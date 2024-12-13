@@ -5,7 +5,7 @@ CBINDGEN = cbindgen
 UNITY_BASE_URI = https://raw.githubusercontent.com/ThrowTheSwitch/Unity/refs/tags/v2.6.0
 
 .PHONY: all
-all: generate-header
+all: generate-header tests/c_tests/unity/unity.h
 	$(CARGO) build
 	$(MESON) setup $(BUILDDIR)
 	$(MESON) compile -C $(BUILDDIR)
