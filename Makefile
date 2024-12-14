@@ -6,7 +6,7 @@ UNITY_BASE_URI = https://raw.githubusercontent.com/ThrowTheSwitch/Unity/refs/tag
 
 .PHONY: all
 all: generate-header tests/c_tests/unity/unity.h
-	$(CARGO) build
+	$(CARGO) build --features "std"
 	$(MESON) setup $(BUILDDIR)
 	$(MESON) compile -C $(BUILDDIR)
 
@@ -15,7 +15,7 @@ generate-header: include/smart_keymap.h
 
 .PHONY: test
 test: include/smart_keymap.h tests/c_tests/unity/unity.h
-	$(CARGO) test
+	$(CARGO) test --features "std"
 	$(MESON) setup $(BUILDDIR) || $(MESON) setup $(BUILDDIR)
 	$(MESON) test -C $(BUILDDIR)
 

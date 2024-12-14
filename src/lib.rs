@@ -1,3 +1,5 @@
+#![cfg_attr(not(feature = "std"), no_std)]
+
 mod keymap;
 
 pub use keymap::KeyDefinition;
@@ -9,6 +11,12 @@ pub extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
     }
 
     unsafe {
-        std::ptr::write_bytes(buf, 0, 8);
+        core::ptr::write_bytes(buf, 0, 8);
     }
+}
+
+#[cfg(not(feature = "std"))]
+#[panic_handler]
+fn panic(_info: &core::panic::PanicInfo) -> ! {
+    loop {}
 }
