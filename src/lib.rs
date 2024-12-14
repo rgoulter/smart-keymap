@@ -1,4 +1,4 @@
-#![no_std]
+#![cfg_attr(not(feature = "std"), no_std)]
 
 mod keymap;
 
@@ -15,6 +15,7 @@ pub extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
     }
 }
 
+#[cfg(not(feature = "std"))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}

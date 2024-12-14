@@ -3,6 +3,9 @@ name = "smart_keymap"
 version = "0.1.0"
 edition = "2021"
 
+[features]
+std = []
+
 [lib]
 name = "smart_keymap"
 crate-type = ["staticlib"]
