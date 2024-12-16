@@ -26,6 +26,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install meson
+          cargo install --force cbindgen
 
       - name: Run Tests
         run: |
