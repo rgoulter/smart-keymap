@@ -2,7 +2,17 @@
 
 mod keymap;
 
-pub use keymap::KeyDefinition;
+#[no_mangle]
+pub extern "C" fn keymap_init() {
+}
+
+#[no_mangle]
+pub extern "C" fn keymap_register_input_keypress(index: u8) {
+}
+
+#[no_mangle]
+pub extern "C" fn keymap_register_input_keyrelease(index: u8) {
+}
 
 #[no_mangle]
 pub extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
