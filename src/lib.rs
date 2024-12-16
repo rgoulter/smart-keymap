@@ -7,11 +7,11 @@ pub extern "C" fn keymap_init() {
 }
 
 #[no_mangle]
-pub extern "C" fn keymap_register_input_keypress(index: u8) {
+pub extern "C" fn keymap_register_input_keypress(index: u16) {
 }
 
 #[no_mangle]
-pub extern "C" fn keymap_register_input_keyrelease(index: u8) {
+pub extern "C" fn keymap_register_input_keyrelease(index: u16) {
 }
 
 #[no_mangle]
