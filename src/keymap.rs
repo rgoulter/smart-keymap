@@ -7,10 +7,11 @@ pub enum KeyDefinition {
     TapHold { tap: u8, hold: u8 },
 }
 
-pub const KEY_DEFINITIONS: [KeyDefinition; 3] = [
+pub const KEY_DEFINITIONS: [KeyDefinition; 4] = [
     KeyDefinition::Simple(0x04),
     KeyDefinition::Simple(0x04),
-    KeyDefinition::Simple(0x04),
+    KeyDefinition::Simple(0x04),  // A
+    KeyDefinition::Simple(0x05),  // B
 ];
 
 /// The engine (set of key definition systems),

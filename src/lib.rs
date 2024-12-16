@@ -4,7 +4,7 @@ mod input;
 mod keymap;
 
 
-static mut KEYMAP: keymap::Keymap<3> = keymap::Keymap::new(keymap::KEY_DEFINITIONS);
+static mut KEYMAP: keymap::Keymap<4> = keymap::Keymap::new(keymap::KEY_DEFINITIONS);
 
 #[no_mangle]
 pub extern "C" fn keymap_init() {
