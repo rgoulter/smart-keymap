@@ -11,6 +11,7 @@ name = "smart_keymap"
 crate-type = ["staticlib"]
 
 [dependencies]
+heapless = "0.8"
 libc = "0.2"
 
 [profile.dev]
