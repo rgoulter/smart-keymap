@@ -3,6 +3,7 @@
 {
   languages = {
     c.enable = true;
+    ruby.enable = true;
     rust.enable = true;
   };
 
