@@ -8,8 +8,8 @@ pub enum KeyDefinition {
 }
 
 pub const KEY_DEFINITIONS: [KeyDefinition; 4] = [
-    KeyDefinition::Simple(0x04),
-    KeyDefinition::Simple(0x04),
+    KeyDefinition::TapHold { tap: 0x06, hold: 0xE0 }, // Tap C, Hold LCtrl
+    KeyDefinition::TapHold { tap: 0x07, hold: 0xE1 }, // Tap D, Hold LShift
     KeyDefinition::Simple(0x04),  // A
     KeyDefinition::Simple(0x05),  // B
 ];
