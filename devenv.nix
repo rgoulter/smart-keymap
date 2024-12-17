@@ -8,9 +8,6 @@
   };
 
   packages = [
-    pkgs.git
-    pkgs.meson
-    pkgs.ninja
     pkgs.rust-cbindgen
   ];
 }
