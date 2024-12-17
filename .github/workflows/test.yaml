@@ -24,11 +24,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install meson
+          export PATH=$(gem environment user_gemhome)/bin:$PATH
+          export GEM_HOME=$(gem environment user_gemhome)
+          gem install bundler --user-install
+          bundle install
+          wget https://github.com/ThrowTheSwitch/Ceedling/releases/download/1.0.0-13d0e3d/ceedling-1.0.0-13d0e3d.gem
+          gem install --local ceedling-1.0.0-13d0e3d.gem
+          rm ceedling-1.0.0-13d0e3d.gem
           cargo install --force cbindgen
 
       - name: Run Tests
         run: |
+          export PATH=$(gem environment user_gemhome)/bin:$PATH
           make
           make test
