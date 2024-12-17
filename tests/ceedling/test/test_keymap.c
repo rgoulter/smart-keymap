@@ -16,7 +16,7 @@ void test_copy_hid_boot_keyboard_report(void) {
 
     uint8_t actual_report[8] = {1, 2, 3, 4, 5, 6, 7, 8};
     copy_hid_boot_keyboard_report(actual_report);
-    
+
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
@@ -109,20 +109,4 @@ void test_simple_keypress_sequence_da_db_ua(void) {
 
     copy_hid_boot_keyboard_report(actual_report);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
-}
-
-int main(void) {
-    UNITY_BEGIN();
-    
-    RUN_TEST(test_copy_hid_boot_keyboard_report);
-
-    RUN_TEST(test_simple_keypress);
-    RUN_TEST(test_simple_keyrelease);
-
-    RUN_TEST(test_simple_keypress_sequence_da_db);
-    RUN_TEST(test_simple_keypress_sequence_da_db_ua);
-    RUN_TEST(test_simple_keypress_sequence_da_db_ub);
-    RUN_TEST(test_simple_keypress_sequence_db_da);
-
-    return UNITY_END();
 }
