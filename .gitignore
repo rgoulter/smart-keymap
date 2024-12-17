@@ -1,6 +1,7 @@
 build
 builddir
 target
+.bundle
 # Devenv
 .devenv*
 devenv.local.nix
