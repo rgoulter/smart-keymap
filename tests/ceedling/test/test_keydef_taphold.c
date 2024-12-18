@@ -67,3 +67,21 @@ void test_taphold_dth_uth_eventually_clears(void) {
 
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
+
+void test_taphold_dth_eventually_holds(void) {
+    // Pressing T.H., is eventually the same as holding the hold key.
+
+    uint8_t expected_report[8] = {MOD_LCTL, 0, 0, 0, 0, 0, 0, 0};
+    uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    keymap_init();
+
+    keymap_register_input_keypress(0); // First key in keymap is TapHold(C, _)
+
+    // Wait 500ms
+    for (int i = 0; i < 500; i++) {
+        keymap_tick(actual_report);
+    }
+
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
+}
