@@ -14,16 +14,16 @@ pub extern "C" fn keymap_init() {
 }
 
 #[no_mangle]
-pub extern "C" fn keymap_register_input_keypress(index: u16) {
+pub extern "C" fn keymap_register_input_keypress(keymap_index: u16) {
     unsafe {
-        KEYMAP.handle_input(input::Event::Press(index));
+        KEYMAP.handle_input(input::Event::Press { keymap_index });
     }
 }
 
 #[no_mangle]
-pub extern "C" fn keymap_register_input_keyrelease(index: u16) {
+pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
     unsafe {
-        KEYMAP.handle_input(input::Event::Release(index));
+        KEYMAP.handle_input(input::Event::Release { keymap_index });
     }
 }
 
@@ -39,6 +39,8 @@ pub extern "C" fn keymap_tick(buf: *mut u8) {
     }
 
     unsafe {
+        KEYMAP.tick();
+
         let report = KEYMAP.boot_keyboard_report();
         core::ptr::copy_nonoverlapping(report.as_ptr(), buf, report.len());
     }
