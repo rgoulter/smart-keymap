@@ -3,7 +3,6 @@
 mod input;
 mod keymap;
 
-
 static mut KEYMAP: keymap::Keymap<4> = keymap::Keymap::new(keymap::KEY_DEFINITIONS);
 
 #[no_mangle]
@@ -33,7 +32,7 @@ pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
 ///
 /// The HID keyboard report is copied to the given buffer.
 #[no_mangle]
-pub extern "C" fn keymap_tick(buf: *mut u8) {
+pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
     if buf.is_null() {
         return;
     }
@@ -47,7 +46,7 @@ pub extern "C" fn keymap_tick(buf: *mut u8) {
 }
 
 #[no_mangle]
-pub extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
+pub unsafe extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
     if buf.is_null() {
         return;
     }
