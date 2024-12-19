@@ -77,12 +77,20 @@ pub const KEY_DEFINITIONS: [KeyDefinition; 4] = [
     KeyDefinition::Simple(0x05), // B
 ];
 
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub struct ScheduledEvent {
+    time: u32,
+    event: input::Event,
+}
+
 /// The engine (set of key definition systems),
 ///  and key definitions.
 pub struct Keymap<const N: usize> {
     key_definitions: [KeyDefinition; N],
     pressed_keys: heapless::Vec<PressedKeyState, N>,
     pending_events: heapless::spsc::Queue<input::Event, 256>,
+    scheduled_events: heapless::BinaryHeap<ScheduledEvent, heapless::binary_heap::Min, 256>,
+    schedule_counter: u32,
 }
 
 impl<const N: usize> Keymap<N> {
@@ -91,12 +99,16 @@ impl<const N: usize> Keymap<N> {
             key_definitions,
             pressed_keys: heapless::Vec::new(),
             pending_events: heapless::spsc::Queue::new(),
+            scheduled_events: heapless::BinaryHeap::new(),
+            schedule_counter: 0,
         }
     }
 
     pub fn init(&mut self) {
         self.pressed_keys.clear();
         while self.pending_events.dequeue().is_some() {}
+        self.scheduled_events.clear();
+        self.schedule_counter = 0;
     }
 
     pub fn handle_input(&mut self, ev: input::Event) {
@@ -132,6 +144,8 @@ impl<const N: usize> Keymap<N> {
                             state: TapHoldState::Pending,
                         };
                         self.pressed_keys.push(pressed_key).unwrap();
+
+                        self.schedule_after(200, input::Event::TapHoldTimeout { keymap_index });
                     }
                 }
             }
@@ -167,7 +181,27 @@ impl<const N: usize> Keymap<N> {
         }
     }
 
+    pub fn schedule_after(&mut self, delay: u32, event: input::Event) {
+        let time = self.schedule_counter + delay;
+        self.scheduled_events
+            .push(ScheduledEvent { time, event })
+            .unwrap();
+    }
+
     pub fn tick(&mut self) {
+        self.schedule_counter += 1;
+        let scheduled_ready =
+            if let Some(ScheduledEvent { time, .. }) = self.scheduled_events.peek() {
+                *time <= self.schedule_counter
+            } else {
+                false
+            };
+        if scheduled_ready {
+            if let Some(ScheduledEvent { event, .. }) = self.scheduled_events.pop() {
+                self.pending_events.enqueue(event).unwrap();
+            }
+        }
+
         // take from pending
         if let Some(ev) = self.pending_events.dequeue() {
             match ev {
@@ -185,6 +219,21 @@ impl<const N: usize> Keymap<N> {
                             _ => false,
                         })
                         .map(|i| self.pressed_keys.remove(i));
+                }
+                input::Event::TapHoldTimeout { keymap_index } => {
+                    // Resolve the TapHold key at the given keymap index to "Hold"
+                    //  if it's pressed, and if it's pressed key state is pending.
+                    if let Some(pk) = self
+                        .pressed_keys
+                        .iter_mut()
+                        .find(|pk| pk.keymap_index() == Some(keymap_index))
+                    {
+                        if let PressedKeyState::TapHold { state, .. } = pk {
+                            if let TapHoldState::Pending = state {
+                                *state = TapHoldState::Hold;
+                            }
+                        }
+                    }
                 }
                 _ => {}
             }
