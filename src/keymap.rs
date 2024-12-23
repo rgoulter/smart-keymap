@@ -8,8 +8,8 @@ trait PressedKey {
     fn handle_event<const N: usize>(
         &mut self,
         key_definitions: [KeyDefinition; N],
-        event: Self::Event,
-    ) -> impl IntoIterator<Item = Self::Event>;
+        event: key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = key::Event<Self::Event>>;
     fn key_code<const N: usize>(&self, key: [KeyDefinition; N]) -> Option<u8>;
 }
 
@@ -74,16 +74,17 @@ impl PressedKey for CompositePressedKey {
     fn handle_event<const N: usize>(
         &mut self,
         key_definitions: [KeyDefinition; N],
-        event: Self::Event,
-    ) -> impl IntoIterator<Item = Self::Event> {
+        event: key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         if let CompositePressedKey::TapHold(tap_hold) = self {
             let keymap_index = tap_hold.keymap_index();
             if let KeyDefinition::TapHold(key_def) = key_definitions[keymap_index as usize] {
                 if let Ok(ev) = key::Event::try_from(event) {
-                    let events = tap_hold.handle_event(&key_def, ev);
+                    let events: heapless::Vec<key::Event<tap_hold::Event>, 2> =
+                        tap_hold.handle_event(&key_def, ev);
                     events.into_iter().map(|ev| ev.into()).collect()
                 } else {
-                    heapless::Vec::<CompositeEvent, 2>::new()
+                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
                 }
             } else {
                 heapless::Vec::new()
@@ -109,47 +110,30 @@ pub const KEY_DEFINITIONS: [KeyDefinition; 4] = [
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum CompositeEvent {
-    Input(input::Event),
-    Simple(simple::Event),
     TapHold(tap_hold::Event),
 }
 
-impl From<input::Event> for CompositeEvent {
-    fn from(ev: input::Event) -> Self {
-        CompositeEvent::Input(ev)
-    }
-}
-
-impl From<key::Event<simple::Event>> for CompositeEvent {
-    fn from(ev: key::Event<simple::Event>) -> Self {
-        match ev {
-            key::Event::Input(ev) => CompositeEvent::Input(ev),
-            key::Event::Key(ev) => CompositeEvent::Simple(ev),
-        }
-    }
-}
-
-impl From<key::Event<tap_hold::Event>> for CompositeEvent {
+impl From<key::Event<tap_hold::Event>> for key::Event<CompositeEvent> {
     fn from(ev: key::Event<tap_hold::Event>) -> Self {
         match ev {
-            key::Event::Input(ev) => CompositeEvent::Input(ev),
-            key::Event::Key(ev) => CompositeEvent::TapHold(ev),
+            key::Event::Input(ev) => key::Event::Input(ev),
+            key::Event::Key(ev) => key::Event::Key(CompositeEvent::TapHold(ev)),
         }
     }
 }
 
+#[allow(unused)]
 pub enum EventError {
     UnmappableEvent,
 }
 
-impl TryFrom<CompositeEvent> for key::Event<tap_hold::Event> {
+impl TryFrom<key::Event<CompositeEvent>> for key::Event<tap_hold::Event> {
     type Error = EventError;
 
-    fn try_from(ev: CompositeEvent) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<CompositeEvent>) -> Result<Self, Self::Error> {
         match ev {
-            CompositeEvent::Input(e) => Ok(key::Event::Input(e)),
-            CompositeEvent::TapHold(e) => Ok(key::Event::Key(e)),
-            _ => Err(EventError::UnmappableEvent),
+            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
+            key::Event::Key(CompositeEvent::TapHold(ev)) => Ok(key::Event::Key(ev)),
         }
     }
 }
@@ -157,7 +141,7 @@ impl TryFrom<CompositeEvent> for key::Event<tap_hold::Event> {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ScheduledEvent {
     time: u32,
-    event: CompositeEvent,
+    event: key::Event<CompositeEvent>,
 }
 
 /// The engine (set of key definition systems),
@@ -165,7 +149,7 @@ pub struct ScheduledEvent {
 pub struct Keymap<const N: usize> {
     key_definitions: [KeyDefinition; N],
     pressed_keys: heapless::Vec<CompositePressedKey, N>,
-    pending_events: heapless::spsc::Queue<CompositeEvent, 256>,
+    pending_events: heapless::spsc::Queue<key::Event<CompositeEvent>, 256>,
     scheduled_events: heapless::BinaryHeap<ScheduledEvent, heapless::binary_heap::Min, 256>,
     schedule_counter: u32,
 }
@@ -194,7 +178,9 @@ impl<const N: usize> Keymap<N> {
             let events = pk.handle_event(self.key_definitions, ev.into());
             events
                 .into_iter()
-                .for_each(|ev: CompositeEvent| self.pending_events.enqueue(ev).unwrap());
+                .for_each(|ev: key::Event<CompositeEvent>| {
+                    self.pending_events.enqueue(ev).unwrap()
+                });
         });
 
         match ev {
@@ -239,7 +225,7 @@ impl<const N: usize> Keymap<N> {
 
     fn schedule_event<T>(&mut self, scheduled_event: key::ScheduledEvent<T>)
     where
-        CompositeEvent: From<key::Event<T>>,
+        key::Event<CompositeEvent>: From<key::Event<T>>,
     {
         match scheduled_event.schedule {
             key::Schedule::Immediate => {
@@ -253,7 +239,7 @@ impl<const N: usize> Keymap<N> {
         }
     }
 
-    pub fn schedule_after(&mut self, delay: u32, event: CompositeEvent) {
+    pub fn schedule_after(&mut self, delay: u32, event: key::Event<CompositeEvent>) {
         let time = self.schedule_counter + delay;
         self.scheduled_events
             .push(ScheduledEvent { time, event })
@@ -281,14 +267,13 @@ impl<const N: usize> Keymap<N> {
                 let events = pk.handle_event(self.key_definitions, ev);
                 events
                     .into_iter()
-                    .for_each(|ev: CompositeEvent| self.pending_events.enqueue(ev).unwrap());
+                    .for_each(|ev: key::Event<CompositeEvent>| {
+                        self.pending_events.enqueue(ev).unwrap()
+                    });
             });
 
-            match ev {
-                CompositeEvent::Input(input_ev) => {
-                    self.handle_input(input_ev);
-                }
-                _ => {}
+            if let key::Event::Input(input_ev) = ev {
+                self.handle_input(input_ev);
             }
         }
     }
