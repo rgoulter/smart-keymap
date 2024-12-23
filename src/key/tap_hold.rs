@@ -1,5 +1,5 @@
 use crate::input;
-use crate::key_definitions;
+use crate::key;
 
 #[derive(Debug, Clone, Copy)]
 pub struct KeyDefinition {
@@ -19,9 +19,9 @@ pub enum Event {
     TapHoldTimeout { keymap_index: u16 },
 }
 
-impl From<Event> for key_definitions::Event<Event> {
+impl From<Event> for key::Event<Event> {
     fn from(event: Event) -> Self {
-        key_definitions::Event::Key(event)
+        key::Event::Key(event)
     }
 }
 
@@ -32,16 +32,13 @@ pub struct PressedKey {
 }
 
 impl PressedKey {
-    pub fn new(keymap_index: u16) -> (Self, key_definitions::ScheduledEvent<Event>) {
+    pub fn new(keymap_index: u16) -> (Self, key::ScheduledEvent<Event>) {
         (
             Self {
                 keymap_index,
                 state: TapHoldState::Pending,
             },
-            key_definitions::ScheduledEvent::after(
-                200,
-                Event::TapHoldTimeout { keymap_index }.into(),
-            ),
+            key::ScheduledEvent::after(200, Event::TapHoldTimeout { keymap_index }.into()),
         )
     }
 
@@ -66,15 +63,15 @@ impl PressedKey {
     pub fn handle_event(
         &mut self,
         key_def: &KeyDefinition,
-        event: key_definitions::Event<Event>,
-    ) -> impl IntoIterator<Item = key_definitions::Event<Event>> {
+        event: key::Event<Event>,
+    ) -> impl IntoIterator<Item = key::Event<Event>> {
         match event {
-            key_definitions::Event::Input(input::Event::Press { .. }) => {
+            key::Event::Input(input::Event::Press { .. }) => {
                 // TapHold: any interruption resolves pending TapHold as Hold.
                 self.resolve(TapHoldState::Hold);
                 heapless::Vec::new()
             }
-            key_definitions::Event::Input(input::Event::Release { keymap_index }) => {
+            key::Event::Input(input::Event::Release { keymap_index }) => {
                 if keymap_index == self.keymap_index {
                     // TapHold: resolved as tap.
                     self.resolve(TapHoldState::Tap);
@@ -83,7 +80,7 @@ impl PressedKey {
                 match &self.state {
                     TapHoldState::Tap => {
                         let key_code = key_def.tap;
-                        let mut emitted_events: heapless::Vec<key_definitions::Event<Event>, 2> =
+                        let mut emitted_events: heapless::Vec<key::Event<Event>, 2> =
                             heapless::Vec::new();
                         emitted_events
                             .push(input::Event::VirtualKeyPress { key_code }.into())
@@ -96,7 +93,7 @@ impl PressedKey {
                     _ => heapless::Vec::new(),
                 }
             }
-            key_definitions::Event::Key(Event::TapHoldTimeout { .. }) => {
+            key::Event::Key(Event::TapHoldTimeout { .. }) => {
                 // Key held long enough to resolve as hold.
                 self.resolve(TapHoldState::Hold);
                 heapless::Vec::new()
