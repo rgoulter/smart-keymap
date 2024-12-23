@@ -9,36 +9,36 @@ pub enum KeyDefinition {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum PressedKey {
+pub enum CompositePressedKey {
     Simple(simple::PressedKey),
     TapHold(tap_hold::PressedKey),
     Virtual { key_code: u8 },
 }
 
-impl From<simple::PressedKey> for PressedKey {
+impl From<simple::PressedKey> for CompositePressedKey {
     fn from(pk: simple::PressedKey) -> Self {
-        PressedKey::Simple(pk)
+        CompositePressedKey::Simple(pk)
     }
 }
 
-impl From<tap_hold::PressedKey> for PressedKey {
+impl From<tap_hold::PressedKey> for CompositePressedKey {
     fn from(pk: tap_hold::PressedKey) -> Self {
-        PressedKey::TapHold(pk)
+        CompositePressedKey::TapHold(pk)
     }
 }
 
-impl PressedKey {
+impl CompositePressedKey {
     pub fn keymap_index(&self) -> Option<u16> {
         match self {
-            PressedKey::Simple(pk) => Some(pk.keymap_index()),
-            PressedKey::TapHold(pk) => Some(pk.keymap_index()),
+            CompositePressedKey::Simple(pk) => Some(pk.keymap_index()),
+            CompositePressedKey::TapHold(pk) => Some(pk.keymap_index()),
             _ => None,
         }
     }
 
     pub fn key_code<const N: usize>(&self, key: [KeyDefinition; N]) -> Option<u8> {
         match self {
-            PressedKey::Simple(pk) => {
+            CompositePressedKey::Simple(pk) => {
                 let key_definition = key[pk.keymap_index() as usize];
                 match key_definition {
                     KeyDefinition::Simple(key_def) => Some(pk.key_code(&key_def)),
@@ -46,7 +46,7 @@ impl PressedKey {
                 }
             }
 
-            PressedKey::TapHold(pk) => {
+            CompositePressedKey::TapHold(pk) => {
                 let key_definition = key[pk.keymap_index() as usize];
                 match key_definition {
                     KeyDefinition::TapHold(key_def) => pk.key_code(&key_def),
@@ -54,7 +54,7 @@ impl PressedKey {
                 }
             }
 
-            PressedKey::Virtual { key_code } => Some(*key_code),
+            CompositePressedKey::Virtual { key_code } => Some(*key_code),
         }
     }
 }
@@ -129,7 +129,7 @@ pub struct ScheduledEvent {
 ///  and key definitions.
 pub struct Keymap<const N: usize> {
     key_definitions: [KeyDefinition; N],
-    pressed_keys: heapless::Vec<PressedKey, N>,
+    pressed_keys: heapless::Vec<CompositePressedKey, N>,
     pending_events: heapless::spsc::Queue<Event, 256>,
     scheduled_events: heapless::BinaryHeap<ScheduledEvent, heapless::binary_heap::Min, 256>,
     schedule_counter: u32,
@@ -156,7 +156,7 @@ impl<const N: usize> Keymap<N> {
     fn handle_event(&mut self, ev: Event) {
         // Update each of the PressedKeys with the event.
         self.pressed_keys.iter_mut().for_each(|pk| {
-            if let PressedKey::TapHold(tap_hold) = pk {
+            if let CompositePressedKey::TapHold(tap_hold) = pk {
                 let keymap_index = tap_hold.keymap_index();
                 if let KeyDefinition::TapHold(key_def) = self.key_definitions[keymap_index as usize]
                 {
@@ -196,7 +196,7 @@ impl<const N: usize> Keymap<N> {
             }
             Event::Input(input::Event::VirtualKeyPress { key_code }) => {
                 // Add to pressed keys.
-                let pressed_key = PressedKey::Virtual { key_code };
+                let pressed_key = CompositePressedKey::Virtual { key_code };
                 self.pressed_keys.push(pressed_key).unwrap();
             }
             Event::Input(input::Event::VirtualKeyRelease { key_code }) => {
@@ -204,7 +204,7 @@ impl<const N: usize> Keymap<N> {
                 self.pressed_keys
                     .iter()
                     .position(|&k| match k {
-                        PressedKey::Virtual { key_code: kc } => key_code == kc,
+                        CompositePressedKey::Virtual { key_code: kc } => key_code == kc,
                         _ => false,
                     })
                     .map(|i| self.pressed_keys.remove(i));
