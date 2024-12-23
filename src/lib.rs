@@ -6,6 +6,7 @@ mod keymap;
 
 static mut KEYMAP: keymap::Keymap<4> = keymap::Keymap::new(keymap::KEY_DEFINITIONS);
 
+#[allow(static_mut_refs)]
 #[no_mangle]
 pub extern "C" fn keymap_init() {
     unsafe {
@@ -13,6 +14,7 @@ pub extern "C" fn keymap_init() {
     }
 }
 
+#[allow(static_mut_refs)]
 #[no_mangle]
 pub extern "C" fn keymap_register_input_keypress(keymap_index: u16) {
     unsafe {
@@ -20,6 +22,7 @@ pub extern "C" fn keymap_register_input_keypress(keymap_index: u16) {
     }
 }
 
+#[allow(static_mut_refs)]
 #[no_mangle]
 pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
     unsafe {
@@ -32,6 +35,7 @@ pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
 /// Should be called every ms.
 ///
 /// The HID keyboard report is copied to the given buffer.
+#[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
     if buf.is_null() {
@@ -46,6 +50,7 @@ pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
     }
 }
 
+#[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
     if buf.is_null() {
