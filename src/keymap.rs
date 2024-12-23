@@ -73,32 +73,32 @@ pub const KEY_DEFINITIONS: [KeyDefinition; 4] = [
 ];
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Event {
+pub enum CompositeEvent {
     Input(input::Event),
     Simple(simple::Event),
     TapHold(tap_hold::Event),
 }
 
-impl From<input::Event> for Event {
+impl From<input::Event> for CompositeEvent {
     fn from(ev: input::Event) -> Self {
-        Event::Input(ev)
+        CompositeEvent::Input(ev)
     }
 }
 
-impl From<key::Event<simple::Event>> for Event {
+impl From<key::Event<simple::Event>> for CompositeEvent {
     fn from(ev: key::Event<simple::Event>) -> Self {
         match ev {
-            key::Event::Input(ev) => Event::Input(ev),
-            key::Event::Key(ev) => Event::Simple(ev),
+            key::Event::Input(ev) => CompositeEvent::Input(ev),
+            key::Event::Key(ev) => CompositeEvent::Simple(ev),
         }
     }
 }
 
-impl From<key::Event<tap_hold::Event>> for Event {
+impl From<key::Event<tap_hold::Event>> for CompositeEvent {
     fn from(ev: key::Event<tap_hold::Event>) -> Self {
         match ev {
-            key::Event::Input(ev) => Event::Input(ev),
-            key::Event::Key(ev) => Event::TapHold(ev),
+            key::Event::Input(ev) => CompositeEvent::Input(ev),
+            key::Event::Key(ev) => CompositeEvent::TapHold(ev),
         }
     }
 }
@@ -107,13 +107,13 @@ pub enum EventError {
     UnmappableEvent,
 }
 
-impl TryFrom<Event> for key::Event<tap_hold::Event> {
+impl TryFrom<CompositeEvent> for key::Event<tap_hold::Event> {
     type Error = EventError;
 
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+    fn try_from(ev: CompositeEvent) -> Result<Self, Self::Error> {
         match ev {
-            Event::Input(e) => Ok(key::Event::Input(e)),
-            Event::TapHold(e) => Ok(key::Event::Key(e)),
+            CompositeEvent::Input(e) => Ok(key::Event::Input(e)),
+            CompositeEvent::TapHold(e) => Ok(key::Event::Key(e)),
             _ => Err(EventError::UnmappableEvent),
         }
     }
@@ -122,7 +122,7 @@ impl TryFrom<Event> for key::Event<tap_hold::Event> {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ScheduledEvent {
     time: u32,
-    event: Event,
+    event: CompositeEvent,
 }
 
 /// The engine (set of key definition systems),
@@ -130,7 +130,7 @@ pub struct ScheduledEvent {
 pub struct Keymap<const N: usize> {
     key_definitions: [KeyDefinition; N],
     pressed_keys: heapless::Vec<CompositePressedKey, N>,
-    pending_events: heapless::spsc::Queue<Event, 256>,
+    pending_events: heapless::spsc::Queue<CompositeEvent, 256>,
     scheduled_events: heapless::BinaryHeap<ScheduledEvent, heapless::binary_heap::Min, 256>,
     schedule_counter: u32,
 }
@@ -153,7 +153,7 @@ impl<const N: usize> Keymap<N> {
         self.schedule_counter = 0;
     }
 
-    fn handle_event(&mut self, ev: Event) {
+    fn handle_event(&mut self, ev: CompositeEvent) {
         // Update each of the PressedKeys with the event.
         self.pressed_keys.iter_mut().for_each(|pk| {
             if let CompositePressedKey::TapHold(tap_hold) = pk {
@@ -173,7 +173,7 @@ impl<const N: usize> Keymap<N> {
         });
 
         match ev {
-            Event::Input(input::Event::Press { keymap_index }) => {
+            CompositeEvent::Input(input::Event::Press { keymap_index }) => {
                 let key_definition = self.key_definitions[keymap_index as usize];
                 match key_definition {
                     KeyDefinition::Simple(_) => {
@@ -188,18 +188,18 @@ impl<const N: usize> Keymap<N> {
                     }
                 }
             }
-            Event::Input(input::Event::Release { keymap_index }) => {
+            CompositeEvent::Input(input::Event::Release { keymap_index }) => {
                 self.pressed_keys
                     .iter()
                     .position(|&k| k.keymap_index() == Some(keymap_index))
                     .map(|i| self.pressed_keys.remove(i));
             }
-            Event::Input(input::Event::VirtualKeyPress { key_code }) => {
+            CompositeEvent::Input(input::Event::VirtualKeyPress { key_code }) => {
                 // Add to pressed keys.
                 let pressed_key = CompositePressedKey::Virtual { key_code };
                 self.pressed_keys.push(pressed_key).unwrap();
             }
-            Event::Input(input::Event::VirtualKeyRelease { key_code }) => {
+            CompositeEvent::Input(input::Event::VirtualKeyRelease { key_code }) => {
                 // Remove from pressed keys.
                 self.pressed_keys
                     .iter()
@@ -219,7 +219,7 @@ impl<const N: usize> Keymap<N> {
 
     fn schedule_event<T>(&mut self, scheduled_event: key::ScheduledEvent<T>)
     where
-        Event: From<key::Event<T>>,
+        CompositeEvent: From<key::Event<T>>,
     {
         match scheduled_event.schedule {
             key::Schedule::Immediate => {
@@ -233,7 +233,7 @@ impl<const N: usize> Keymap<N> {
         }
     }
 
-    pub fn schedule_after(&mut self, delay: u32, event: Event) {
+    pub fn schedule_after(&mut self, delay: u32, event: CompositeEvent) {
         let time = self.schedule_counter + delay;
         self.scheduled_events
             .push(ScheduledEvent { time, event })
