@@ -11,17 +11,11 @@ impl KeyDefinition {
 pub struct Event();
 
 #[derive(Debug, Clone, Copy)]
-pub struct PressedKey {
-    keymap_index: u16,
-}
+pub struct PressedKey {}
 
 impl PressedKey {
-    pub fn new(keymap_index: u16) -> Self {
-        Self { keymap_index }
-    }
-
-    pub fn keymap_index(&self) -> u16 {
-        self.keymap_index
+    pub fn new() -> Self {
+        Self {}
     }
 
     pub fn key_code(&self, key_def: &KeyDefinition) -> u8 {

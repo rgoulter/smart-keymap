@@ -42,10 +42,6 @@ impl PressedKey {
         )
     }
 
-    pub fn keymap_index(&self) -> u16 {
-        self.keymap_index
-    }
-
     pub fn key_code(&self, key_def: &KeyDefinition) -> Option<u8> {
         match self.state {
             TapHoldState::Tap => Some(key_def.tap),
