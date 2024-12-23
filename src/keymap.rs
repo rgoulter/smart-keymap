@@ -188,17 +188,17 @@ impl<const N: usize> Keymap<N> {
         self.schedule_counter = 0;
     }
 
-    fn handle_event(&mut self, ev: CompositeEvent) {
+    pub fn handle_input(&mut self, ev: input::Event) {
         // Update each of the PressedKeys with the event.
         self.pressed_keys.iter_mut().for_each(|pk| {
-            let events = pk.handle_event(self.key_definitions, ev);
+            let events = pk.handle_event(self.key_definitions, ev.into());
             events
                 .into_iter()
                 .for_each(|ev: CompositeEvent| self.pending_events.enqueue(ev).unwrap());
         });
 
         match ev {
-            CompositeEvent::Input(input::Event::Press { keymap_index }) => {
+            input::Event::Press { keymap_index } => {
                 let key_definition = self.key_definitions[keymap_index as usize];
                 match key_definition {
                     KeyDefinition::Simple(_) => {
@@ -213,18 +213,18 @@ impl<const N: usize> Keymap<N> {
                     }
                 }
             }
-            CompositeEvent::Input(input::Event::Release { keymap_index }) => {
+            input::Event::Release { keymap_index } => {
                 self.pressed_keys
                     .iter()
                     .position(|&k| k.keymap_index() == Some(keymap_index))
                     .map(|i| self.pressed_keys.remove(i));
             }
-            CompositeEvent::Input(input::Event::VirtualKeyPress { key_code }) => {
+            input::Event::VirtualKeyPress { key_code } => {
                 // Add to pressed keys.
                 let pressed_key = CompositePressedKey::Virtual { key_code };
                 self.pressed_keys.push(pressed_key).unwrap();
             }
-            CompositeEvent::Input(input::Event::VirtualKeyRelease { key_code }) => {
+            input::Event::VirtualKeyRelease { key_code } => {
                 // Remove from pressed keys.
                 self.pressed_keys
                     .iter()
@@ -234,12 +234,7 @@ impl<const N: usize> Keymap<N> {
                     })
                     .map(|i| self.pressed_keys.remove(i));
             }
-            _ => {}
         }
-    }
-
-    pub fn handle_input(&mut self, ev: input::Event) {
-        self.handle_event(ev.into());
     }
 
     fn schedule_event<T>(&mut self, scheduled_event: key::ScheduledEvent<T>)
@@ -281,7 +276,20 @@ impl<const N: usize> Keymap<N> {
 
         // take from pending
         if let Some(ev) = self.pending_events.dequeue() {
-            self.handle_event(ev);
+            // Update each of the PressedKeys with the event.
+            self.pressed_keys.iter_mut().for_each(|pk| {
+                let events = pk.handle_event(self.key_definitions, ev);
+                events
+                    .into_iter()
+                    .for_each(|ev: CompositeEvent| self.pending_events.enqueue(ev).unwrap());
+            });
+
+            match ev {
+                CompositeEvent::Input(input_ev) => {
+                    self.handle_input(input_ev);
+                }
+                _ => {}
+            }
         }
     }
 
