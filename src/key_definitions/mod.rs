@@ -15,6 +15,7 @@ impl<T> From<input::Event> for Event<T> {
     }
 }
 
+#[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Schedule {
     Immediate,
@@ -28,6 +29,7 @@ pub struct ScheduledEvent<T> {
 }
 
 impl<T> ScheduledEvent<T> {
+    #[allow(unused)]
     pub fn immediate(event: Event<T>) -> Self {
         ScheduledEvent {
             schedule: Schedule::Immediate,
