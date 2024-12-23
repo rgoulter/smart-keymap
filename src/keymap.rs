@@ -18,6 +18,27 @@ pub enum KeyDefinition {
     TapHold(tap_hold::KeyDefinition),
 }
 
+impl KeyDefinition {
+    fn new_pressed_key(
+        keymap_index: u16,
+        key_definition: KeyDefinition,
+    ) -> (
+        CompositePressedKey,
+        Option<key::ScheduledEvent<CompositeEvent>>,
+    ) {
+        match key_definition {
+            KeyDefinition::Simple(_) => {
+                let pressed_key = simple::PressedKey::new();
+                (pressed_key.into(), None)
+            }
+            KeyDefinition::TapHold(_) => {
+                let (pressed_key, new_event) = tap_hold::PressedKey::new(keymap_index);
+                (pressed_key.into(), Some(new_event.into()))
+            }
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum CompositePressedKey {
     Simple(simple::PressedKey),
@@ -112,6 +133,15 @@ impl From<key::Event<tap_hold::Event>> for key::Event<CompositeEvent> {
     }
 }
 
+impl From<key::ScheduledEvent<tap_hold::Event>> for key::ScheduledEvent<CompositeEvent> {
+    fn from(ev: key::ScheduledEvent<tap_hold::Event>) -> Self {
+        Self {
+            schedule: ev.schedule,
+            event: ev.event.into(),
+        }
+    }
+}
+
 #[allow(unused)]
 pub enum EventError {
     UnmappableEvent,
@@ -179,27 +209,14 @@ impl<const N: usize> Keymap<N> {
         match ev {
             input::Event::Press { keymap_index } => {
                 let key_definition = self.key_definitions[keymap_index as usize];
-                match key_definition {
-                    KeyDefinition::Simple(_) => {
-                        let pressed_key = simple::PressedKey::new();
-                        self.pressed_inputs
-                            .push(
-                                CompositePressedKey::from(pressed_key)
-                                    .as_pressed_input(keymap_index),
-                            )
-                            .unwrap();
-                    }
-                    KeyDefinition::TapHold(_) => {
-                        let (pressed_key, new_event) = tap_hold::PressedKey::new(keymap_index);
-                        self.pressed_inputs
-                            .push(
-                                CompositePressedKey::from(pressed_key)
-                                    .as_pressed_input(keymap_index),
-                            )
-                            .unwrap();
+                let (pressed_key, new_event) =
+                    KeyDefinition::new_pressed_key(keymap_index, key_definition);
+                self.pressed_inputs
+                    .push(pressed_key.as_pressed_input(keymap_index))
+                    .unwrap();
 
-                        self.schedule_event(new_event);
-                    }
+                if let Some(new_event) = new_event {
+                    self.schedule_event(new_event);
                 }
             }
             input::Event::Release { keymap_index } => {
