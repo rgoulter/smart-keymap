@@ -35,6 +35,10 @@ pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
 /// Should be called every ms.
 ///
 /// The HID keyboard report is copied to the given buffer.
+///
+/// # Safety
+///
+/// `buf` must be a valid pointer to a buffer of at least 8 bytes.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
@@ -50,6 +54,9 @@ pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
     }
 }
 
+/// # Safety
+///
+/// `buf` must be a valid pointer to a buffer of at least 8 bytes.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
