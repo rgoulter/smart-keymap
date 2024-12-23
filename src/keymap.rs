@@ -153,25 +153,27 @@ impl<const N: usize> Keymap<N> {
         self.schedule_counter = 0;
     }
 
-    pub fn handle_input(&mut self, ev: input::Event) {
+    fn handle_event(&mut self, ev: Event) {
         // Update each of the PressedKeys with the event.
         self.pressed_keys.iter_mut().for_each(|pk| {
             if let PressedKey::TapHold(tap_hold) = pk {
                 let keymap_index = tap_hold.keymap_index();
                 if let KeyDefinition::TapHold(key_def) = self.key_definitions[keymap_index as usize]
                 {
-                    let events = tap_hold.handle_event(&key_def, ev.into());
-                    events
-                        .into_iter()
-                        .for_each(|ev: key_definitions::Event<tap_hold::Event>| {
-                            self.pending_events.enqueue(ev.into()).unwrap()
-                        });
+                    if let Ok(ev) = key_definitions::Event::try_from(ev) {
+                        let events = tap_hold.handle_event(&key_def, ev);
+                        events.into_iter().for_each(
+                            |ev: key_definitions::Event<tap_hold::Event>| {
+                                self.pending_events.enqueue(ev.into()).unwrap()
+                            },
+                        );
+                    }
                 }
             }
         });
 
         match ev {
-            input::Event::Press { keymap_index } => {
+            Event::Input(input::Event::Press { keymap_index }) => {
                 let key_definition = self.key_definitions[keymap_index as usize];
                 match key_definition {
                     KeyDefinition::Simple(_) => {
@@ -186,14 +188,33 @@ impl<const N: usize> Keymap<N> {
                     }
                 }
             }
-            input::Event::Release { keymap_index } => {
+            Event::Input(input::Event::Release { keymap_index }) => {
                 self.pressed_keys
                     .iter()
                     .position(|&k| k.keymap_index() == Some(keymap_index))
                     .map(|i| self.pressed_keys.remove(i));
             }
+            Event::Input(input::Event::VirtualKeyPress { key_code }) => {
+                // Add to pressed keys.
+                let pressed_key = PressedKey::Virtual { key_code };
+                self.pressed_keys.push(pressed_key).unwrap();
+            }
+            Event::Input(input::Event::VirtualKeyRelease { key_code }) => {
+                // Remove from pressed keys.
+                self.pressed_keys
+                    .iter()
+                    .position(|&k| match k {
+                        PressedKey::Virtual { key_code: kc } => key_code == kc,
+                        _ => false,
+                    })
+                    .map(|i| self.pressed_keys.remove(i));
+            }
             _ => {}
         }
+    }
+
+    pub fn handle_input(&mut self, ev: input::Event) {
+        self.handle_event(ev.into());
     }
 
     fn schedule_event<T>(&mut self, scheduled_event: key_definitions::ScheduledEvent<T>)
@@ -235,43 +256,7 @@ impl<const N: usize> Keymap<N> {
 
         // take from pending
         if let Some(ev) = self.pending_events.dequeue() {
-            // Update each of the PressedKeys with the input event.
-            self.pressed_keys.iter_mut().for_each(|pk| {
-                if let PressedKey::TapHold(tap_hold) = pk {
-                    let keymap_index = tap_hold.keymap_index();
-                    if let KeyDefinition::TapHold(key_def) =
-                        self.key_definitions[keymap_index as usize]
-                    {
-                        if let Ok(ev) = key_definitions::Event::try_from(ev) {
-                            let events = tap_hold.handle_event(&key_def, ev);
-                            events.into_iter().for_each(
-                                |ev: key_definitions::Event<tap_hold::Event>| {
-                                    self.pending_events.enqueue(ev.into()).unwrap()
-                                },
-                            );
-                        }
-                    }
-                }
-            });
-
-            match ev {
-                Event::Input(input::Event::VirtualKeyPress { key_code }) => {
-                    // Add to pressed keys.
-                    let pressed_key = PressedKey::Virtual { key_code };
-                    self.pressed_keys.push(pressed_key).unwrap();
-                }
-                Event::Input(input::Event::VirtualKeyRelease { key_code }) => {
-                    // Remove from pressed keys.
-                    self.pressed_keys
-                        .iter()
-                        .position(|&k| match k {
-                            PressedKey::Virtual { key_code: kc } => key_code == kc,
-                            _ => false,
-                        })
-                        .map(|i| self.pressed_keys.remove(i));
-                }
-                _ => {}
-            }
+            self.handle_event(ev);
         }
     }
 
