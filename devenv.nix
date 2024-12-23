@@ -9,7 +9,11 @@
   languages = {
     c.enable = true;
     ruby.enable = true;
-    rust.enable = true;
+    rust = {
+      channel = "stable";
+      enable = true;
+      targets = ["riscv32imac-unknown-none-elf"];
+    };
   };
 
   packages = [
