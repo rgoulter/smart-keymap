@@ -2,6 +2,17 @@ use crate::input;
 use crate::key;
 use key::{simple, tap_hold};
 
+trait PressedKey {
+    type Event;
+    fn keymap_index(&self) -> Option<u16>;
+    fn handle_event<const N: usize>(
+        &mut self,
+        key_definitions: [KeyDefinition; N],
+        event: Self::Event,
+    ) -> impl IntoIterator<Item = Self::Event>;
+    fn key_code<const N: usize>(&self, key: [KeyDefinition; N]) -> Option<u8>;
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum KeyDefinition {
     Simple(simple::KeyDefinition),
@@ -27,8 +38,10 @@ impl From<tap_hold::PressedKey> for CompositePressedKey {
     }
 }
 
-impl CompositePressedKey {
-    pub fn keymap_index(&self) -> Option<u16> {
+impl PressedKey for CompositePressedKey {
+    type Event = CompositeEvent;
+
+    fn keymap_index(&self) -> Option<u16> {
         match self {
             CompositePressedKey::Simple(pk) => Some(pk.keymap_index()),
             CompositePressedKey::TapHold(pk) => Some(pk.keymap_index()),
@@ -36,10 +49,10 @@ impl CompositePressedKey {
         }
     }
 
-    pub fn key_code<const N: usize>(&self, key: [KeyDefinition; N]) -> Option<u8> {
+    fn key_code<const N: usize>(&self, key_definitions: [KeyDefinition; N]) -> Option<u8> {
         match self {
             CompositePressedKey::Simple(pk) => {
-                let key_definition = key[pk.keymap_index() as usize];
+                let key_definition = key_definitions[pk.keymap_index() as usize];
                 match key_definition {
                     KeyDefinition::Simple(key_def) => Some(pk.key_code(&key_def)),
                     _ => None,
@@ -47,7 +60,7 @@ impl CompositePressedKey {
             }
 
             CompositePressedKey::TapHold(pk) => {
-                let key_definition = key[pk.keymap_index() as usize];
+                let key_definition = key_definitions[pk.keymap_index() as usize];
                 match key_definition {
                     KeyDefinition::TapHold(key_def) => pk.key_code(&key_def),
                     _ => None,
@@ -55,6 +68,28 @@ impl CompositePressedKey {
             }
 
             CompositePressedKey::Virtual { key_code } => Some(*key_code),
+        }
+    }
+
+    fn handle_event<const N: usize>(
+        &mut self,
+        key_definitions: [KeyDefinition; N],
+        event: Self::Event,
+    ) -> impl IntoIterator<Item = Self::Event> {
+        if let CompositePressedKey::TapHold(tap_hold) = self {
+            let keymap_index = tap_hold.keymap_index();
+            if let KeyDefinition::TapHold(key_def) = key_definitions[keymap_index as usize] {
+                if let Ok(ev) = key::Event::try_from(event) {
+                    let events = tap_hold.handle_event(&key_def, ev);
+                    events.into_iter().map(|ev| ev.into()).collect()
+                } else {
+                    heapless::Vec::<CompositeEvent, 2>::new()
+                }
+            } else {
+                heapless::Vec::new()
+            }
+        } else {
+            heapless::Vec::new()
         }
     }
 }
@@ -156,20 +191,10 @@ impl<const N: usize> Keymap<N> {
     fn handle_event(&mut self, ev: CompositeEvent) {
         // Update each of the PressedKeys with the event.
         self.pressed_keys.iter_mut().for_each(|pk| {
-            if let CompositePressedKey::TapHold(tap_hold) = pk {
-                let keymap_index = tap_hold.keymap_index();
-                if let KeyDefinition::TapHold(key_def) = self.key_definitions[keymap_index as usize]
-                {
-                    if let Ok(ev) = key::Event::try_from(ev) {
-                        let events = tap_hold.handle_event(&key_def, ev);
-                        events
-                            .into_iter()
-                            .for_each(|ev: key::Event<tap_hold::Event>| {
-                                self.pending_events.enqueue(ev.into()).unwrap()
-                            });
-                    }
-                }
-            }
+            let events = pk.handle_event(self.key_definitions, ev);
+            events
+                .into_iter()
+                .for_each(|ev: CompositeEvent| self.pending_events.enqueue(ev).unwrap());
         });
 
         match ev {
