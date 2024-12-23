@@ -162,9 +162,9 @@ impl<const N: usize> Keymap<N> {
                 {
                     let events = tap_hold.handle_event(&key_def, ev.into());
                     events
-                        .iter()
-                        .for_each(|ev: &key_definitions::Event<tap_hold::Event>| {
-                            self.pending_events.enqueue((*ev).into()).unwrap()
+                        .into_iter()
+                        .for_each(|ev: key_definitions::Event<tap_hold::Event>| {
+                            self.pending_events.enqueue(ev.into()).unwrap()
                         });
                 }
             }
@@ -244,9 +244,9 @@ impl<const N: usize> Keymap<N> {
                     {
                         if let Ok(ev) = key_definitions::Event::try_from(ev) {
                             let events = tap_hold.handle_event(&key_def, ev);
-                            events.iter().for_each(
-                                |ev: &key_definitions::Event<tap_hold::Event>| {
-                                    self.pending_events.enqueue((*ev).into()).unwrap()
+                            events.into_iter().for_each(
+                                |ev: key_definitions::Event<tap_hold::Event>| {
+                                    self.pending_events.enqueue(ev.into()).unwrap()
                                 },
                             );
                         }

@@ -67,7 +67,7 @@ impl PressedKey {
         &mut self,
         key_def: &KeyDefinition,
         event: key_definitions::Event<Event>,
-    ) -> heapless::Vec<key_definitions::Event<Event>, 2> {
+    ) -> impl IntoIterator<Item = key_definitions::Event<Event>> {
         match event {
             key_definitions::Event::Input(input::Event::Press { .. }) => {
                 // TapHold: any interruption resolves pending TapHold as Hold.
