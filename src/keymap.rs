@@ -1,6 +1,6 @@
 use crate::input;
-use crate::key_definitions;
-use key_definitions::{simple, tap_hold};
+use crate::key;
+use key::{simple, tap_hold};
 
 #[derive(Debug, Clone, Copy)]
 pub enum KeyDefinition {
@@ -36,10 +36,10 @@ impl PressedKey {
         }
     }
 
-    pub fn key_code<const N: usize>(&self, key_definitions: [KeyDefinition; N]) -> Option<u8> {
+    pub fn key_code<const N: usize>(&self, key: [KeyDefinition; N]) -> Option<u8> {
         match self {
             PressedKey::Simple(pk) => {
-                let key_definition = key_definitions[pk.keymap_index() as usize];
+                let key_definition = key[pk.keymap_index() as usize];
                 match key_definition {
                     KeyDefinition::Simple(key_def) => Some(pk.key_code(&key_def)),
                     _ => None,
@@ -47,7 +47,7 @@ impl PressedKey {
             }
 
             PressedKey::TapHold(pk) => {
-                let key_definition = key_definitions[pk.keymap_index() as usize];
+                let key_definition = key[pk.keymap_index() as usize];
                 match key_definition {
                     KeyDefinition::TapHold(key_def) => pk.key_code(&key_def),
                     _ => None,
@@ -85,20 +85,20 @@ impl From<input::Event> for Event {
     }
 }
 
-impl From<key_definitions::Event<simple::Event>> for Event {
-    fn from(ev: key_definitions::Event<simple::Event>) -> Self {
+impl From<key::Event<simple::Event>> for Event {
+    fn from(ev: key::Event<simple::Event>) -> Self {
         match ev {
-            key_definitions::Event::Input(ev) => Event::Input(ev),
-            key_definitions::Event::Key(ev) => Event::Simple(ev),
+            key::Event::Input(ev) => Event::Input(ev),
+            key::Event::Key(ev) => Event::Simple(ev),
         }
     }
 }
 
-impl From<key_definitions::Event<tap_hold::Event>> for Event {
-    fn from(ev: key_definitions::Event<tap_hold::Event>) -> Self {
+impl From<key::Event<tap_hold::Event>> for Event {
+    fn from(ev: key::Event<tap_hold::Event>) -> Self {
         match ev {
-            key_definitions::Event::Input(ev) => Event::Input(ev),
-            key_definitions::Event::Key(ev) => Event::TapHold(ev),
+            key::Event::Input(ev) => Event::Input(ev),
+            key::Event::Key(ev) => Event::TapHold(ev),
         }
     }
 }
@@ -107,13 +107,13 @@ pub enum EventError {
     UnmappableEvent,
 }
 
-impl TryFrom<Event> for key_definitions::Event<tap_hold::Event> {
+impl TryFrom<Event> for key::Event<tap_hold::Event> {
     type Error = EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
         match ev {
-            Event::Input(e) => Ok(key_definitions::Event::Input(e)),
-            Event::TapHold(e) => Ok(key_definitions::Event::Key(e)),
+            Event::Input(e) => Ok(key::Event::Input(e)),
+            Event::TapHold(e) => Ok(key::Event::Key(e)),
             _ => Err(EventError::UnmappableEvent),
         }
     }
@@ -160,13 +160,13 @@ impl<const N: usize> Keymap<N> {
                 let keymap_index = tap_hold.keymap_index();
                 if let KeyDefinition::TapHold(key_def) = self.key_definitions[keymap_index as usize]
                 {
-                    if let Ok(ev) = key_definitions::Event::try_from(ev) {
+                    if let Ok(ev) = key::Event::try_from(ev) {
                         let events = tap_hold.handle_event(&key_def, ev);
-                        events.into_iter().for_each(
-                            |ev: key_definitions::Event<tap_hold::Event>| {
+                        events
+                            .into_iter()
+                            .for_each(|ev: key::Event<tap_hold::Event>| {
                                 self.pending_events.enqueue(ev.into()).unwrap()
-                            },
-                        );
+                            });
                     }
                 }
             }
@@ -217,17 +217,17 @@ impl<const N: usize> Keymap<N> {
         self.handle_event(ev.into());
     }
 
-    fn schedule_event<T>(&mut self, scheduled_event: key_definitions::ScheduledEvent<T>)
+    fn schedule_event<T>(&mut self, scheduled_event: key::ScheduledEvent<T>)
     where
-        Event: From<key_definitions::Event<T>>,
+        Event: From<key::Event<T>>,
     {
         match scheduled_event.schedule {
-            key_definitions::Schedule::Immediate => {
+            key::Schedule::Immediate => {
                 self.pending_events
                     .enqueue(scheduled_event.event.into())
                     .unwrap();
             }
-            key_definitions::Schedule::After(delay) => {
+            key::Schedule::After(delay) => {
                 self.schedule_after(delay as u32, scheduled_event.event.into());
             }
         }

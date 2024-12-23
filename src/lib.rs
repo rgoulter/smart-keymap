@@ -1,7 +1,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 mod input;
-mod key_definitions;
+mod key;
 mod keymap;
 
 static mut KEYMAP: keymap::Keymap<4> = keymap::Keymap::new(keymap::KEY_DEFINITIONS);
