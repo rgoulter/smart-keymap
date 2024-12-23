@@ -58,11 +58,8 @@ impl PressedKey {
     }
 
     fn resolve(&mut self, state: TapHoldState) {
-        match self.state {
-            TapHoldState::Pending => {
-                self.state = state;
-            }
-            _ => {}
+        if let TapHoldState::Pending = self.state {
+            self.state = state;
         }
     }
 
