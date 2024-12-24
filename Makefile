@@ -10,7 +10,11 @@ generate-header: include/smart_keymap.h
 
 .PHONY: test
 test:
+	$(CARGO) clean
 	$(CARGO) test --features "std"
+	$(CARGO) clean
+	env SMART_KEYMAP_CUSTOM_KEYMAP="$(shell pwd)/tests/keymaps/simple_keymap.rs" \
+	  $(CARGO) build --features "std"
 	cd tests/ceedling && ceedling
 
 .PHONY: clean
