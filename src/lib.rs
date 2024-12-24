@@ -1,17 +1,17 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
-mod input;
-mod key;
-mod keymap;
+pub mod input;
+pub mod key;
+pub mod keymap;
 
+#[allow(unused)]
+use key::composite::Key;
 #[allow(unused)]
 use key::{simple, tap_hold};
-#[allow(unused)]
-use keymap::KeyDefinition;
 
 #[cfg(not(custom_keymap))]
-pub const KEY_DEFINITIONS: [KeyDefinition; 1] = [
-    KeyDefinition::Simple(simple::KeyDefinition(0x04)), // A
+pub const KEY_DEFINITIONS: [Key; 1] = [
+    Key::Simple(simple::Key(0x04)), // A
 ];
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));

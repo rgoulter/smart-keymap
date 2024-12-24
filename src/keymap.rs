@@ -2,7 +2,6 @@ use core::fmt::Debug;
 
 use crate::input;
 use crate::key;
-use key::{simple, tap_hold};
 
 pub trait Key {
     type PressedKey: PressedKey<Key = Self, Event = Self::Event> + Debug;
@@ -25,132 +24,9 @@ pub trait PressedKey {
     fn key_code(&self, key_definition: &Self::Key) -> Option<u8>;
 }
 
-#[derive(Debug, Clone, Copy)]
-pub enum KeyDefinition {
-    Simple(simple::KeyDefinition),
-    TapHold(tap_hold::KeyDefinition),
-}
-
-impl Key for KeyDefinition {
-    type Event = CompositeEvent;
-    type PressedKey = CompositePressedKey;
-
-    fn new_pressed_key(
-        keymap_index: u16,
-        key_definition: &KeyDefinition,
-    ) -> (
-        CompositePressedKey,
-        Option<key::ScheduledEvent<CompositeEvent>>,
-    ) {
-        match key_definition {
-            KeyDefinition::Simple(_) => {
-                let pressed_key = simple::PressedKey::new();
-                (pressed_key.into(), None)
-            }
-            KeyDefinition::TapHold(_) => {
-                let (pressed_key, new_event) = tap_hold::PressedKey::new(keymap_index);
-                (pressed_key.into(), Some(new_event.into()))
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub enum CompositePressedKey {
-    Simple(simple::PressedKey),
-    TapHold(tap_hold::PressedKey),
-}
-
-impl From<simple::PressedKey> for CompositePressedKey {
-    fn from(pk: simple::PressedKey) -> Self {
-        CompositePressedKey::Simple(pk)
-    }
-}
-
-impl From<tap_hold::PressedKey> for CompositePressedKey {
-    fn from(pk: tap_hold::PressedKey) -> Self {
-        CompositePressedKey::TapHold(pk)
-    }
-}
-
-impl PressedKey for CompositePressedKey {
-    type Event = CompositeEvent;
-    type Key = KeyDefinition;
-
-    fn key_code(&self, key_definition: &KeyDefinition) -> Option<u8> {
-        match self {
-            CompositePressedKey::Simple(pk) => match key_definition {
-                KeyDefinition::Simple(key_def) => Some(pk.key_code(key_def)),
-                _ => None,
-            },
-
-            CompositePressedKey::TapHold(pk) => match key_definition {
-                KeyDefinition::TapHold(key_def) => pk.key_code(key_def),
-                _ => None,
-            },
-        }
-    }
-
-    fn handle_event(
-        &mut self,
-        key_definition: &KeyDefinition,
-        event: key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
-        if let CompositePressedKey::TapHold(tap_hold) = self {
-            if let KeyDefinition::TapHold(key_def) = key_definition {
-                if let Ok(ev) = key::Event::try_from(event) {
-                    let events: heapless::Vec<key::Event<tap_hold::Event>, 2> =
-                        tap_hold.handle_event(key_def, ev);
-                    events.into_iter().map(|ev| ev.into()).collect()
-                } else {
-                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
-                }
-            } else {
-                heapless::Vec::new()
-            }
-        } else {
-            heapless::Vec::new()
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-pub enum CompositeEvent {
-    TapHold(tap_hold::Event),
-}
-
-impl From<key::Event<tap_hold::Event>> for key::Event<CompositeEvent> {
-    fn from(ev: key::Event<tap_hold::Event>) -> Self {
-        match ev {
-            key::Event::Input(ev) => key::Event::Input(ev),
-            key::Event::Key(ev) => key::Event::Key(CompositeEvent::TapHold(ev)),
-        }
-    }
-}
-
-impl From<key::ScheduledEvent<tap_hold::Event>> for key::ScheduledEvent<CompositeEvent> {
-    fn from(ev: key::ScheduledEvent<tap_hold::Event>) -> Self {
-        Self {
-            schedule: ev.schedule,
-            event: ev.event.into(),
-        }
-    }
-}
-
 #[allow(unused)]
 pub enum EventError {
     UnmappableEvent,
-}
-
-impl TryFrom<key::Event<CompositeEvent>> for key::Event<tap_hold::Event> {
-    type Error = EventError;
-
-    fn try_from(ev: key::Event<CompositeEvent>) -> Result<Self, Self::Error> {
-        match ev {
-            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
-            key::Event::Key(CompositeEvent::TapHold(ev)) => Ok(key::Event::Key(ev)),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
@@ -161,7 +37,7 @@ pub struct ScheduledEvent<E> {
 
 /// The engine (set of key definition systems),
 ///  and key definitions.
-pub struct Keymap<const N: usize, K: Key = KeyDefinition> {
+pub struct Keymap<const N: usize, K: Key = key::composite::Key> {
     key_definitions: [K; N],
     pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, N>,
     pending_events: heapless::spsc::Queue<key::Event<K::Event>, 256>,

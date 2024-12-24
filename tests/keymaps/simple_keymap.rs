@@ -1,12 +1,12 @@
-pub const KEY_DEFINITIONS: [KeyDefinition; 4] = [
-    KeyDefinition::TapHold(tap_hold::KeyDefinition {
+pub const KEY_DEFINITIONS: [Key; 4] = [
+    Key::TapHold(tap_hold::Key {
         tap: 0x06,
         hold: 0xE0,
     }), // Tap C, Hold LCtrl
-    KeyDefinition::TapHold(tap_hold::KeyDefinition {
+    Key::TapHold(tap_hold::Key {
         tap: 0x07,
         hold: 0xE1,
     }), // Tap D, Hold LShift
-    KeyDefinition::Simple(simple::KeyDefinition(0x04)), // A
-    KeyDefinition::Simple(simple::KeyDefinition(0x05)), // B
+    Key::Simple(simple::Key(0x04)), // A
+    Key::Simple(simple::Key(0x05)), // B
 ];
