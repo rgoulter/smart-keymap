@@ -28,3 +28,37 @@ impl Default for PressedKey {
         Self::new()
     }
 }
+
+impl crate::keymap::Key for Key {
+    type Event = Event;
+    type PressedKey = PressedKey;
+
+    fn new_pressed_key(
+        _keymap_index: u16,
+        _key_definition: &Self,
+    ) -> (
+        Self::PressedKey,
+        Option<crate::key::ScheduledEvent<Self::Event>>,
+    ) {
+        (PressedKey::new(), None)
+    }
+}
+
+impl crate::keymap::PressedKey for PressedKey {
+    type Event = Event;
+    type Key = Key;
+
+    /// Simple key never emits events.
+    fn handle_event(
+        &mut self,
+        _key_definition: &Self::Key,
+        _event: crate::key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = crate::key::Event<Self::Event>> {
+        None
+    }
+
+    /// Simple key always has a key_code.
+    fn key_code(&self, key_definition: &Self::Key) -> Option<u8> {
+        Some(self.key_code(key_definition))
+    }
+}
