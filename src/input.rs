@@ -11,3 +11,9 @@ pub enum PressedInput<K> {
     Key { keymap_index: u16, key: K },
     Virtual { key_code: u8 },
 }
+
+impl<K> PressedInput<K> {
+    pub fn new_pressed_key(keymap_index: u16, key: K) -> Self {
+        Self::Key { keymap_index, key }
+    }
+}
