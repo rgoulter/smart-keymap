@@ -3,6 +3,8 @@ use crate::input;
 pub mod simple;
 pub mod tap_hold;
 
+pub mod composite;
+
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Event<T> {
     Input(input::Event),

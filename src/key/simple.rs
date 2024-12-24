@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, Copy)]
-pub struct KeyDefinition(pub u8);
+pub struct Key(pub u8);
 
-impl KeyDefinition {
+impl Key {
     pub fn key_code(&self) -> u8 {
         self.0
     }
@@ -18,7 +18,13 @@ impl PressedKey {
         Self {}
     }
 
-    pub fn key_code(&self, key_def: &KeyDefinition) -> u8 {
+    pub fn key_code(&self, key_def: &Key) -> u8 {
         key_def.key_code()
+    }
+}
+
+impl Default for PressedKey {
+    fn default() -> Self {
+        Self::new()
     }
 }

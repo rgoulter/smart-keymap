@@ -2,7 +2,7 @@ use crate::input;
 use crate::key;
 
 #[derive(Debug, Clone, Copy)]
-pub struct KeyDefinition {
+pub struct Key {
     pub tap: u8,
     pub hold: u8,
 }
@@ -42,7 +42,7 @@ impl PressedKey {
         )
     }
 
-    pub fn key_code(&self, key_def: &KeyDefinition) -> Option<u8> {
+    pub fn key_code(&self, key_def: &Key) -> Option<u8> {
         match self.state {
             TapHoldState::Tap => Some(key_def.tap),
             TapHoldState::Hold => Some(key_def.hold),
@@ -58,7 +58,7 @@ impl PressedKey {
 
     pub fn handle_event(
         &mut self,
-        key_def: &KeyDefinition,
+        key_def: &Key,
         event: key::Event<Event>,
     ) -> heapless::Vec<key::Event<Event>, 2> {
         match event {
