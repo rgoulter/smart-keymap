@@ -4,7 +4,19 @@ mod input;
 mod key;
 mod keymap;
 
-static mut KEYMAP: keymap::Keymap<4> = keymap::Keymap::new(keymap::KEY_DEFINITIONS);
+#[allow(unused)]
+use key::{simple, tap_hold};
+#[allow(unused)]
+use keymap::KeyDefinition;
+
+#[cfg(not(custom_keymap))]
+pub const KEY_DEFINITIONS: [KeyDefinition; 1] = [
+    KeyDefinition::Simple(simple::KeyDefinition(0x04)), // A
+];
+#[cfg(custom_keymap)]
+include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
+
+static mut KEYMAP: keymap::Keymap<{ KEY_DEFINITIONS.len() }> = keymap::Keymap::new(KEY_DEFINITIONS);
 
 #[allow(static_mut_refs)]
 #[no_mangle]
