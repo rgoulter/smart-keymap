@@ -2,6 +2,7 @@ use core::fmt::Debug;
 
 use crate::input;
 
+pub mod layered;
 pub mod simple;
 pub mod tap_hold;
 
