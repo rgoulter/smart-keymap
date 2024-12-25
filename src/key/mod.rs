@@ -8,9 +8,9 @@ pub mod tap_hold;
 
 pub mod composite;
 
-pub trait Key {
+pub trait Key<PK = Self> {
     type Context: Context;
-    type PressedKey: PressedKey<Key = Self, Event = Self::Event> + Debug;
+    type PressedKey: PressedKey<Key = PK, Event = Self::Event> + Debug;
     type Event: Copy + Debug + Ord;
 
     fn new_pressed_key(
