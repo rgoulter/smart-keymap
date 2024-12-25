@@ -36,8 +36,8 @@ impl key::Key for Key {
     type PressedKey = PressedKey;
 
     fn new_pressed_key(
+        &self,
         _keymap_index: u16,
-        _key_definition: &Self,
     ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
         (PressedKey::new(), None)
     }

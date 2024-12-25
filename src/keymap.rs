@@ -55,7 +55,7 @@ impl<const N: usize, K: Key> Keymap<N, K> {
         match ev {
             input::Event::Press { keymap_index } => {
                 let key_definition = &self.key_definitions[keymap_index as usize];
-                let (pressed_key, new_event) = K::new_pressed_key(keymap_index, key_definition);
+                let (pressed_key, new_event) = key_definition.new_pressed_key(keymap_index);
                 self.pressed_inputs
                     .push(input::PressedInput::new_pressed_key(
                         keymap_index,
