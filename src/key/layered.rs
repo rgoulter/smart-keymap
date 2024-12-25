@@ -13,7 +13,10 @@ impl<const L: LayerIndex> ModifierKey<L> {
     fn new_pressed_key(
         &self,
         keymap_index: u16,
-    ) -> (PressedModifierKey, Option<key::ScheduledEvent<LayerEvent>>) {
+    ) -> (
+        PressedModifierKey<L>,
+        Option<key::ScheduledEvent<LayerEvent>>,
+    ) {
         match self {
             ModifierKey::Hold(layer) => {
                 let event = LayerEvent::LayerActivated(*layer);
@@ -23,6 +26,20 @@ impl<const L: LayerIndex> ModifierKey<L> {
                 )
             }
         }
+    }
+}
+
+impl<const L: LayerIndex> key::Key for ModifierKey<L> {
+    type Context = ();
+    type PressedKey = PressedModifierKey<L>;
+    type Event = LayerEvent;
+
+    fn new_pressed_key(
+        &self,
+        _context: &Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
+        self.new_pressed_key(keymap_index)
     }
 }
 
@@ -40,7 +57,15 @@ impl<const L: LayerIndex, C: key::Context> Context<L, C> {
         }
     }
 
-    pub fn handle_event(&mut self, event: LayerEvent) {
+    pub fn active_layers(&self) -> &[bool; L] {
+        &self.active_layers
+    }
+}
+
+impl<const L: LayerIndex, C: key::Context> key::Context for Context<L, C> {
+    type Event = LayerEvent;
+
+    fn handle_event(&mut self, event: Self::Event) {
         match event {
             LayerEvent::LayerActivated(layer) => {
                 self.active_layers[layer] = true;
@@ -49,10 +74,6 @@ impl<const L: LayerIndex, C: key::Context> Context<L, C> {
                 self.active_layers[layer] = false;
             }
         }
-    }
-
-    pub fn active_layers(&self) -> &[bool; L] {
-        &self.active_layers
     }
 }
 
@@ -82,6 +103,20 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K> {
     }
 }
 
+impl<const L: LayerIndex, K: key::Key> key::Key<K> for LayeredKey<L, K> {
+    type Context = Context<L, K::Context>;
+    type PressedKey = K::PressedKey;
+    type Event = K::Event;
+
+    fn new_pressed_key(
+        &self,
+        context: &Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
+        self.new_pressed_key(context, keymap_index)
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum LayerEvent {
     LayerActivated(LayerIndex),
@@ -89,16 +124,16 @@ pub enum LayerEvent {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PressedModifierKey {
+pub struct PressedModifierKey<const L: LayerIndex> {
     keymap_index: u16,
 }
 
-impl PressedModifierKey {
+impl<const L: LayerIndex> PressedModifierKey<L> {
     pub fn new(keymap_index: u16) -> Self {
         Self { keymap_index }
     }
 
-    fn handle_event<const L: LayerIndex>(
+    fn handle_event(
         &mut self,
         key_definition: &ModifierKey<L>,
         event: key::Event<LayerEvent>,
@@ -118,11 +153,28 @@ impl PressedModifierKey {
     }
 }
 
+impl<const L: LayerIndex> key::PressedKey for PressedModifierKey<L> {
+    type Event = LayerEvent;
+    type Key = ModifierKey<L>;
+
+    fn handle_event(
+        &mut self,
+        key_definition: &Self::Key,
+        event: key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
+        self.handle_event(key_definition, event)
+    }
+
+    fn key_code(&self, _key_definition: &Self::Key) -> Option<u8> {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use key::{simple, Key};
+    use key::{simple, Context as _, Key};
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
