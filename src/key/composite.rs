@@ -14,16 +14,18 @@ pub enum Key {
 }
 
 impl key::Key for Key {
+    type Context = Context;
     type Event = Event;
     type PressedKey = PressedKey;
 
     fn new_pressed_key(
         &self,
+        _context: &Self::Context,
         keymap_index: u16,
     ) -> (PressedKey, Option<key::ScheduledEvent<Event>>) {
         match self {
             Key::Simple(k) => {
-                let (pressed_key, _new_event) = k.new_pressed_key(keymap_index);
+                let pressed_key = simple::PressedKey::new(k.key_code());
                 (pressed_key.into(), None)
             }
             Key::TapHold(_) => {
@@ -32,6 +34,26 @@ impl key::Key for Key {
             }
         }
     }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct Context {}
+
+impl Context {
+    pub const fn new() -> Self {
+        Self {}
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl key::Context for Context {
+    type Event = Event;
+    fn handle_event(&mut self, _event: Self::Event) {}
 }
 
 #[derive(Debug, Clone, Copy)]
