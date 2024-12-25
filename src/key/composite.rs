@@ -7,15 +7,13 @@ use core::fmt::Debug;
 use crate::key;
 use key::{simple, tap_hold};
 
-use crate::keymap;
-
 #[derive(Debug, Clone, Copy)]
 pub enum Key {
     Simple(simple::Key),
     TapHold(tap_hold::Key),
 }
 
-impl keymap::Key for Key {
+impl key::Key for Key {
     type Event = Event;
     type PressedKey = PressedKey;
 
@@ -54,7 +52,7 @@ impl From<tap_hold::PressedKey> for PressedKey {
     }
 }
 
-impl keymap::PressedKey for PressedKey {
+impl key::PressedKey for PressedKey {
     type Event = Event;
     type Key = Key;
 
@@ -119,7 +117,7 @@ impl From<key::ScheduledEvent<tap_hold::Event>> for key::ScheduledEvent<Event> {
 }
 
 impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
-    type Error = keymap::EventError;
+    type Error = key::EventError;
 
     fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
         match ev {

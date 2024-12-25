@@ -3,44 +3,20 @@ use core::fmt::Debug;
 use crate::input;
 use crate::key;
 
-pub trait Key {
-    type PressedKey: PressedKey<Key = Self, Event = Self::Event> + Debug;
-    type Event: Copy + Debug + Ord;
-
-    fn new_pressed_key(
-        keymap_index: u16,
-        key_definition: &Self,
-    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>);
-}
-
-pub trait PressedKey {
-    type Event;
-    type Key: Key;
-    fn handle_event(
-        &mut self,
-        key_definition: &Self::Key,
-        event: key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = key::Event<Self::Event>>;
-    fn key_code(&self, key_definition: &Self::Key) -> Option<u8>;
-}
-
-#[allow(unused)]
-pub enum EventError {
-    UnmappableEvent,
-}
+use key::{composite, Event, Key, PressedKey};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ScheduledEvent<E> {
     time: u32,
-    event: key::Event<E>,
+    event: Event<E>,
 }
 
 /// The engine (set of key definition systems),
 ///  and key definitions.
-pub struct Keymap<const N: usize, K: Key = key::composite::Key> {
+pub struct Keymap<const N: usize, K: Key = composite::Key> {
     key_definitions: [K; N],
     pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, N>,
-    pending_events: heapless::spsc::Queue<key::Event<K::Event>, 256>,
+    pending_events: heapless::spsc::Queue<Event<K::Event>, 256>,
     scheduled_events:
         heapless::BinaryHeap<ScheduledEvent<K::Event>, heapless::binary_heap::Min, 256>,
     schedule_counter: u32,
@@ -72,7 +48,7 @@ impl<const N: usize, K: Key> Keymap<N, K> {
                 let events = key.handle_event(key_definition, ev.into());
                 events
                     .into_iter()
-                    .for_each(|ev: key::Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
+                    .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
             }
         });
 
@@ -131,7 +107,7 @@ impl<const N: usize, K: Key> Keymap<N, K> {
         }
     }
 
-    pub fn schedule_after(&mut self, delay: u32, event: key::Event<K::Event>) {
+    pub fn schedule_after(&mut self, delay: u32, event: Event<K::Event>) {
         let time = self.schedule_counter + delay;
         self.scheduled_events
             .push(ScheduledEvent { time, event })
@@ -159,13 +135,13 @@ impl<const N: usize, K: Key> Keymap<N, K> {
                 if let input::PressedInput::Key { keymap_index, key } = pi {
                     let key_definition = &self.key_definitions[*keymap_index as usize];
                     let events = key.handle_event(key_definition, ev);
-                    events.into_iter().for_each(|ev: key::Event<K::Event>| {
-                        self.pending_events.enqueue(ev).unwrap()
-                    });
+                    events
+                        .into_iter()
+                        .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
                 }
             });
 
-            if let key::Event::Input(input_ev) = ev {
+            if let Event::Input(input_ev) = ev {
                 self.handle_input(input_ev);
             }
         }
