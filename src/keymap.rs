@@ -15,6 +15,7 @@ pub struct ScheduledEvent<E> {
 ///  and key definitions.
 pub struct Keymap<const N: usize, K: Key = composite::Key> {
     key_definitions: [K; N],
+    context: K::Context,
     pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, N>,
     pending_events: heapless::spsc::Queue<Event<K::Event>, 256>,
     scheduled_events:
@@ -23,9 +24,10 @@ pub struct Keymap<const N: usize, K: Key = composite::Key> {
 }
 
 impl<const N: usize, K: Key> Keymap<N, K> {
-    pub const fn new(key_definitions: [K; N]) -> Self {
+    pub const fn new(key_definitions: [K; N], context: K::Context) -> Self {
         Self {
             key_definitions,
+            context,
             pressed_inputs: heapless::Vec::new(),
             pending_events: heapless::spsc::Queue::new(),
             scheduled_events: heapless::BinaryHeap::new(),
@@ -55,7 +57,8 @@ impl<const N: usize, K: Key> Keymap<N, K> {
         match ev {
             input::Event::Press { keymap_index } => {
                 let key_definition = &self.key_definitions[keymap_index as usize];
-                let (pressed_key, new_event) = key_definition.new_pressed_key(keymap_index);
+                let (pressed_key, new_event) =
+                    key_definition.new_pressed_key(&self.context, keymap_index);
                 self.pressed_inputs
                     .push(input::PressedInput::new_pressed_key(
                         keymap_index,

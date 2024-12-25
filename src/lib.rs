@@ -16,7 +16,8 @@ pub const KEY_DEFINITIONS: [Key; 1] = [
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
-static mut KEYMAP: keymap::Keymap<{ KEY_DEFINITIONS.len() }> = keymap::Keymap::new(KEY_DEFINITIONS);
+static mut KEYMAP: keymap::Keymap<{ KEY_DEFINITIONS.len() }> =
+    keymap::Keymap::new(KEY_DEFINITIONS, key::composite::Context::new());
 
 #[allow(static_mut_refs)]
 #[no_mangle]

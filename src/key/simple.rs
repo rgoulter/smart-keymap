@@ -28,11 +28,13 @@ impl PressedKey {
 }
 
 impl key::Key for Key {
+    type Context = ();
     type Event = Event;
     type PressedKey = PressedKey;
 
     fn new_pressed_key(
         &self,
+        _context: &Self::Context,
         _keymap_index: u16,
     ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
         (PressedKey::new(self.0), None)

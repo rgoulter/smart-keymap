@@ -8,13 +8,25 @@ pub mod tap_hold;
 pub mod composite;
 
 pub trait Key {
+    type Context: Context;
     type PressedKey: PressedKey<Key = Self, Event = Self::Event> + Debug;
     type Event: Copy + Debug + Ord;
 
     fn new_pressed_key(
         &self,
+        context: &Self::Context,
         keymap_index: u16,
     ) -> (Self::PressedKey, Option<ScheduledEvent<Self::Event>>);
+}
+
+pub trait Context {
+    type Event;
+    fn handle_event(&mut self, event: Self::Event);
+}
+
+impl Context for () {
+    type Event = ();
+    fn handle_event(&mut self, _event: Self::Event) {}
 }
 
 pub trait PressedKey {
