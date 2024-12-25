@@ -1,3 +1,5 @@
+use crate::key;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Key(pub u8);
 
@@ -29,22 +31,19 @@ impl Default for PressedKey {
     }
 }
 
-impl crate::keymap::Key for Key {
+impl key::Key for Key {
     type Event = Event;
     type PressedKey = PressedKey;
 
     fn new_pressed_key(
         _keymap_index: u16,
         _key_definition: &Self,
-    ) -> (
-        Self::PressedKey,
-        Option<crate::key::ScheduledEvent<Self::Event>>,
-    ) {
+    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
         (PressedKey::new(), None)
     }
 }
 
-impl crate::keymap::PressedKey for PressedKey {
+impl key::PressedKey for PressedKey {
     type Event = Event;
     type Key = Key;
 
@@ -52,8 +51,8 @@ impl crate::keymap::PressedKey for PressedKey {
     fn handle_event(
         &mut self,
         _key_definition: &Self::Key,
-        _event: crate::key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = crate::key::Event<Self::Event>> {
+        _event: key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         None
     }
 
