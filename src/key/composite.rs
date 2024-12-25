@@ -22,8 +22,8 @@ impl key::Key for Key {
         keymap_index: u16,
     ) -> (PressedKey, Option<key::ScheduledEvent<Event>>) {
         match self {
-            Key::Simple(_) => {
-                let pressed_key = simple::PressedKey::new();
+            Key::Simple(k) => {
+                let (pressed_key, _new_event) = k.new_pressed_key(keymap_index);
                 (pressed_key.into(), None)
             }
             Key::TapHold(_) => {

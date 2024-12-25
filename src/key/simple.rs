@@ -12,22 +12,18 @@ impl Key {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Event();
 
-#[derive(Debug, Clone, Copy)]
-pub struct PressedKey {}
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PressedKey {
+    key_code: u8,
+}
 
 impl PressedKey {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(key_code: u8) -> Self {
+        Self { key_code }
     }
 
     pub fn key_code(&self, key_def: &Key) -> u8 {
         key_def.key_code()
-    }
-}
-
-impl Default for PressedKey {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -39,7 +35,7 @@ impl key::Key for Key {
         &self,
         _keymap_index: u16,
     ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
-        (PressedKey::new(), None)
+        (PressedKey::new(self.0), None)
     }
 }
 
