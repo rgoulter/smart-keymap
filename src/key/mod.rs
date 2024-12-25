@@ -12,8 +12,8 @@ pub trait Key {
     type Event: Copy + Debug + Ord;
 
     fn new_pressed_key(
+        &self,
         keymap_index: u16,
-        key_definition: &Self,
     ) -> (Self::PressedKey, Option<ScheduledEvent<Self::Event>>);
 }
 

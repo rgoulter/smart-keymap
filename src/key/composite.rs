@@ -18,10 +18,10 @@ impl key::Key for Key {
     type PressedKey = PressedKey;
 
     fn new_pressed_key(
+        &self,
         keymap_index: u16,
-        key_definition: &Key,
     ) -> (PressedKey, Option<key::ScheduledEvent<Event>>) {
-        match key_definition {
+        match self {
             Key::Simple(_) => {
                 let pressed_key = simple::PressedKey::new();
                 (pressed_key.into(), None)
