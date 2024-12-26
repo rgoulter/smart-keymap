@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+use serde::Deserialize;
+
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Event {
     Press { keymap_index: u16 },
     Release { keymap_index: u16 },
