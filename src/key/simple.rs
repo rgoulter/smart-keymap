@@ -2,7 +2,7 @@ use serde::Deserialize;
 
 use crate::key;
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key(pub u8);
 
 impl Key {
