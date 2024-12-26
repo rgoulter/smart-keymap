@@ -9,7 +9,7 @@ usbd-human-interface-device = ["dep:usbd-human-interface-device"]
 
 [lib]
 name = "smart_keymap"
-crate-type = ["staticlib"]
+crate-type = ["lib", "staticlib"]
 
 [dependencies]
 heapless = "0.8"
