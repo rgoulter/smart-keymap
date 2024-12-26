@@ -1,7 +1,9 @@
+use serde::Deserialize;
+
 use crate::input;
 use crate::key;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 pub struct Key {
     pub tap: u8,
     pub hold: u8,
