@@ -3,30 +3,99 @@ use cucumber::{given, then, when, World};
 
 use smart_keymap::key;
 
+#[derive(Debug, Default, cucumber::Parameter)]
+#[param(name = "key_type", regex = "simple::Key")]
+enum KeyType {
+    #[default]
+    Simple,
+}
+
+impl std::str::FromStr for KeyType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "simple::Key" => Self::Simple,
+            invalid => return Err(format!("Invalid `KeyType`: {invalid}")),
+        })
+    }
+}
+
+#[derive(Debug, Default, cucumber::Parameter)]
+#[param(name = "deserializer", regex = "JSON|RON")]
+enum Deserializer {
+    #[default]
+    JSON,
+    RON,
+}
+
+impl std::str::FromStr for Deserializer {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "JSON" => Self::JSON,
+            "RON" => Self::RON,
+            invalid => return Err(format!("Invalid `Deserializer`: {invalid}")),
+        })
+    }
+}
+
+impl Deserializer {
+    fn from_str<'a, T>(&self, s: &'a str) -> Option<T>
+    where
+        T: serde::de::Deserialize<'a>,
+    {
+        match self {
+            Self::JSON => serde_json::from_str(s).ok(),
+            Self::RON => ron::from_str(s).ok(),
+        }
+    }
+}
+
 #[derive(Debug, World)]
 pub struct KeymapWorld {
+    input_key_type: KeyType,
+    input_deserializer: Deserializer,
     input_string: String,
 }
 
 impl Default for KeymapWorld {
     fn default() -> Self {
         KeymapWorld {
+            input_deserializer: Deserializer::JSON,
+            input_key_type: KeyType::Simple,
             input_string: String::new(),
         }
     }
 }
 
-#[when("a simple::Key is deserialized from the RON string")]
-fn deserialize_string(world: &mut KeymapWorld, step: &Step) {
+#[when(expr = "a {key_type} is deserialized from the {deserializer} string")]
+fn deserialize_string(
+    world: &mut KeymapWorld,
+    step: &Step,
+    key_type: KeyType,
+    deserializer: Deserializer,
+) {
+    world.input_key_type = key_type;
+    world.input_deserializer = deserializer;
     world.input_string = step.docstring.clone().unwrap();
 }
 
-#[then("the result is same value as deserializng the JSON string")]
-fn check_value(world: &mut KeymapWorld, step: &Step) {
-    let deserialized_lhs: key::simple::Key = ron::from_str(&world.input_string).unwrap();
-    let deserialized_rhs: key::simple::Key =
-        serde_json::from_str(step.docstring.as_ref().unwrap()).unwrap();
-    assert_eq!(deserialized_lhs, deserialized_rhs);
+#[then(expr = "the result is same value as deserializing the {deserializer} string")]
+fn check_value(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer) {
+    match world.input_key_type {
+        KeyType::Simple => {
+            let deserialized_lhs: key::simple::Key = world
+                .input_deserializer
+                .from_str(&world.input_string)
+                .unwrap();
+            let deserialized_rhs: key::simple::Key = deserializer
+                .from_str(step.docstring.as_ref().unwrap())
+                .unwrap();
+            assert_eq!(deserialized_lhs, deserialized_rhs);
+        }
+    }
 }
 
 fn main() {
