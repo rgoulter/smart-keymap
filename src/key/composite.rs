@@ -9,7 +9,7 @@ use core::fmt::Debug;
 use crate::key;
 use key::{simple, tap_hold};
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Key {
     Simple(simple::Key),
     TapHold(tap_hold::Key),
