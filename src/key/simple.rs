@@ -1,6 +1,8 @@
+use serde::Deserialize;
+
 use crate::key;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 pub struct Key(pub u8);
 
 impl Key {
