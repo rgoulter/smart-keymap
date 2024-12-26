@@ -14,6 +14,7 @@ pub struct ScheduledEvent<E> {
 
 /// The engine (set of key definition systems),
 ///  and key definitions.
+#[derive(Debug)]
 pub struct Keymap<I: Index<usize, Output = K>, K: Key = composite::Key> {
     key_definitions: I,
     context: K::Context,
