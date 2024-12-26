@@ -19,3 +19,13 @@ Feature: Key Deserialization
       """
       { "tap": 4, "hold": 224 }
       """
+
+  Example: Deserialize a composite::Key (TapHold variant)
+    When a composite::Key is deserialized from the RON string
+      """
+      TapHold(Key(tap: 0x04, hold: 0xE0))
+      """
+    Then the result is same value as deserializing the JSON string
+      """
+      { "TapHold": { "tap": 4, "hold": 224 } }
+      """
