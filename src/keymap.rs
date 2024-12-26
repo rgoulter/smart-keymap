@@ -16,7 +16,7 @@ pub struct ScheduledEvent<E> {
 pub struct Keymap<const N: usize, K: Key = composite::Key> {
     key_definitions: [K; N],
     context: K::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, N>,
+    pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, 16>,
     pending_events: heapless::spsc::Queue<Event<K::Event>, 256>,
     scheduled_events:
         heapless::BinaryHeap<ScheduledEvent<K::Event>, heapless::binary_heap::Min, 256>,
@@ -161,7 +161,7 @@ impl<const N: usize, K: Key> Keymap<N, K> {
             input::PressedInput::Virtual { key_code } => Some(*key_code),
         });
 
-        let (modifier_keys, key_codes): (heapless::Vec<u8, N>, heapless::Vec<u8, N>) =
+        let (modifier_keys, key_codes): (heapless::Vec<u8, 16>, heapless::Vec<u8, 16>) =
             pressed_keys.partition(|&kc| (0xE0..=0xE7).contains(&kc));
 
         let modifier = modifier_keys
