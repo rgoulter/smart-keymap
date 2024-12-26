@@ -12,7 +12,8 @@ name = "smart_keymap"
 crate-type = ["lib", "staticlib"]
 
 [[test]]
-name = "cucumber"
+name = "cucumber-deserialization"
+path = "tests/cucumber/deserialization.rs"
 harness = false
 
 [dependencies]
