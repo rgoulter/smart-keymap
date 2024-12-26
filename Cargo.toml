@@ -16,6 +16,11 @@ name = "cucumber-deserialization"
 path = "tests/cucumber/deserialization.rs"
 harness = false
 
+[[test]]
+name = "cucumber-keymap"
+path = "tests/cucumber/keymap.rs"
+harness = false
+
 [dependencies]
 heapless = "0.8"
 libc = "0.2"
