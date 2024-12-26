@@ -1,5 +1,4 @@
 use std::fmt::Debug;
-use std::fmt::Formatter;
 
 use cucumber::gherkin::Step;
 use cucumber::{given, then, when, World};
@@ -52,6 +51,13 @@ fn perform_input(world: &mut KeymapWorld, step: &Step) {
     }
 }
 
+#[when(expr = "the keymap ticks {int} times")]
+fn when_keymap_tick(world: &mut KeymapWorld, num_ticks: u16) {
+    for _ in 0..num_ticks {
+        world.keymap.tick();
+    }
+}
+
 #[then("the HID keyboard report should be")]
 fn check_report(world: &mut KeymapWorld, step: &Step) {
     let expected_report: Vec<u8> = world
@@ -59,6 +65,19 @@ fn check_report(world: &mut KeymapWorld, step: &Step) {
         .from_str(step.docstring().as_ref().unwrap())
         .unwrap();
 
+    let actual_report = world.keymap.boot_keyboard_report();
+
+    assert_eq!(expected_report, actual_report);
+}
+
+#[then("the HID keyboard report from the next tick() should be")]
+fn check_tick_report(world: &mut KeymapWorld, step: &Step) {
+    let expected_report: Vec<u8> = world
+        .input_deserializer
+        .from_str(step.docstring().as_ref().unwrap())
+        .unwrap();
+
+    world.keymap.tick();
     let actual_report = world.keymap.boot_keyboard_report();
 
     assert_eq!(expected_report, actual_report);
