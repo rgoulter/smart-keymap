@@ -3,6 +3,10 @@ use cucumber::{then, when, World};
 
 use smart_keymap::key;
 
+mod common;
+
+use common::Deserializer;
+
 #[derive(Debug, Default, cucumber::Parameter)]
 #[param(name = "key_type", regex = "(?:composite|simple|tap_hold)::Key")]
 enum KeyType {
@@ -22,38 +26,6 @@ impl std::str::FromStr for KeyType {
             "tap_hold::Key" => Self::TapHold,
             invalid => return Err(format!("Invalid `KeyType`: {invalid}")),
         })
-    }
-}
-
-#[derive(Debug, Default, cucumber::Parameter)]
-#[param(name = "deserializer", regex = "JSON|RON")]
-enum Deserializer {
-    #[default]
-    JSON,
-    RON,
-}
-
-impl std::str::FromStr for Deserializer {
-    type Err = String;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Ok(match s {
-            "JSON" => Self::JSON,
-            "RON" => Self::RON,
-            invalid => return Err(format!("Invalid `Deserializer`: {invalid}")),
-        })
-    }
-}
-
-impl Deserializer {
-    fn from_str<'a, T>(&self, s: &'a str) -> Option<T>
-    where
-        T: serde::de::Deserialize<'a>,
-    {
-        match self {
-            Self::JSON => serde_json::from_str(s).ok(),
-            Self::RON => ron::from_str(s).ok(),
-        }
     }
 }
 
