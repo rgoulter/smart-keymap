@@ -1,5 +1,5 @@
 use cucumber::gherkin::Step;
-use cucumber::{given, then, when, World};
+use cucumber::{then, when, World};
 
 use smart_keymap::key;
 
@@ -123,5 +123,5 @@ fn check_value(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer)
 }
 
 fn main() {
-    futures::executor::block_on(KeymapWorld::run("features/"));
+    futures::executor::block_on(KeymapWorld::run("features/deserialization/"));
 }
