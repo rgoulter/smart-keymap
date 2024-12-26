@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use core::ops::Index;
 
 use crate::input;
 use crate::key;
@@ -13,8 +14,8 @@ pub struct ScheduledEvent<E> {
 
 /// The engine (set of key definition systems),
 ///  and key definitions.
-pub struct Keymap<const N: usize, K: Key = composite::Key> {
-    key_definitions: [K; N],
+pub struct Keymap<I: Index<usize, Output = K>, K: Key = composite::Key> {
+    key_definitions: I,
     context: K::Context,
     pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, 16>,
     pending_events: heapless::spsc::Queue<Event<K::Event>, 256>,
@@ -23,8 +24,8 @@ pub struct Keymap<const N: usize, K: Key = composite::Key> {
     schedule_counter: u32,
 }
 
-impl<const N: usize, K: Key> Keymap<N, K> {
-    pub const fn new(key_definitions: [K; N], context: K::Context) -> Self {
+impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
+    pub const fn new(key_definitions: I, context: K::Context) -> Self {
         Self {
             key_definitions,
             context,
