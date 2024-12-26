@@ -2,12 +2,14 @@
 //!  which can be any of the other key definitions,
 //!  and is the default Key for the `keymap::KeyMap` implementation.
 
+use serde::Deserialize;
+
 use core::fmt::Debug;
 
 use crate::key;
 use key::{simple, tap_hold};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy)]
 pub enum Key {
     Simple(simple::Key),
     TapHold(tap_hold::Key),
