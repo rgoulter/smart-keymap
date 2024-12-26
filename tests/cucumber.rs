@@ -4,10 +4,11 @@ use cucumber::{given, then, when, World};
 use smart_keymap::key;
 
 #[derive(Debug, Default, cucumber::Parameter)]
-#[param(name = "key_type", regex = "simple::Key")]
+#[param(name = "key_type", regex = "(?:simple|tap_hold)::Key")]
 enum KeyType {
     #[default]
     Simple,
+    TapHold,
 }
 
 impl std::str::FromStr for KeyType {
@@ -16,6 +17,7 @@ impl std::str::FromStr for KeyType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "simple::Key" => Self::Simple,
+            "tap_hold::Key" => Self::TapHold,
             invalid => return Err(format!("Invalid `KeyType`: {invalid}")),
         })
     }
@@ -91,6 +93,16 @@ fn check_value(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer)
                 .from_str(&world.input_string)
                 .unwrap();
             let deserialized_rhs: key::simple::Key = deserializer
+                .from_str(step.docstring.as_ref().unwrap())
+                .unwrap();
+            assert_eq!(deserialized_lhs, deserialized_rhs);
+        }
+        KeyType::TapHold => {
+            let deserialized_lhs: key::tap_hold::Key = world
+                .input_deserializer
+                .from_str(&world.input_string)
+                .unwrap();
+            let deserialized_rhs: key::tap_hold::Key = deserializer
                 .from_str(step.docstring.as_ref().unwrap())
                 .unwrap();
             assert_eq!(deserialized_lhs, deserialized_rhs);
