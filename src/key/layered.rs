@@ -1,10 +1,12 @@
+use serde::Deserialize;
+
 use crate::input;
 use crate::key;
 
 pub type LayerIndex = usize;
 
 /// Modifier layer key affects what layers are active.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone, Copy)]
 pub enum ModifierKey<const L: LayerIndex> {
     Hold(LayerIndex),
 }
@@ -78,12 +80,19 @@ impl<const L: LayerIndex, C: key::Context> key::Context for Context<L, C> {
 }
 
 /// A key whose behavior depends on which layer is active.
-pub struct LayeredKey<const L: LayerIndex, K: key::Key> {
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+pub struct LayeredKey<const L: LayerIndex, K: key::Key>
+where
+    [Option<K>; L]: serde::de::DeserializeOwned,
+{
     base: K,
     layered: [Option<K>; L],
 }
 
-impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K> {
+impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
+where
+    [Option<K>; L]: serde::de::DeserializeOwned,
+{
     fn new_pressed_key(
         &self,
         context: &Context<L, K::Context>,
@@ -103,7 +112,10 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K> {
     }
 }
 
-impl<const L: LayerIndex, K: key::Key> key::Key<K> for LayeredKey<L, K> {
+impl<const L: LayerIndex, K: key::Key> key::Key<K> for LayeredKey<L, K>
+where
+    [Option<K>; L]: serde::de::DeserializeOwned,
+{
     type Context = Context<L, K::Context>;
     type PressedKey = K::PressedKey;
     type Event = K::Event;
