@@ -7,7 +7,7 @@ use serde::Deserialize;
 use core::fmt::Debug;
 
 use crate::key;
-use key::{simple, tap_hold};
+use key::{layered, simple, tap_hold};
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Key {
@@ -120,6 +120,16 @@ impl key::PressedKey for PressedKey {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
     TapHold(tap_hold::Event),
+    LayerModification(layered::LayerEvent),
+}
+
+impl From<key::Event<layered::LayerEvent>> for key::Event<Event> {
+    fn from(ev: key::Event<layered::LayerEvent>) -> Self {
+        match ev {
+            key::Event::Input(ev) => key::Event::Input(ev),
+            key::Event::Key(ev) => key::Event::Key(Event::LayerModification(ev)),
+        }
+    }
 }
 
 impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
@@ -127,6 +137,15 @@ impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
         match ev {
             key::Event::Input(ev) => key::Event::Input(ev),
             key::Event::Key(ev) => key::Event::Key(Event::TapHold(ev)),
+        }
+    }
+}
+
+impl From<key::ScheduledEvent<layered::LayerEvent>> for key::ScheduledEvent<Event> {
+    fn from(ev: key::ScheduledEvent<layered::LayerEvent>) -> Self {
+        Self {
+            schedule: ev.schedule,
+            event: ev.event.into(),
         }
     }
 }
@@ -147,6 +166,7 @@ impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
         match ev {
             key::Event::Input(ev) => Ok(key::Event::Input(ev)),
             key::Event::Key(Event::TapHold(ev)) => Ok(key::Event::Key(ev)),
+            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
         }
     }
 }
