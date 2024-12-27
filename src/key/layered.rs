@@ -6,7 +6,7 @@ use crate::key;
 pub type LayerIndex = usize;
 
 /// Modifier layer key affects what layers are active.
-#[derive(Debug, Deserialize, Clone, Copy)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum ModifierKey<const L: LayerIndex> {
     Hold(LayerIndex),
 }
