@@ -15,16 +15,13 @@ impl<const L: LayerIndex> ModifierKey<L> {
     pub fn new_pressed_key(
         &self,
         keymap_index: u16,
-    ) -> (
-        PressedModifierKey<L>,
-        Option<key::ScheduledEvent<LayerEvent>>,
-    ) {
+    ) -> (PressedModifierKey<L>, key::ScheduledEvent<LayerEvent>) {
         match self {
             ModifierKey::Hold(layer) => {
                 let event = LayerEvent::LayerActivated(*layer);
                 (
                     PressedModifierKey::new(keymap_index),
-                    Some(key::ScheduledEvent::immediate(key::Event::Key(event))),
+                    key::ScheduledEvent::immediate(key::Event::Key(event)),
                 )
             }
         }
@@ -41,7 +38,8 @@ impl<const L: LayerIndex> key::Key for ModifierKey<L> {
         _context: &Self::Context,
         keymap_index: u16,
     ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
-        self.new_pressed_key(keymap_index)
+        let (pk, ev) = self.new_pressed_key(keymap_index);
+        (pk, Some(ev))
     }
 }
 
@@ -196,10 +194,10 @@ mod tests {
         let keymap_index = 9; // arbitrary
         let (_pressed_key, scheduled_event) = key.new_pressed_key(keymap_index);
 
-        if let Some(key::ScheduledEvent {
+        if let key::ScheduledEvent {
             event: key::Event::Key(key_ev),
             ..
-        }) = scheduled_event
+        } = scheduled_event
         {
             assert_eq!(key_ev, LayerEvent::LayerActivated(layer));
         } else {
@@ -408,7 +406,7 @@ mod tests {
     #[test]
     fn test_deserialize_json_option_simple() {
         let actual: Option<key::simple::Key> = serde_json::from_str(r#"4"#).unwrap();
-        let mut expected: Option<key::simple::Key> = Some(simple::Key(0x04));
+        let expected: Option<key::simple::Key> = Some(simple::Key(0x04));
         assert_eq!(actual, expected);
     }
 
@@ -417,7 +415,7 @@ mod tests {
         let actual: heapless::Vec<Option<key::simple::Key>, 1> =
             serde_json::from_str(r#"[4]"#).unwrap();
         let mut expected: heapless::Vec<Option<key::simple::Key>, 1> = heapless::Vec::new();
-        expected.push(Some(simple::Key(0x04)));
+        expected.push(Some(simple::Key(0x04))).unwrap();
         assert_eq!(actual, expected);
     }
 
