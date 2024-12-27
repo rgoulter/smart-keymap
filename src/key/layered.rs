@@ -12,7 +12,7 @@ pub enum ModifierKey<const L: LayerIndex> {
 }
 
 impl<const L: LayerIndex> ModifierKey<L> {
-    fn new_pressed_key(
+    pub fn new_pressed_key(
         &self,
         keymap_index: u16,
     ) -> (
