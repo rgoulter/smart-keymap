@@ -372,4 +372,92 @@ mod tests {
         assert_eq!(actual_pressed_key, expected_pressed_key);
         assert_eq!(actual_event, expected_event);
     }
+
+    #[test]
+    fn test_deserialize_ron_simple() {
+        use key::simple;
+
+        let actual_key: key::simple::Key = ron::from_str("Key(0x04)").unwrap();
+        let expected_key: key::simple::Key = simple::Key(0x04);
+        assert_eq!(actual_key, expected_key);
+    }
+
+    #[test]
+    fn test_deserialize_ron_option_simple() {
+        use key::simple;
+
+        let actual_key: Option<key::simple::Key> = ron::from_str("Some(Key(0x04))").unwrap();
+        let expected_key: Option<key::simple::Key> = Some(simple::Key(0x04));
+        assert_eq!(actual_key, expected_key);
+    }
+
+    #[test]
+    fn test_deserialize_ron_array1_u8() {
+        let actual: [u8; 1] = ron::from_str("(5)").unwrap();
+        let expected: [u8; 1] = [5];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_deserialize_ron_array1_option_simple() {
+        let actual: [Option<key::simple::Key>; 1] = ron::from_str("(Some(Key(0x04)))").unwrap();
+        let expected: [Option<key::simple::Key>; 1] = [Some(simple::Key(0x04))];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_deserialize_json_option_simple() {
+        let actual: Option<key::simple::Key> = serde_json::from_str(r#"4"#).unwrap();
+        let mut expected: Option<key::simple::Key> = Some(simple::Key(0x04));
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_deserialize_json_vec1_option_simple() {
+        let actual: heapless::Vec<Option<key::simple::Key>, 1> =
+            serde_json::from_str(r#"[4]"#).unwrap();
+        let mut expected: heapless::Vec<Option<key::simple::Key>, 1> = heapless::Vec::new();
+        expected.push(Some(simple::Key(0x04)));
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_deserialize_json_array1_option_simple() {
+        let actual: [Option<key::simple::Key>; 1] = serde_json::from_str("[4]").unwrap();
+        let expected: [Option<key::simple::Key>; 1] = [Some(simple::Key(0x04))];
+        assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn test_deserialize_ron_layered_key_simple_0layer() {
+        let actual_key: LayeredKey<0, key::simple::Key> =
+            ron::from_str("(base: (0x04), layered: ())").unwrap();
+        let expected_key: LayeredKey<0, key::simple::Key> = LayeredKey {
+            base: key::simple::Key(0x04),
+            layered: [],
+        };
+        assert_eq!(actual_key, expected_key);
+    }
+
+    #[test]
+    fn test_deserialize_json_layered_key_simple_0layer() {
+        let actual_key: LayeredKey<0, key::simple::Key> =
+            serde_json::from_str(r#"{"base": 4, "layered": []}"#).unwrap();
+        let expected_key: LayeredKey<0, key::simple::Key> = LayeredKey {
+            base: key::simple::Key(0x04),
+            layered: [],
+        };
+        assert_eq!(actual_key, expected_key);
+    }
+
+    #[test]
+    fn test_deserialize_ron_layered_key_simple_1layer_none() {
+        let actual_key: LayeredKey<1, key::simple::Key> =
+            ron::from_str("LayeredKey(base: Key(0x04), layered: (None))").unwrap();
+        let expected_key: LayeredKey<1, key::simple::Key> = LayeredKey {
+            base: key::simple::Key(0x04),
+            layered: [None],
+        };
+        assert_eq!(actual_key, expected_key);
+    }
 }
