@@ -128,10 +128,7 @@ where
                 _ => None,
             },
 
-            PressedKey::Simple(pk) => match key_definition {
-                Key::Simple(key_def) => Some(pk.key_code(key_def)),
-                _ => None,
-            },
+            PressedKey::Simple(pk) => Some(pk.key_code()),
 
             PressedKey::TapHold(pk) => match key_definition {
                 Key::TapHold(key_def) => pk.key_code(key_def),
