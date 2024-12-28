@@ -8,8 +8,12 @@ pub mod tap_hold;
 
 pub mod composite;
 
-pub trait Key<PK: Key = Self> {
-    type Context: Context;
+pub trait Key<PK: Key = Self>
+where
+    Self::ContextEvent: From<Self::Event>,
+{
+    type Context: Context<Event = Self::ContextEvent>;
+    type ContextEvent;
     type PressedKey: PressedKey<PK, Event = Self::Event> + Debug;
     type Event: Copy + Debug + Ord;
 
