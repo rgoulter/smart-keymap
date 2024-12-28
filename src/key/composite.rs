@@ -234,3 +234,40 @@ impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_composite_context_updates_with_composite_layermodifier_press_event() {
+        use key::{composite, layered, simple, Context, Key};
+
+        // Assemble
+        const L: layered::LayerIndex = 1;
+        let keys: [composite::Key<L>; 2] = [
+            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
+            composite::Key::<L>::Layered(layered::LayeredKey::new(
+                simple::Key(0x04),
+                [Some(simple::Key(0x05))],
+            )),
+        ];
+        let mut context = composite::Context::<L, DefaultNestableKey>::new();
+        let (_pressed_key, maybe_ev) = keys[0].new_pressed_key(&context, 0);
+
+        // Act
+        let event = match maybe_ev {
+            Some(key::ScheduledEvent {
+                event: key::Event::Key(ev),
+                ..
+            }) => ev,
+            _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
+        };
+        context.handle_event(event);
+        let actual_active_layers = context.layer_context.active_layers();
+
+        // Assert
+        let expected_active_layers = &[true];
+        assert_eq!(actual_active_layers, expected_active_layers);
+    }
+}
