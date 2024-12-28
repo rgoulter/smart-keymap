@@ -24,8 +24,8 @@ impl PressedKey {
         Self { key_code }
     }
 
-    pub fn key_code(&self, key_def: &Key) -> u8 {
-        key_def.key_code()
+    pub fn key_code(&self) -> u8 {
+        self.key_code
     }
 }
 
@@ -61,7 +61,7 @@ impl key::PressedKey<Key> for PressedKey {
     }
 
     /// Simple key always has a key_code.
-    fn key_code(&self, key_definition: &Key) -> Option<u8> {
-        Some(self.key_code(key_definition))
+    fn key_code(&self, _key_definition: &Key) -> Option<u8> {
+        Some(self.key_code())
     }
 }
