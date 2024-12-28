@@ -177,3 +177,46 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         report
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_keymap_with_simple_key() {
+        use key::simple;
+
+        // Assemble
+        let keys: [simple::Key; 1] = [simple::Key(0x04)];
+        let context = ();
+        let mut keymap: Keymap<[simple::Key; 1], simple::Key> = Keymap::new(keys, context);
+
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.tick();
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+
+    #[test]
+    fn test_keymap_with_composite_simple_key() {
+        use key::{composite, simple};
+
+        // Assemble
+        let keys: [composite::Key; 1] = [composite::Key::Simple(simple::Key(0x04))];
+        let context = composite::Context::new();
+        let mut keymap: Keymap<[composite::Key; 1]> = Keymap::new(keys, context);
+
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.tick();
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+}
