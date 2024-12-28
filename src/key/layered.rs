@@ -91,6 +91,15 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
+    pub fn new(base: K, layered: [Option<K>; L]) -> Self {
+        Self { base, layered }
+    }
+}
+
+impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
+where
+    [Option<K>; L]: serde::de::DeserializeOwned,
+{
     fn new_pressed_key(
         &self,
         context: &Context<L, K::Context>,
