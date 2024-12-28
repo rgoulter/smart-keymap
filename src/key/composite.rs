@@ -270,4 +270,30 @@ mod tests {
         let expected_active_layers = &[true];
         assert_eq!(actual_active_layers, expected_active_layers);
     }
+
+    #[test]
+    fn test_composite_simple_pressed_key_has_key_code_for_composite_simple_key_def() {
+        use key::{composite, layered, simple, Key, PressedKey};
+
+        // Assemble
+        const L: layered::LayerIndex = 1;
+        let keys: [composite::Key<L>; 3] = [
+            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
+            composite::Key::<L>::Layered(layered::LayeredKey::new(
+                simple::Key(0x04),
+                [Some(simple::Key(0x05))],
+            )),
+            composite::Key::<L>::Simple(simple::Key(0x06)),
+        ];
+        let context = composite::Context::<L, DefaultNestableKey>::new();
+
+        // Act
+        let keymap_index: u16 = 2;
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
+        let actual_keycode = pressed_key.key_code(&keys[keymap_index as usize]);
+
+        // Assert
+        let expected_keycode = Some(0x06);
+        assert_eq!(actual_keycode, expected_keycode);
+    }
 }
