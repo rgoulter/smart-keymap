@@ -243,9 +243,35 @@ mod tests {
             Keymap::new(keys, context);
 
         // Act
-        keymap.handle_input(input::Event::Press { keymap_index: 0 });
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+
+    #[test]
+    fn test_keymap_with_composite_layered_key_press_active_layer_when_layer_mod_held() {
+        use key::{composite, layered, simple};
+
+        // Assemble
+        const L: layered::LayerIndex = 1;
+        let keys: [composite::Key<L>; 2] = [
+            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
+            composite::Key::<L>::Layered(layered::LayeredKey::new(
+                simple::Key(0x04),
+                [Some(simple::Key(0x05))],
+            )),
+        ];
+        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
+        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>> =
+            Keymap::new(keys, context);
+
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
         keymap.tick();
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
         let actual_report = keymap.boot_keyboard_report();
 
         // Assert
