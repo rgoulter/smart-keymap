@@ -14,7 +14,7 @@ pub trait NestableKey: key::Key + Sized {}
 
 impl NestableKey for simple::Key {}
 
-type DefaultNestableKey = simple::Key;
+pub type DefaultNestableKey = simple::Key;
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum Key<const L: layered::LayerIndex = 0, K: NestableKey = DefaultNestableKey>
