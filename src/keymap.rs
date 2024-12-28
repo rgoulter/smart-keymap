@@ -4,7 +4,7 @@ use core::ops::Index;
 use crate::input;
 use crate::key;
 
-use key::{composite, Event, Key, PressedKey};
+use key::{composite, Context, Event, Key, PressedKey};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ScheduledEvent<E> {
@@ -145,6 +145,11 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
                         .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
                 }
             });
+
+            // Update context with the event
+            if let key::Event::Key(ev) = ev {
+                self.context.handle_event(ev.into());
+            }
 
             if let Event::Input(input_ev) = ev {
                 self.handle_input(input_ev);

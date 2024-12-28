@@ -28,8 +28,13 @@ impl<const L: LayerIndex> ModifierKey<L> {
     }
 }
 
+impl From<LayerEvent> for () {
+    fn from(_: LayerEvent) -> Self {}
+}
+
 impl<const L: LayerIndex> key::Key for ModifierKey<L> {
     type Context = ();
+    type ContextEvent = ();
     type PressedKey = PressedModifierKey<L>;
     type Event = LayerEvent;
 
@@ -100,7 +105,7 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
-    fn new_pressed_key(
+    pub fn new_pressed_key(
         &self,
         context: &Context<L, K::Context>,
         keymap_index: u16,
@@ -122,8 +127,10 @@ where
 impl<const L: LayerIndex, K: key::Key> key::Key<K> for LayeredKey<L, K>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
+    LayerEvent: From<<K as key::Key>::Event>,
 {
     type Context = Context<L, K::Context>;
+    type ContextEvent = LayerEvent;
     type PressedKey = K::PressedKey;
     type Event = K::Event;
 

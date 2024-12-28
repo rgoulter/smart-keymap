@@ -29,8 +29,13 @@ impl PressedKey {
     }
 }
 
+impl From<Event> for () {
+    fn from(_: Event) -> Self {}
+}
+
 impl key::Key for Key {
     type Context = ();
+    type ContextEvent = ();
     type Event = Event;
     type PressedKey = PressedKey;
 

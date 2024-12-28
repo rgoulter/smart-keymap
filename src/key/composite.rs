@@ -32,6 +32,7 @@ where
     [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
 {
     type Context = Context<L, DefaultNestableKey>;
+    type ContextEvent = Event;
     type Event = Event;
     type PressedKey = PressedKey<L>;
 
@@ -82,7 +83,11 @@ impl<const L: layered::LayerIndex> Default for Context<L, DefaultNestableKey> {
 
 impl<const L: layered::LayerIndex> key::Context for Context<L, DefaultNestableKey> {
     type Event = Event;
-    fn handle_event(&mut self, _event: Self::Event) {}
+    fn handle_event(&mut self, event: Self::Event) {
+        if let Event::LayerModification(ev) = event {
+            self.layer_context.handle_event(ev);
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
