@@ -8,9 +8,9 @@ pub mod tap_hold;
 
 pub mod composite;
 
-pub trait Key<PK = Self> {
+pub trait Key<PK: Key = Self> {
     type Context: Context;
-    type PressedKey: PressedKey<Key = PK, Event = Self::Event> + Debug;
+    type PressedKey: PressedKey<PK, Event = Self::Event> + Debug;
     type Event: Copy + Debug + Ord;
 
     fn new_pressed_key(
@@ -30,15 +30,14 @@ impl Context for () {
     fn handle_event(&mut self, _event: Self::Event) {}
 }
 
-pub trait PressedKey {
+pub trait PressedKey<K: Key> {
     type Event;
-    type Key: Key;
     fn handle_event(
         &mut self,
-        key_definition: &Self::Key,
+        key_definition: &K,
         event: Event<Self::Event>,
     ) -> impl IntoIterator<Item = Event<Self::Event>>;
-    fn key_code(&self, key_definition: &Self::Key) -> Option<u8>;
+    fn key_code(&self, key_definition: &K) -> Option<u8>;
 }
 
 #[allow(unused)]

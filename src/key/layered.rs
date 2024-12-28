@@ -163,19 +163,18 @@ impl<const L: LayerIndex> PressedModifierKey<L> {
     }
 }
 
-impl<const L: LayerIndex> key::PressedKey for PressedModifierKey<L> {
+impl<const L: LayerIndex> key::PressedKey<ModifierKey<L>> for PressedModifierKey<L> {
     type Event = LayerEvent;
-    type Key = ModifierKey<L>;
 
     fn handle_event(
         &mut self,
-        key_definition: &Self::Key,
+        key_definition: &ModifierKey<L>,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         self.handle_event(key_definition, event)
     }
 
-    fn key_code(&self, _key_definition: &Self::Key) -> Option<u8> {
+    fn key_code(&self, _key_definition: &ModifierKey<L>) -> Option<u8> {
         None
     }
 }

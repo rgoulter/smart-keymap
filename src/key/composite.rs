@@ -88,9 +88,8 @@ impl<const L: layered::LayerIndex> From<tap_hold::PressedKey> for PressedKey<L> 
     }
 }
 
-impl<const L: layered::LayerIndex> key::PressedKey for PressedKey<L> {
+impl<const L: layered::LayerIndex> key::PressedKey<Key<L>> for PressedKey<L> {
     type Event = Event;
-    type Key = Key<L>;
 
     fn key_code(&self, key_definition: &Key<L>) -> Option<u8> {
         match self {
