@@ -9,21 +9,35 @@ use core::fmt::Debug;
 use crate::key;
 use key::{layered, simple, tap_hold};
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum Key<const L: layered::LayerIndex = 0> {
+/// Used to implement nested combinations of [Key].
+pub trait NestableKey: key::Key + Sized {}
+
+impl NestableKey for simple::Key {}
+
+type DefaultNestableKey = simple::Key;
+
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+pub enum Key<const L: layered::LayerIndex = 0, K: NestableKey = DefaultNestableKey>
+where
+    [Option<K>; L]: serde::de::DeserializeOwned,
+{
     Simple(simple::Key),
     TapHold(tap_hold::Key),
     LayerModifier(layered::ModifierKey<L>),
+    Layered(layered::LayeredKey<L, K>),
 }
 
-impl<const L: layered::LayerIndex> key::Key for Key<L> {
-    type Context = Context;
+impl<const L: layered::LayerIndex> key::Key for Key<L, DefaultNestableKey>
+where
+    [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
+{
+    type Context = Context<L, DefaultNestableKey>;
     type Event = Event;
     type PressedKey = PressedKey<L>;
 
     fn new_pressed_key(
         &self,
-        _context: &Self::Context,
+        context: &Self::Context,
         keymap_index: u16,
     ) -> (Self::PressedKey, Option<key::ScheduledEvent<Event>>) {
         match self {
@@ -39,26 +53,34 @@ impl<const L: layered::LayerIndex> key::Key for Key<L> {
                 let (pressed_key, new_event) = k.new_pressed_key(keymap_index);
                 (pressed_key.into(), Some(new_event.into()))
             }
+            Key::Layered(k) => {
+                let Context { layer_context } = context;
+                let (pressed_key, new_event) = k.new_pressed_key(layer_context, keymap_index);
+                (pressed_key.into(), new_event.map(|ev| ev.into()))
+            }
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Context {}
+pub struct Context<const L: layered::LayerIndex, K: key::Key> {
+    layer_context: layered::Context<L, K::Context>,
+}
 
-impl Context {
+impl<const L: layered::LayerIndex> Context<L, DefaultNestableKey> {
     pub const fn new() -> Self {
-        Self {}
+        let layer_context = layered::Context::new(());
+        Self { layer_context }
     }
 }
 
-impl Default for Context {
+impl<const L: layered::LayerIndex> Default for Context<L, DefaultNestableKey> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl key::Context for Context {
+impl<const L: layered::LayerIndex> key::Context for Context<L, DefaultNestableKey> {
     type Event = Event;
     fn handle_event(&mut self, _event: Self::Event) {}
 }
@@ -88,10 +110,13 @@ impl<const L: layered::LayerIndex> From<tap_hold::PressedKey> for PressedKey<L> 
     }
 }
 
-impl<const L: layered::LayerIndex> key::PressedKey<Key<L>> for PressedKey<L> {
+impl<const L: layered::LayerIndex> key::PressedKey<Key<L, DefaultNestableKey>> for PressedKey<L>
+where
+    [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
+{
     type Event = Event;
 
-    fn key_code(&self, key_definition: &Key<L>) -> Option<u8> {
+    fn key_code(&self, key_definition: &Key<L, DefaultNestableKey>) -> Option<u8> {
         match self {
             PressedKey::LayerModifier(pk) => match key_definition {
                 Key::LayerModifier(key_def) => pk.key_code(key_def),
@@ -112,7 +137,7 @@ impl<const L: layered::LayerIndex> key::PressedKey<Key<L>> for PressedKey<L> {
 
     fn handle_event(
         &mut self,
-        key_definition: &Key<L>,
+        key_definition: &Key<L, DefaultNestableKey>,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         if let PressedKey::TapHold(tap_hold) = self {
@@ -148,6 +173,15 @@ impl From<key::Event<layered::LayerEvent>> for key::Event<Event> {
     }
 }
 
+impl From<key::Event<simple::Event>> for key::Event<Event> {
+    fn from(ev: key::Event<simple::Event>) -> Self {
+        match ev {
+            key::Event::Input(ev) => key::Event::Input(ev),
+            key::Event::Key(_) => panic!("key::simple never emits events"),
+        }
+    }
+}
+
 impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
     fn from(ev: key::Event<tap_hold::Event>) -> Self {
         match ev {
@@ -159,6 +193,15 @@ impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
 
 impl From<key::ScheduledEvent<layered::LayerEvent>> for key::ScheduledEvent<Event> {
     fn from(ev: key::ScheduledEvent<layered::LayerEvent>) -> Self {
+        Self {
+            schedule: ev.schedule,
+            event: ev.event.into(),
+        }
+    }
+}
+
+impl From<key::ScheduledEvent<simple::Event>> for key::ScheduledEvent<Event> {
+    fn from(ev: key::ScheduledEvent<simple::Event>) -> Self {
         Self {
             schedule: ev.schedule,
             event: ev.event.into(),

@@ -50,7 +50,7 @@ pub struct Context<const L: LayerIndex, C: key::Context> {
 }
 
 impl<const L: LayerIndex, C: key::Context> Context<L, C> {
-    pub fn new(inner_context: C) -> Self {
+    pub const fn new(inner_context: C) -> Self {
         Self {
             active_layers: [false; L],
             inner_context,
