@@ -46,8 +46,8 @@ where
                 let pressed_key = simple::PressedKey::new(k.key_code());
                 (pressed_key.into(), None)
             }
-            Key::TapHold(_) => {
-                let (pressed_key, new_event) = tap_hold::PressedKey::new(keymap_index);
+            Key::TapHold(k) => {
+                let (pressed_key, new_event) = tap_hold::PressedKey::new(keymap_index, *k);
                 (pressed_key.into(), Some(new_event.into()))
             }
             Key::LayerModifier(k) => {
@@ -121,41 +121,31 @@ where
 {
     type Event = Event;
 
-    fn key_code(&self, key_definition: &Key<L, DefaultNestableKey>) -> Option<u8> {
+    fn key_code(&self) -> Option<u8> {
         match self {
-            PressedKey::LayerModifier(pk) => match key_definition {
-                Key::LayerModifier(key_def) => pk.key_code(key_def),
-                _ => None,
-            },
-
+            PressedKey::LayerModifier(pk) => pk.key_code(),
             PressedKey::Simple(pk) => Some(pk.key_code()),
-
-            PressedKey::TapHold(pk) => match key_definition {
-                Key::TapHold(key_def) => pk.key_code(key_def),
-                _ => None,
-            },
+            PressedKey::TapHold(pk) => pk.key_code(),
         }
     }
 
     fn handle_event(
         &mut self,
-        key_definition: &Key<L, DefaultNestableKey>,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
-        match (key_definition, self) {
-            (Key::TapHold(key_def), PressedKey::TapHold(tap_hold)) => {
+        match self {
+            PressedKey::TapHold(tap_hold) => {
                 if let Ok(ev) = key::Event::try_from(event) {
                     let events: heapless::Vec<key::Event<tap_hold::Event>, 2> =
-                        tap_hold.handle_event(key_def, ev);
+                        tap_hold.handle_event(ev);
                     events.into_iter().map(|ev| ev.into()).collect()
                 } else {
                     heapless::Vec::<key::Event<Self::Event>, 2>::new()
                 }
             }
-            (Key::LayerModifier(key_def), PressedKey::LayerModifier(lmod)) => {
+            PressedKey::LayerModifier(lmod) => {
                 if let Ok(ev) = key::Event::try_from(event) {
-                    let events: Option<key::Event<layered::LayerEvent>> =
-                        lmod.handle_event(key_def, ev);
+                    let events: Option<key::Event<layered::LayerEvent>> = lmod.handle_event(ev);
                     events.into_iter().map(|ev| ev.into()).collect()
                 } else {
                     heapless::Vec::<key::Event<Self::Event>, 2>::new()
@@ -267,10 +257,8 @@ mod tests {
         let (mut pressed_lmod_key, _) = key.new_pressed_key(&context, keymap_index);
 
         // Act
-        let events = pressed_lmod_key.handle_event(
-            &key,
-            key::Event::Input(input::Event::Release { keymap_index }),
-        );
+        let events = pressed_lmod_key
+            .handle_event(key::Event::Input(input::Event::Release { keymap_index }));
 
         // Assert
         let _key_ev = match events.into_iter().next() {
@@ -332,10 +320,8 @@ mod tests {
         let mut context = composite::Context::<L, DefaultNestableKey>::new();
         let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(&context, 0);
         context.layer_context.activate_layer(0);
-        let events = pressed_lmod_key.handle_event(
-            &keys[0],
-            key::Event::Input(input::Event::Release { keymap_index: 0 }),
-        );
+        let events = pressed_lmod_key
+            .handle_event(key::Event::Input(input::Event::Release { keymap_index: 0 }));
         let key_ev = match events.into_iter().next() {
             Some(key::Event::Key(ev)) => ev,
             _ => panic!("Expected an Event::Key(_)"),
@@ -369,7 +355,7 @@ mod tests {
         // Act
         let keymap_index: u16 = 2;
         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
-        let actual_keycode = pressed_key.key_code(&keys[keymap_index as usize]);
+        let actual_keycode = pressed_key.key_code();
 
         // Assert
         let expected_keycode = Some(0x06);
@@ -395,7 +381,7 @@ mod tests {
         // Act
         let keymap_index: u16 = 1;
         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
-        let actual_keycode = pressed_key.key_code(&keys[keymap_index as usize]);
+        let actual_keycode = pressed_key.key_code();
 
         // Assert
         let expected_keycode = Some(0x04);
