@@ -269,6 +269,41 @@ mod tests {
     }
 
     #[test]
+    fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
+        use crate::input;
+        use key::{composite, layered, simple, Context, Key, PressedKey};
+
+        // Assemble
+        const L: layered::LayerIndex = 1;
+        let keys: [composite::Key<L>; 2] = [
+            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
+            composite::Key::<L>::Layered(layered::LayeredKey::new(
+                simple::Key(0x04),
+                [Some(simple::Key(0x05))],
+            )),
+        ];
+        let mut context = composite::Context::<L, DefaultNestableKey>::new();
+        let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(&context, 0);
+        context.layer_context.activate_layer(0);
+        let events = pressed_lmod_key.handle_event(
+            &keys[0],
+            key::Event::Input(input::Event::Release { keymap_index: 0 }),
+        );
+        let key_ev = match events.into_iter().next() {
+            Some(key::Event::Key(ev)) => ev,
+            _ => panic!("Expected an Event::Key(_)"),
+        };
+
+        // Act
+        context.handle_event(key_ev);
+        let actual_active_layers = context.layer_context.active_layers();
+
+        // Assert
+        let expected_active_layers = &[false];
+        assert_eq!(actual_active_layers, expected_active_layers);
+    }
+
+    #[test]
     fn test_composite_simple_pressed_key_has_key_code_for_composite_simple_key_def() {
         use key::{composite, layered, simple, Key, PressedKey};
 
