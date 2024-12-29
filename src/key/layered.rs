@@ -62,6 +62,10 @@ impl<const L: LayerIndex, C: key::Context> Context<L, C> {
         }
     }
 
+    pub fn activate_layer(&mut self, layer: LayerIndex) {
+        self.active_layers[layer] = true;
+    }
+
     pub fn active_layers(&self) -> &[bool; L] {
         &self.active_layers
     }
