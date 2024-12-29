@@ -54,14 +54,13 @@ impl key::PressedKey<Key> for PressedKey {
     /// Simple key never emits events.
     fn handle_event(
         &mut self,
-        _key_definition: &Key,
         _event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         None
     }
 
     /// Simple key always has a key_code.
-    fn key_code(&self, _key_definition: &Key) -> Option<u8> {
+    fn key_code(&self) -> Option<u8> {
         Some(self.key_code())
     }
 }
