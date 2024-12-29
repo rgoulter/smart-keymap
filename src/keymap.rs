@@ -47,9 +47,13 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
     pub fn handle_input(&mut self, ev: input::Event) {
         // Update each of the PressedKeys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
-            if let input::PressedInput::Key { keymap_index, key } = pi {
+            if let input::PressedInput::Key {
+                keymap_index,
+                pressed_key,
+            } = pi
+            {
                 let key_definition = &self.key_definitions[*keymap_index as usize];
-                let events = key.handle_event(key_definition, ev.into());
+                let events = pressed_key.handle_event(key_definition, ev.into());
                 events
                     .into_iter()
                     .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
@@ -137,9 +141,13 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         if let Some(ev) = self.pending_events.dequeue() {
             // Update each of the PressedKeys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key { keymap_index, key } = pi {
+                if let input::PressedInput::Key {
+                    keymap_index,
+                    pressed_key,
+                } = pi
+                {
                     let key_definition = &self.key_definitions[*keymap_index as usize];
-                    let events = key.handle_event(key_definition, ev);
+                    let events = pressed_key.handle_event(key_definition, ev);
                     events
                         .into_iter()
                         .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
@@ -161,7 +169,10 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         let mut report = [0u8; 8];
 
         let pressed_keys = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key { keymap_index, key } => {
+            input::PressedInput::Key {
+                keymap_index,
+                pressed_key: key,
+            } => {
                 let key_definition = &self.key_definitions[*keymap_index as usize];
                 key.key_code(key_definition)
             }
