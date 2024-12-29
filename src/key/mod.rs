@@ -38,10 +38,9 @@ pub trait PressedKey<K: Key> {
     type Event;
     fn handle_event(
         &mut self,
-        key_definition: &K,
         event: Event<Self::Event>,
     ) -> impl IntoIterator<Item = Event<Self::Event>>;
-    fn key_code(&self, key_definition: &K) -> Option<u8>;
+    fn key_code(&self) -> Option<u8>;
 }
 
 #[allow(unused)]
