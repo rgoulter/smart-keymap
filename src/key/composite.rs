@@ -142,8 +142,8 @@ where
         key_definition: &Key<L, DefaultNestableKey>,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
-        if let PressedKey::TapHold(tap_hold) = self {
-            if let Key::TapHold(key_def) = key_definition {
+        match (key_definition, self) {
+            (Key::TapHold(key_def), PressedKey::TapHold(tap_hold)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
                     let events: heapless::Vec<key::Event<tap_hold::Event>, 2> =
                         tap_hold.handle_event(key_def, ev);
@@ -151,11 +151,17 @@ where
                 } else {
                     heapless::Vec::<key::Event<Self::Event>, 2>::new()
                 }
-            } else {
-                heapless::Vec::new()
             }
-        } else {
-            heapless::Vec::new()
+            (Key::LayerModifier(key_def), PressedKey::LayerModifier(lmod)) => {
+                if let Ok(ev) = key::Event::try_from(event) {
+                    let events: Option<key::Event<layered::LayerEvent>> =
+                        lmod.handle_event(key_def, ev);
+                    events.into_iter().map(|ev| ev.into()).collect()
+                } else {
+                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
+                }
+            }
+            _ => heapless::Vec::new(),
         }
     }
 }
@@ -216,6 +222,18 @@ impl From<key::ScheduledEvent<tap_hold::Event>> for key::ScheduledEvent<Event> {
         Self {
             schedule: ev.schedule,
             event: ev.event.into(),
+        }
+    }
+}
+
+impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
+    type Error = key::EventError;
+
+    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
+        match ev {
+            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
+            key::Event::Key(Event::LayerModification(ev)) => Ok(key::Event::Key(ev)),
+            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
         }
     }
 }
