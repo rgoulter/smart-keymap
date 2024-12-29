@@ -237,6 +237,35 @@ mod tests {
     use super::*;
 
     #[test]
+    fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
+        use crate::input;
+        use key::{composite, layered, Key, PressedKey};
+
+        // Assemble
+        const L: layered::LayerIndex = 1;
+        let keymap_index: u16 = 0;
+        let key = composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0));
+        let context = composite::Context::<L, DefaultNestableKey>::new();
+        let (mut pressed_lmod_key, _) = key.new_pressed_key(&context, keymap_index);
+
+        // Act
+        let events = pressed_lmod_key.handle_event(
+            &key,
+            key::Event::Input(input::Event::Release { keymap_index }),
+        );
+
+        // Assert
+        let _key_ev = match events.into_iter().next() {
+            Some(key::Event::Key(Event::LayerModification(
+                layered::LayerEvent::LayerDeactivated(layer),
+            ))) => {
+                assert_eq!(layer, 0);
+            }
+            _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
+        };
+    }
+
+    #[test]
     fn test_composite_context_updates_with_composite_layermodifier_press_event() {
         use key::{composite, layered, simple, Context, Key};
 
