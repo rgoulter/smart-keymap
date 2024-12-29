@@ -31,23 +31,25 @@ impl From<Event> for key::Event<Event> {
 pub struct PressedKey {
     keymap_index: u16,
     state: TapHoldState,
+    key_def: Key,
 }
 
 impl PressedKey {
-    pub fn new(keymap_index: u16) -> (Self, key::ScheduledEvent<Event>) {
+    pub fn new(keymap_index: u16, key_def: Key) -> (Self, key::ScheduledEvent<Event>) {
         (
             Self {
                 keymap_index,
                 state: TapHoldState::Pending,
+                key_def,
             },
             key::ScheduledEvent::after(200, Event::TapHoldTimeout { keymap_index }.into()),
         )
     }
 
-    pub fn key_code(&self, key_def: &Key) -> Option<u8> {
+    pub fn key_code(&self) -> Option<u8> {
         match self.state {
-            TapHoldState::Tap => Some(key_def.tap),
-            TapHoldState::Hold => Some(key_def.hold),
+            TapHoldState::Tap => Some(self.key_def.tap),
+            TapHoldState::Hold => Some(self.key_def.hold),
             _ => None,
         }
     }
@@ -60,7 +62,6 @@ impl PressedKey {
 
     pub fn handle_event(
         &mut self,
-        key_def: &Key,
         event: key::Event<Event>,
     ) -> heapless::Vec<key::Event<Event>, 2> {
         match event {
@@ -77,7 +78,7 @@ impl PressedKey {
 
                 match &self.state {
                     TapHoldState::Tap => {
-                        let key_code = key_def.tap;
+                        let key_code = self.key_def.tap;
                         let mut emitted_events: heapless::Vec<key::Event<Event>, 2> =
                             heapless::Vec::new();
                         emitted_events
