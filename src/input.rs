@@ -10,12 +10,15 @@ pub enum Event {
 
 #[derive(Debug, Clone, Copy)]
 pub enum PressedInput<K> {
-    Key { keymap_index: u16, key: K },
+    Key { keymap_index: u16, pressed_key: K },
     Virtual { key_code: u8 },
 }
 
 impl<K> PressedInput<K> {
-    pub fn new_pressed_key(keymap_index: u16, key: K) -> Self {
-        Self::Key { keymap_index, key }
+    pub fn new_pressed_key(keymap_index: u16, pressed_key: K) -> Self {
+        Self::Key {
+            keymap_index,
+            pressed_key,
+        }
     }
 }
