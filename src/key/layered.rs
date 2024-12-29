@@ -163,7 +163,7 @@ impl<const L: LayerIndex> PressedModifierKey<L> {
         Self { keymap_index }
     }
 
-    fn handle_event(
+    pub fn handle_event(
         &mut self,
         key_definition: &ModifierKey<L>,
         event: key::Event<LayerEvent>,
