@@ -5,9 +5,9 @@ pub mod key;
 pub mod keymap;
 
 #[allow(unused)]
-use key::composite::Key;
+use composite::{Event, Key};
 #[allow(unused)]
-use key::{simple, tap_hold};
+use key::{composite, simple, tap_hold};
 
 #[cfg(not(custom_keymap))]
 pub const KEY_DEFINITIONS: [Key; 1] = [
@@ -16,7 +16,7 @@ pub const KEY_DEFINITIONS: [Key; 1] = [
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
-static mut KEYMAP: keymap::Keymap<[Key; KEY_DEFINITIONS.len()]> =
+static mut KEYMAP: keymap::Keymap<[Key; KEY_DEFINITIONS.len()], Key, Event> =
     keymap::Keymap::new(KEY_DEFINITIONS, key::composite::Context::new());
 
 #[allow(static_mut_refs)]
