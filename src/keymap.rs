@@ -4,7 +4,7 @@ use core::ops::Index;
 use crate::input;
 use crate::key;
 
-use key::{composite, Context, Event, Key, PressedKey};
+use key::{Context, Event, Key, PressedKey};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ScheduledEvent<E> {
@@ -15,17 +15,16 @@ pub struct ScheduledEvent<E> {
 /// The engine (set of key definition systems),
 ///  and key definitions.
 #[derive(Debug)]
-pub struct Keymap<I: Index<usize, Output = K>, K: Key = composite::Key> {
+pub struct Keymap<I: Index<usize, Output = K>, K: Key<Ev>, Ev: Copy + Debug + Ord> {
     key_definitions: I,
     context: K::Context,
     pressed_inputs: heapless::Vec<input::PressedInput<K, K::PressedKeyState>, 16>,
-    pending_events: heapless::spsc::Queue<Event<K::Event>, 256>,
-    scheduled_events:
-        heapless::BinaryHeap<ScheduledEvent<K::Event>, heapless::binary_heap::Min, 256>,
+    pending_events: heapless::spsc::Queue<Event<Ev>, 256>,
+    scheduled_events: heapless::BinaryHeap<ScheduledEvent<Ev>, heapless::binary_heap::Min, 256>,
     schedule_counter: u32,
 }
 
-impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
+impl<I: Index<usize, Output = K>, K: Key<Ev>, Ev: Copy + Debug + Ord> Keymap<I, K, Ev> {
     pub const fn new(key_definitions: I, context: K::Context) -> Self {
         Self {
             key_definitions,
@@ -51,7 +50,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
                 let events = pressed_key.handle_event(ev.into());
                 events
                     .into_iter()
-                    .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
+                    .for_each(|ev: Event<Ev>| self.pending_events.enqueue(ev).unwrap());
             }
         });
 
@@ -97,7 +96,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         }
     }
 
-    fn schedule_event(&mut self, scheduled_event: key::ScheduledEvent<K::Event>) {
+    fn schedule_event(&mut self, scheduled_event: key::ScheduledEvent<Ev>) {
         match scheduled_event.schedule {
             key::Schedule::Immediate => {
                 self.pending_events.enqueue(scheduled_event.event).unwrap();
@@ -108,7 +107,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         }
     }
 
-    pub fn schedule_after(&mut self, delay: u32, event: Event<K::Event>) {
+    pub fn schedule_after(&mut self, delay: u32, event: Event<Ev>) {
         let time = self.schedule_counter + delay;
         self.scheduled_events
             .push(ScheduledEvent { time, event })
@@ -137,7 +136,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
                     let events = pressed_key.handle_event(ev);
                     events
                         .into_iter()
-                        .for_each(|ev: Event<K::Event>| self.pending_events.enqueue(ev).unwrap());
+                        .for_each(|ev: Event<Ev>| self.pending_events.enqueue(ev).unwrap());
                 }
             });
 
@@ -186,7 +185,8 @@ mod tests {
         // Assemble
         let keys: [simple::Key; 1] = [simple::Key(0x04)];
         let context = ();
-        let mut keymap: Keymap<[simple::Key; 1], simple::Key> = Keymap::new(keys, context);
+        let mut keymap: Keymap<[simple::Key; 1], simple::Key, simple::Event> =
+            Keymap::new(keys, context);
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -205,7 +205,8 @@ mod tests {
         // Assemble
         let keys: [composite::Key; 1] = [composite::Key::Simple(simple::Key(0x04))];
         let context = composite::Context::new();
-        let mut keymap: Keymap<[composite::Key; 1]> = Keymap::new(keys, context);
+        let mut keymap: Keymap<[composite::Key; 1], composite::Key, composite::Event> =
+            Keymap::new(keys, context);
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -230,8 +231,12 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
-        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>> =
+        let context = composite::Context::<
+            L,
+            composite::DefaultNestableKey,
+            composite::DefaultNestableKeyEvent,
+        >::new();
+        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>, composite::Event> =
             Keymap::new(keys, context);
 
         // Act
@@ -256,8 +261,12 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
-        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>> =
+        let context = composite::Context::<
+            L,
+            composite::DefaultNestableKey,
+            composite::DefaultNestableKeyEvent,
+        >::new();
+        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>, composite::Event> =
             Keymap::new(keys, context);
 
         // Act
@@ -284,8 +293,12 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
-        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>> =
+        let context = composite::Context::<
+            L,
+            composite::DefaultNestableKey,
+            composite::DefaultNestableKeyEvent,
+        >::new();
+        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>, composite::Event> =
             Keymap::new(keys, context);
 
         // Act
@@ -315,8 +328,12 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
-        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>> =
+        let context = composite::Context::<
+            L,
+            composite::DefaultNestableKey,
+            composite::DefaultNestableKeyEvent,
+        >::new();
+        let mut keymap: Keymap<[composite::Key<L>; 2], composite::Key<L>, composite::Event> =
             Keymap::new(keys, context);
 
         // Act
