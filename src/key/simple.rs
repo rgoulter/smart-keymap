@@ -11,10 +11,9 @@ impl Key {
     }
 }
 
-impl key::Key for Key {
+impl key::Key<Event> for Key {
     type Context = ();
     type ContextEvent = ();
-    type Event = Event;
     type PressedKeyState = PressedKeyState;
 
     fn new_pressed_key(
@@ -23,7 +22,7 @@ impl key::Key for Key {
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        Option<key::ScheduledEvent<Event>>,
     ) {
         (
             input::PressedKey {
@@ -37,7 +36,7 @@ impl key::Key for Key {
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Event();
+pub struct Event;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKeyState;
