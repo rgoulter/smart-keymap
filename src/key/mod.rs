@@ -8,14 +8,14 @@ pub mod tap_hold;
 
 pub mod composite;
 
-pub trait Key<PK: Key = Self>: Debug
+pub trait Key<Ev, PK: Key<Ev> = Self>: Debug
 where
-    Self::ContextEvent: From<Self::Event>,
+    Ev: Copy + Debug + Ord,
+    Self::ContextEvent: From<Ev>,
 {
     type Context: Context<Event = Self::ContextEvent>;
     type ContextEvent;
-    type Event: Copy + Debug + Ord;
-    type PressedKeyState: PressedKeyState<PK, Event = Self::Event>;
+    type PressedKeyState: PressedKeyState<PK, Event = Ev>;
 
     fn new_pressed_key(
         &self,
@@ -23,7 +23,7 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<PK, Self::PressedKeyState>,
-        Option<ScheduledEvent<Self::Event>>,
+        Option<ScheduledEvent<Ev>>,
     );
 }
 
@@ -47,8 +47,8 @@ pub trait PressedKey {
     fn key_code(&self) -> Option<u8>;
 }
 
-pub trait PressedKeyState<K: Key>: Debug {
-    type Event;
+pub trait PressedKeyState<K: Key<Self::Event>>: Debug {
+    type Event: Copy + Debug + Ord;
 
     fn handle_event_for(
         &mut self,
