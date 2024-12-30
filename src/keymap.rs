@@ -18,7 +18,7 @@ pub struct ScheduledEvent<E> {
 pub struct Keymap<I: Index<usize, Output = K>, K: Key = composite::Key> {
     key_definitions: I,
     context: K::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput<K::PressedKey>, 16>,
+    pressed_inputs: heapless::Vec<input::PressedInput<K, K::PressedKeyState>, 16>,
     pending_events: heapless::spsc::Queue<Event<K::Event>, 256>,
     scheduled_events:
         heapless::BinaryHeap<ScheduledEvent<K::Event>, heapless::binary_heap::Min, 256>,
@@ -47,7 +47,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
     pub fn handle_input(&mut self, ev: input::Event) {
         // Update each of the PressedKeys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
-            if let input::PressedInput::Key(input::PressedKey { pressed_key, .. }) = pi {
+            if let input::PressedInput::Key(pressed_key) = pi {
                 let events = pressed_key.handle_event(ev.into());
                 events
                     .into_iter()
@@ -61,10 +61,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
                 let (pressed_key, new_event) =
                     key_definition.new_pressed_key(&self.context, keymap_index);
                 self.pressed_inputs
-                    .push(input::PressedInput::new_pressed_key(
-                        keymap_index,
-                        pressed_key,
-                    ))
+                    .push(input::PressedInput::Key(pressed_key))
                     .unwrap();
 
                 if let Some(new_event) = new_event {
@@ -136,7 +133,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         if let Some(ev) = self.pending_events.dequeue() {
             // Update each of the PressedKeys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key(input::PressedKey { pressed_key, .. }) = pi {
+                if let input::PressedInput::Key(pressed_key) = pi {
                     let events = pressed_key.handle_event(ev);
                     events
                         .into_iter()
@@ -159,9 +156,7 @@ impl<I: Index<usize, Output = K>, K: Key> Keymap<I, K> {
         let mut report = [0u8; 8];
 
         let pressed_keys = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key(input::PressedKey { pressed_key, .. }) => {
-                pressed_key.key_code()
-            }
+            input::PressedInput::Key(pressed_key) => pressed_key.key_code(),
             input::PressedInput::Virtual { key_code } => Some(*key_code),
         });
 
