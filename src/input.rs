@@ -8,23 +8,43 @@ pub enum Event {
     VirtualKeyRelease { key_code: u8 },
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct PressedKey<K> {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PressedKey<K, S> {
     pub keymap_index: u16,
-    pub pressed_key: K,
+    pub key: K,
+    pub pressed_key_state: S,
+}
+
+impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> crate::key::PressedKey
+    for PressedKey<K, S>
+{
+    type Event = K::Event;
+
+    fn handle_event(
+        &mut self,
+        event: crate::key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = crate::key::Event<Self::Event>> {
+        self.pressed_key_state
+            .handle_event_for(self.keymap_index, &self.key, event)
+    }
+
+    fn key_code(&self) -> Option<u8> {
+        self.pressed_key_state.key_code(&self.key)
+    }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum PressedInput<K> {
-    Key(PressedKey<K>),
+pub enum PressedInput<K, S> {
+    Key(PressedKey<K, S>),
     Virtual { key_code: u8 },
 }
 
-impl<K> PressedInput<K> {
-    pub fn new_pressed_key(keymap_index: u16, pressed_key: K) -> Self {
+impl<K, S> PressedInput<K, S> {
+    pub fn new_pressed_key(keymap_index: u16, key: K, pressed_key_state: S) -> Self {
         Self::Key(PressedKey {
             keymap_index,
-            pressed_key,
+            key,
+            pressed_key_state,
         })
     }
 }
