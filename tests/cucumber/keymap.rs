@@ -7,7 +7,7 @@ use smart_keymap::input;
 use smart_keymap::key;
 use smart_keymap::keymap::Keymap;
 
-use key::composite::Key;
+use key::composite::{Event, Key};
 
 mod common;
 
@@ -16,7 +16,7 @@ use common::Deserializer;
 #[derive(Debug, World)]
 pub struct KeymapWorld {
     input_deserializer: Deserializer,
-    keymap: Keymap<Vec<Key>>,
+    keymap: Keymap<Vec<Key>, Key, Event>,
 }
 
 impl Default for KeymapWorld {
