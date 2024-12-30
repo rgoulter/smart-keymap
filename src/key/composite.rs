@@ -10,30 +10,33 @@ use crate::{input, key};
 use key::{layered, simple, tap_hold};
 
 /// Used to implement nested combinations of [Key].
-pub trait NestableKey: key::Key + Sized {}
+pub trait NestableKey<Ev: Copy + Debug + Ord>: key::Key<Ev> + Sized {}
 
-impl NestableKey for simple::Key {}
+impl NestableKey<simple::Event> for simple::Key {}
 
 pub type DefaultNestableKey = simple::Key;
+pub type DefaultNestableKeyEvent = simple::Event;
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub enum Key<const L: layered::LayerIndex = 0, K: NestableKey = DefaultNestableKey>
-where
+pub enum Key<
+    const L: layered::LayerIndex = 0,
+    K: NestableKey<KEv> = DefaultNestableKey,
+    KEv: Copy + Debug + Ord = DefaultNestableKeyEvent,
+> where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
     Simple(simple::Key),
     TapHold(tap_hold::Key),
     LayerModifier(layered::ModifierKey<L>),
-    Layered(layered::LayeredKey<L, K>),
+    Layered(layered::LayeredKey<L, K, KEv>),
 }
 
-impl<const L: layered::LayerIndex> key::Key for Key<L, DefaultNestableKey>
+impl<const L: layered::LayerIndex> key::Key<Event> for Key<L, DefaultNestableKey>
 where
     [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
 {
-    type Context = Context<L, DefaultNestableKey>;
+    type Context = Context<L, DefaultNestableKey, DefaultNestableKeyEvent>;
     type ContextEvent = Event;
-    type Event = Event;
     type PressedKeyState = PressedKeyState<L>;
 
     fn new_pressed_key(
@@ -67,24 +70,31 @@ where
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Context<const L: layered::LayerIndex, K: key::Key> {
+pub struct Context<const L: layered::LayerIndex, K: key::Key<KEv>, KEv>
+where
+    KEv: Copy + Debug + Ord,
+{
     layer_context: layered::Context<L, K::Context>,
 }
 
-impl<const L: layered::LayerIndex> Context<L, DefaultNestableKey> {
+impl<const L: layered::LayerIndex> Context<L, DefaultNestableKey, DefaultNestableKeyEvent> {
     pub const fn new() -> Self {
         let layer_context = layered::Context::new(());
         Self { layer_context }
     }
 }
 
-impl<const L: layered::LayerIndex> Default for Context<L, DefaultNestableKey> {
+impl<const L: layered::LayerIndex> Default
+    for Context<L, DefaultNestableKey, DefaultNestableKeyEvent>
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const L: layered::LayerIndex> key::Context for Context<L, DefaultNestableKey> {
+impl<const L: layered::LayerIndex> key::Context
+    for Context<L, DefaultNestableKey, DefaultNestableKeyEvent>
+{
     type Event = Event;
     fn handle_event(&mut self, event: Self::Event) {
         if let Event::LayerModification(ev) = event {
@@ -301,7 +311,7 @@ mod tests {
         const L: layered::LayerIndex = 1;
         let keymap_index: u16 = 0;
         let key = composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0));
-        let context = composite::Context::<L, DefaultNestableKey>::new();
+        let context = composite::Context::<L, DefaultNestableKey, DefaultNestableKeyEvent>::new();
         let (mut pressed_lmod_key, _) = key.new_pressed_key(&context, keymap_index);
 
         // Act
@@ -332,7 +342,8 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let mut context = composite::Context::<L, DefaultNestableKey>::new();
+        let mut context =
+            composite::Context::<L, DefaultNestableKey, DefaultNestableKeyEvent>::new();
         let (_pressed_key, maybe_ev) = keys[0].new_pressed_key(&context, 0);
 
         // Act
@@ -365,7 +376,8 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let mut context = composite::Context::<L, DefaultNestableKey>::new();
+        let mut context =
+            composite::Context::<L, DefaultNestableKey, DefaultNestableKeyEvent>::new();
         let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(&context, 0);
         context.layer_context.activate_layer(0);
         let events = pressed_lmod_key
@@ -398,7 +410,7 @@ mod tests {
             )),
             composite::Key::<L>::Simple(simple::Key(0x06)),
         ];
-        let context = composite::Context::<L, DefaultNestableKey>::new();
+        let context = composite::Context::<L, DefaultNestableKey, DefaultNestableKeyEvent>::new();
 
         // Act
         let keymap_index: u16 = 2;
@@ -424,7 +436,7 @@ mod tests {
             )),
             composite::Key::<L>::Simple(simple::Key(0x06)),
         ];
-        let context = composite::Context::<L, DefaultNestableKey>::new();
+        let context = composite::Context::<L, DefaultNestableKey, DefaultNestableKeyEvent>::new();
 
         // Act
         let keymap_index: u16 = 1;
