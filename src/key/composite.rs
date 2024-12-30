@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use core::fmt::Debug;
 
-use crate::key;
+use crate::{input, key};
 use key::{layered, simple, tap_hold};
 
 /// Used to implement nested combinations of [Key].
@@ -34,21 +34,24 @@ where
     type Context = Context<L, DefaultNestableKey>;
     type ContextEvent = Event;
     type Event = Event;
-    type PressedKey = PressedKey<L>;
+    type PressedKeyState = PressedKeyState<L>;
 
     fn new_pressed_key(
         &self,
         context: &Self::Context,
         keymap_index: u16,
-    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Event>>) {
+    ) -> (
+        input::PressedKey<Self, Self::PressedKeyState>,
+        Option<key::ScheduledEvent<Event>>,
+    ) {
         match self {
             Key::Simple(k) => {
-                let pressed_key = simple::PressedKey::new(k.key_code());
+                let (pressed_key, _new_event) = k.new_pressed_key(&(), keymap_index);
                 (pressed_key.into(), None)
             }
             Key::TapHold(k) => {
-                let (pressed_key, new_event) = tap_hold::PressedKey::new(keymap_index, *k);
-                (pressed_key.into(), Some(new_event.into()))
+                let (pressed_key, new_event) = k.new_pressed_key(&(), keymap_index);
+                (pressed_key.into(), new_event.map(|ev| ev.into()))
             }
             Key::LayerModifier(k) => {
                 let (pressed_key, new_event) = k.new_pressed_key(keymap_index);
@@ -91,67 +94,112 @@ impl<const L: layered::LayerIndex> key::Context for Context<L, DefaultNestableKe
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum PressedKey<const L: layered::LayerIndex = 0> {
-    Simple(simple::PressedKey),
-    TapHold(tap_hold::PressedKey),
-    LayerModifier(layered::PressedModifierKey<L>),
+pub enum PressedKeyState<const L: layered::LayerIndex = 0> {
+    Simple(simple::PressedKeyState),
+    TapHold(tap_hold::PressedKeyState),
+    LayerModifier(layered::PressedModifierKeyState),
 }
 
-impl<const L: layered::LayerIndex> From<layered::PressedModifierKey<L>> for PressedKey<L> {
-    fn from(pk: layered::PressedModifierKey<L>) -> Self {
-        PressedKey::LayerModifier(pk)
+pub type PressedKey<const L: layered::LayerIndex> =
+    input::PressedKey<Key<L, DefaultNestableKey>, PressedKeyState<L>>;
+
+impl<const L: layered::LayerIndex> From<layered::PressedModifierKey<L>> for PressedKey<L>
+where
+    [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
+{
+    fn from(
+        input::PressedKey {
+            keymap_index,
+            key,
+            pressed_key_state,
+        }: layered::PressedModifierKey<L>,
+    ) -> Self {
+        input::PressedKey {
+            key: Key::LayerModifier(key),
+            keymap_index,
+            pressed_key_state: PressedKeyState::LayerModifier(pressed_key_state),
+        }
     }
 }
 
-impl<const L: layered::LayerIndex> From<simple::PressedKey> for PressedKey<L> {
-    fn from(pk: simple::PressedKey) -> Self {
-        PressedKey::Simple(pk)
+impl<const L: layered::LayerIndex> From<simple::PressedKey> for PressedKey<L>
+where
+    [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
+{
+    fn from(
+        input::PressedKey {
+            keymap_index,
+            key,
+            pressed_key_state,
+        }: simple::PressedKey,
+    ) -> Self {
+        input::PressedKey {
+            key: Key::Simple(key),
+            keymap_index,
+            pressed_key_state: PressedKeyState::Simple(pressed_key_state),
+        }
     }
 }
 
-impl<const L: layered::LayerIndex> From<tap_hold::PressedKey> for PressedKey<L> {
-    fn from(pk: tap_hold::PressedKey) -> Self {
-        PressedKey::TapHold(pk)
+impl<const L: layered::LayerIndex> From<tap_hold::PressedKey> for PressedKey<L>
+where
+    [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
+{
+    fn from(
+        input::PressedKey {
+            keymap_index,
+            key,
+            pressed_key_state,
+        }: tap_hold::PressedKey,
+    ) -> Self {
+        input::PressedKey {
+            key: Key::TapHold(key),
+            keymap_index,
+            pressed_key_state: PressedKeyState::TapHold(pressed_key_state),
+        }
     }
 }
 
-impl<const L: layered::LayerIndex> key::PressedKey<Key<L, DefaultNestableKey>> for PressedKey<L>
+impl<const L: layered::LayerIndex> key::PressedKeyState<Key<L, DefaultNestableKey>>
+    for PressedKeyState<L>
 where
     [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
 {
     type Event = Event;
 
-    fn key_code(&self) -> Option<u8> {
-        match self {
-            PressedKey::LayerModifier(pk) => pk.key_code(),
-            PressedKey::Simple(pk) => Some(pk.key_code()),
-            PressedKey::TapHold(pk) => pk.key_code(),
-        }
-    }
-
-    fn handle_event(
+    fn handle_event_for(
         &mut self,
+        keymap_index: u16,
+        key: &Key<L, DefaultNestableKey>,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
-        match self {
-            PressedKey::TapHold(tap_hold) => {
+        match (key, self) {
+            (Key::TapHold(key), PressedKeyState::TapHold(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
-                    let events: heapless::Vec<key::Event<tap_hold::Event>, 2> =
-                        tap_hold.handle_event(ev);
+                    let events = pks.handle_event_for(keymap_index, key, ev);
                     events.into_iter().map(|ev| ev.into()).collect()
                 } else {
                     heapless::Vec::<key::Event<Self::Event>, 2>::new()
                 }
             }
-            PressedKey::LayerModifier(lmod) => {
+            (Key::LayerModifier(key), PressedKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
-                    let events: Option<key::Event<layered::LayerEvent>> = lmod.handle_event(ev);
+                    let events = pks.handle_event_for(keymap_index, key, ev);
                     events.into_iter().map(|ev| ev.into()).collect()
                 } else {
                     heapless::Vec::<key::Event<Self::Event>, 2>::new()
                 }
             }
             _ => heapless::Vec::new(),
+        }
+    }
+
+    fn key_code(&self, key: &Key<L, DefaultNestableKey>) -> Option<u8> {
+        match (key, self) {
+            (Key::LayerModifier(k), PressedKeyState::LayerModifier(pk)) => pk.key_code(k),
+            (Key::Simple(k), PressedKeyState::Simple(pk)) => pk.key_code(k),
+            (Key::TapHold(k), PressedKeyState::TapHold(pk)) => pk.key_code(k),
+            _ => None,
         }
     }
 }
