@@ -35,7 +35,7 @@ impl key::Key<Event> for Key {
     }
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Deserialize, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Event;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
