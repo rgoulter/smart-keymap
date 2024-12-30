@@ -13,10 +13,9 @@ impl From<Event> for () {
     fn from(_: Event) -> Self {}
 }
 
-impl key::Key for Key {
+impl key::Key<Event> for Key {
     type Context = ();
     type ContextEvent = ();
-    type Event = Event;
     type PressedKeyState = PressedKeyState;
 
     fn new_pressed_key(
@@ -25,7 +24,7 @@ impl key::Key for Key {
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        Option<key::ScheduledEvent<Event>>,
     ) {
         (
             input::PressedKey {
