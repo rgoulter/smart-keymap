@@ -15,12 +15,19 @@ impl<const L: LayerIndex> ModifierKey<L> {
     pub fn new_pressed_key(
         &self,
         keymap_index: u16,
-    ) -> (PressedModifierKey<L>, key::ScheduledEvent<LayerEvent>) {
+    ) -> (
+        input::PressedKey<Self, PressedModifierKeyState>,
+        key::ScheduledEvent<LayerEvent>,
+    ) {
         match self {
             ModifierKey::Hold(layer) => {
                 let event = LayerEvent::LayerActivated(*layer);
                 (
-                    PressedModifierKey::new(keymap_index, *self),
+                    input::PressedKey {
+                        keymap_index,
+                        key: *self,
+                        pressed_key_state: PressedModifierKeyState,
+                    },
                     key::ScheduledEvent::immediate(key::Event::Key(event)),
                 )
             }
@@ -35,14 +42,17 @@ impl From<LayerEvent> for () {
 impl<const L: LayerIndex> key::Key for ModifierKey<L> {
     type Context = ();
     type ContextEvent = ();
-    type PressedKey = PressedModifierKey<L>;
     type Event = LayerEvent;
+    type PressedKeyState = PressedModifierKeyState;
 
     fn new_pressed_key(
         &self,
         _context: &Self::Context,
         keymap_index: u16,
-    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
+    ) -> (
+        input::PressedKey<Self, Self::PressedKeyState>,
+        Option<key::ScheduledEvent<Self::Event>>,
+    ) {
         let (pk, ev) = ModifierKey::new_pressed_key(self, keymap_index);
         (pk, Some(ev))
     }
@@ -113,7 +123,10 @@ where
         &self,
         context: &Context<L, K::Context>,
         keymap_index: u16,
-    ) -> (K::PressedKey, Option<key::ScheduledEvent<K::Event>>) {
+    ) -> (
+        input::PressedKey<K, K::PressedKeyState>,
+        Option<key::ScheduledEvent<K::Event>>,
+    ) {
         for index in 1..=L {
             let i = L - index;
             if context.active_layers()[i] {
@@ -135,14 +148,17 @@ where
 {
     type Context = Context<L, K::Context>;
     type ContextEvent = LayerEvent;
-    type PressedKey = K::PressedKey;
     type Event = K::Event;
+    type PressedKeyState = K::PressedKeyState;
 
     fn new_pressed_key(
         &self,
         context: &Self::Context,
         keymap_index: u16,
-    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
+    ) -> (
+        input::PressedKey<K, Self::PressedKeyState>,
+        Option<key::ScheduledEvent<Self::Event>>,
+    ) {
         self.new_pressed_key(context, keymap_index)
     }
 }
@@ -154,47 +170,25 @@ pub enum LayerEvent {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PressedModifierKey<const L: LayerIndex> {
-    keymap_index: u16,
-    key: ModifierKey<L>,
-}
+pub struct PressedModifierKeyState;
 
-impl<const L: LayerIndex> PressedModifierKey<L> {
-    pub fn new(keymap_index: u16, key: ModifierKey<L>) -> Self {
-        Self { keymap_index, key }
-    }
+pub type PressedModifierKey<const L: LayerIndex> =
+    input::PressedKey<ModifierKey<L>, PressedModifierKeyState>;
 
-    pub fn handle_event(
-        &mut self,
-        event: key::Event<LayerEvent>,
-    ) -> Option<key::Event<LayerEvent>> {
-        match self.key {
-            ModifierKey::Hold(layer) => match event {
-                key::Event::Input(input::Event::Release { keymap_index }) => {
-                    if keymap_index == self.keymap_index {
-                        Some(key::Event::Key(LayerEvent::LayerDeactivated(layer)))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
-        }
-    }
-}
-
-impl<const L: LayerIndex> key::PressedKey<ModifierKey<L>> for PressedModifierKey<L> {
+impl<const L: LayerIndex> key::PressedKeyState<ModifierKey<L>> for PressedModifierKeyState {
     type Event = LayerEvent;
 
-    fn handle_event(
+    fn handle_event_for(
         &mut self,
+        keymap_index: u16,
+        key: &ModifierKey<L>,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
-        match self.key {
+        match key {
             ModifierKey::Hold(layer) => match event {
-                key::Event::Input(input::Event::Release { keymap_index }) => {
-                    if keymap_index == self.keymap_index {
-                        Some(key::Event::Key(LayerEvent::LayerDeactivated(layer)))
+                key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                    if keymap_index == ki {
+                        Some(key::Event::Key(LayerEvent::LayerDeactivated(*layer)))
                     } else {
                         None
                     }
@@ -204,7 +198,7 @@ impl<const L: LayerIndex> key::PressedKey<ModifierKey<L>> for PressedModifierKey
         }
     }
 
-    fn key_code(&self) -> Option<u8> {
+    fn key_code(&self, _key: &ModifierKey<L>) -> Option<u8> {
         None
     }
 }
@@ -213,7 +207,7 @@ impl<const L: LayerIndex> key::PressedKey<ModifierKey<L>> for PressedModifierKey
 mod tests {
     use super::*;
 
-    use key::{simple, Context as _, Key};
+    use key::{simple, Context as _, Key, PressedKey as _};
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
@@ -243,8 +237,10 @@ mod tests {
         let (mut pressed_key, _) = key.new_pressed_key(keymap_index);
 
         // Act: the modifier key handles "release key" input event
-        let actual_events =
-            pressed_key.handle_event(key::Event::Input(input::Event::Release { keymap_index }));
+        let actual_events = pressed_key
+            .handle_event(key::Event::Input(input::Event::Release { keymap_index }))
+            .into_iter()
+            .next();
 
         // Assert: the pressed key should have emitted a layer deactivation event
         if let Some(key::Event::Key(actual_layer_event)) = actual_events {
@@ -268,7 +264,10 @@ mod tests {
         let different_key_released_ev = key::Event::Input(input::Event::Release {
             keymap_index: different_keymap_index,
         });
-        let actual_events = pressed_key.handle_event(different_key_released_ev);
+        let actual_events = pressed_key
+            .handle_event(different_key_released_ev)
+            .into_iter()
+            .next();
 
         // Assert: the pressed key should not emit an event
         if actual_events.is_some() {
