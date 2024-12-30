@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-use crate::key;
+use crate::{input, key};
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key(pub u8);
@@ -11,56 +11,58 @@ impl Key {
     }
 }
 
+impl key::Key for Key {
+    type Context = ();
+    type ContextEvent = ();
+    type Event = Event;
+    type PressedKeyState = PressedKeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: &Self::Context,
+        keymap_index: u16,
+    ) -> (
+        input::PressedKey<Self, Self::PressedKeyState>,
+        Option<key::ScheduledEvent<Self::Event>>,
+    ) {
+        (
+            input::PressedKey {
+                keymap_index,
+                key: *self,
+                pressed_key_state: PressedKeyState,
+            },
+            None,
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Event();
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedKey {
-    key_code: u8,
-}
+pub struct PressedKeyState;
 
-impl PressedKey {
-    pub fn new(key_code: u8) -> Self {
-        Self { key_code }
-    }
-
-    pub fn key_code(&self) -> u8 {
-        self.key_code
-    }
-}
+pub type PressedKey = input::PressedKey<Key, PressedKeyState>;
 
 impl From<Event> for () {
     fn from(_: Event) -> Self {}
 }
 
-impl key::Key for Key {
-    type Context = ();
-    type ContextEvent = ();
-    type Event = Event;
-    type PressedKey = PressedKey;
-
-    fn new_pressed_key(
-        &self,
-        _context: &Self::Context,
-        _keymap_index: u16,
-    ) -> (Self::PressedKey, Option<key::ScheduledEvent<Self::Event>>) {
-        (PressedKey::new(self.0), None)
-    }
-}
-
-impl key::PressedKey<Key> for PressedKey {
+impl key::PressedKeyState<Key> for PressedKeyState {
     type Event = Event;
 
     /// Simple key never emits events.
-    fn handle_event(
+    fn handle_event_for(
         &mut self,
+        _keymap_index: u16,
+        _key: &Key,
         _event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         None
     }
 
     /// Simple key always has a key_code.
-    fn key_code(&self) -> Option<u8> {
-        Some(self.key_code())
+    fn key_code(&self, key: &Key) -> Option<u8> {
+        Some(key.key_code())
     }
 }
