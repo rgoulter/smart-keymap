@@ -9,6 +9,40 @@ pub struct Key {
     pub hold: u8,
 }
 
+impl From<Event> for () {
+    fn from(_: Event) -> Self {}
+}
+
+impl key::Key for Key {
+    type Context = ();
+    type ContextEvent = ();
+    type Event = Event;
+    type PressedKeyState = PressedKeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: &Self::Context,
+        keymap_index: u16,
+    ) -> (
+        input::PressedKey<Self, Self::PressedKeyState>,
+        Option<key::ScheduledEvent<Self::Event>>,
+    ) {
+        (
+            input::PressedKey {
+                keymap_index,
+                key: *self,
+                pressed_key_state: PressedKeyState {
+                    state: TapHoldState::Pending,
+                },
+            },
+            Some(key::ScheduledEvent::after(
+                200,
+                Event::TapHoldTimeout { keymap_index }.into(),
+            )),
+        )
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub enum TapHoldState {
     Pending,
@@ -28,57 +62,44 @@ impl From<Event> for key::Event<Event> {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PressedKey {
-    keymap_index: u16,
+pub struct PressedKeyState {
     state: TapHoldState,
-    key_def: Key,
 }
 
-impl PressedKey {
-    pub fn new(keymap_index: u16, key_def: Key) -> (Self, key::ScheduledEvent<Event>) {
-        (
-            Self {
-                keymap_index,
-                state: TapHoldState::Pending,
-                key_def,
-            },
-            key::ScheduledEvent::after(200, Event::TapHoldTimeout { keymap_index }.into()),
-        )
-    }
+pub type PressedKey = input::PressedKey<Key, PressedKeyState>;
 
-    pub fn key_code(&self) -> Option<u8> {
-        match self.state {
-            TapHoldState::Tap => Some(self.key_def.tap),
-            TapHoldState::Hold => Some(self.key_def.hold),
-            _ => None,
-        }
-    }
-
+impl PressedKeyState {
     fn resolve(&mut self, state: TapHoldState) {
         if let TapHoldState::Pending = self.state {
             self.state = state;
         }
     }
+}
+impl key::PressedKeyState<Key> for PressedKeyState {
+    type Event = Event;
 
-    pub fn handle_event(
+    /// Returns at most 2 events
+    fn handle_event_for(
         &mut self,
+        keymap_index: u16,
+        key: &Key,
         event: key::Event<Event>,
-    ) -> heapless::Vec<key::Event<Event>, 2> {
+    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         match event {
             key::Event::Input(input::Event::Press { .. }) => {
                 // TapHold: any interruption resolves pending TapHold as Hold.
                 self.resolve(TapHoldState::Hold);
                 heapless::Vec::new()
             }
-            key::Event::Input(input::Event::Release { keymap_index }) => {
-                if keymap_index == self.keymap_index {
+            key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                if keymap_index == ki {
                     // TapHold: resolved as tap.
                     self.resolve(TapHoldState::Tap);
                 }
 
                 match &self.state {
                     TapHoldState::Tap => {
-                        let key_code = self.key_def.tap;
+                        let key_code = key.tap;
                         let mut emitted_events: heapless::Vec<key::Event<Event>, 2> =
                             heapless::Vec::new();
                         emitted_events
@@ -98,6 +119,14 @@ impl PressedKey {
                 heapless::Vec::new()
             }
             _ => heapless::Vec::new(),
+        }
+    }
+
+    fn key_code(&self, key: &Key) -> Option<u8> {
+        match self.state {
+            TapHoldState::Tap => Some(key.tap),
+            TapHoldState::Hold => Some(key.hold),
+            _ => None,
         }
     }
 }
