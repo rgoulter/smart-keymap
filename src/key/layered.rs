@@ -1,3 +1,6 @@
+use core::fmt::Debug;
+use core::marker::PhantomData;
+
 use serde::Deserialize;
 
 use crate::input;
@@ -39,10 +42,9 @@ impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
 }
 
-impl<const L: LayerIndex> key::Key for ModifierKey<L> {
+impl<const L: LayerIndex> key::Key<LayerEvent> for ModifierKey<L> {
     type Context = ();
     type ContextEvent = ();
-    type Event = LayerEvent;
     type PressedKeyState = PressedModifierKeyState;
 
     fn new_pressed_key(
@@ -51,7 +53,7 @@ impl<const L: LayerIndex> key::Key for ModifierKey<L> {
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        Option<key::ScheduledEvent<LayerEvent>>,
     ) {
         let (pk, ev) = ModifierKey::new_pressed_key(self, keymap_index);
         (pk, Some(ev))
@@ -98,26 +100,36 @@ impl<const L: LayerIndex, C: key::Context> key::Context for Context<L, C> {
 
 /// A key whose behavior depends on which layer is active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub struct LayeredKey<const L: LayerIndex, K: key::Key>
+pub struct LayeredKey<const L: LayerIndex, K: key::Key<KEv>, KEv>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
+    KEv: Copy + Debug + Ord,
 {
     base: K,
     layered: [Option<K>; L],
+
+    #[serde(skip)]
+    _event_type: PhantomData<KEv>,
 }
 
-impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
+impl<const L: LayerIndex, K: key::Key<KEv>, KEv> LayeredKey<L, K, KEv>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
+    KEv: Copy + Debug + Ord,
 {
     pub fn new(base: K, layered: [Option<K>; L]) -> Self {
-        Self { base, layered }
+        Self {
+            base,
+            layered,
+            _event_type: PhantomData,
+        }
     }
 }
 
-impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
+impl<const L: LayerIndex, K: key::Key<KEv>, KEv> LayeredKey<L, K, KEv>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
+    KEv: Copy + Debug + Ord,
 {
     pub fn new_pressed_key(
         &self,
@@ -125,7 +137,7 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<K, K::PressedKeyState>,
-        Option<key::ScheduledEvent<K::Event>>,
+        Option<key::ScheduledEvent<KEv>>,
     ) {
         for index in 1..=L {
             let i = L - index;
@@ -141,14 +153,14 @@ where
     }
 }
 
-impl<const L: LayerIndex, K: key::Key> key::Key<K> for LayeredKey<L, K>
+impl<const L: LayerIndex, K: key::Key<KEv>, KEv> key::Key<KEv, K> for LayeredKey<L, K, KEv>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
-    LayerEvent: From<<K as key::Key>::Event>,
+    LayerEvent: From<KEv>,
+    KEv: Copy + Debug + Ord,
 {
     type Context = Context<L, K::Context>;
     type ContextEvent = LayerEvent;
-    type Event = K::Event;
     type PressedKeyState = K::PressedKeyState;
 
     fn new_pressed_key(
@@ -157,7 +169,7 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<K, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        Option<key::ScheduledEvent<KEv>>,
     ) {
         self.new_pressed_key(context, keymap_index)
     }
@@ -291,14 +303,14 @@ mod tests {
         const L: usize = 3;
         let context: Context<L, ()> = Context::new(());
         let expected_key = simple::Key(0x04);
-        let layered_key = LayeredKey {
-            base: expected_key,
-            layered: [
+        let layered_key = LayeredKey::<L, simple::Key, simple::Event>::new(
+            expected_key,
+            [
                 Some(simple::Key(0x05)),
                 Some(simple::Key(0x06)),
                 Some(simple::Key(0x07)),
             ],
-        };
+        );
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
@@ -322,10 +334,8 @@ mod tests {
         const L: usize = 3;
         let mut context: Context<L, ()> = Context::new(());
         let expected_key = simple::Key(0x04);
-        let layered_key = LayeredKey {
-            base: expected_key,
-            layered: [None, None, None],
-        };
+        let layered_key =
+            LayeredKey::<L, simple::Key, simple::Event>::new(expected_key, [None, None, None]);
 
         // Act: activate all layers, press layered key
         context.handle_event(LayerEvent::LayerActivated(0));
@@ -348,14 +358,14 @@ mod tests {
         const L: usize = 3;
         let mut context: Context<L, ()> = Context::new(());
         let expected_key = simple::Key(0x09);
-        let layered_key = LayeredKey {
-            base: simple::Key(0x04),
-            layered: [
+        let layered_key = LayeredKey::<L, simple::Key, simple::Event>::new(
+            simple::Key(0x04),
+            [
                 Some(simple::Key(0x05)),
                 Some(simple::Key(0x06)),
                 Some(expected_key),
             ],
-        };
+        );
 
         // Act: activate all layers, press layered key
         context.handle_event(LayerEvent::LayerActivated(0));
@@ -378,10 +388,10 @@ mod tests {
         const L: usize = 3;
         let mut context: Context<L, ()> = Context::new(());
         let expected_key = simple::Key(0x09);
-        let layered_key = LayeredKey {
-            base: simple::Key(0x04),
-            layered: [Some(expected_key), Some(simple::Key(0x06)), None],
-        };
+        let layered_key = LayeredKey::<L, simple::Key, simple::Event>::new(
+            simple::Key(0x04),
+            [Some(expected_key), Some(simple::Key(0x06)), None],
+        );
 
         // Act: activate all layers, press layered key
         context.handle_event(LayerEvent::LayerActivated(0));
@@ -399,19 +409,19 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_simple() {
-        use key::simple;
+        use simple;
 
-        let actual_key: key::simple::Key = ron::from_str("Key(0x04)").unwrap();
-        let expected_key: key::simple::Key = simple::Key(0x04);
+        let actual_key: simple::Key = ron::from_str("Key(0x04)").unwrap();
+        let expected_key: simple::Key = simple::Key(0x04);
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
     fn test_deserialize_ron_option_simple() {
-        use key::simple;
+        use simple;
 
-        let actual_key: Option<key::simple::Key> = ron::from_str("Some(Key(0x04))").unwrap();
-        let expected_key: Option<key::simple::Key> = Some(simple::Key(0x04));
+        let actual_key: Option<simple::Key> = ron::from_str("Some(Key(0x04))").unwrap();
+        let expected_key: Option<simple::Key> = Some(simple::Key(0x04));
         assert_eq!(actual_key, expected_key);
     }
 
@@ -424,64 +434,55 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_array1_option_simple() {
-        let actual: [Option<key::simple::Key>; 1] = ron::from_str("(Some(Key(0x04)))").unwrap();
-        let expected: [Option<key::simple::Key>; 1] = [Some(simple::Key(0x04))];
+        let actual: [Option<simple::Key>; 1] = ron::from_str("(Some(Key(0x04)))").unwrap();
+        let expected: [Option<simple::Key>; 1] = [Some(simple::Key(0x04))];
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_deserialize_json_option_simple() {
-        let actual: Option<key::simple::Key> = serde_json::from_str(r#"4"#).unwrap();
-        let expected: Option<key::simple::Key> = Some(simple::Key(0x04));
+        let actual: Option<simple::Key> = serde_json::from_str(r#"4"#).unwrap();
+        let expected: Option<simple::Key> = Some(simple::Key(0x04));
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_deserialize_json_vec1_option_simple() {
-        let actual: heapless::Vec<Option<key::simple::Key>, 1> =
-            serde_json::from_str(r#"[4]"#).unwrap();
-        let mut expected: heapless::Vec<Option<key::simple::Key>, 1> = heapless::Vec::new();
+        let actual: heapless::Vec<Option<simple::Key>, 1> = serde_json::from_str(r#"[4]"#).unwrap();
+        let mut expected: heapless::Vec<Option<simple::Key>, 1> = heapless::Vec::new();
         expected.push(Some(simple::Key(0x04))).unwrap();
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_deserialize_json_array1_option_simple() {
-        let actual: [Option<key::simple::Key>; 1] = serde_json::from_str("[4]").unwrap();
-        let expected: [Option<key::simple::Key>; 1] = [Some(simple::Key(0x04))];
+        let actual: [Option<simple::Key>; 1] = serde_json::from_str("[4]").unwrap();
+        let expected: [Option<simple::Key>; 1] = [Some(simple::Key(0x04))];
         assert_eq!(actual, expected);
     }
 
     #[test]
     fn test_deserialize_ron_layered_key_simple_0layer() {
-        let actual_key: LayeredKey<0, key::simple::Key> =
+        let actual_key: LayeredKey<0, simple::Key, simple::Event> =
             ron::from_str("(base: (0x04), layered: ())").unwrap();
-        let expected_key: LayeredKey<0, key::simple::Key> = LayeredKey {
-            base: key::simple::Key(0x04),
-            layered: [],
-        };
+        let expected_key = LayeredKey::<0, simple::Key, simple::Event>::new(simple::Key(0x04), []);
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
     fn test_deserialize_json_layered_key_simple_0layer() {
-        let actual_key: LayeredKey<0, key::simple::Key> =
+        let actual_key: LayeredKey<0, simple::Key, simple::Event> =
             serde_json::from_str(r#"{"base": 4, "layered": []}"#).unwrap();
-        let expected_key: LayeredKey<0, key::simple::Key> = LayeredKey {
-            base: key::simple::Key(0x04),
-            layered: [],
-        };
+        let expected_key = LayeredKey::<0, simple::Key, simple::Event>::new(simple::Key(0x04), []);
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
     fn test_deserialize_ron_layered_key_simple_1layer_none() {
-        let actual_key: LayeredKey<1, key::simple::Key> =
+        let actual_key: LayeredKey<1, simple::Key, simple::Event> =
             ron::from_str("LayeredKey(base: Key(0x04), layered: (None))").unwrap();
-        let expected_key: LayeredKey<1, key::simple::Key> = LayeredKey {
-            base: key::simple::Key(0x04),
-            layered: [None],
-        };
+        let expected_key =
+            LayeredKey::<1, simple::Key, simple::Event>::new(simple::Key(0x04), [None]);
         assert_eq!(actual_key, expected_key);
     }
 }
