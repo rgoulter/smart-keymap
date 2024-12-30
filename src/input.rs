@@ -1,3 +1,5 @@
+use core::fmt::Debug;
+
 use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
@@ -15,10 +17,13 @@ pub struct PressedKey<K, S> {
     pub pressed_key_state: S,
 }
 
-impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> crate::key::PressedKey
-    for PressedKey<K, S>
+impl<K, Ev, S> crate::key::PressedKey for PressedKey<K, S>
+where
+    K: crate::key::Key<Ev>,
+    Ev: Copy + Debug + Ord,
+    S: crate::key::PressedKeyState<K, Event = Ev>,
 {
-    type Event = K::Event;
+    type Event = Ev;
 
     fn handle_event(
         &mut self,
