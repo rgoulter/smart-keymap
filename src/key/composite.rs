@@ -276,6 +276,17 @@ impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
     }
 }
 
+impl TryFrom<key::Event<Event>> for key::Event<simple::Event> {
+    type Error = key::EventError;
+
+    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
+        match ev {
+            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
+            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
+
 impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
     type Error = key::EventError;
 
