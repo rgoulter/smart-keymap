@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use core::marker::PhantomData;
 
 use crate::{input, key};
 
@@ -33,33 +34,48 @@ where
 }
 
 #[derive(Debug)]
-pub struct DynamicKey {
-    key: simple::Key,
-    pressed_key: Option<input::PressedKey<simple::Key, <simple::Key as key::Key>::PressedKeyState>>,
+pub struct DynamicKey<K: key::Key, Ctx, Ev> {
+    key: K,
+    pressed_key: Option<input::PressedKey<K, K::PressedKeyState>>,
+
+    _context_type: PhantomData<Ctx>,
+    _event_type: PhantomData<Ev>,
 }
 
-impl DynamicKey {
-    pub fn new(key: simple::Key) -> Self {
+impl<K: key::Key, Ctx, Ev> DynamicKey<K, Ctx, Ev> {
+    pub fn new(key: K) -> Self {
         Self {
             key,
             pressed_key: None,
+
+            _context_type: PhantomData,
+            _event_type: PhantomData,
         }
     }
 }
 
-impl<const N: usize> Key<composite::Event, N> for DynamicKey {
-    type Context = composite::Context<0, simple::Key>;
-    type ContextEvent = composite::Event;
+impl<
+        K: key::Key,
+        Ctx: key::Context<Event = Ev> + Debug,
+        Ev: Copy + Debug + Ord,
+        const N: usize,
+    > Key<Ev, N> for DynamicKey<K, Ctx, Ev>
+where
+    key::Event<K::Event>: TryFrom<key::Event<Ev>>,
+    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<K::Event>>,
+    for<'c, 'k> &'k K::Context: From<&'c Ctx>,
+{
+    type Context = Ctx;
+    type ContextEvent = Ev;
 
     fn handle_event(
         &mut self,
         context: &Self::Context,
-        event: key::Event<composite::Event>,
-    ) -> heapless::Vec<key::ScheduledEvent<composite::Event>, N> {
-        let mut scheduled_events: heapless::Vec<key::ScheduledEvent<composite::Event>, N> =
-            heapless::Vec::new();
+        event: key::Event<Ev>,
+    ) -> heapless::Vec<key::ScheduledEvent<Ev>, N> {
+        let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, N> = heapless::Vec::new();
 
-        if let Some(mut pressed_key) = self.pressed_key {
+        if let Some(ref mut pressed_key) = &mut self.pressed_key {
             if let Ok(event) = event.try_into() {
                 scheduled_events.extend(
                     pressed_key
@@ -87,7 +103,7 @@ impl<const N: usize> Key<composite::Event, N> for DynamicKey {
     }
 
     fn key_code(&self) -> Option<u8> {
-        if let Some(pressed_key) = self.pressed_key {
+        if let Some(pressed_key) = &self.pressed_key {
             pressed_key.key_code()
         } else {
             None
