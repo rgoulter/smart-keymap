@@ -3,9 +3,7 @@ use core::marker::PhantomData;
 
 use crate::{input, key};
 
-use key::{Key as _, PressedKey as _};
-
-use key::{composite, simple};
+use key::PressedKey as _;
 
 use super::ScheduledEvent;
 
@@ -105,5 +103,39 @@ where
         } else {
             None
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use key::{composite, simple};
+
+    #[test]
+    fn test_composite_dynamic_simple_key_has_no_key_code_when_released() {
+        // Assemble
+        let dyn_key: &mut dyn Key<
+            composite::Event,
+            Context = composite::Context<0, simple::Key>,
+            ContextEvent = composite::Event,
+        > = &mut DynamicKey::new(simple::Key(0x04));
+        let context = composite::Context::new();
+
+        // Act
+        let keymap_index: u16 = 5; // arbitrary
+        let _ = dyn_key.handle_event(
+            &context,
+            key::Event::Input(input::Event::Press { keymap_index }),
+        );
+        let _ = dyn_key.handle_event(
+            &context,
+            key::Event::Input(input::Event::Release { keymap_index }),
+        );
+
+        // Assert
+        let actual_key_code = dyn_key.key_code();
+        let expected_key_code = None;
+        assert_eq!(actual_key_code, expected_key_code);
     }
 }
