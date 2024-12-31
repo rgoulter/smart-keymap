@@ -90,13 +90,10 @@ where
                     self.pressed_key = None;
                 }
             }
-        } else {
-            if let key::Event::Input(input::Event::Press { keymap_index }) = event {
-                let (pressed_key, new_events) =
-                    self.key.new_pressed_key(context.into(), keymap_index);
-                scheduled_events.extend(new_events.into_iter().map(|sch_ev| sch_ev.into()));
-                self.pressed_key = Some(pressed_key);
-            }
+        } else if let key::Event::Input(input::Event::Press { keymap_index }) = event {
+            let (pressed_key, new_events) = self.key.new_pressed_key(context.into(), keymap_index);
+            scheduled_events.extend(new_events.into_iter().map(|sch_ev| sch_ev.into()));
+            self.pressed_key = Some(pressed_key);
         }
 
         scheduled_events
