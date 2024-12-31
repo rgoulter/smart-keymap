@@ -8,6 +8,8 @@ pub mod tap_hold;
 
 pub mod composite;
 
+pub mod dynamic;
+
 pub trait Key<PK: Key = Self>: Debug
 where
     Self::ContextEvent: From<Self::Event>,
