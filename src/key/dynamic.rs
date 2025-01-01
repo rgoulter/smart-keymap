@@ -41,7 +41,7 @@ pub struct DynamicKey<K: key::Key, Ctx, Ev> {
 }
 
 impl<K: key::Key, Ctx, Ev> DynamicKey<K, Ctx, Ev> {
-    pub fn new(key: K) -> Self {
+    pub const fn new(key: K) -> Self {
         Self {
             key,
             pressed_key: None,
