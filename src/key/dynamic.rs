@@ -11,10 +11,8 @@ use super::ScheduledEvent;
 pub trait Key<Ev, const N: usize = 2>: Debug
 where
     Ev: Copy + Debug + Ord,
-    Self::ContextEvent: From<Ev>,
 {
-    type Context: key::Context<Event = Self::ContextEvent>;
-    type ContextEvent;
+    type Context: key::Context<Event = Ev>;
 
     /// Handles events in two cases:
     /// - an unpressed key will only receive [input::Event::Press]
@@ -24,7 +22,7 @@ where
     /// - a pressed key will receive all kinds of [input::Event].
     fn handle_event(
         &mut self,
-        context: &Self::Context,
+        context: Self::Context,
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N>;
 
@@ -61,14 +59,13 @@ impl<
 where
     key::Event<K::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<K::Event>>,
-    for<'c, 'k> &'k K::Context: From<&'c Ctx>,
+    K::Context: From<Ctx>,
 {
     type Context = Ctx;
-    type ContextEvent = Ev;
 
     fn handle_event(
         &mut self,
-        context: &Self::Context,
+        context: Self::Context,
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N> {
         let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, N> = heapless::Vec::new();
@@ -89,7 +86,7 @@ where
                 }
             }
         } else if let key::Event::Input(input::Event::Press { keymap_index }) = event {
-            let (pressed_key, new_events) = self.key.new_pressed_key(context.into(), keymap_index);
+            let (pressed_key, new_events) = self.key.new_pressed_key(&context.into(), keymap_index);
             scheduled_events.extend(new_events.into_iter().map(|sch_ev| sch_ev.into()));
             self.pressed_key = Some(pressed_key);
         }
@@ -115,21 +112,18 @@ mod tests {
     #[test]
     fn test_composite_dynamic_simple_key_has_no_key_code_when_released() {
         // Assemble
-        let dyn_key: &mut dyn Key<
-            composite::Event,
-            Context = composite::Context<0, simple::Key>,
-            ContextEvent = composite::Event,
-        > = &mut DynamicKey::new(simple::Key(0x04));
+        let dyn_key: &mut dyn Key<composite::Event, Context = composite::Context<0, simple::Key>> =
+            &mut DynamicKey::new(simple::Key(0x04));
         let context = composite::Context::new();
 
         // Act
         let keymap_index: u16 = 5; // arbitrary
         let _ = dyn_key.handle_event(
-            &context,
+            context,
             key::Event::Input(input::Event::Press { keymap_index }),
         );
         let _ = dyn_key.handle_event(
-            &context,
+            context,
             key::Event::Input(input::Event::Release { keymap_index }),
         );
 
