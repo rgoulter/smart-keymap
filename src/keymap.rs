@@ -78,12 +78,12 @@ impl EventScheduler {
 #[derive(Debug)]
 pub struct Keymap<
     I: IndexMut<
-        usize,
-        Output = dyn key::dynamic::Key<
-            key::composite::Event,
-            Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
-        >,
-    >,
+            usize,
+            Output = dyn key::dynamic::Key<
+                key::composite::Event,
+                Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
+            >,
+        > + crate::tuples::KeysReset,
     const L: key::layered::LayerIndex = 0,
 > {
     key_definitions: I,
@@ -94,12 +94,12 @@ pub struct Keymap<
 
 impl<
         I: IndexMut<
-            usize,
-            Output = dyn key::dynamic::Key<
-                key::composite::Event,
-                Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
-            >,
-        >,
+                usize,
+                Output = dyn key::dynamic::Key<
+                    key::composite::Event,
+                    Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
+                >,
+            > + crate::tuples::KeysReset,
         const L: key::layered::LayerIndex,
     > Keymap<I, L>
 {
@@ -118,6 +118,7 @@ impl<
     pub fn init(&mut self) {
         self.pressed_inputs.clear();
         self.event_scheduler.init();
+        self.key_definitions.reset();
     }
 
     pub fn handle_input(&mut self, ev: input::Event) {
