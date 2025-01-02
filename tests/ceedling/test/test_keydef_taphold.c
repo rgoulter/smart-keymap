@@ -34,8 +34,6 @@ void test_taphold_interrupted_is_hold(void) {
 }
 
 void test_taphold_dth_uth_is_tap(void) {
-    TEST_IGNORE_MESSAGE("Known to fail, despite Cucumber equivalent passing.");
-
     // Pressing T.H., then releasing T.H., is same as tapping the tap key.
     // (Check the tap key gets pressed).
 
