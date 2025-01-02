@@ -1,0 +1,31 @@
+name: Build Keymaps
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - '*'
+
+jobs:
+  cargo-build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install dependencies
+        run: |
+          rustup target add riscv32imac-unknown-none-elf
+
+      - name: Build checkkeys_60key_keymap
+        run: |
+          env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/tests/keymaps/checkkeys_60key_keymap.rs" cargo build --target riscv32imac-unknown-none-elf --features "usbd-human-interface-device" --release
