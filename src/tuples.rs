@@ -35,7 +35,7 @@ impl<
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
-    <K0 as key::Key>::Context: From<Ctx>,
+    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
 {
     type Output = dyn dynamic::Key<Ev, N, Context = Ctx>;
 
@@ -56,7 +56,7 @@ impl<
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
-    <K0 as key::Key>::Context: From<Ctx>,
+    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
@@ -102,10 +102,10 @@ impl<
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
-    <K0 as key::Key>::Context: From<Ctx>,
+    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
     key::Event<<K1 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K1 as key::Key>::Event>>,
-    <K1 as key::Key>::Context: From<Ctx>,
+    for<'c> &'c <K1 as key::Key>::Context: From<&'c Ctx>,
 {
     type Output = dyn dynamic::Key<Ev, N, Context = Ctx>;
 
@@ -128,10 +128,10 @@ impl<
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
-    <K0 as key::Key>::Context: From<Ctx>,
+    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
     key::Event<<K1 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K1 as key::Key>::Event>>,
-    <K1 as key::Key>::Context: From<Ctx>,
+    for<'c> &'c <K1 as key::Key>::Context: From<&'c Ctx>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
