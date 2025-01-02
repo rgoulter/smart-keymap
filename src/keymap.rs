@@ -230,24 +230,24 @@ mod tests {
 
     use crate::tuples;
 
-    // #[test]
-    // fn test_keymap_with_simple_key() {
-    //     use key::simple;
+    #[test]
+    fn test_keymap_with_simple_key_with_composite_context() {
+        use key::simple;
 
-    //     // Assemble
-    //     let keys = tuples::Keys1::new(simple::Key(0x04));
-    //     let context = ();
-    //     let mut keymap = Keymap::new(keys, context);
+        // Assemble
+        let keys: tuples::Keys1<simple::Key, 0> = tuples::Keys1::new((simple::Key(0x04),));
+        let context = composite::Context::new();
+        let mut keymap = Keymap::new(keys, context);
 
-    //     // Act
-    //     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    //     keymap.tick();
-    //     let actual_report = keymap.boot_keyboard_report();
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.tick();
+        let actual_report = keymap.boot_keyboard_report();
 
-    //     // Assert
-    //     let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-    //     assert_eq!(actual_report, expected_report);
-    // }
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
 
     #[test]
     fn test_keymap_with_composite_simple_key() {
