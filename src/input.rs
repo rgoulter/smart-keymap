@@ -34,17 +34,13 @@ impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> cr
 }
 
 #[derive(Debug, Clone, Copy)]
-pub enum PressedInput<K, S> {
-    Key(PressedKey<K, S>),
+pub enum PressedInput {
+    Key { keymap_index: u16 },
     Virtual { key_code: u8 },
 }
 
-impl<K, S> PressedInput<K, S> {
-    pub fn new_pressed_key(keymap_index: u16, key: K, pressed_key_state: S) -> Self {
-        Self::Key(PressedKey {
-            keymap_index,
-            key,
-            pressed_key_state,
-        })
+impl PressedInput {
+    pub fn new_pressed_key(keymap_index: u16) -> Self {
+        Self::Key { keymap_index }
     }
 }
