@@ -20,9 +20,9 @@ impl<K0: key::Key + Copy, const L: key::layered::LayerIndex> Keys1<K0, L> {
 
 impl<K0: key::Key + 'static, const L: key::layered::LayerIndex> Index<usize> for Keys1<K0, L>
 where
+    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<composite::Event>>,
     key::ScheduledEvent<composite::Event>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
     <K0 as key::Key>::Context: From<composite::Context<L, simple::Key>>,
-    key::Event<<K0 as key::Key>::Event>: From<key::Event<composite::Event>>,
 {
     type Output = dyn dynamic::Key<
         key::composite::Event,
@@ -39,9 +39,9 @@ where
 
 impl<K0: key::Key + 'static, const L: key::layered::LayerIndex> IndexMut<usize> for Keys1<K0, L>
 where
+    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<composite::Event>>,
     key::ScheduledEvent<composite::Event>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
     <K0 as key::Key>::Context: From<composite::Context<L, simple::Key>>,
-    key::Event<<K0 as key::Key>::Event>: From<key::Event<composite::Event>>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
@@ -72,12 +72,12 @@ impl<K0: key::Key + Copy, K1: key::Key + Copy, const L: key::layered::LayerIndex
 impl<K0: key::Key + 'static, K1: key::Key + 'static, const L: key::layered::LayerIndex> Index<usize>
     for Keys2<K0, K1, L>
 where
+    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<composite::Event>>,
     key::ScheduledEvent<composite::Event>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
     <K0 as key::Key>::Context: From<composite::Context<L, simple::Key>>,
-    key::Event<<K0 as key::Key>::Event>: From<key::Event<composite::Event>>,
+    key::Event<<K1 as key::Key>::Event>: TryFrom<key::Event<composite::Event>>,
     key::ScheduledEvent<composite::Event>: From<key::ScheduledEvent<<K1 as key::Key>::Event>>,
     <K1 as key::Key>::Context: From<composite::Context<L, simple::Key>>,
-    key::Event<<K1 as key::Key>::Event>: From<key::Event<composite::Event>>,
 {
     type Output = dyn dynamic::Key<
         key::composite::Event,
@@ -96,12 +96,12 @@ where
 impl<K0: key::Key + 'static, K1: key::Key + 'static, const L: key::layered::LayerIndex>
     IndexMut<usize> for Keys2<K0, K1, L>
 where
+    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<composite::Event>>,
     key::ScheduledEvent<composite::Event>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
     <K0 as key::Key>::Context: From<composite::Context<L, simple::Key>>,
-    key::Event<<K0 as key::Key>::Event>: From<key::Event<composite::Event>>,
+    key::Event<<K1 as key::Key>::Event>: TryFrom<key::Event<composite::Event>>,
     key::ScheduledEvent<composite::Event>: From<key::ScheduledEvent<<K1 as key::Key>::Event>>,
     <K1 as key::Key>::Context: From<composite::Context<L, simple::Key>>,
-    key::Event<<K1 as key::Key>::Event>: From<key::Event<composite::Event>>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
