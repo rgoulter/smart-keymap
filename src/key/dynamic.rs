@@ -29,6 +29,11 @@ where
     fn key_code(&self) -> Option<u8>;
 }
 
+pub type CompositeKey<const L: key::layered::LayerIndex = 0> = dyn Key<
+    key::composite::Event,
+    Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
+>;
+
 #[derive(Debug)]
 pub struct DynamicKey<K: key::Key, Ctx, Ev> {
     key: K,
