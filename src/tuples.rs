@@ -8,6 +8,10 @@ use crate::key;
 
 use key::{composite, dynamic};
 
+pub trait KeysReset {
+    fn reset(&mut self);
+}
+
 #[derive(Debug)]
 pub struct Keys1<
     K0: key::Key,
@@ -65,6 +69,22 @@ where
             0 => &mut self.0,
             _ => panic!("Index out of bounds"),
         }
+    }
+}
+
+impl<
+        K0: key::Key + 'static,
+        Ctx: key::Context<Event = Ev> + Debug + 'static,
+        Ev: Copy + Debug + Ord + 'static,
+        const N: usize,
+    > KeysReset for Keys1<K0, Ctx, Ev, N>
+where
+    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
+    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
+    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
+{
+    fn reset(&mut self) {
+        <dynamic::DynamicKey<K0, Ctx, Ev> as dynamic::Key<Ev, N>>::reset(&mut self.0)
     }
 }
 
@@ -168,6 +188,31 @@ macro_rules! define_keys {
                             )*
                             _ => panic!("Index out of bounds"),
                         }
+                    }
+                }
+
+                impl<
+                    #(
+                        K~I: key::Key + 'static,
+                    )*
+                Ctx: key::Context<Event = Ev> + Debug + 'static,
+                Ev: Copy + Debug + Ord + 'static,
+                const M: usize,
+                > KeysReset for [<Keys $n>]<
+                    #(K~I,)*
+                Ctx, Ev, M
+                    >
+                where
+                    #(
+                    key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
+                    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K~I as key::Key>::Event>>,
+                    for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
+                )*
+                {
+                    fn reset(&mut self) {
+                        #(
+                        <dynamic::DynamicKey<K~I, Ctx, Ev> as dynamic::Key<Ev, M>>::reset(&mut self.I);
+                        )*
                     }
                 }
             });
