@@ -97,6 +97,11 @@ impl<const L: layered::LayerIndex> key::Context for Context<L, DefaultNestableKe
 impl<const L: layered::LayerIndex> From<Context<L, DefaultNestableKey>> for () {
     fn from(_: Context<L, DefaultNestableKey>) -> Self {}
 }
+impl<const L: layered::LayerIndex> From<&Context<L, DefaultNestableKey>> for &() {
+    fn from(_: &Context<L, DefaultNestableKey>) -> Self {
+        &()
+    }
+}
 
 #[derive(Debug, Clone, Copy)]
 pub enum PressedKeyState<const L: layered::LayerIndex = 0> {

@@ -22,7 +22,7 @@ where
     /// - a pressed key will receive all kinds of [input::Event].
     fn handle_event(
         &mut self,
-        context: Self::Context,
+        context: &Self::Context,
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N>;
 
@@ -57,20 +57,20 @@ impl<K: key::Key, Ctx, Ev> DynamicKey<K, Ctx, Ev> {
 
 impl<
         K: key::Key,
-        Ctx: key::Context<Event = Ev> + Debug,
+        Ctx: key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord,
         const N: usize,
     > Key<Ev, N> for DynamicKey<K, Ctx, Ev>
 where
     key::Event<K::Event>: TryFrom<key::Event<Ev>>,
     key::ScheduledEvent<Ev>: From<key::ScheduledEvent<K::Event>>,
-    K::Context: From<Ctx>,
+    for<'c> &'c K::Context: From<&'c Ctx>,
 {
     type Context = Ctx;
 
     fn handle_event(
         &mut self,
-        context: Self::Context,
+        context: &Self::Context,
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N> {
         let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, N> = heapless::Vec::new();
@@ -91,7 +91,7 @@ where
                 }
             }
         } else if let key::Event::Input(input::Event::Press { keymap_index }) = event {
-            let (pressed_key, new_events) = self.key.new_pressed_key(&context.into(), keymap_index);
+            let (pressed_key, new_events) = self.key.new_pressed_key(context.into(), keymap_index);
             scheduled_events.extend(new_events.into_iter().map(|sch_ev| sch_ev.into()));
             self.pressed_key = Some(pressed_key);
         }
@@ -124,11 +124,11 @@ mod tests {
         // Act
         let keymap_index: u16 = 5; // arbitrary
         let _ = dyn_key.handle_event(
-            context,
+            &context,
             key::Event::Input(input::Event::Press { keymap_index }),
         );
         let _ = dyn_key.handle_event(
-            context,
+            &context,
             key::Event::Input(input::Event::Release { keymap_index }),
         );
 
