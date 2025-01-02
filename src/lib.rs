@@ -3,6 +3,7 @@
 pub mod input;
 pub mod key;
 pub mod keymap;
+pub mod tuples;
 
 #[allow(unused)]
 use key::composite::Key;
