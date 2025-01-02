@@ -176,3 +176,7 @@ macro_rules! define_keys {
 }
 
 define_keys!(2);
+
+define_keys!(4);
+
+define_keys!(60);
