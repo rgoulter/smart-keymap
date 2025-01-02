@@ -11,13 +11,11 @@ use key::composite::Key;
 use key::{simple, tap_hold};
 
 #[cfg(not(custom_keymap))]
-pub const KEY_DEFINITIONS: [Key; 1] = [
-    Key::Simple(simple::Key(0x04)), // A
-];
+const KEY_DEFINITIONS: tuples::Keys1<Key> = tuples::Keys1::new((Key::Simple(simple::Key(0x04)),));
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
-static mut KEYMAP: keymap::Keymap<[Key; KEY_DEFINITIONS.len()]> =
+static mut KEYMAP: keymap::Keymap<tuples::Keys1<Key>> =
     keymap::Keymap::new(KEY_DEFINITIONS, key::composite::Context::new());
 
 #[allow(static_mut_refs)]
