@@ -94,9 +94,6 @@ impl<const L: layered::LayerIndex> key::Context for Context<L, DefaultNestableKe
 }
 
 /// simple::Context from composite::Context
-impl<const L: layered::LayerIndex> From<Context<L, DefaultNestableKey>> for () {
-    fn from(_: Context<L, DefaultNestableKey>) -> Self {}
-}
 impl<const L: layered::LayerIndex> From<&Context<L, DefaultNestableKey>> for &() {
     fn from(_: &Context<L, DefaultNestableKey>) -> Self {
         &()
