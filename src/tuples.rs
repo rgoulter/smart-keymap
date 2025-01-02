@@ -6,7 +6,6 @@ use crate::key;
 use key::{composite, dynamic};
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Keys1<
     K0: key::Key,
     Ctx: key::Context<Event = Ev> + Debug = composite::Context<0, composite::DefaultNestableKey>,
@@ -67,7 +66,6 @@ where
 }
 
 #[derive(Debug)]
-#[allow(dead_code)]
 pub struct Keys2<
     K0: key::Key,
     K1: key::Key,
