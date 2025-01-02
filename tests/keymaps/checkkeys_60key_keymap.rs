@@ -1,5 +1,12 @@
-#[rustfmt::skip]
-pub const KEY_DEFINITIONS: [Key; 60] = {
+use seq_macro::seq;
+seq!(I in 0..60 {
+    type KeyDefinitionsType = tuples::Keys60<
+        #(
+            Key,
+        )*
+    >;
+});
+pub const KEY_DEFINITIONS: KeyDefinitionsType = {
     #[cfg(not(feature = "usbd-human-interface-device"))]
     compile_error!("usbd-human-interface-device feature is not enabled");
 
@@ -13,11 +20,11 @@ pub const KEY_DEFINITIONS: [Key; 60] = {
         A, B, C, D, E, F, G, H, I, J, K, L,
     ];
 
-    let mut key_codes = [Key::Simple(simple::Key(0x00)); 60];
-    let mut i = 0;
-    while i < 60 {
-        key_codes[i] = Key::Simple(simple::Key(codes[i] as u8));
-        i += 1;
-    }
-    key_codes
+    seq!(I in 0..60 {
+        tuples::Keys60::new((
+            #(
+                Key::Simple(simple::Key(codes[I] as u8)),
+            )*
+        ))
+    })
 };
