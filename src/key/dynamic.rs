@@ -27,6 +27,8 @@ where
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N>;
 
     fn key_code(&self) -> Option<u8>;
+
+    fn reset(&mut self);
 }
 
 pub type CompositeKey<const L: key::layered::LayerIndex = 0> = dyn Key<
@@ -105,6 +107,10 @@ where
         } else {
             None
         }
+    }
+
+    fn reset(&mut self) {
+        self.pressed_key = None;
     }
 }
 
