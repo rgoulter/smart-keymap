@@ -232,10 +232,13 @@ mod tests {
 
     #[test]
     fn test_keymap_with_simple_key_with_composite_context() {
+        use key::composite::{Context, DefaultNestableKey, Event};
         use key::simple;
+        use tuples::Keys1;
 
         // Assemble
-        let keys: tuples::Keys1<simple::Key, 0> = tuples::Keys1::new((simple::Key(0x04),));
+        let keys: Keys1<simple::Key, Context<0, DefaultNestableKey>, Event> =
+            Keys1::new((simple::Key(0x04),));
         let context = composite::Context::new();
         let mut keymap = Keymap::new(keys, context);
 
@@ -252,9 +255,13 @@ mod tests {
     #[test]
     fn test_keymap_with_composite_simple_key() {
         use key::{composite, simple};
+        use tuples::Keys1;
+
+        use composite::{Context, DefaultNestableKey, Event};
 
         // Assemble
-        let keys = tuples::Keys1::new((composite::Key::<0>::Simple(simple::Key(0x04)),));
+        let keys: Keys1<composite::Key, Context<0, DefaultNestableKey>, Event> =
+            Keys1::new((composite::Key::<0>::Simple(simple::Key(0x04)),));
         let context = composite::Context::new();
         let mut keymap = Keymap::new(keys, context);
 
@@ -271,10 +278,18 @@ mod tests {
     #[test]
     fn test_keymap_with_composite_layered_key_press_base_key() {
         use key::{composite, layered, simple};
+        use tuples::Keys2;
+
+        use composite::{Context, DefaultNestableKey, Event};
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys = tuples::Keys2::new((
+        let keys: Keys2<
+            composite::Key<L>,
+            composite::Key<L>,
+            Context<L, DefaultNestableKey>,
+            Event,
+        > = tuples::Keys2::new((
             composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
             composite::Key::<L>::Layered(layered::LayeredKey::new(
                 simple::Key(0x04),
@@ -296,10 +311,18 @@ mod tests {
     #[test]
     fn test_keymap_with_composite_layered_key_press_active_layer_when_layer_mod_held() {
         use key::{composite, layered, simple};
+        use tuples::Keys2;
+
+        use composite::{Context, DefaultNestableKey, Event};
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys = tuples::Keys2::new((
+        let keys: Keys2<
+            composite::Key<L>,
+            composite::Key<L>,
+            Context<L, DefaultNestableKey>,
+            Event,
+        > = tuples::Keys2::new((
             composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
             composite::Key::<L>::Layered(layered::LayeredKey::new(
                 simple::Key(0x04),
@@ -323,10 +346,18 @@ mod tests {
     #[test]
     fn test_keymap_with_composite_layered_key_press_retained_when_layer_mod_released() {
         use key::{composite, layered, simple};
+        use tuples::Keys2;
+
+        use composite::{Context, DefaultNestableKey, Event};
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys = tuples::Keys2::new((
+        let keys: Keys2<
+            composite::Key<L>,
+            composite::Key<L>,
+            Context<L, DefaultNestableKey>,
+            Event,
+        > = tuples::Keys2::new((
             composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
             composite::Key::<L>::Layered(layered::LayeredKey::new(
                 simple::Key(0x04),
@@ -353,10 +384,18 @@ mod tests {
     #[test]
     fn test_keymap_with_composite_layered_key_uses_base_when_pressed_after_layer_mod_released() {
         use key::{composite, layered, simple};
+        use tuples::Keys2;
+
+        use composite::{Context, DefaultNestableKey, Event};
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys = tuples::Keys2::new((
+        let keys: Keys2<
+            composite::Key<L>,
+            composite::Key<L>,
+            Context<L, DefaultNestableKey>,
+            Event,
+        > = tuples::Keys2::new((
             composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
             composite::Key::<L>::Layered(layered::LayeredKey::new(
                 simple::Key(0x04),

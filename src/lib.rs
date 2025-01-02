@@ -8,7 +8,7 @@ pub mod tuples;
 #[allow(unused)]
 use key::composite::Key;
 #[allow(unused)]
-use key::{simple, tap_hold};
+use key::{composite, simple, tap_hold};
 
 #[cfg(not(custom_keymap))]
 const KEY_DEFINITIONS: tuples::Keys1<Key> = tuples::Keys1::new((Key::Simple(simple::Key(0x04)),));
