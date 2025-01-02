@@ -13,7 +13,7 @@ use key::{composite, simple, tap_hold};
 #[cfg(not(custom_keymap))]
 type KeyDefinitionsType = tuples::Keys1<Key>;
 #[cfg(not(custom_keymap))]
-const KEY_DEFINITIONS: KeyDefinitionsType   = tuples::Keys1::new((Key::Simple(simple::Key(0x04)),));
+const KEY_DEFINITIONS: KeyDefinitionsType = tuples::Keys1::new((Key::Simple(simple::Key(0x04)),));
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
