@@ -1,6 +1,9 @@
 use seq_macro::seq;
+
+crate::tuples::define_keys!(60);
+
 seq!(I in 0..60 {
-    type KeyDefinitionsType = tuples::Keys60<
+    type KeyDefinitionsType = Keys60<
         #(
             Key,
         )*
@@ -21,7 +24,7 @@ pub const KEY_DEFINITIONS: KeyDefinitionsType = {
     ];
 
     seq!(I in 0..60 {
-        tuples::Keys60::new((
+        Keys60::new((
             #(
                 Key::Simple(simple::Key(codes[I] as u8)),
             )*
