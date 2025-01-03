@@ -3,16 +3,14 @@ CBINDGEN = cbindgen
 
 .PHONY: all
 all: generate-header
-	$(CARGO) build --features "std"
+	$(CARGO) build
 
 .PHONY: generate-header
 generate-header: include/smart_keymap.h
 
 .PHONY: test
-test:
-	$(CARGO) clean
-	$(CARGO) test --features "std"
-	$(CARGO) clean
+test: include/smart_keymap.h
+	$(CARGO) test
 	env SMART_KEYMAP_CUSTOM_KEYMAP="$(shell pwd)/tests/keymaps/simple_keymap.rs" \
 	  $(CARGO) build
 	cd tests/ceedling && ceedling
