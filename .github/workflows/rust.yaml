@@ -24,3 +24,6 @@ jobs:
 
       - name: Run Cargo Build
         run: cargo build
+
+      - name: Run Cargo Test
+        run: cargo test
