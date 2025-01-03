@@ -1,9 +1,6 @@
 use core::fmt::Debug;
 use core::ops::{Index, IndexMut};
 
-use paste::paste;
-use seq_macro::seq;
-
 use crate::key;
 
 use key::{composite, dynamic};
@@ -92,19 +89,19 @@ where
 
 macro_rules! define_keys {
     ($n:expr) => {
-        paste! {
-            seq!(I in 0..$n {
-                #[derive(Debug)]
+        paste::paste! {
+            seq_macro::seq!(I in 0..$n {
+                #[derive(core::fmt::Debug)]
                 pub struct [<Keys $n>]<
                     #(
                         K~I: key::Key,
                     )*
-                Ctx: key::Context<Event = Ev> + Debug = composite::Context<0, composite::DefaultNestableKey>,
-                Ev: Copy + Debug + Ord = composite::Event,
+                Ctx: key::Context<Event = Ev> + core::fmt::Debug = composite::Context<0, composite::DefaultNestableKey>,
+                Ev: Copy + core::fmt::Debug + Ord = composite::Event,
                 const M: usize = 2,
                 >(
                     #(
-                        dynamic::DynamicKey<K~I, Ctx, Ev>,
+                        crate::key::dynamic::DynamicKey<K~I, Ctx, Ev>,
                     )*
                 );
 
@@ -112,8 +109,8 @@ macro_rules! define_keys {
                     #(
                         K~I: key::Key + Copy,
                     )*
-                Ctx: key::Context<Event = Ev> + Debug,
-                Ev: Copy + Debug + Ord,
+                Ctx: key::Context<Event = Ev> + core::fmt::Debug,
+                Ev: Copy + core::fmt::Debug + Ord,
                 const M: usize,
                 > [<Keys $n>]<
                     #(K~I,)*
@@ -127,7 +124,7 @@ macro_rules! define_keys {
                     )) -> Self {
                         [<Keys $n>](
                             #(
-                                dynamic::DynamicKey::new(k~I),
+                                crate::key::dynamic::DynamicKey::new(k~I),
                             )*
                         )
                     }
@@ -137,10 +134,10 @@ macro_rules! define_keys {
                     #(
                         K~I: key::Key + 'static,
                     )*
-                Ctx: key::Context<Event = Ev> + Debug + 'static,
-                Ev: Copy + Debug + Ord + 'static,
+                Ctx: key::Context<Event = Ev> + core::fmt::Debug + 'static,
+                Ev: Copy + core::fmt::Debug + Ord + 'static,
                 const M: usize,
-                > Index<usize> for [<Keys $n>]<
+                > core::ops::Index<usize> for [<Keys $n>]<
                     #(K~I,)*
                 Ctx, Ev, M
                     >
@@ -151,7 +148,7 @@ macro_rules! define_keys {
                     for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
-                    type Output = dyn dynamic::Key<Ev, M, Context = Ctx>;
+                    type Output = dyn crate::key::dynamic::Key<Ev, M, Context = Ctx>;
 
                     fn index(&self, idx: usize) -> &Self::Output {
                         match idx {
@@ -167,10 +164,10 @@ macro_rules! define_keys {
                     #(
                         K~I: key::Key + 'static,
                     )*
-                Ctx: key::Context<Event = Ev> + Debug + 'static,
-                Ev: Copy + Debug + Ord + 'static,
+                Ctx: key::Context<Event = Ev> + core::fmt::Debug + 'static,
+                Ev: Copy + core::fmt::Debug + Ord + 'static,
                 const M: usize,
-                > IndexMut<usize> for [<Keys $n>]<
+                > core::ops::IndexMut<usize> for [<Keys $n>]<
                     #(K~I,)*
                 Ctx, Ev, M
                     >
@@ -195,10 +192,10 @@ macro_rules! define_keys {
                     #(
                         K~I: key::Key + 'static,
                     )*
-                Ctx: key::Context<Event = Ev> + Debug + 'static,
-                Ev: Copy + Debug + Ord + 'static,
+                Ctx: key::Context<Event = Ev> + core::fmt::Debug + 'static,
+                Ev: Copy + core::fmt::Debug + Ord + 'static,
                 const M: usize,
-                > KeysReset for [<Keys $n>]<
+                > crate::tuples::KeysReset for [<Keys $n>]<
                     #(K~I,)*
                 Ctx, Ev, M
                     >
@@ -211,7 +208,7 @@ macro_rules! define_keys {
                 {
                     fn reset(&mut self) {
                         #(
-                        <dynamic::DynamicKey<K~I, Ctx, Ev> as dynamic::Key<Ev, M>>::reset(&mut self.I);
+                        <crate::key::dynamic::DynamicKey<K~I, Ctx, Ev> as crate::key::dynamic::Key<Ev, M>>::reset(&mut self.I);
                         )*
                     }
                 }
