@@ -5,10 +5,13 @@ use crate::key;
 
 use key::{composite, dynamic};
 
+/// A trait for resetting all keys in a tuple struct.
 pub trait KeysReset {
+    /// Reset all keys.
     fn reset(&mut self);
 }
 
+/// A tuple struct for 1 key.
 #[derive(Debug)]
 pub struct Keys1<
     K0: key::Key,
@@ -24,6 +27,7 @@ impl<
         const N: usize,
     > Keys1<K0, Ctx, Ev, N>
 {
+    /// Constructs a KeysN for the given tuple.
     pub const fn new((k0,): (K0,)) -> Self {
         Keys1(dynamic::DynamicKey::new(k0))
     }
@@ -91,6 +95,7 @@ macro_rules! define_keys {
     ($n:expr) => {
         paste::paste! {
             seq_macro::seq!(I in 0..$n {
+                /// A tuple struct for some number of keys.
                 #[derive(core::fmt::Debug)]
                 pub struct [<Keys $n>]<
                     #(
@@ -117,6 +122,7 @@ macro_rules! define_keys {
                 Ctx, Ev, M
                     >
                 {
+                    /// Constructs a KeysN tuple struct with the given tuple.
                     pub const fn new((
                         #(k~I,)*
                     ): (

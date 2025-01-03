@@ -73,8 +73,7 @@ impl EventScheduler {
     }
 }
 
-/// The engine (set of key definition systems),
-///  and key definitions.
+/// State for a keymap that handles input, and outputs HID keyboard reports.
 #[derive(Debug)]
 pub struct Keymap<
     I: IndexMut<
@@ -103,6 +102,7 @@ impl<
         const L: key::layered::LayerIndex,
     > Keymap<I, L>
 {
+    /// Constructs a new keymap with the given key definitions and context.
     pub const fn new(
         key_definitions: I,
         context: composite::Context<L, composite::DefaultNestableKey>,
@@ -115,12 +115,14 @@ impl<
         }
     }
 
+    /// Initializes or resets the keyboard to an initial state.
     pub fn init(&mut self) {
         self.pressed_inputs.clear();
         self.event_scheduler.init();
         self.key_definitions.reset();
     }
 
+    /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
@@ -173,6 +175,7 @@ impl<
         }
     }
 
+    /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
         self.event_scheduler.tick();
 
@@ -199,6 +202,7 @@ impl<
         }
     }
 
+    /// Returns the current HID keyboard report.
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         let mut report = [0u8; 8];
 

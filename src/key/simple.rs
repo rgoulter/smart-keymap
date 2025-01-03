@@ -2,10 +2,12 @@ use serde::Deserialize;
 
 use crate::{input, key};
 
+/// A simple key that only has a key code.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key(pub u8);
 
 impl Key {
+    /// Gets the key code from [Key].
     pub fn key_code(&self) -> u8 {
         self.0
     }
@@ -36,12 +38,15 @@ impl key::Key for Key {
     }
 }
 
+/// Unit-like struct for event. (crate::key::simple doesn't use events).
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Event();
 
+/// Unit-like struct for [crate::key::PressedKeyState]. (crate::key::simple pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKeyState;
 
+/// Convenience type alias for [input::PressedKey] with [Key] and [PressedKeyState].
 pub type PressedKey = input::PressedKey<Key, PressedKeyState>;
 
 impl From<Event> for () {
