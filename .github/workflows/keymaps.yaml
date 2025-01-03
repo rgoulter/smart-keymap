@@ -28,4 +28,9 @@ jobs:
 
       - name: Build checkkeys_60key_keymap
         run: |
-          env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/tests/keymaps/checkkeys_60key_keymap.rs" cargo build --target riscv32imac-unknown-none-elf --features "usbd-human-interface-device" --release
+          env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/tests/keymaps/checkkeys_60key_keymap.rs" \
+            cargo build \
+              --target riscv32imac-unknown-none-elf \
+              --release \
+              --no-default-features \
+              --features "usbd-human-interface-device"
