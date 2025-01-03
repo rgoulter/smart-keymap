@@ -18,6 +18,7 @@
 
   packages = [
     pkgs.just
+    pkgs.nickel
     pkgs.rust-cbindgen
     pkgs.yaml-language-server
   ];
