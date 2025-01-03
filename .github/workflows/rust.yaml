@@ -27,3 +27,6 @@ jobs:
 
       - name: Run Cargo Test
         run: cargo test
+
+      - name: Run Cargo Doc
+        run: cargo doc
