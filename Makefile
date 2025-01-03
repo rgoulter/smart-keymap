@@ -2,11 +2,8 @@ CARGO = cargo
 CBINDGEN = cbindgen
 
 .PHONY: all
-all: generate-header
+all: include/smart_keymap.h
 	$(CARGO) build
-
-.PHONY: generate-header
-generate-header: include/smart_keymap.h
 
 .PHONY: test
 test: include/smart_keymap.h

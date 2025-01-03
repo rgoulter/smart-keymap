@@ -1,5 +1,8 @@
 default: test
 
+bindgen:
+	cbindgen -c cbindgen.toml -o include/smart_keymap.h
+
 clean:
     make clean
 
