@@ -14,6 +14,7 @@
       enable = true;
       targets = ["riscv32imac-unknown-none-elf"];
     };
+    shell.enable = true;
   };
 
   packages = [
