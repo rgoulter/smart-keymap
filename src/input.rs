@@ -1,17 +1,38 @@
 use serde::Deserialize;
 
+/// Input events for [crate::keymap::Keymap].
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Event {
-    Press { keymap_index: u16 },
-    Release { keymap_index: u16 },
-    VirtualKeyPress { key_code: u8 },
-    VirtualKeyRelease { key_code: u8 },
+    /// A physical key press for a given `keymap_index`.
+    Press {
+        /// The index of the key in the keymap.
+        keymap_index: u16,
+    },
+    /// A physical key release for a given `keymap_index`.
+    Release {
+        /// The index of the key in the keymap.
+        keymap_index: u16,
+    },
+    /// A virtual key press for a given `key_code`.
+    VirtualKeyPress {
+        /// The virtual key code.
+        key_code: u8,
+    },
+    /// A virtual key release for a given `key_code`.
+    VirtualKeyRelease {
+        /// The virtual key code.
+        key_code: u8,
+    },
 }
 
+/// A struct for associating a [crate::key::Key] with a [crate::key::PressedKeyState].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKey<K, S> {
+    /// The index of the pressed key in some keymap.
     pub keymap_index: u16,
+    /// The pressed key.
     pub key: K,
+    /// The pressed key state.
     pub pressed_key_state: S,
 }
 
@@ -33,13 +54,23 @@ impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> cr
     }
 }
 
+/// State resulting from [Event].
 #[derive(Debug, Clone, Copy)]
 pub enum PressedInput {
-    Key { keymap_index: u16 },
-    Virtual { key_code: u8 },
+    /// Physically pressed key.
+    Key {
+        /// The index of the pressed key in the keymap.
+        keymap_index: u16,
+    },
+    /// Virtually pressed key.
+    Virtual {
+        /// The pressed key code.
+        key_code: u8,
+    },
 }
 
 impl PressedInput {
+    /// Constructor for a [PressedInput::Key].
     pub fn new_pressed_key(keymap_index: u16) -> Self {
         Self::Key { keymap_index }
     }

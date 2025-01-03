@@ -3,15 +3,20 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
+/// The type used for layer index.
 pub type LayerIndex = usize;
 
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum ModifierKey<const L: LayerIndex> {
+    /// Activates the given layer when the held.
     Hold(LayerIndex),
 }
 
 impl<const L: LayerIndex> ModifierKey<L> {
+    /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
+    ///
+    /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
     pub fn new_pressed_key(
         &self,
         keymap_index: u16,
@@ -58,6 +63,7 @@ impl<const L: LayerIndex> key::Key for ModifierKey<L> {
     }
 }
 
+/// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
 pub struct Context<const L: LayerIndex, C: key::Context> {
     active_layers: [bool; L],
@@ -65,6 +71,7 @@ pub struct Context<const L: LayerIndex, C: key::Context> {
 }
 
 impl<const L: LayerIndex, C: key::Context> Context<L, C> {
+    /// Create a new [Context].
     pub const fn new(inner_context: C) -> Self {
         Self {
             active_layers: [false; L],
@@ -72,10 +79,12 @@ impl<const L: LayerIndex, C: key::Context> Context<L, C> {
         }
     }
 
+    /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
         self.active_layers[layer] = true;
     }
 
+    /// Get the active layers.
     pub fn active_layers(&self) -> &[bool; L] {
         &self.active_layers
     }
@@ -110,6 +119,7 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
+    /// Constructs a new [LayeredKey].
     pub fn new(base: K, layered: [Option<K>; L]) -> Self {
         Self { base, layered }
     }
@@ -119,6 +129,7 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
+    /// Create a new [input::PressedKey], depending on the active layers in [Context].
     pub fn new_pressed_key(
         &self,
         context: &Context<L, K::Context>,
@@ -163,15 +174,20 @@ where
     }
 }
 
+/// Events from [ModifierKey] which affect [Context].
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum LayerEvent {
+    /// Activates the given layer.
     LayerActivated(LayerIndex),
+    /// Deactivates the given layer.
     LayerDeactivated(LayerIndex),
 }
 
+/// Unit-like struct, for [crate::key::PressedKeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy)]
 pub struct PressedModifierKeyState;
 
+/// Type alias for [crate::input::PressedKey] of [ModifierKey].
 pub type PressedModifierKey<const L: LayerIndex> =
     input::PressedKey<ModifierKey<L>, PressedModifierKeyState>;
 

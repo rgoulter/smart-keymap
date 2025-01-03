@@ -14,16 +14,22 @@ pub trait NestableKey: key::Key + Sized {}
 
 impl NestableKey for simple::Key {}
 
+/// Default [NestableKey] for [Key] and its associated types.
 pub type DefaultNestableKey = simple::Key;
 
+/// An aggregate of [key::Key] types.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum Key<const L: layered::LayerIndex = 0, K: NestableKey = DefaultNestableKey>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
+    /// A simple key.
     Simple(simple::Key),
+    /// A tap-hold key.
     TapHold(tap_hold::Key),
+    /// A layer modifier key.
     LayerModifier(layered::ModifierKey<L>),
+    /// A layered key.
     Layered(layered::LayeredKey<L, K>),
 }
 
@@ -66,12 +72,14 @@ where
     }
 }
 
+/// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context<const L: layered::LayerIndex, K: key::Key> {
     layer_context: layered::Context<L, K::Context>,
 }
 
 impl<const L: layered::LayerIndex> Context<L, DefaultNestableKey> {
+    /// Constructs a new [Context].
     pub const fn new() -> Self {
         let layer_context = layered::Context::new(());
         Self { layer_context }
@@ -100,13 +108,18 @@ impl<const L: layered::LayerIndex> From<&Context<L, DefaultNestableKey>> for &()
     }
 }
 
+/// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug, Clone, Copy)]
 pub enum PressedKeyState<const L: layered::LayerIndex = 0> {
+    /// A simple key's pressed state.
     Simple(simple::PressedKeyState),
+    /// A tap-hold key's pressed state.
     TapHold(tap_hold::PressedKeyState),
+    /// A layer modifier key's pressed state.
     LayerModifier(layered::PressedModifierKeyState),
 }
 
+/// Convenience type alias for a [key::PressedKey] with a [PressedKeyState].
 pub type PressedKey<const L: layered::LayerIndex> =
     input::PressedKey<Key<L, DefaultNestableKey>, PressedKeyState<L>>;
 
@@ -211,9 +224,12 @@ where
     }
 }
 
+/// Aggregates the [key::Event] types.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
+    /// A tap-hold event.
     TapHold(tap_hold::Event),
+    /// A layer modification event.
     LayerModification(layered::LayerEvent),
 }
 

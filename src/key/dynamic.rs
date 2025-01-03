@@ -12,6 +12,7 @@ pub trait Key<Ev, const N: usize = 2>: Debug
 where
     Ev: Copy + Debug + Ord,
 {
+    /// The context type for the key.
     type Context: key::Context<Event = Ev>;
 
     /// Handles events in two cases:
@@ -26,16 +27,20 @@ where
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N>;
 
+    /// Output HID keyboard code for the [Key].
     fn key_code(&self) -> Option<u8>;
 
+    /// Resets the [Key] to its initial state.
     fn reset(&mut self);
 }
 
+/// Convenience type alias for [Key] which uses [crate::key::composite::Event] and [crate::key::composite::Context].
 pub type CompositeKey<const L: key::layered::LayerIndex = 0> = dyn Key<
     key::composite::Event,
     Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
 >;
 
+/// Generic implementation of [Key] for a [key::Key] and some `Ctx`/`Ev`.
 #[derive(Debug)]
 pub struct DynamicKey<K: key::Key, Ctx, Ev> {
     key: K,
@@ -46,6 +51,7 @@ pub struct DynamicKey<K: key::Key, Ctx, Ev> {
 }
 
 impl<K: key::Key, Ctx, Ev> DynamicKey<K, Ctx, Ev> {
+    /// Constructs a [DynamicKey] with the given key.
     pub const fn new(key: K) -> Self {
         Self {
             key,

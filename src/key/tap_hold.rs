@@ -3,9 +3,12 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
+/// A key with tap-hold functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key {
+    /// The 'tap' key.
     pub tap: u8,
+    /// The 'hold' key.
     pub hold: u8,
 }
 
@@ -43,16 +46,25 @@ impl key::Key for Key {
     }
 }
 
+/// The state of a tap-hold key.
 #[derive(Debug, Clone, Copy)]
 pub enum TapHoldState {
+    /// Not yet resolved as tap or hold.
     Pending,
+    /// Resolved as tap.
     Tap,
+    /// Resolved as hold.
     Hold,
 }
 
+/// Events emitted by a tap-hold key.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
-    TapHoldTimeout { keymap_index: u16 },
+    /// Event indicating the key has been held long enough to resolve as hold.
+    TapHoldTimeout {
+        /// The keymap index of the key the timeout is for.
+        keymap_index: u16,
+    },
 }
 
 impl From<Event> for key::Event<Event> {
@@ -61,20 +73,24 @@ impl From<Event> for key::Event<Event> {
     }
 }
 
+/// The state of a pressed tap-hold key.
 #[derive(Debug, Clone, Copy)]
 pub struct PressedKeyState {
     state: TapHoldState,
 }
 
+/// Convenience type for a pressed tap-hold key.
 pub type PressedKey = input::PressedKey<Key, PressedKeyState>;
 
 impl PressedKeyState {
+    /// Resolves the state of the key, unless it has already been resolved.
     fn resolve(&mut self, state: TapHoldState) {
         if let TapHoldState::Pending = self.state {
             self.state = state;
         }
     }
 }
+
 impl key::PressedKeyState<Key> for PressedKeyState {
     type Event = Event;
 
