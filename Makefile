@@ -20,5 +20,5 @@ clean:
 	rm -f include/smart_keymap.h
 	$(CARGO) clean
 
-include/smart_keymap.h:
+include/smart_keymap.h: src/lib.rs
 	$(CBINDGEN) -c cbindgen.toml -o include/smart_keymap.h
