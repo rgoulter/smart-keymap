@@ -18,5 +18,6 @@
 
   packages = [
     pkgs.rust-cbindgen
+    pkgs.yaml-language-server
   ];
 }
