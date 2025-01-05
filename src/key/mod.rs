@@ -23,7 +23,7 @@ pub mod dynamic;
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait Key<PK: Key = Self>: Debug
+pub trait Key<PK: Key = Self>: Copy + Debug + PartialEq
 where
     Self::ContextEvent: From<Self::Event>,
 {
