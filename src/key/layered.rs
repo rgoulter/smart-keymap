@@ -162,20 +162,14 @@ pub struct LayeredKey<K: key::Key, Ly: Layers<K>> {
     layered: Ly,
 }
 
-impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]>
-where
-    [Option<K>; L]: serde::de::DeserializeOwned,
-{
+impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]> {
     /// Constructs a new [LayeredKey].
     pub fn new(base: K, layered: [Option<K>; L]) -> Self {
         Self { base, layered }
     }
 }
 
-impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]>
-where
-    [Option<K>; L]: serde::de::DeserializeOwned,
-{
+impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]> {
     /// Create a new [input::PressedKey], depending on the active layers in [Context].
     pub fn new_pressed_key<LS: LayerState>(
         &self,
@@ -196,7 +190,6 @@ where
 
 impl<const L: LayerIndex, K: key::Key + Copy> key::Key<K> for LayeredKey<K, [Option<K>; L]>
 where
-    [Option<K>; L]: serde::de::DeserializeOwned,
     LayerEvent: From<<K as key::Key>::Event>,
 {
     type Context = Context<K::Context, [bool; L]>; // LS = [bool; L]
