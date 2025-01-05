@@ -1,3 +1,4 @@
+use core::fmt::Debug;
 use core::marker::Copy;
 
 use serde::Deserialize;
@@ -9,19 +10,20 @@ use crate::key;
 pub type LayerIndex = usize;
 
 /// Implementation of associated [Layers] and [LayerState].
-pub trait LayerImpl {
+pub trait LayerImpl: Copy + Debug + PartialEq {
     /// The associated [LayerState] type.
     type LayerState: LayerState;
     /// The associated [Layers] type.
-    type Layers<K: key::Key + Copy>: Layers<K>;
+    type Layers<K: key::Key + Copy + PartialEq>: Layers<K>;
 }
 
 /// Tuple struct indicating array-based layer implementation.
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub struct ArrayImpl<const L: usize>;
 
 impl<const L: usize> LayerImpl for ArrayImpl<L> {
     type LayerState = [bool; L];
-    type Layers<K: key::Key + Copy> = [Option<K>; L];
+    type Layers<K: key::Key + Copy + PartialEq> = [Option<K>; L];
 }
 
 /// Modifier layer key affects what layers are active.
@@ -82,7 +84,7 @@ impl key::Key for ModifierKey {
 }
 
 /// Tracks state of active layers.
-pub trait LayerState {
+pub trait LayerState: Copy + Debug {
     /// Activate the given layer.
     fn activate(&mut self, layer: LayerIndex);
     /// Deactivate the given layer.
@@ -112,12 +114,12 @@ impl<const L: usize> LayerState for [bool; L] {
 
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<C: key::Context, LS: LayerState> {
-    active_layers: LS,
+pub struct Context<C: key::Context, L: LayerImpl> {
+    active_layers: L::LayerState,
     inner_context: C,
 }
 
-impl<C: key::Context, const L: usize> Context<C, [bool; L]> {
+impl<C: key::Context, const L: usize> Context<C, ArrayImpl<L>> {
     /// Create a new [Context].
     pub const fn new(inner_context: C) -> Self {
         Self {
@@ -127,19 +129,19 @@ impl<C: key::Context, const L: usize> Context<C, [bool; L]> {
     }
 }
 
-impl<C: key::Context, LS: LayerState> Context<C, LS> {
+impl<C: key::Context, L: LayerImpl> Context<C, L> {
     /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
         self.active_layers.activate(layer);
     }
 
     /// Get the active layers.
-    pub fn layer_state(&self) -> &LS {
+    pub fn layer_state(&self) -> &L::LayerState {
         &self.active_layers
     }
 }
 
-impl<C: key::Context, LS: LayerState> key::Context for Context<C, LS> {
+impl<C: key::Context, L: LayerImpl> key::Context for Context<C, L> {
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: Self::Event) {
@@ -155,12 +157,12 @@ impl<C: key::Context, LS: LayerState> key::Context for Context<C, LS> {
 }
 
 /// Trait for layers of [LayeredKey].
-pub trait Layers<K: key::Key> {
+pub trait Layers<K: key::Key>: Copy + Debug + PartialEq {
     /// Get the highest active key, if any, for the given [LayerState].
     fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K>;
 }
 
-impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
+impl<K: key::Key + Copy + PartialEq, const L: usize> Layers<K> for [Option<K>; L] {
     fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K> {
         for layer in layer_state.active_layers() {
             if let Some(key) = self[layer] {
@@ -174,24 +176,24 @@ impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
 
 /// A key whose behavior depends on which layer is active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub struct LayeredKey<K: key::Key, Ly: Layers<K>> {
+pub struct LayeredKey<K: key::Key + Copy, L: LayerImpl> {
     base: K,
-    #[serde(bound(deserialize = "Ly: serde::de::DeserializeOwned"))]
-    layered: Ly,
+    #[serde(bound(deserialize = "L::Layers<K>: serde::de::DeserializeOwned"))]
+    layered: L::Layers<K>,
 }
 
-impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]> {
+impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, ArrayImpl<L>> {
     /// Constructs a new [LayeredKey].
     pub fn new(base: K, layered: [Option<K>; L]) -> Self {
         Self { base, layered }
     }
 }
 
-impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]> {
+impl<L: LayerImpl, K: key::Key + Copy> LayeredKey<K, L> {
     /// Create a new [input::PressedKey], depending on the active layers in [Context].
-    pub fn new_pressed_key<LS: LayerState>(
+    pub fn new_pressed_key(
         &self,
-        context: &Context<K::Context, LS>,
+        context: &Context<K::Context, L>,
         keymap_index: u16,
     ) -> (
         input::PressedKey<K, K::PressedKeyState>,
@@ -206,11 +208,11 @@ impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]> {
     }
 }
 
-impl<const L: LayerIndex, K: key::Key + Copy> key::Key<K> for LayeredKey<K, [Option<K>; L]>
+impl<L: LayerImpl, K: key::Key + Copy> key::Key<K> for LayeredKey<K, L>
 where
     LayerEvent: From<<K as key::Key>::Event>,
 {
-    type Context = Context<K::Context, [bool; L]>; // LS = [bool; L]
+    type Context = Context<K::Context, L>;
     type ContextEvent = LayerEvent;
     type Event = K::Event;
     type PressedKeyState = K::PressedKeyState;
@@ -345,8 +347,8 @@ mod tests {
 
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
-        const L: usize = 3;
-        let mut context: Context<(), [bool; L]> = Context::new(());
+        type L = ArrayImpl<3>;
+        let mut context: Context<(), L> = Context::new(());
 
         context.handle_event(LayerEvent::LayerActivated(1));
 
@@ -357,8 +359,8 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_acts_as_base_key_when_no_layers_active() {
         // Assemble
-        const L: usize = 3;
-        let context: Context<(), [bool; L]> = Context::new(());
+        type L = ArrayImpl<3>;
+        let context: Context<(), L> = Context::new(());
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -388,8 +390,8 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_falls_through_undefined_active_layers() {
         // Assemble: layered key (with no layered definitions)
-        const L: usize = 3;
-        let mut context: Context<(), [bool; L]> = Context::new(());
+        type L = ArrayImpl<3>;
+        let mut context: Context<(), L> = Context::new(());
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -414,8 +416,8 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
-        const L: usize = 3;
-        let mut context: Context<(), [bool; L]> = Context::new(());
+        type L = ArrayImpl<3>;
+        let mut context: Context<(), L> = Context::new(());
         let expected_key = simple::Key(0x09);
         let layered_key = LayeredKey {
             base: simple::Key(0x04),
@@ -444,8 +446,8 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_with_some_transparency_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
-        const L: usize = 3;
-        let mut context: Context<(), [bool; L]> = Context::new(());
+        type L = ArrayImpl<3>;
+        let mut context: Context<(), L> = Context::new(());
         let expected_key = simple::Key(0x09);
         let layered_key = LayeredKey {
             base: simple::Key(0x04),
@@ -523,10 +525,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_layered_key_simple_0layer() {
-        type Ly = [Option<key::simple::Key>; 0];
-        let actual_key: LayeredKey<key::simple::Key, Ly> =
+        type L = ArrayImpl<0>;
+        let actual_key: LayeredKey<key::simple::Key, L> =
             ron::from_str("(base: (0x04), layered: ())").unwrap();
-        let expected_key: LayeredKey<key::simple::Key, Ly> = LayeredKey {
+        let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [],
         };
@@ -535,10 +537,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_json_layered_key_simple_0layer() {
-        type Ly = [Option<key::simple::Key>; 0];
-        let actual_key: LayeredKey<key::simple::Key, Ly> =
+        type L = ArrayImpl<0>;
+        let actual_key: LayeredKey<key::simple::Key, L> =
             serde_json::from_str(r#"{"base": 4, "layered": []}"#).unwrap();
-        let expected_key: LayeredKey<key::simple::Key, Ly> = LayeredKey {
+        let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [],
         };
@@ -547,10 +549,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_layered_key_simple_1layer_none() {
-        type Ly = [Option<key::simple::Key>; 1];
-        let actual_key: LayeredKey<key::simple::Key, Ly> =
+        type L = ArrayImpl<1>;
+        let actual_key: LayeredKey<key::simple::Key, L> =
             ron::from_str("LayeredKey(base: Key(0x04), layered: (None))").unwrap();
-        let expected_key: LayeredKey<key::simple::Key, Ly> = LayeredKey {
+        let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [None],
         };
@@ -560,18 +562,6 @@ mod tests {
     #[test]
     fn test_layer_state_array_active_layers() {
         let mut layer_state: [bool; 5] = [false; 5];
-        layer_state.activate(0);
-        layer_state.activate(1);
-        layer_state.activate(3);
-        let actual_active_layers: Vec<LayerIndex> = layer_state.active_layers().collect();
-        let expected_active_layers: Vec<LayerIndex> = vec![3, 1, 0];
-
-        assert_eq!(actual_active_layers, expected_active_layers);
-    }
-
-    #[test]
-    fn test_layer_state_vec_active_layers() {
-        let mut layer_state: Vec<bool> = vec![false, false, false, false, false];
         layer_state.activate(0);
         layer_state.activate(1);
         layer_state.activate(3);
