@@ -1,3 +1,5 @@
+use core::marker::Copy;
+
 use serde::Deserialize;
 
 use crate::input;
@@ -5,6 +7,22 @@ use crate::key;
 
 /// The type used for layer index.
 pub type LayerIndex = usize;
+
+/// Implementation of associated [Layers] and [LayerState].
+pub trait LayerImpl {
+    /// The associated [LayerState] type.
+    type LayerState: LayerState;
+    /// The associated [Layers] type.
+    type Layers<K: key::Key + Copy>: Layers<K>;
+}
+
+/// Tuple struct indicating array-based layer implementation.
+pub struct ArrayImpl<const L: usize>;
+
+impl<const L: usize> LayerImpl for ArrayImpl<L> {
+    type LayerState = [bool; L];
+    type Layers<K: key::Key + Copy> = [Option<K>; L];
+}
 
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
