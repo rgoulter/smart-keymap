@@ -1,3 +1,5 @@
+#![doc = include_str!("doc_de_simple.md")]
+
 use serde::Deserialize;
 
 use crate::{input, key};
