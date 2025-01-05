@@ -156,15 +156,13 @@ impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
 
 /// A key whose behavior depends on which layer is active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub struct LayeredKey<const L: LayerIndex, K: key::Key>
-where
-    [Option<K>; L]: serde::de::DeserializeOwned,
-{
+pub struct LayeredKey<K: key::Key, Ly: Layers<K>> {
     base: K,
-    layered: [Option<K>; L],
+    #[serde(bound(deserialize = "Ly: serde::de::DeserializeOwned"))]
+    layered: Ly,
 }
 
-impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
+impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
@@ -174,7 +172,7 @@ where
     }
 }
 
-impl<const L: LayerIndex, K: key::Key> LayeredKey<L, K>
+impl<const L: LayerIndex, K: key::Key + Copy> LayeredKey<K, [Option<K>; L]>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
@@ -187,10 +185,8 @@ where
         input::PressedKey<K, K::PressedKeyState>,
         Option<key::ScheduledEvent<K::Event>>,
     ) {
-        for i in context.layer_state().active_layers() {
-            if let Some(key) = &self.layered[i] {
-                return key.new_pressed_key(&context.inner_context, keymap_index);
-            }
+        if let Some(key) = self.layered.highest_active_key(context.layer_state()) {
+            return key.new_pressed_key(&context.inner_context, keymap_index);
         }
 
         self.base
@@ -198,7 +194,7 @@ where
     }
 }
 
-impl<const L: LayerIndex, K: key::Key> key::Key<K> for LayeredKey<L, K>
+impl<const L: LayerIndex, K: key::Key + Copy> key::Key<K> for LayeredKey<K, [Option<K>; L]>
 where
     [Option<K>; L]: serde::de::DeserializeOwned,
     LayerEvent: From<<K as key::Key>::Event>,
@@ -517,9 +513,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_layered_key_simple_0layer() {
-        let actual_key: LayeredKey<0, key::simple::Key> =
+        type Ly = [Option<key::simple::Key>; 0];
+        let actual_key: LayeredKey<key::simple::Key, Ly> =
             ron::from_str("(base: (0x04), layered: ())").unwrap();
-        let expected_key: LayeredKey<0, key::simple::Key> = LayeredKey {
+        let expected_key: LayeredKey<key::simple::Key, Ly> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [],
         };
@@ -528,9 +525,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_json_layered_key_simple_0layer() {
-        let actual_key: LayeredKey<0, key::simple::Key> =
+        type Ly = [Option<key::simple::Key>; 0];
+        let actual_key: LayeredKey<key::simple::Key, Ly> =
             serde_json::from_str(r#"{"base": 4, "layered": []}"#).unwrap();
-        let expected_key: LayeredKey<0, key::simple::Key> = LayeredKey {
+        let expected_key: LayeredKey<key::simple::Key, Ly> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [],
         };
@@ -539,9 +537,10 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_layered_key_simple_1layer_none() {
-        let actual_key: LayeredKey<1, key::simple::Key> =
+        type Ly = [Option<key::simple::Key>; 1];
+        let actual_key: LayeredKey<key::simple::Key, Ly> =
             ron::from_str("LayeredKey(base: Key(0x04), layered: (None))").unwrap();
-        let expected_key: LayeredKey<1, key::simple::Key> = LayeredKey {
+        let expected_key: LayeredKey<key::simple::Key, Ly> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [None],
         };
