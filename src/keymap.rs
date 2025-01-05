@@ -80,13 +80,13 @@ pub struct Keymap<
             usize,
             Output = dyn key::dynamic::Key<
                 key::composite::Event,
-                Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
+                Context = key::composite::Context<key::composite::DefaultNestableKey, LS>,
             >,
         > + crate::tuples::KeysReset,
-    const L: key::layered::LayerIndex = 0,
+    LS: key::layered::LayerState = [bool; 0],
 > {
     key_definitions: I,
-    context: composite::Context<L, composite::DefaultNestableKey>,
+    context: composite::Context<composite::DefaultNestableKey, LS>,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
     event_scheduler: EventScheduler,
 }
@@ -96,16 +96,16 @@ impl<
                 usize,
                 Output = dyn key::dynamic::Key<
                     key::composite::Event,
-                    Context = key::composite::Context<L, key::composite::DefaultNestableKey>,
+                    Context = key::composite::Context<key::composite::DefaultNestableKey, LS>,
                 >,
             > + crate::tuples::KeysReset,
-        const L: key::layered::LayerIndex,
-    > Keymap<I, L>
+        LS: key::layered::LayerState,
+    > Keymap<I, LS>
 {
     /// Constructs a new keymap with the given key definitions and context.
     pub const fn new(
         key_definitions: I,
-        context: composite::Context<L, composite::DefaultNestableKey>,
+        context: composite::Context<composite::DefaultNestableKey, LS>,
     ) -> Self {
         Self {
             key_definitions,
@@ -242,7 +242,7 @@ mod tests {
         use tuples::Keys1;
 
         // Assemble
-        let keys: Keys1<simple::Key, Context<0, DefaultNestableKey>, Event> =
+        let keys: Keys1<simple::Key, Context<DefaultNestableKey>, Event> =
             Keys1::new((simple::Key(0x04),));
         let context = composite::Context::new();
         let mut keymap = Keymap::new(keys, context);
@@ -265,7 +265,7 @@ mod tests {
         use composite::{Context, DefaultNestableKey, Event};
 
         // Assemble
-        let keys: Keys1<composite::Key, Context<0, DefaultNestableKey>, Event> =
+        let keys: Keys1<composite::Key, Context<DefaultNestableKey>, Event> =
             Keys1::new((composite::Key::<0>::Simple(simple::Key(0x04)),));
         let context = composite::Context::new();
         let mut keymap = Keymap::new(keys, context);
@@ -289,19 +289,17 @@ mod tests {
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys: Keys2<
-            composite::Key<L>,
-            composite::Key<L>,
-            Context<L, DefaultNestableKey>,
-            Event,
-        > = tuples::Keys2::new((
-            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
-            composite::Key::<L>::Layered(layered::LayeredKey::new(
+        type LS = [bool; L];
+        type Ctx = Context<DefaultNestableKey, LS>;
+        type K = composite::Key<L, DefaultNestableKey, LS>;
+        let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
+            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
+        let context = Ctx::new();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -322,19 +320,18 @@ mod tests {
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys: Keys2<
-            composite::Key<L>,
-            composite::Key<L>,
-            Context<L, DefaultNestableKey>,
-            Event,
-        > = tuples::Keys2::new((
-            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
-            composite::Key::<L>::Layered(layered::LayeredKey::new(
+        type LS = [bool; L];
+        type Ctx = Context<DefaultNestableKey, LS>;
+        type K = composite::Key<L, DefaultNestableKey, LS>;
+        let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
+            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
+        let context = Ctx::new();
+
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -357,19 +354,17 @@ mod tests {
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys: Keys2<
-            composite::Key<L>,
-            composite::Key<L>,
-            Context<L, DefaultNestableKey>,
-            Event,
-        > = tuples::Keys2::new((
-            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
-            composite::Key::<L>::Layered(layered::LayeredKey::new(
+        type LS = [bool; L];
+        type Ctx = Context<DefaultNestableKey, LS>;
+        type K = composite::Key<L, DefaultNestableKey, LS>;
+        let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
+            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
+        let context = Ctx::new();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -395,19 +390,17 @@ mod tests {
 
         // Assemble
         const L: layered::LayerIndex = 1;
-        let keys: Keys2<
-            composite::Key<L>,
-            composite::Key<L>,
-            Context<L, DefaultNestableKey>,
-            Event,
-        > = tuples::Keys2::new((
-            composite::Key::<L>::LayerModifier(layered::ModifierKey::Hold(0)),
-            composite::Key::<L>::Layered(layered::LayeredKey::new(
+        type LS = [bool; L];
+        type Ctx = Context<DefaultNestableKey, LS>;
+        type K = composite::Key<L, DefaultNestableKey, LS>;
+        let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
+            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = composite::Context::<L, composite::DefaultNestableKey>::new();
+        let context = Ctx::new();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
