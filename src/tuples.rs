@@ -21,7 +21,7 @@ pub struct Keys1<
 >(dynamic::DynamicKey<K0, Ctx, Ev>);
 
 impl<
-        K0: key::Key + Copy,
+        K0: key::Key,
         Ctx: key::Context<Event = Ev> + Debug,
         Ev: Copy + Debug + Ord,
         const N: usize,
@@ -112,7 +112,7 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: key::Key + Copy,
+                        K~I: key::Key,
                     )*
                 Ctx: key::Context<Event = Ev> + core::fmt::Debug,
                 Ev: Copy + core::fmt::Debug + Ord,
