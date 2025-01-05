@@ -266,7 +266,7 @@ mod tests {
 
         // Assemble
         let keys: Keys1<composite::Key, Context<DefaultNestableKey>, Event> =
-            Keys1::new((composite::Key::<0>::Simple(simple::Key(0x04)),));
+            Keys1::new((composite::Key::<0>::simple(simple::Key(0x04)),));
         let context = composite::Context::new();
         let mut keymap = Keymap::new(keys, context);
 
@@ -293,7 +293,7 @@ mod tests {
         type Ctx = Context<DefaultNestableKey, LS>;
         type K = composite::Key<L, DefaultNestableKey, LS>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
-            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
@@ -324,7 +324,7 @@ mod tests {
         type Ctx = Context<DefaultNestableKey, LS>;
         type K = composite::Key<L, DefaultNestableKey, LS>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
-            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
@@ -358,7 +358,7 @@ mod tests {
         type Ctx = Context<DefaultNestableKey, LS>;
         type K = composite::Key<L, DefaultNestableKey, LS>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
-            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
@@ -394,7 +394,7 @@ mod tests {
         type Ctx = Context<DefaultNestableKey, LS>;
         type K = composite::Key<L, DefaultNestableKey, LS>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
-            K::LayerModifier(layered::ModifierKey::Hold(0)),
+            K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
                 simple::Key(0x04),
                 [Some(simple::Key(0x05))],
