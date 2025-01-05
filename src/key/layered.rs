@@ -63,6 +63,35 @@ impl<const L: LayerIndex> key::Key for ModifierKey<L> {
     }
 }
 
+/// Tracks state of active layers.
+pub trait LayerState {
+    /// Activate the given layer.
+    fn activate(&mut self, layer: LayerIndex);
+    /// Deactivate the given layer.
+    fn deactivate(&mut self, layer: LayerIndex);
+    /// Get the active layers, from highest active layer to lowest.
+    fn active_layers(&self) -> impl Iterator<Item = LayerIndex>;
+}
+
+impl<const L: usize> LayerState for [bool; L] {
+    fn activate(&mut self, layer: LayerIndex) {
+        debug_assert!(layer < L, "layer must be less than array length of {}", L);
+        self[layer] = true;
+    }
+
+    fn deactivate(&mut self, layer: LayerIndex) {
+        debug_assert!(layer < L, "layer must be less than array length of {}", L);
+        self[layer] = false;
+    }
+
+    fn active_layers(&self) -> impl Iterator<Item = LayerIndex> {
+        self.iter()
+            .enumerate()
+            .rev()
+            .filter_map(|(i, &active)| if active { Some(i) } else { None })
+    }
+}
+
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
 pub struct Context<const L: LayerIndex, C: key::Context> {
@@ -79,6 +108,7 @@ impl<const L: LayerIndex, C: key::Context> Context<L, C> {
         }
     }
 
+impl<C: key::Context, LS: LayerState> Context<C, LS> {
     /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
         self.active_layers[layer] = true;
@@ -102,6 +132,24 @@ impl<const L: LayerIndex, C: key::Context> key::Context for Context<L, C> {
                 self.active_layers[layer] = false;
             }
         }
+    }
+}
+
+/// Trait for layers of [LayeredKey].
+pub trait Layers<K: key::Key> {
+    /// Get the highest active key, if any, for the given [LayerState].
+    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K>;
+}
+
+impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
+    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K> {
+        for layer in layer_state.active_layers() {
+            if let Some(key) = self[layer] {
+                return Some(key);
+            }
+        }
+
+        None
     }
 }
 
@@ -499,5 +547,29 @@ mod tests {
             layered: [None],
         };
         assert_eq!(actual_key, expected_key);
+    }
+
+    #[test]
+    fn test_layer_state_array_active_layers() {
+        let mut layer_state: [bool; 5] = [false; 5];
+        layer_state.activate(0);
+        layer_state.activate(1);
+        layer_state.activate(3);
+        let actual_active_layers: Vec<LayerIndex> = layer_state.active_layers().collect();
+        let expected_active_layers: Vec<LayerIndex> = vec![3, 1, 0];
+
+        assert_eq!(actual_active_layers, expected_active_layers);
+    }
+
+    #[test]
+    fn test_layer_state_vec_active_layers() {
+        let mut layer_state: Vec<bool> = vec![false, false, false, false, false];
+        layer_state.activate(0);
+        layer_state.activate(1);
+        layer_state.activate(3);
+        let actual_active_layers: Vec<LayerIndex> = layer_state.active_layers().collect();
+        let expected_active_layers: Vec<LayerIndex> = vec![3, 1, 0];
+
+        assert_eq!(actual_active_layers, expected_active_layers);
     }
 }
