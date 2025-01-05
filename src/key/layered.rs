@@ -94,12 +94,12 @@ impl<const L: usize> LayerState for [bool; L] {
 
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<const L: LayerIndex, C: key::Context> {
-    active_layers: [bool; L],
+pub struct Context<C: key::Context, LS: LayerState> {
+    active_layers: LS,
     inner_context: C,
 }
 
-impl<const L: LayerIndex, C: key::Context> Context<L, C> {
+impl<C: key::Context, const L: usize> Context<C, [bool; L]> {
     /// Create a new [Context].
     pub const fn new(inner_context: C) -> Self {
         Self {
@@ -107,29 +107,30 @@ impl<const L: LayerIndex, C: key::Context> Context<L, C> {
             inner_context,
         }
     }
+}
 
 impl<C: key::Context, LS: LayerState> Context<C, LS> {
     /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
-        self.active_layers[layer] = true;
+        self.active_layers.activate(layer);
     }
 
     /// Get the active layers.
-    pub fn active_layers(&self) -> &[bool; L] {
+    pub fn layer_state(&self) -> &LS {
         &self.active_layers
     }
 }
 
-impl<const L: LayerIndex, C: key::Context> key::Context for Context<L, C> {
+impl<C: key::Context, LS: LayerState> key::Context for Context<C, LS> {
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: Self::Event) {
         match event {
             LayerEvent::LayerActivated(layer) => {
-                self.active_layers[layer] = true;
+                self.active_layers.activate(layer);
             }
             LayerEvent::LayerDeactivated(layer) => {
-                self.active_layers[layer] = false;
+                self.active_layers.deactivate(layer);
             }
         }
     }
@@ -178,20 +179,17 @@ where
     [Option<K>; L]: serde::de::DeserializeOwned,
 {
     /// Create a new [input::PressedKey], depending on the active layers in [Context].
-    pub fn new_pressed_key(
+    pub fn new_pressed_key<LS: LayerState>(
         &self,
-        context: &Context<L, K::Context>,
+        context: &Context<K::Context, LS>,
         keymap_index: u16,
     ) -> (
         input::PressedKey<K, K::PressedKeyState>,
         Option<key::ScheduledEvent<K::Event>>,
     ) {
-        for index in 1..=L {
-            let i = L - index;
-            if context.active_layers()[i] {
-                if let Some(key) = &self.layered[i] {
-                    return key.new_pressed_key(&context.inner_context, keymap_index);
-                }
+        for i in context.layer_state().active_layers() {
+            if let Some(key) = &self.layered[i] {
+                return key.new_pressed_key(&context.inner_context, keymap_index);
             }
         }
 
@@ -205,7 +203,7 @@ where
     [Option<K>; L]: serde::de::DeserializeOwned,
     LayerEvent: From<<K as key::Key>::Event>,
 {
-    type Context = Context<L, K::Context>;
+    type Context = Context<K::Context, [bool; L]>; // LS = [bool; L]
     type ContextEvent = LayerEvent;
     type Event = K::Event;
     type PressedKeyState = K::PressedKeyState;
@@ -341,11 +339,12 @@ mod tests {
 
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
-        let mut context: Context<3, ()> = Context::new(());
+        const L: usize = 3;
+        let mut context: Context<(), [bool; L]> = Context::new(());
 
         context.handle_event(LayerEvent::LayerActivated(1));
 
-        let actual_active_layers = context.active_layers();
+        let actual_active_layers = &context.active_layers;
         assert_eq!(&[false, true, false], actual_active_layers);
     }
 
@@ -353,7 +352,7 @@ mod tests {
     fn test_pressing_layered_key_acts_as_base_key_when_no_layers_active() {
         // Assemble
         const L: usize = 3;
-        let context: Context<L, ()> = Context::new(());
+        let context: Context<(), [bool; L]> = Context::new(());
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -384,7 +383,7 @@ mod tests {
     fn test_pressing_layered_key_falls_through_undefined_active_layers() {
         // Assemble: layered key (with no layered definitions)
         const L: usize = 3;
-        let mut context: Context<L, ()> = Context::new(());
+        let mut context: Context<(), [bool; L]> = Context::new(());
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -410,7 +409,7 @@ mod tests {
     fn test_pressing_layered_key_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
         const L: usize = 3;
-        let mut context: Context<L, ()> = Context::new(());
+        let mut context: Context<(), [bool; L]> = Context::new(());
         let expected_key = simple::Key(0x09);
         let layered_key = LayeredKey {
             base: simple::Key(0x04),
@@ -440,7 +439,7 @@ mod tests {
     fn test_pressing_layered_key_with_some_transparency_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
         const L: usize = 3;
-        let mut context: Context<L, ()> = Context::new(());
+        let mut context: Context<(), [bool; L]> = Context::new(());
         let expected_key = simple::Key(0x09);
         let layered_key = LayeredKey {
             base: simple::Key(0x04),
