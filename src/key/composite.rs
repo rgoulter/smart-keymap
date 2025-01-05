@@ -24,7 +24,7 @@ pub type DefaultNestableKey = simple::Key;
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum Key<
     const L: layered::LayerIndex = 0,
-    K: NestableKey = DefaultNestableKey,
+    K: NestableKey + Copy = DefaultNestableKey,
     LS: layered::LayerState = [bool; 0],
 > where
     [Option<K>; L]: serde::de::DeserializeOwned,
@@ -47,7 +47,7 @@ pub enum Key<
     /// A layered key.
     Layered {
         /// The layered key.
-        key: layered::LayeredKey<L, K>,
+        key: layered::LayeredKey<K, [Option<K>; L]>,
         /// Marker for the LayerState, for LayeredKey new_pressed_key.
         #[serde(skip)]
         _phantom: PhantomData<LS>,
@@ -74,7 +74,9 @@ where
     }
 
     /// Constructs a [Key::Layered] from the given [layered::LayeredKey].
-    pub const fn layered(key: layered::LayeredKey<L, DefaultNestableKey>) -> Self {
+    pub const fn layered(
+        key: layered::LayeredKey<DefaultNestableKey, [Option<DefaultNestableKey>; L]>,
+    ) -> Self {
         Self::Layered {
             key,
             _phantom: PhantomData,
