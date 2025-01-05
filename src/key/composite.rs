@@ -42,7 +42,7 @@ pub enum Key<
     /// A layer modifier key.
     LayerModifier {
         /// The layer modifier key.
-        key: layered::ModifierKey<L>,
+        key: layered::ModifierKey,
     },
     /// A layered key.
     Layered {
@@ -69,7 +69,7 @@ where
     }
 
     /// Constructs a [Key::LayerModifier] from the given [layered::ModifierKey].
-    pub const fn layer_modifier(key: layered::ModifierKey<L>) -> Self {
+    pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
         Self::LayerModifier { key }
     }
 
@@ -176,7 +176,7 @@ pub type PressedKey<const L: layered::LayerIndex, LS> =
     input::PressedKey<Key<L, DefaultNestableKey, LS>, PressedKeyState<L>>;
 
 impl<const L: layered::LayerIndex, LS: layered::LayerState + Debug>
-    From<layered::PressedModifierKey<L>> for PressedKey<L, LS>
+    From<layered::PressedModifierKey> for PressedKey<L, LS>
 where
     [Option<DefaultNestableKey>; L]: serde::de::DeserializeOwned,
 {
@@ -185,7 +185,7 @@ where
             keymap_index,
             key,
             pressed_key_state,
-        }: layered::PressedModifierKey<L>,
+        }: layered::PressedModifierKey,
     ) -> Self {
         input::PressedKey {
             key: Key::layer_modifier(key),

@@ -8,12 +8,12 @@ pub type LayerIndex = usize;
 
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub enum ModifierKey<const L: LayerIndex> {
+pub enum ModifierKey {
     /// Activates the given layer when the held.
     Hold(LayerIndex),
 }
 
-impl<const L: LayerIndex> ModifierKey<L> {
+impl ModifierKey {
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
@@ -44,7 +44,7 @@ impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
 }
 
-impl<const L: LayerIndex> key::Key for ModifierKey<L> {
+impl key::Key for ModifierKey {
     type Context = ();
     type ContextEvent = ();
     type Event = LayerEvent;
@@ -230,16 +230,15 @@ pub enum LayerEvent {
 pub struct PressedModifierKeyState;
 
 /// Type alias for [crate::input::PressedKey] of [ModifierKey].
-pub type PressedModifierKey<const L: LayerIndex> =
-    input::PressedKey<ModifierKey<L>, PressedModifierKeyState>;
+pub type PressedModifierKey = input::PressedKey<ModifierKey, PressedModifierKeyState>;
 
-impl<const L: LayerIndex> key::PressedKeyState<ModifierKey<L>> for PressedModifierKeyState {
+impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
     type Event = LayerEvent;
 
     fn handle_event_for(
         &mut self,
         keymap_index: u16,
-        key: &ModifierKey<L>,
+        key: &ModifierKey,
         event: key::Event<Self::Event>,
     ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
         match key {
@@ -256,7 +255,7 @@ impl<const L: LayerIndex> key::PressedKeyState<ModifierKey<L>> for PressedModifi
         }
     }
 
-    fn key_code(&self, _key: &ModifierKey<L>) -> Option<u8> {
+    fn key_code(&self, _key: &ModifierKey) -> Option<u8> {
         None
     }
 }
@@ -270,7 +269,7 @@ mod tests {
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
         let layer = 0;
-        let key = ModifierKey::<3>::Hold(layer);
+        let key = ModifierKey::Hold(layer);
 
         let keymap_index = 9; // arbitrary
         let (_pressed_key, scheduled_event) = key.new_pressed_key(keymap_index);
@@ -290,7 +289,7 @@ mod tests {
     fn test_releasing_hold_modifier_key_emits_event_deactivate_layer() {
         // Assemble: press a Hold layer modifier key
         let layer = 0;
-        let key = ModifierKey::<3>::Hold(layer);
+        let key = ModifierKey::Hold(layer);
         let keymap_index = 9; // arbitrary
         let (mut pressed_key, _) = key.new_pressed_key(keymap_index);
 
@@ -313,7 +312,7 @@ mod tests {
     fn test_releasing_different_hold_modifier_key_does_not_emit_event() {
         // Assemble: press a Hold layer modifier key
         let layer = 0;
-        let key = ModifierKey::<3>::Hold(layer);
+        let key = ModifierKey::Hold(layer);
         let keymap_index = 9; // arbitrary
         let (mut pressed_key, _) = key.new_pressed_key(keymap_index);
 
