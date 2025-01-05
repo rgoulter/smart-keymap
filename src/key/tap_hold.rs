@@ -1,3 +1,5 @@
+#![doc = include_str!("doc_de_tap_hold.md")]
+
 use serde::Deserialize;
 
 use crate::input;
