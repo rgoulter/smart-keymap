@@ -3,7 +3,7 @@ Feature: Simple Key
   Example: Deserialize a simple::Key
     Given a keymap, expressed as a RON string
       """
-      [Simple(Key(0x04)), Simple(Key(0x05))]
+      [Simple(key: Key(0x04)), Simple(key: Key(0x05))]
       """
     When the keymap registers the following input
       """

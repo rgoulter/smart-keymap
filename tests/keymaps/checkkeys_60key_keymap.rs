@@ -26,7 +26,7 @@ pub const KEY_DEFINITIONS: KeyDefinitionsType = {
     seq!(I in 0..60 {
         Keys60::new((
             #(
-                Key::Simple(simple::Key(codes[I] as u8)),
+                Key::simple(simple::Key(codes[I] as u8)),
             )*
         ))
     })

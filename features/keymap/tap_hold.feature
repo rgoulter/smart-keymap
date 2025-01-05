@@ -14,7 +14,7 @@ Feature: TapHold Key
 
     Given a keymap, expressed as a RON string
       """
-      [TapHold(Key(tap: 0x04, hold: 0xE0)), Simple(Key(0x05))]
+      [TapHold(key: Key(tap: 0x04, hold: 0xE0)), Simple(key: Key(0x05))]
       """
 
   Example: acts as 'tap' when tapped
