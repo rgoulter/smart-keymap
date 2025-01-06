@@ -40,10 +40,7 @@ impl ModifierKey {
     pub fn new_pressed_key(
         &self,
         keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, PressedModifierKeyState>,
-        key::ScheduledEvent<LayerEvent>,
-    ) {
+    ) -> (input::PressedKey<Self, PressedModifierKeyState>, LayerEvent) {
         match self {
             ModifierKey::Hold(layer) => {
                 let event = LayerEvent::LayerActivated(*layer);
@@ -53,7 +50,7 @@ impl ModifierKey {
                         key: *self,
                         pressed_key_state: PressedModifierKeyState,
                     },
-                    key::ScheduledEvent::immediate(key::Event::Key(event)),
+                    event,
                 )
             }
         }
@@ -76,10 +73,10 @@ impl key::Key for ModifierKey {
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        key::PressedKeyEvents<Self::Event>,
     ) {
         let (pk, ev) = ModifierKey::new_pressed_key(self, keymap_index);
-        (pk, Some(ev))
+        (pk, key::PressedKeyEvents::key_event(ev))
     }
 }
 
@@ -197,7 +194,7 @@ impl<L: LayerImpl, K: key::Key> LayeredKey<K, L> {
         keymap_index: u16,
     ) -> (
         input::PressedKey<K, K::PressedKeyState>,
-        Option<key::ScheduledEvent<K::Event>>,
+        key::PressedKeyEvents<K::Event>,
     ) {
         if let Some(key) = self.layered.highest_active_key(context.layer_state()) {
             return key.new_pressed_key(&context.inner_context, keymap_index);
@@ -223,7 +220,7 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<K, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        key::PressedKeyEvents<Self::Event>,
     ) {
         self.new_pressed_key(context, keymap_index)
     }
@@ -285,17 +282,9 @@ mod tests {
         let key = ModifierKey::Hold(layer);
 
         let keymap_index = 9; // arbitrary
-        let (_pressed_key, scheduled_event) = key.new_pressed_key(keymap_index);
+        let (_pressed_key, layer_event) = key.new_pressed_key(keymap_index);
 
-        if let key::ScheduledEvent {
-            event: key::Event::Key(key_ev),
-            ..
-        } = scheduled_event
-        {
-            assert_eq!(key_ev, LayerEvent::LayerActivated(layer));
-        } else {
-            panic!("Expected Some scheduled event");
-        }
+        assert_eq!(layer_event, LayerEvent::LayerActivated(layer));
     }
 
     #[test]

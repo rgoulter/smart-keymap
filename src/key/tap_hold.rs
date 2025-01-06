@@ -30,7 +30,7 @@ impl key::Key for Key {
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        key::PressedKeyEvents<Self::Event>,
     ) {
         (
             input::PressedKey {
@@ -40,10 +40,7 @@ impl key::Key for Key {
                     state: TapHoldState::Pending,
                 },
             },
-            Some(key::ScheduledEvent::after(
-                200,
-                Event::TapHoldTimeout { keymap_index }.into(),
-            )),
+            key::PressedKeyEvents::scheduled_key_event(200, Event::TapHoldTimeout { keymap_index }),
         )
     }
 }

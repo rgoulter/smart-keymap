@@ -15,6 +15,52 @@ pub mod composite;
 /// dyn-compatible `Key` trait, and generic implementation.
 pub mod dynamic;
 
+/// Events emitted when a [Key] is pressed.
+#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+pub struct PressedKeyEvents<E>(Option<ScheduledEvent<E>>);
+
+impl<E: Copy> PressedKeyEvents<E> {
+    /// Constructs a [PressedKeyEvents] with no events scheduled.
+    pub fn no_events() -> Self {
+        PressedKeyEvents(None)
+    }
+
+    /// Constructs a [PressedKeyEvents] with an immediate [Event].
+    pub fn key_event(key_event: E) -> Self {
+        PressedKeyEvents(Some(ScheduledEvent::immediate(Event::Key(key_event))))
+    }
+
+    /// Constructs a [PressedKeyEvents] with an [Event] scheduled after a delay.
+    pub fn scheduled_key_event(delay: u16, key_event: E) -> Self {
+        PressedKeyEvents(Some(ScheduledEvent::after(delay, Event::Key(key_event))))
+    }
+
+    /// Maps the PressedKeyEvents to a new type.
+    pub fn into_events<F>(&self) -> PressedKeyEvents<F>
+    where
+        Event<F>: From<Event<E>>,
+    {
+        PressedKeyEvents(self.0.map(|scheduled_event| ScheduledEvent {
+            schedule: scheduled_event.schedule,
+            event: scheduled_event.event.into(),
+        }))
+    }
+
+    /// Returns the [ScheduledEvent] if it exists.
+    pub fn into_option(self) -> Option<ScheduledEvent<E>> {
+        self.0
+    }
+}
+
+impl<E> IntoIterator for PressedKeyEvents<E> {
+    type Item = ScheduledEvent<E>;
+    type IntoIter = core::option::IntoIter<ScheduledEvent<E>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
 /// The interface for `Key` behaviour.
 ///
 /// A `Key` has an associated [Context], `Event`, and [PressedKeyState].
@@ -53,7 +99,7 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<PK, Self::PressedKeyState>,
-        Option<ScheduledEvent<Self::Event>>,
+        PressedKeyEvents<Self::Event>,
     );
 }
 
