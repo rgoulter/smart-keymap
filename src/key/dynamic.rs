@@ -71,7 +71,7 @@ impl<
     > Key<Ev, N> for DynamicKey<K, Ctx, Ev>
 where
     key::Event<K::Event>: TryFrom<key::Event<Ev>>,
-    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<K::Event>>,
+    key::Event<Ev>: From<key::Event<K::Event>>,
     for<'c> &'c K::Context: From<&'c Ctx>,
 {
     type Context = Ctx;
@@ -89,7 +89,7 @@ where
                     pressed_key
                         .handle_event(event)
                         .into_iter()
-                        .map(|ev| ScheduledEvent::immediate(ev).into()),
+                        .map(|ev| ScheduledEvent::immediate(ev).into_scheduled_event()),
                 );
             }
 
@@ -100,7 +100,11 @@ where
             }
         } else if let key::Event::Input(input::Event::Press { keymap_index }) = event {
             let (pressed_key, new_events) = self.key.new_pressed_key(context.into(), keymap_index);
-            scheduled_events.extend(new_events.into_iter().map(|sch_ev| sch_ev.into()));
+            scheduled_events.extend(
+                new_events
+                    .into_iter()
+                    .map(|sch_ev| sch_ev.into_scheduled_event()),
+            );
             self.pressed_key = Some(pressed_key);
         }
 

@@ -217,7 +217,7 @@ pub struct ScheduledEvent<T> {
     pub event: Event<T>,
 }
 
-impl<T> ScheduledEvent<T> {
+impl<T: Copy> ScheduledEvent<T> {
     /// Constructs a [ScheduledEvent] with [Schedule::Immediate].
     #[allow(unused)]
     pub fn immediate(event: Event<T>) -> Self {
@@ -232,6 +232,17 @@ impl<T> ScheduledEvent<T> {
         ScheduledEvent {
             schedule: Schedule::After(delay),
             event,
+        }
+    }
+
+    /// Maps the ScheduledEvent into a new type.
+    pub fn into_scheduled_event<U>(&self) -> ScheduledEvent<U>
+    where
+        Event<U>: From<Event<T>>,
+    {
+        ScheduledEvent {
+            event: self.event.into(),
+            schedule: self.schedule,
         }
     }
 }

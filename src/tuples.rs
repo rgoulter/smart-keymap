@@ -41,7 +41,7 @@ impl<
     > Index<usize> for Keys1<K0, Ctx, Ev, N>
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
+    key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
     for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
 {
     type Output = dyn dynamic::Key<Ev, N, Context = Ctx>;
@@ -62,7 +62,7 @@ impl<
     > IndexMut<usize> for Keys1<K0, Ctx, Ev, N>
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
+    key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
     for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
@@ -81,7 +81,7 @@ impl<
     > KeysReset for Keys1<K0, Ctx, Ev, N>
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K0 as key::Key>::Event>>,
+    key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
     for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
 {
     fn reset(&mut self) {
@@ -150,7 +150,7 @@ macro_rules! define_keys {
                 where
                     #(
                     key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-                    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K~I as key::Key>::Event>>,
+                    key::Event<Ev>: From<key::Event<<K~I as key::Key>::Event>>,
                     for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
@@ -180,7 +180,7 @@ macro_rules! define_keys {
                 where
                     #(
                     key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-                    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K~I as key::Key>::Event>>,
+                    key::Event<Ev>: From<key::Event<<K~I as key::Key>::Event>>,
                     for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
@@ -208,7 +208,7 @@ macro_rules! define_keys {
                 where
                     #(
                     key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-                    key::ScheduledEvent<Ev>: From<key::ScheduledEvent<<K~I as key::Key>::Event>>,
+                    key::Event<Ev>: From<key::Event<<K~I as key::Key>::Event>>,
                     for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
