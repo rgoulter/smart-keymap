@@ -140,10 +140,10 @@ impl key::PressedKeyState<Key> for PressedKeyState {
         }
     }
 
-    fn key_code(&self, key: &Key) -> Option<u8> {
+    fn key_output(&self, key: &Key) -> Option<key::KeyOutput> {
         match self.state {
-            TapHoldState::Tap => Some(key.tap),
-            TapHoldState::Hold => Some(key.hold),
+            TapHoldState::Tap => Some(key::KeyOutput::from_key_code(key.tap)),
+            TapHoldState::Hold => Some(key::KeyOutput::from_key_code(key.hold)),
             _ => None,
         }
     }

@@ -69,7 +69,7 @@ impl key::PressedKeyState<Key> for PressedKeyState {
     }
 
     /// Simple key always has a key_code.
-    fn key_code(&self, key: &Key) -> Option<u8> {
-        Some(key.key_code())
+    fn key_output(&self, key: &Key) -> Option<key::KeyOutput> {
+        Some(key::KeyOutput::from_key_code(key.key_code()))
     }
 }

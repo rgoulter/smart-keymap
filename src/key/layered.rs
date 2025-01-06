@@ -268,7 +268,7 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
         }
     }
 
-    fn key_code(&self, _key: &ModifierKey) -> Option<u8> {
+    fn key_output(&self, _key: &ModifierKey) -> Option<key::KeyOutput> {
         None
     }
 }
