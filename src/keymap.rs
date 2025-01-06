@@ -209,7 +209,7 @@ impl<
         let pressed_keys = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key { keymap_index, .. } => {
                 let key = &self.key_definitions[*keymap_index as usize];
-                key.key_code()
+                key.key_output().map(|ko| ko.key_code())
             }
             input::PressedInput::Virtual { key_code } => Some(*key_code),
         });

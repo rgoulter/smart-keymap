@@ -28,7 +28,7 @@ where
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, N>;
 
     /// Output HID keyboard code for the [Key].
-    fn key_code(&self) -> Option<u8>;
+    fn key_output(&self) -> Option<key::KeyOutput>;
 
     /// Resets the [Key] to its initial state.
     fn reset(&mut self);
@@ -107,9 +107,9 @@ where
         scheduled_events
     }
 
-    fn key_code(&self) -> Option<u8> {
+    fn key_output(&self) -> Option<key::KeyOutput> {
         if let Some(pressed_key) = &self.pressed_key {
-            pressed_key.key_code()
+            pressed_key.key_output()
         } else {
             None
         }
@@ -145,7 +145,7 @@ mod tests {
         );
 
         // Assert
-        let actual_key_code = dyn_key.key_code();
+        let actual_key_code = dyn_key.key_output();
         let expected_key_code = None;
         assert_eq!(actual_key_code, expected_key_code);
     }

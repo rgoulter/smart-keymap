@@ -49,8 +49,8 @@ impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> cr
             .handle_event_for(self.keymap_index, &self.key, event)
     }
 
-    fn key_code(&self) -> Option<u8> {
-        self.pressed_key_state.key_code(&self.key)
+    fn key_output(&self) -> Option<crate::key::KeyOutput> {
+        self.pressed_key_state.key_output(&self.key)
     }
 }
 

@@ -74,6 +74,22 @@ impl Context for () {
     fn handle_event(&mut self, _event: Self::Event) {}
 }
 
+/// Struct for the output from [PressedKey].
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+pub struct KeyOutput(u8);
+
+impl KeyOutput {
+    /// Constructs a [KeyOutput] from a key code.
+    pub fn from_key_code(key_code: u8) -> Self {
+        KeyOutput(key_code)
+    }
+
+    /// Returns the key code value.
+    pub fn key_code(self) -> u8 {
+        self.0
+    }
+}
+
 /// [PressedKeyState] for a stateful pressed key value.
 pub trait PressedKey {
     /// The type of `Event` the pressed key handles.
@@ -86,7 +102,7 @@ pub trait PressedKey {
     ) -> impl IntoIterator<Item = Event<Self::Event>>;
 
     /// Output for the pressed key.
-    fn key_code(&self) -> Option<u8>;
+    fn key_output(&self) -> Option<KeyOutput>;
 }
 
 /// Implements functionality for the pressed key.
@@ -106,7 +122,7 @@ pub trait PressedKeyState<K: Key>: Debug {
     ) -> impl IntoIterator<Item = Event<Self::Event>>;
 
     /// Output for the pressed key state.
-    fn key_code(&self, key: &K) -> Option<u8>;
+    fn key_output(&self, key: &K) -> Option<KeyOutput>;
 }
 
 /// Errors for [TryFrom] implementations.

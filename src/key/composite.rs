@@ -254,13 +254,13 @@ where
         }
     }
 
-    fn key_code(&self, key: &Key<DefaultNestableKey, L>) -> Option<u8> {
+    fn key_output(&self, key: &Key<DefaultNestableKey, L>) -> Option<key::KeyOutput> {
         match (key, self) {
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pk)) => {
-                pk.key_code(key)
+                pk.key_output(key)
             }
-            (Key::Simple { key, .. }, PressedKeyState::Simple(pk)) => pk.key_code(key),
-            (Key::TapHold { key, .. }, PressedKeyState::TapHold(pk)) => pk.key_code(key),
+            (Key::Simple { key, .. }, PressedKeyState::Simple(pk)) => pk.key_output(key),
+            (Key::TapHold { key, .. }, PressedKeyState::TapHold(pk)) => pk.key_output(key),
             _ => None,
         }
     }
@@ -487,10 +487,10 @@ mod tests {
         // Act
         let keymap_index: u16 = 2;
         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
-        let actual_keycode = pressed_key.key_code();
+        let actual_keycode = pressed_key.key_output();
 
         // Assert
-        let expected_keycode = Some(0x06);
+        let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
         assert_eq!(actual_keycode, expected_keycode);
     }
 
@@ -515,10 +515,10 @@ mod tests {
         // Act
         let keymap_index: u16 = 1;
         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
-        let actual_keycode = pressed_key.key_code();
+        let actual_keycode = pressed_key.key_output();
 
         // Assert
-        let expected_keycode = Some(0x04);
+        let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
         assert_eq!(actual_keycode, expected_keycode);
     }
 }
