@@ -27,7 +27,7 @@ impl key::Key for Key {
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Self::Event>>,
+        key::PressedKeyEvents<Self::Event>,
     ) {
         (
             input::PressedKey {
@@ -35,7 +35,7 @@ impl key::Key for Key {
                 key: *self,
                 pressed_key_state: PressedKeyState,
             },
-            None,
+            key::PressedKeyEvents::no_events(),
         )
     }
 }

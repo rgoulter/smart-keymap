@@ -87,25 +87,25 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
-        Option<key::ScheduledEvent<Event>>,
+        key::PressedKeyEvents<Self::Event>,
     ) {
         match self {
             Key::Simple { key, .. } => {
-                let (pressed_key, _new_event) = key.new_pressed_key(&(), keymap_index);
-                (pressed_key.into(), None)
+                let (pressed_key, events) = key.new_pressed_key(&(), keymap_index);
+                (pressed_key.into(), events.into_events())
             }
             Key::TapHold { key, .. } => {
-                let (pressed_key, new_event) = key.new_pressed_key(&(), keymap_index);
-                (pressed_key.into(), new_event.map(|ev| ev.into()))
+                let (pressed_key, events) = key.new_pressed_key(&(), keymap_index);
+                (pressed_key.into(), events.into_events())
             }
             Key::LayerModifier { key, .. } => {
-                let (pressed_key, new_event) = key.new_pressed_key(keymap_index);
-                (pressed_key.into(), Some(new_event.into()))
+                let (pressed_key, events) = key::Key::new_pressed_key(key, &(), keymap_index);
+                (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
                 let Context { layer_context } = context;
-                let (pressed_key, new_event) = key.new_pressed_key(layer_context, keymap_index);
-                (pressed_key.into(), new_event.map(|ev| ev.into()))
+                let (pressed_key, events) = key.new_pressed_key(layer_context, keymap_index);
+                (pressed_key.into(), events.into_events())
             }
         }
     }
@@ -413,7 +413,8 @@ mod tests {
             )),
         ];
         let mut context = Ctx::new();
-        let (_pressed_key, maybe_ev) = keys[0].new_pressed_key(&context, 0);
+        let (_pressed_key, pressed_key_events) = keys[0].new_pressed_key(&context, 0);
+        let maybe_ev = pressed_key_events.into_iter().next();
 
         // Act
         let event = match maybe_ev {
