@@ -302,33 +302,6 @@ impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
     }
 }
 
-impl From<key::ScheduledEvent<layered::LayerEvent>> for key::ScheduledEvent<Event> {
-    fn from(ev: key::ScheduledEvent<layered::LayerEvent>) -> Self {
-        Self {
-            schedule: ev.schedule,
-            event: ev.event.into(),
-        }
-    }
-}
-
-impl From<key::ScheduledEvent<simple::Event>> for key::ScheduledEvent<Event> {
-    fn from(ev: key::ScheduledEvent<simple::Event>) -> Self {
-        Self {
-            schedule: ev.schedule,
-            event: ev.event.into(),
-        }
-    }
-}
-
-impl From<key::ScheduledEvent<tap_hold::Event>> for key::ScheduledEvent<Event> {
-    fn from(ev: key::ScheduledEvent<tap_hold::Event>) -> Self {
-        Self {
-            schedule: ev.schedule,
-            event: ev.event.into(),
-        }
-    }
-}
-
 impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
     type Error = key::EventError;
 
