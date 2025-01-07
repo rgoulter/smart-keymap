@@ -20,6 +20,7 @@
 #include "hiddev.h"
 #include "hidkbd.h"
 
+#include "keyboard_wabble60.h"
 #include "smart_keymap.h"
 
 /*********************************************************************
@@ -142,9 +143,9 @@ static uint8_t advertData[] = {
     'e',
     'y',
     'b',
-    'r',
     'o',
     'a',
+    'r',
     'd',  // connection interval range
 };
 
@@ -247,7 +248,45 @@ void HidEmu_Init()
     tmos_set_event(hidEmuTaskId, START_DEVICE_EVT);
 
     // SmartKeymap
+    keyboard_matrix_init();
     keymap_init();
+}
+
+void keyboard_matrix_init(void) {
+    // Cols
+    // col1 is A4
+    GPIOA_ModeCfg(GPIO_Pin_4, GPIO_ModeOut_PP_5mA);
+    GPIOA_SetBits(GPIO_Pin_4);
+
+    // Rows
+    // row1 is a8
+    GPIOA_ModeCfg(GPIO_Pin_8, GPIO_ModeIN_PD);
+}
+
+bool previousScan = false;
+bool currentScan = false;
+void keyboard_matrix_scan(void) {
+    // Clear all Column pins
+    GPIOA_ResetBits(GPIO_Pin_4);
+    mDelayuS(5);
+
+    // Read column: Set column pin
+    GPIOA_SetBits(GPIO_Pin_4);
+    mDelayuS(5);
+
+    // Read the row pins
+    currentScan = GPIOA_ReadPortPin(GPIO_Pin_8) != 0;
+
+    // Register presses/events based on changes
+    if (previousScan != currentScan) {
+        if (currentScan) {
+            keymap_register_input_keypress(0);
+        } else {
+            keymap_register_input_keyrelease(0);
+        }
+
+        previousScan = currentScan;
+    }
 }
 
 /*********************************************************************
@@ -313,13 +352,8 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events)
     if(events & START_REPORT_EVT)
     {
         // SmartKeymap
-        keymap_register_input_keyrelease(send_char);
 
-        send_char++;
-        if(send_char >= 60)
-            send_char = 0;
-
-        keymap_register_input_keypress(send_char);
+        keyboard_matrix_scan();
 
         uint8_t buf[HID_KEYBOARD_IN_RPT_LEN];
 
@@ -328,7 +362,8 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events)
         HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
                       HID_KEYBOARD_IN_RPT_LEN, buf);
 
-        tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 2000);
+        // 13 * 625 microseconds = 8.125ms, approx 125Hz
+        tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 13);
         return (events ^ START_REPORT_EVT);
     }
     return 0;
