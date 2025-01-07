@@ -252,43 +252,6 @@ void HidEmu_Init()
     keymap_init();
 }
 
-void keyboard_matrix_init(void) {
-    // Cols
-    // col1 is A4
-    GPIOA_ModeCfg(GPIO_Pin_4, GPIO_ModeOut_PP_5mA);
-    GPIOA_SetBits(GPIO_Pin_4);
-
-    // Rows
-    // row1 is a8
-    GPIOA_ModeCfg(GPIO_Pin_8, GPIO_ModeIN_PD);
-}
-
-bool previousScan = false;
-bool currentScan = false;
-void keyboard_matrix_scan(void) {
-    // Clear all Column pins
-    GPIOA_ResetBits(GPIO_Pin_4);
-    mDelayuS(5);
-
-    // Read column: Set column pin
-    GPIOA_SetBits(GPIO_Pin_4);
-    mDelayuS(5);
-
-    // Read the row pins
-    currentScan = GPIOA_ReadPortPin(GPIO_Pin_8) != 0;
-
-    // Register presses/events based on changes
-    if (previousScan != currentScan) {
-        if (currentScan) {
-            keymap_register_input_keypress(0);
-        } else {
-            keymap_register_input_keyrelease(0);
-        }
-
-        previousScan = currentScan;
-    }
-}
-
 /*********************************************************************
  * @fn      HidEmu_ProcessEvent
  *

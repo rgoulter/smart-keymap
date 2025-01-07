@@ -6,6 +6,7 @@ enable_language(C ASM)
 add_executable(HID_Keyboard
     APP/hidkbd.c
     APP/hidkbd_main.c
+    generated/matrix.c
     Profile/battservice.c
     Profile/devinfoservice.c
     Profile/hiddev.c
