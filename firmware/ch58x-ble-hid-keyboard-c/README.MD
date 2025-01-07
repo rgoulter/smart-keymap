@@ -3,8 +3,10 @@ Demonstration of using the C interface for `libsmart_keymap` with CH58x
 
 The BLE HID firmware comes from the CH58x EVT examples.
 
-The firmware has been modified to use `libsmart_keymap` to iterate through
- each of the keys of the keymap smart keymap lib was built with.
+The firmware has been modified to:
+- use `libsmart_keymap`,
+- and the [WABBLE-60
+ keyboard](https://github.com/rgoulter/keyboard-labs/releases/tag/wabble-60-rev2024.2).
 
 ## Building
 
