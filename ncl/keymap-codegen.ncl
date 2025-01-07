@@ -24,7 +24,7 @@ in
 let key_types =
   keymap
   |> std.array.map key_type_of_key
-  |> std.string.join ""
+  |> std.string.join ","
 in
 
 let key_exprs =
