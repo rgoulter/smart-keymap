@@ -11,18 +11,36 @@
 ///     didn't succeed.
 ///     (e.g. 'q' or 'w' for the chord 'qw').
 /// - [PressedKeyState] manages chord resolution.
-///   - If a timeout event is received for the key,
-///     the PKS resolves to "Timed out",
-///     and behaves as the pass-through key.
-///   - If a key press occurs for keys unrelated
-///     to the chords related to that pressed key,
-///     the PKS resolves to "Interrupted",
-///     and behaves as the pass-through key.
-///   - Otherwise,
-///     when a key press belonging to the chords related to the pressed key occurs:
-///     - If the chord is fully satisfied (and there are no overlapping chords),
-///       the pressed key state resolves, and behaves
-///     - Otherwise, the PKS tracks the pressed key index.
+///   - If a timeout event is received for the key:
+///     - if the PKS does not have a satisfied chord,
+///       the PKS resolves to "Timed out",
+///       and behaves as the pass-through key.
+///     - if the PKS has a satisfied chord,
+///       the PKS resolves to "Chorded key",
+///       - and the primary PKS
+///         (the PKS with lowest index in the chord)
+///         behaves as the chorded key.
+///   - When a key press is received for some keymap index:
+///     - if the pressed key does not belong to any of  the chords related to
+///        that pressed key,
+///       the PKS resolves to "Interrupted",
+///       and behaves as the pass-through key.
+///     - Otherwise,
+///        when a key press belonging to the chords related to the pressed key occurs:
+///       - If a chord is fully satisfied (and there are no overlapping chords),
+///         the PKS resolves to "Chorded key",
+///         - and the primary PKS
+///           (the PKS with lowest index in the chord)
+///           behaves as the chorded key.
+///       - If a chord is fully satisfied (and there are overlapping chords),
+///         then the pressed key state remains pending,
+///       - Otherwise, the PKS remains pending.
+///   - When a key release event is received for some keymap index:
+///     - If the PKS is resolved:
+///       - as chorded: then the chorded key is released (if the PKS was pressing it),
+///       - as pass-through key: then the pass through key is released.
+///     - If the PKS is pending,
+///       - then the pass-through key is 'tapped'.
 use serde::Deserialize;
 
 use crate::{input, key};
