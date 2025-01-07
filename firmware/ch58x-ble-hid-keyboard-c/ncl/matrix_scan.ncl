@@ -4,28 +4,33 @@ let gpio_pins =
 
   std.array.flat_map
     (fun port => std.array.map (fun pin => { "%{port}%{std.to_string pin}" = { "port_name" = port, "pin_number" = pin } }) pins)
-    ports |>
-  std.array.fold_left (&) {}
+    ports
+  |> std.array.fold_left (&) {}
 in
 
-let board = let gp = gpio_pins in {
-  cols = [ gp.A4, gp.A5, gp.A15, gp.A14, gp.A13, gp.A12, gp.A11, gp.A10 ],
-  rows = [ gp.A8, gp.A9, gp.B15, gp.B14, gp.B13, gp.B12, gp.B7, gp.B4 ],
-  num_keys = 60,
-} in
+let board =
+  let gp = gpio_pins in
+  {
+    cols = [gp.A4, gp.A5, gp.A15, gp.A14, gp.A13, gp.A12, gp.A11, gp.A10],
+    rows = [gp.A8, gp.A9, gp.B15, gp.B14, gp.B13, gp.B12, gp.B7, gp.B4],
+    num_keys = 60,
+  }
+in
 
 let init_col = fun { port_name, pin_number, .. } =>
-m%"
+  m%"
     GPIO%{port_name}_ModeCfg(GPIO_Pin_%{std.to_string pin_number}, GPIO_ModeOut_PP_5mA); // %{port_name}%{std.to_string pin_number}
-"% in
+"%
+in
 
 let init_row = fun { port_name, pin_number, .. } =>
-m%"
+  m%"
     GPIO%{port_name}_ModeCfg(GPIO_Pin_%{std.to_string pin_number}, GPIO_ModeIN_PD); // %{port_name}%{std.to_string pin_number}
-"% in
+"%
+in
 
 let matrix_init = fun { cols, rows, .. } =>
-m%"
+  m%"
 void keyboard_matrix_init(void) {
     // Cols
     %{cols |> std.array.map init_col |> std.string.join "\n"}
@@ -33,7 +38,8 @@ void keyboard_matrix_init(void) {
     // Rows
     %{rows |> std.array.map init_row |>std.string.join "\n"}
 }
-"% in
+"%
+in
 
 # The WABBLE-60 uses a digital matrix of 8x8 rows and columns,
 #  forming a physical 5x12 matrix of keys.
@@ -44,25 +50,26 @@ void keyboard_matrix_init(void) {
 #
 # The given column_index and row_index refer to (digital) row/col, 0..7.
 let keymap_index_for_key = fun { column_index, row_index, .. } =>
-    let columnwise_index = column_index * 8 + row_index in
-    let physical_column_index = std.number.floor (columnwise_index / 5) in
-    let physical_row_index = columnwise_index % 5 in
-    let rowwise_index = physical_row_index * 12 + physical_column_index in
-    rowwise_index
+  let columnwise_index = column_index * 8 + row_index in
+  let physical_column_index = std.number.floor (columnwise_index / 5) in
+  let physical_row_index = columnwise_index % 5 in
+  let rowwise_index = physical_row_index * 12 + physical_column_index in
+  rowwise_index
 in
 
-let matrix_scan_row_for_column = fun args@{ column_index, row_index, col, row, .. } =>
-    let idx = std.to_string (keymap_index_for_key args) in
-m%"
+let matrix_scan_row_for_column = fun args @ { column_index, row_index, col, row, .. } =>
+  let idx = std.to_string (keymap_index_for_key args) in
+  m%"
     // Read row %{std.to_string row_index} = %{row.port_name}%{std.to_string row.pin_number}
     currentScan[%{idx}] = GPIO%{row.port_name}_ReadPortPin(GPIO_Pin_%{std.to_string row.pin_number}) != 0;
 
     // Register presses/events based on changes
     handle_index(%{idx});
-"% in
+"%
+in
 
-let matrix_scan_column = fun args@{ column_index, col, rows, .. } =>
-m%"
+let matrix_scan_column = fun args @ { column_index, col, rows, .. } =>
+  m%"
     // Scan column %{std.to_string column_index} = %{col.port_name}%{std.to_string col.pin_number}
     GPIO%{col.port_name}_SetBits(GPIO_Pin_%{std.to_string col.pin_number});
     mDelayuS(5);
@@ -71,7 +78,8 @@ m%"
     %{rows |> std.array.map_with_index (fun idx r => matrix_scan_row_for_column (args & { row = r, row_index = idx })) |> std.string.join "\n"}
 
     GPIO%{col.port_name}_ResetBits(GPIO_Pin_%{std.to_string col.pin_number});
-"% in
+"%
+in
 
 m%"
 #include <stdbool.h>
