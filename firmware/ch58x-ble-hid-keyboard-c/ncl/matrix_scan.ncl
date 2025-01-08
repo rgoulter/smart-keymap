@@ -3,7 +3,7 @@ let gpio_pins =
   let pins = std.array.range 0 24 in
 
   std.array.flat_map
-    (fun port => std.array.map (fun pin => { "%{port}%{std.to_string pin}" = { "port_name" = port, "pin_number" = pin } }) pins)
+    (fun port_name => std.array.map (fun pin_num => { "%{port_name}%{std.to_string pin_num}" = { "port" = port_name, "pin" = pin_num } }) pins)
     ports
   |> std.array.fold_left (&) {}
 in
@@ -17,15 +17,15 @@ let board =
   }
 in
 
-let init_col = fun { port_name, pin_number, .. } =>
+let init_col = fun { port, pin, .. } =>
   m%"
-    GPIO%{port_name}_ModeCfg(GPIO_Pin_%{std.to_string pin_number}, GPIO_ModeOut_PP_5mA); // %{port_name}%{std.to_string pin_number}
+    GPIO%{port}_ModeCfg(GPIO_Pin_%{std.to_string pin}, GPIO_ModeOut_PP_5mA); // %{port}%{std.to_string pin}
 "%
 in
 
-let init_row = fun { port_name, pin_number, .. } =>
+let init_row = fun { port, pin, .. } =>
   m%"
-    GPIO%{port_name}_ModeCfg(GPIO_Pin_%{std.to_string pin_number}, GPIO_ModeIN_PD); // %{port_name}%{std.to_string pin_number}
+    GPIO%{port}_ModeCfg(GPIO_Pin_%{std.to_string pin}, GPIO_ModeIN_PD); // %{port}%{std.to_string pin}
 "%
 in
 
@@ -60,8 +60,8 @@ in
 let matrix_scan_row_for_column = fun args @ { column_index, row_index, col, row, .. } =>
   let idx = std.to_string (keymap_index_for_key args) in
   m%"
-    // Read row %{std.to_string row_index} = %{row.port_name}%{std.to_string row.pin_number}
-    currentScan[%{idx}] = GPIO%{row.port_name}_ReadPortPin(GPIO_Pin_%{std.to_string row.pin_number}) != 0;
+    // Read row %{std.to_string row_index} = %{row.port}%{std.to_string row.pin}
+    currentScan[%{idx}] = GPIO%{row.port}_ReadPortPin(GPIO_Pin_%{std.to_string row.pin}) != 0;
 
     // Register presses/events based on changes
     handle_index(%{idx});
@@ -70,14 +70,14 @@ in
 
 let matrix_scan_column = fun args @ { column_index, col, rows, .. } =>
   m%"
-    // Scan column %{std.to_string column_index} = %{col.port_name}%{std.to_string col.pin_number}
-    GPIO%{col.port_name}_SetBits(GPIO_Pin_%{std.to_string col.pin_number});
+    // Scan column %{std.to_string column_index} = %{col.port}%{std.to_string col.pin}
+    GPIO%{col.port}_SetBits(GPIO_Pin_%{std.to_string col.pin});
     mDelayuS(5);
 
     // Read the row pins
     %{rows |> std.array.map_with_index (fun idx r => matrix_scan_row_for_column (args & { row = r, row_index = idx })) |> std.string.join "\n"}
 
-    GPIO%{col.port_name}_ResetBits(GPIO_Pin_%{std.to_string col.pin_number});
+    GPIO%{col.port}_ResetBits(GPIO_Pin_%{std.to_string col.pin});
 "%
 in
 
