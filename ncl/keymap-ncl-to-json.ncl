@@ -1,16 +1,15 @@
 {
   keymap
-    | { layers : Array (Array Number) }
+    | { layers : Array (Array { key_code: Number }) }
     | doc "The keymap.ncl file that gets rendered to JSON"
     = import "keymap.ncl",
 
   make_key
     | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."
-    = fun v =>
-      if std.is_number v then
-        { "simple" = v }
-      else
-        std.fail_with "unsupported value",
+    = match {
+      { key_code = kc } => { "simple" = kc },
+      _ => std.fail_with "unsupported item in keymap.ncl",
+    },
 
   keymap_json
     | doc "The keymap.json output value."
