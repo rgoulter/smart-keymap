@@ -14,6 +14,9 @@ NCL_TESTS_DIR="${REPOSITORY_DIR}/tests/ncl"
 
 KEYMAP_DIR="${NCL_TESTS_DIR}/${1}"
 
-"${SCRIPTS_DIR}/keymap-codegen.sh" "${KEYMAP_DIR}"
+pushd "${REPOSITORY_DIR}"
+    make "${KEYMAP_DIR}/keymap.json"
+    make "${KEYMAP_DIR}/keymap.rs"
+popd
 
 diff "${KEYMAP_DIR}/expected.rs" "${KEYMAP_DIR}/keymap.rs"
