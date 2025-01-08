@@ -1,4 +1,4 @@
-let K = import "hid-usage-keyboard.ncl" in
+let K = import "keys.ncl" in
 
 {
   layers = [
