@@ -19,5 +19,6 @@ nickel export \
   --format=json \
   --import-path="${KEYMAP_DIR}" \
   --import-path="${NCL_DIR}" \
+  --field="keymap_json" \
   "${NCL_DIR}/keymap-ncl-to-json.ncl" \
   > "${DEST}"
