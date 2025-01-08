@@ -1,6 +1,8 @@
 {
+  KeymapKey = Dyn,
+
   keymap
-    | { layers : Array (Array { key_code: Number }) }
+    | { layers : Array (Array KeymapKey) }
     | doc "The keymap.ncl file that gets rendered to JSON"
     = import "keymap.ncl",
 
