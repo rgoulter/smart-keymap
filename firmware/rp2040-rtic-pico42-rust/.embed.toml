@@ -1,0 +1,5 @@
+[rp2040.general]
+chip = "RP2040"
+
+[rp2040.rtt]
+enabled = true
