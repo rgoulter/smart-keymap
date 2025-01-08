@@ -10,6 +10,19 @@
       rust_expr = fun key => "crate::key::simple::Key(%{std.to_string key})",
     },
 
+  tap_hold
+    | doc "Generates type declaration and value expression for smart_keymap::key::tap_hold::Key."
+    = {
+      key_type = "crate::key::tap_hold::Key",
+      rust_expr = fun { hold, tap, } =>
+        m%"
+        crate::key::tap_hold::Key {
+          hold: %{std.to_string hold},
+          tap: %{std.to_string tap},
+        }
+        "%,
+    },
+
   keymap_len
     | doc "The keymap length."
     = std.array.length keymap,
@@ -21,7 +34,8 @@
   key_type_of_key
     | doc "The type declaration for the key."
     = match {
-      { simple = key } => simple.key_type,
+      { simple = _ } => simple.key_type,
+      { tap_hold = _ } => tap_hold.key_type,
       _ => "unknown_key_type"
     },
 
@@ -29,6 +43,7 @@
     | doc "The Rust expression for the key."
     = match {
       { simple = key } => simple.rust_expr key,
+      { tap_hold = key } => tap_hold.rust_expr key,
       _ => "unknown_key_type"
     },
 
