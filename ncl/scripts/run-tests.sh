@@ -10,6 +10,7 @@ SCRIPTS_DIR="$(dirname "$0")"
 
 ncl_tests=(
     "keymap-1key-simple"
+    "keymap-1key-tap_hold"
     "keymap-60key-dvorak-simple"
 )
 for ncl_test in "${ncl_tests[@]}"
