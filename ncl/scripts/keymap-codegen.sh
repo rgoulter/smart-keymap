@@ -18,6 +18,7 @@ DEST="${KEYMAP_DIR}/keymap.rs"
 nickel export \
   --format=raw \
   --import-path="${KEYMAP_DIR}" \
+  --field="keymap_rs" \
   "${NCL_DIR}/keymap-codegen.ncl" \
   > "${DEST}"
 
