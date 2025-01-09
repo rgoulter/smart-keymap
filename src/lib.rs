@@ -61,9 +61,12 @@ use key::composite::Key;
 use key::{composite, simple, tap_hold};
 
 #[cfg(not(custom_keymap))]
-type KeyDefinitionsType = tuples::Keys1<Key>;
+/// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
+pub type KeyDefinitionsType = tuples::Keys1<Key>;
 #[cfg(not(custom_keymap))]
-const KEY_DEFINITIONS: KeyDefinitionsType = tuples::Keys1::new((Key::simple(simple::Key(0x04)),));
+/// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
+pub const KEY_DEFINITIONS: KeyDefinitionsType =
+    tuples::Keys1::new((Key::simple(simple::Key(0x04)),));
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
