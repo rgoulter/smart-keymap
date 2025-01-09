@@ -2,6 +2,8 @@ use core::fmt::Debug;
 
 use crate::input;
 
+/// Chorded keys. (Chording functionality).
+pub mod chorded;
 /// Layered keys. (Layering functionality).
 pub mod layered;
 /// Simple keys.
