@@ -964,7 +964,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "smart_keymap"
+name = "smart-keymap"
 version = "0.1.0"
 dependencies = [
  "cucumber",
