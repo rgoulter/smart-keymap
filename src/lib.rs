@@ -147,7 +147,7 @@ pub unsafe extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
     }
 }
 
-#[cfg(not(feature = "std"))]
+#[cfg(all(not(feature = "std"), feature = "staticlib"))]
 #[panic_handler]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
     loop {}

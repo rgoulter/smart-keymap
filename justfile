@@ -17,9 +17,10 @@ build-test-keymap-rv-checkkeys_60key: (build-keymap-rv `pwd`/"tests/keymaps/chec
 build-keymap-rv $SMART_KEYMAP_CUSTOM_KEYMAP: (build-keymap-target SMART_KEYMAP_CUSTOM_KEYMAP "riscv32imac-unknown-none-elf")
 
 build-keymap-target $SMART_KEYMAP_CUSTOM_KEYMAP target:
-    cargo build \
+    cargo rustc \
+        --crate-type "staticlib" \
         --target riscv32imac-unknown-none-elf \
         --release \
         --no-default-features \
+        --features "staticlib" \
         --features "usbd-human-interface-device"
-

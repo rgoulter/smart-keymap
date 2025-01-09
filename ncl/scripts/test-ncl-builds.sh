@@ -29,7 +29,9 @@ SMART_KEYMAP_CUSTOM_KEYMAP=$(realpath "${KEYMAP_DIR}/keymap.rs")
 
 export SMART_KEYMAP_CUSTOM_KEYMAP
 
-cargo build \
+cargo rustc \
+    --crate-type "staticlib" \
     --target riscv32imac-unknown-none-elf \
     --release \
+    --features "staticlib" \
     --no-default-features

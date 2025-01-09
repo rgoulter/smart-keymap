@@ -29,8 +29,10 @@ jobs:
       - name: Build checkkeys_60key_keymap
         run: |
           env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/tests/keymaps/checkkeys_60key_keymap.rs" \
-            cargo build \
+            cargo rustc \
+              --crate-type "staticlib" \
               --target riscv32imac-unknown-none-elf \
               --release \
               --no-default-features \
+              --features "staticlib" \
               --features "usbd-human-interface-device"
