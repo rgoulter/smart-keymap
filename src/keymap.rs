@@ -91,6 +91,44 @@ pub struct Keymap<
     event_scheduler: EventScheduler,
 }
 
+/// Output from the keymap, used to build HID reports.
+#[derive(Debug)]
+pub struct KeymapOutput {
+    pressed_key_codes: heapless::Vec<u8, 16>,
+}
+
+impl KeymapOutput {
+    /// Constructs a new keymap output.
+    pub fn new(pressed_key_codes: heapless::Vec<u8, 16>) -> Self {
+        Self { pressed_key_codes }
+    }
+
+    /// Returns the pressed key codes.
+    pub fn pressed_key_codes(&self) -> &[u8] {
+        self.pressed_key_codes.as_slice()
+    }
+
+    /// Returns the current HID keyboard report.
+    pub fn as_hid_boot_keyboard_report(&self) -> [u8; 8] {
+        let mut report = [0u8; 8];
+
+        let (modifier_keys, key_codes): (heapless::Vec<u8, 16>, heapless::Vec<u8, 16>) = self
+            .pressed_key_codes
+            .iter()
+            .partition(|&kc| (0xE0..=0xE7).contains(kc));
+
+        let modifier = modifier_keys
+            .iter()
+            .fold(0u8, |acc, &kc| acc | (1 << (kc - 0xE0)));
+        report[0] = modifier;
+
+        for (i, key_code) in key_codes.iter().take(6).enumerate() {
+            report[i + 2] = *key_code;
+        }
+        report
+    }
+}
+
 impl<
         I: IndexMut<
                 usize,
@@ -202,11 +240,9 @@ impl<
         }
     }
 
-    /// Returns the current HID keyboard report.
-    pub fn boot_keyboard_report(&self) -> [u8; 8] {
-        let mut report = [0u8; 8];
-
-        let pressed_keys = self.pressed_inputs.iter().filter_map(|pi| match pi {
+    /// Returns the the pressed key codes.
+    pub fn pressed_keys(&self) -> KeymapOutput {
+        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key { keymap_index, .. } => {
                 let key = &self.key_definitions[*keymap_index as usize];
                 key.key_output().map(|ko| ko.key_code())
@@ -214,18 +250,12 @@ impl<
             input::PressedInput::Virtual { key_code } => Some(*key_code),
         });
 
-        let (modifier_keys, key_codes): (heapless::Vec<u8, 16>, heapless::Vec<u8, 16>) =
-            pressed_keys.partition(|&kc| (0xE0..=0xE7).contains(&kc));
+        KeymapOutput::new(pressed_key_codes.collect())
+    }
 
-        let modifier = modifier_keys
-            .iter()
-            .fold(0u8, |acc, &kc| acc | (1 << (kc - 0xE0)));
-        report[0] = modifier;
-
-        for (i, key_code) in key_codes.iter().take(6).enumerate() {
-            report[i + 2] = *key_code;
-        }
-        report
+    /// Returns the current HID keyboard report.
+    pub fn boot_keyboard_report(&self) -> [u8; 8] {
+        self.pressed_keys().as_hid_boot_keyboard_report()
     }
 }
 
