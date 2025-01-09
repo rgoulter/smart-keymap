@@ -3,12 +3,15 @@ use seq_macro::seq;
 crate::tuples::define_keys!(60);
 
 seq!(I in 0..60 {
-    type KeyDefinitionsType = Keys60<
+    /// Alias for a [tuples] KeysN type.
+    pub type KeyDefinitionsType = Keys60<
         #(
             Key,
         )*
     >;
 });
+
+/// Alias for a [tuples] KeysN value.
 pub const KEY_DEFINITIONS: KeyDefinitionsType = {
     #[cfg(not(feature = "usbd-human-interface-device"))]
     compile_error!("usbd-human-interface-device feature is not enabled");
