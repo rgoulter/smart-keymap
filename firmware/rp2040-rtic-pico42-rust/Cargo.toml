@@ -19,6 +19,9 @@ usb-device = { version = "0.2.0", features = ["control-buffer-256"] }
 usbd-human-interface-device = "0.4"
 usbd-serial = "0.1"
 
+# smart-keymap = { git = "https://github.com/rgoulter/smart-keymap.git" }
+smart-keymap = { path = "../..", default-features = false }
+
 [package]
 name = "rp2040-rtic-pico42-rust"
 version = "0.1.0"
@@ -33,6 +36,8 @@ frunk = { workspace = true }
 heapless = { workspace = true }
 usb-device = { workspace = true }
 usbd-human-interface-device = { workspace = true }
+
+smart-keymap = { workspace = true }
 
 [profile.release]
 lto = true
