@@ -14,6 +14,13 @@ NCL_TESTS_DIR="${REPOSITORY_DIR}/tests/ncl"
 
 KEYMAP_DIR="${NCL_TESTS_DIR}/${1}"
 
+# Clean: rm the keymap.rs;
+#  and rm the keymap.json if there's a keymap.ncl
+rm --force "${KEYMAP_DIR}/keymap.rs"
+if [[ -f "${KEYMAP_DIR}/keymap.ncl" ]]; then
+    rm --force "${KEYMAP_DIR}/keymap.json"
+fi
+
 pushd "${REPOSITORY_DIR}"
     make "${KEYMAP_DIR}/keymap.json"
     make "${KEYMAP_DIR}/keymap.rs"
