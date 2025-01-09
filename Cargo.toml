@@ -4,13 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["std"]
+default = ["std", "staticlib"]
 std = []
+staticlib = []
 usbd-human-interface-device = ["dep:usbd-human-interface-device"]
 
 [lib]
 name = "smart_keymap"
-crate-type = ["lib", "staticlib"]
+crate-type = ["lib"]
 
 [[test]]
 name = "cucumber-deserialization"
