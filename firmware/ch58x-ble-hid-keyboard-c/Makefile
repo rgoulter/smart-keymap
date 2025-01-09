@@ -9,4 +9,6 @@ generated/matrix.c:
 	nickel export \
 	  --format=raw \
 	  --field=output \
-	  ncl/matrix_scan.ncl > generated/matrix.c
+	  ncl/wabble-60.ncl \
+	  ncl/matrix_scan.ncl \
+	  > generated/matrix.c
