@@ -29,3 +29,5 @@ rtt-target = { workspace = true }
 usb-device = { workspace = true }
 usbd-human-interface-device = { workspace = true }
 usbd-serial = { workspace = true }
+
+smart-keymap = { workspace = true }
