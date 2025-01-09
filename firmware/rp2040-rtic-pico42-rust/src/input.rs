@@ -14,6 +14,9 @@ use usbd_human_interface_device::UsbHidError;
 use crate::common;
 use crate::layouts::common::CustomAction;
 
+/// For input from the smart_keymap crate.
+pub mod smart_keymap;
+
 pub type PressedKeys<const COLS: usize, const ROWS: usize> = [[bool; COLS]; ROWS];
 
 pub type PressedKeys1x1 = PressedKeys<1, 1>;
