@@ -5,7 +5,7 @@ let K = import "keys.ncl" in
 # with a key.
 let A_A = K.A & K.hold K.LeftAlt in
 let G_O = K.O & K.hold K.LeftGUI in
-let C_E = K.O & K.hold K.LeftCtrl in
+let C_E = K.E & K.hold K.LeftCtrl in
 let S_U = K.U & K.hold K.LeftShift in
 let S_H = K.H & K.hold K.RightShift in
 let C_T = K.T & K.hold K.RightCtrl in
