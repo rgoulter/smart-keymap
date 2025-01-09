@@ -1,10 +1,9 @@
 {
   KeymapKey = Dyn,
 
-  keymap
-    | { layers : Array (Array KeymapKey) }
-    | doc "The keymap.ncl file that gets rendered to JSON"
-    = import "keymap.ncl",
+  layers
+    | Array (Array KeymapKey)
+    | doc "The layers of the keymap that gets rendered to JSON",
 
   make_key
     | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."
@@ -18,5 +17,5 @@
   keymap_json
     | doc "The keymap.json output value."
     =
-      keymap.layers |> std.array.at 0 |> std.array.map make_key,
+      layers |> std.array.at 0 |> std.array.map make_key,
 }
