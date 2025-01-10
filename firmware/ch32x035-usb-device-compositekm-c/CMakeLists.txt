@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.29)
 project(usb-device-compositekm)
 
 add_executable(usb-device-compositekm
+  generated/matrix.c
   User/ch32x035_it.c
   User/ch32x035_usbfs_device.c
   User/main.c

@@ -16,6 +16,7 @@
 #include <ch32x035_usbfs_device.h>
 #include "usbd_composite_km.h"
 
+#include "keyboard_ch32x_48.h"
 #include "smart_keymap.h"
 
 /*******************************************************************************/
@@ -115,16 +116,7 @@ void TIM3_IRQHandler( void )
  */
 void KB_Scan_Init( void )
 {
-    GPIO_InitTypeDef GPIO_InitStructure = { 0 };
-
-    /* Enable GPIOB clock */
-    RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOB, ENABLE );
-
-    /* Initialize GPIOB (Pin4-Pin7) for the keyboard scan */
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0 | GPIO_Pin_1 | GPIO_Pin_3 | GPIO_Pin_11;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init( GPIOB, &GPIO_InitStructure );
+    keyboard_matrix_init();
 
     keymap_init();
 }
@@ -183,26 +175,8 @@ void KB_Sleep_Wakeup_Cfg( void )
  */
 void KB_Scan( void )
 {
-    static uint16_t scan_cnt = 0;
-    static uint16_t scan_result = 0;
-
-    scan_cnt++;
-    if( ( scan_cnt % 10 ) == 0 )
-    {
-        scan_cnt = 0;
-
-        /* Determine whether the two scan results are consistent */
-        if( scan_result == ( GPIO_ReadInputData( GPIOB ) & (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11) ) )
-        {
-            KB_Scan_Done = 1;
-            KB_Scan_Result = scan_result;
-        }
-    }
-    else if( ( scan_cnt % 5 ) == 0 )
-    {
-        /* Save the first scan result */
-        scan_result = ( GPIO_ReadInputData( GPIOB ) & (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11) );
-    }
+    keyboard_matrix_scan();
+    KB_Scan_Done = 1;
 }
 
 /*********************************************************************
@@ -214,84 +188,6 @@ void KB_Scan( void )
  */
 void KB_Scan_Handle( void )
 {
-    uint8_t i, j;
-    uint8_t status;
-    static uint8_t flag = 0x00;
-
-    if( KB_Scan_Done )
-    {
-        KB_Scan_Done = 0;
-
-        if( KB_Scan_Result != KB_Scan_Last_Result )
-        {
-            for( i = 0; i < 16; i++ )
-            {
-                // ignore all except 0, 1, 3, 11:
-                switch (i) {
-                    case 2:
-                    case 4:
-                    case 5:
-                    case 6:
-                    case 7:
-                    case 8:
-                    case 9:
-                    case 10:
-                    case 12:
-                    case 13:
-                    case 14:
-                    case 15:
-                        continue;
-                }
-
-                /* Determine that there is at least one key is pressed or released */
-                if( ( KB_Scan_Result & ( 1 << i ) ) != ( KB_Scan_Last_Result & ( 1 << i ) ) )
-                {
-                    if( ( KB_Scan_Result & ( 1 << i ) ) )           // Key press
-                    {
-                        if( i == 0 )
-                        {
-                            keymap_register_input_keyrelease(0);
-                        }
-                        else if( i == 1 )
-                        {
-                            keymap_register_input_keyrelease(1);
-                        }
-                        else if( i == 3 )
-                        {
-                            keymap_register_input_keyrelease(2);
-                        }
-                        else if( i == 11 )
-                        {
-                            keymap_register_input_keyrelease(3);
-                        }
-                    }
-                    else                                            // Key release
-                    {
-                        if( i == 0 )
-                        {
-                            keymap_register_input_keypress(0);
-                        }
-                        else if( i == 1 )
-                        {
-                            keymap_register_input_keypress(1);
-                        }
-                        else if( i == 3 )
-                        {
-                            keymap_register_input_keypress(2);
-                        }
-                        else if( i == 11 )
-                        {
-                            keymap_register_input_keypress(3);
-                        }
-                    }
-                }
-            }
-
-            /* Copy the keyboard data to the buffer of endpoint 1 and set the data uploading flag */
-            KB_Scan_Last_Result = KB_Scan_Result;
-            flag = 1;
-        }
-    }
 }
 
 /*********************************************************************
