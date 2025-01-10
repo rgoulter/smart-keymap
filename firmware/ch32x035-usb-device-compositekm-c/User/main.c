@@ -13,7 +13,10 @@
 /*
  * @Note
  * Composite Keyboard and Mouse Example:
- * This example uses PB0, PB1, PB3, PB11 to simulate keyboard key pressing, active low.
+ *
+ * The matrix scan code is generated from ncl/matrix_scan.ncl, using whatever
+ *  board.ncl file it was applied with.
+ * e.g. by default, with the WeAct CH32X core board: cols: B0, B1, rows: B3, B11.
  */
 
 #include <ch32x035_usbfs_device.h>
