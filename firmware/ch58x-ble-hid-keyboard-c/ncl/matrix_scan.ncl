@@ -52,14 +52,19 @@
   matrix_scan_row_for_column
     | doc "Generates C fragment for reading a row, as part of COL2ROW scanning."
     = fun args @ { column_index, row_index, col, row, .. } =>
-      let idx = std.to_string (keymap_index_for_key args) in
-      m%"
-      // Read row %{std.to_string row_index} = %{row.port}%{std.to_string row.pin}
-      currentScan[%{idx}] = GPIO%{row.port}_ReadPortPin(GPIO_Pin_%{std.to_string row.pin}) != 0;
+      let maybe_idx = keymap_index_for_key args in
+      maybe_idx |> match {
+        'Error err => "",
+        'Ok idx_num =>
+          let idx = std.to_string idx_num in
+          m%"
+          // Read row %{std.to_string row_index} = %{row.port}%{std.to_string row.pin}
+          // SW_r_c = SW_%{std.to_string (1 + row_index)}_%{std.to_string (1 + column_index)}
+          currentScan[%{idx}] = GPIO%{row.port}_ReadPortPin(GPIO_Pin_%{std.to_string row.pin}) != 0;
+          // Register presses/events based on changes
+          handle_index(%{idx});
 
-      // Register presses/events based on changes
-      handle_index(%{idx});
-  "%,
+  "%},
 
   matrix_scan_column
     | doc "Generates C fragment for reading a column, as part of COL2ROW scanning."
