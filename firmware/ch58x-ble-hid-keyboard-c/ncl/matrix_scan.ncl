@@ -41,6 +41,11 @@
     = fun { cols, rows, .. } =>
       m%"
   void keyboard_matrix_init(void) {
+      // NOTE: this implementation assumes diode's cathodes(-) face ROWS.
+      //  i.e. that current flows from COLUMNS to ROWS.
+      // This implementation configures ROWS as Input (Pull Down),
+      // and COLS as Output (set high when scanned).
+
       // Cols
       %{cols |> std.array.map init_col_fragment |> std.string.join "\n"}
 
