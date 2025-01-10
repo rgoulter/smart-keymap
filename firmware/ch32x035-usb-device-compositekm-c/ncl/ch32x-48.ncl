@@ -28,8 +28,11 @@
     | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index."
     = fun { column_index | Number, row_index | Number, .. } =>
       let columnwise_index = column_index * 7 + row_index in
-      let physical_column_index = std.number.floor (columnwise_index / 4) in
-      let physical_row_index = columnwise_index % 4 in
-      let rowwise_index = physical_row_index * 12 + physical_column_index in
-      rowwise_index,
+      if columnwise_index >= board.num_keys then
+        'Error "no key at this column/row index."
+      else
+        let physical_column_index = std.number.floor (columnwise_index / 4) in
+        let physical_row_index = columnwise_index % 4 in
+        let rowwise_index = physical_row_index * 12 + physical_column_index in
+        'Ok rowwise_index,
 }
