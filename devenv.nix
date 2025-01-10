@@ -18,6 +18,7 @@
   };
 
   packages = [
+    pkgs.cmake-language-server
     pkgs.just
     pkgs.nickel
     pkgs.rust-cbindgen
