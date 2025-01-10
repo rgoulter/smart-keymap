@@ -95,12 +95,47 @@
       GPIO_SetBits(GPIO%{col.port}, GPIO_Pin_%{std.to_string col.pin});
   "%,
 
-  keyboard_matrix_scan
+  keyboard_matrix_scan_raw
     | doc "Generates C fragment with the keyboard_matrix_scan function, for the given cols/rows."
     = fun { cols, rows, .. } =>
       m%"
-  void keyboard_matrix_scan(void) {
+  void keyboard_matrix_scan_raw(bool scan_buf[%{std.to_string board.num_keys}]) {
       %{board.cols |> std.array.map_with_index (fun idx c => matrix_scan_column ({ col = c, column_index = idx, rows = board.rows })) |> std.string.join "\n"}
+  }
+  "%,
+
+  keyboard_matrix_scan
+    | doc "Generates C fragment with the keyboard_matrix_scan function, for the given cols/rows."
+    = fun args@{ cols, rows, .. } =>
+      m%"
+  %{keyboard_matrix_scan_raw args}
+
+  void keyboard_matrix_scan(void) {
+      static bool debounced_state[%{std.to_string board.num_keys}] = { false };
+      static bool previous_raw_scan[%{std.to_string board.num_keys}] = { false };
+      static bool current_raw_scan[%{std.to_string board.num_keys}] = { false };
+      static uint8_t debounce_counter[%{std.to_string board.num_keys}] = { 0 };
+
+      keyboard_matrix_scan_raw(current_raw_scan);
+
+      for (uint32_t i = 0; i < %{std.to_string board.num_keys}; i++) {
+          if (current_raw_scan[i] == debounced_state[i]) {
+              debounce_counter[i] = 0;
+          } else {
+              if (current_raw_scan[i] != previous_raw_scan[i]) {
+                  debounce_counter[i] = 0;
+              } else {
+                  debounce_counter[i]++;
+              }
+
+              if (debounce_counter[i] >= 5) {
+                  key_state_changed(i, current_raw_scan[i]);
+                  debounced_state[i] = current_raw_scan[i];
+              }
+          }
+
+          previous_raw_scan[i] = current_raw_scan[i];
+      }
   }
   "%,
 
@@ -113,20 +148,13 @@
 
   #include "smart_keymap.h"
 
-  bool previousScan[%{std.to_string board.num_keys}] = { false };
-  bool currentScan[%{std.to_string board.num_keys}] = { false };
-
   %{keyboard_matrix_init board}
 
-  void handle_index(uint32_t index) {
-      if (previousScan[index] != currentScan[index]) {
-          if (currentScan[index]) {
-              keymap_register_input_keypress(index);
-          } else {
-              keymap_register_input_keyrelease(index);
-          }
-
-          previousScan[index] = currentScan[index];
+  void key_state_changed(uint32_t index, bool new_state) {
+      if (new_state) {
+          keymap_register_input_keypress(index);
+      } else {
+          keymap_register_input_keyrelease(index);
       }
   }
 
