@@ -9,6 +9,9 @@ clean:
 test:
     make test
 
+build-keymap-rv-48key-checkkeys: && (build-keymap-rv `pwd`/"tests/ncl/keymap-48key-checkkeys/keymap.rs")
+    make tests/ncl/keymap-48key-checkkeys/keymap.rs
+
 build-test-keymap-rv-ncl_60key_dvorak: && (build-keymap-rv `pwd`/"tests/ncl/keymap-60key-dvorak-simple/keymap.rs")
     make tests/ncl/keymap-60key-dvorak-simple/keymap.rs
 
