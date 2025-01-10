@@ -55,6 +55,11 @@
     = fun { cols, rows, .. } =>
       m%"
   void keyboard_matrix_init(void) {
+      // NOTE: this implementation assumes diode's cathodes(-) face COLUMNS.
+      //  i.e. that current flows from ROWS to COLUMNS.
+      // This implementation configures ROWS as Input (Pull Up),
+      // and COLS as Output (set low when scanned).
+
       RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOA, ENABLE );
       RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOB, ENABLE );
       RCC_APB2PeriphClockCmd( RCC_APB2Periph_GPIOC, ENABLE );
