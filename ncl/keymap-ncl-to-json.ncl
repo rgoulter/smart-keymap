@@ -20,8 +20,23 @@
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
+  to_composite_json_serialized_key
+    | doc "Constructs a JSON-representable composite::Key value from the given value from keymap.ncl."
+    = match {
+      # Make key::tap_hold::Key from keys with a "hold" modifier.
+      { hold = hold_kc, key_code = tap_kc } => { TapHold = { key = { hold = hold_kc, tap = tap_kc } } },
+      # Otherwise, keys with just a base key_code are key::simple keys.
+      { key_code = kc } => { Simple = { key = kc } },
+      _ => std.fail_with "unsupported item in keymap.ncl",
+    },
+
   serialized_json_keymap
     | doc "The keymap.json output value."
     =
       layers |> std.array.at 0 |> std.array.map to_json_serialized_key,
+
+  serialized_json_composite_keys
+    | doc "The keymap.json output value."
+    =
+      layers |> std.array.at 0 |> std.array.map to_composite_json_serialized_key,
 }
