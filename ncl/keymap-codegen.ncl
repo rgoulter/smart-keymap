@@ -2,6 +2,18 @@
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
+  layer_modifier
+    | doc "Generates type declaration and value expression for smart_keymap::key::layered::ModifierKey."
+    = {
+      # c.f. doc_de_layered.md.
+      # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
+      is = fun k => std.is_record k
+        && std.record.has_field "Hold" k
+        && std.is_number (std.record.get "Hold" k),
+      key_type = "crate::key::layered::ModifierKey",
+      rust_expr = fun { Hold = layer_index } => "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
+    },
+
   simple
     | doc "Generates type declaration and value expression for smart_keymap::key::simple::Key."
     = {
@@ -37,6 +49,7 @@
   key_type_of_key
     | doc "The type declaration for the key."
     = match {
+      key if layer_modifier.is key => layer_modifier.key_type,
       key if simple.is key => simple.key_type,
       key if tap_hold.is key => tap_hold.key_type,
       _ => "unknown_key_type"
@@ -45,6 +58,7 @@
   rust_expr_of_key
     | doc "The Rust expression for the key."
     = match {
+      key if layer_modifier.is key => layer_modifier.rust_expr key,
       key if simple.is key => simple.rust_expr key,
       key if tap_hold.is key => tap_hold.rust_expr key,
       _ => "unknown_key_type"
