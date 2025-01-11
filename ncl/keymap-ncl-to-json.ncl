@@ -1,9 +1,14 @@
 {
   KeymapKey = Dyn,
 
+  keys
+    | optional,
+
   layers
+    | default
     | Array (Array KeymapKey)
-    | doc "The layers of the keymap that gets rendered to JSON",
+    | doc "The layers of the keymap that gets rendered to JSON"
+    = [keys],
 
   to_json_serialized_key
     | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."

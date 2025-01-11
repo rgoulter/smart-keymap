@@ -13,12 +13,10 @@ let G_N = K.N & K.hold K.RightGUI in
 let A_S = K.S & K.hold K.RightAlt in
 
 {
-  layers = [
-    [
-      K.Quote, K.Comma, K.Dot, K.P, K.Y,          K.F, K.G, K.C, K.R, K.L,
-      A_A, G_O, C_E, S_U, K.I,                    K.D, S_H, C_T, G_N, A_S,
-      K.Semicolon, K.Q, K.J, K.K, K.X,            K.B, K.M, K.W, K.V, K.Z,
-      K.LeftCtrl, K.LeftGUI, K.LeftAlt, K.Tab, K.Escape, K.Space,   K.Backspace, K.Return, K.Delete, K.RightAlt, K.RightGUI, K.RightCtrl,
-    ]
+  keys = [
+    K.Quote, K.Comma, K.Dot, K.P, K.Y,          K.F, K.G, K.C, K.R, K.L,
+    A_A, G_O, C_E, S_U, K.I,                    K.D, S_H, C_T, G_N, A_S,
+    K.Semicolon, K.Q, K.J, K.K, K.X,            K.B, K.M, K.W, K.V, K.Z,
+    K.LeftCtrl, K.LeftGUI, K.LeftAlt, K.Tab, K.Escape, K.Space,   K.Backspace, K.Return, K.Delete, K.RightAlt, K.RightGUI, K.RightCtrl,
   ],
 }
