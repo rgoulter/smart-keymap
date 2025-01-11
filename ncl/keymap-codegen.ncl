@@ -114,6 +114,19 @@
   keymap_rs
     | doc "Text contents of the keymap.rs generated from the keymap.json"
     = let keymap_len = std.array.length serialized_json_keymap in
+      let num_layers =
+        serialized_json_keymap |>
+        std.array.fold_left
+          (fun max_num_layers key =>
+            let num_layers = key |> match {
+              { layered, .. } => std.array.length layered,
+              _ => 0,
+            } in
+            if num_layers > max_num_layers then
+              num_layers
+            else
+              max_num_layers)
+          0 in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let key_types = serialized_json_keymap
         |> std.array.map key_type_of_key
@@ -125,7 +138,7 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
     /// Alias for layers impl.
-    pub type LayersImpl = crate::key::layered::ArrayImpl<0>;
+    pub type LayersImpl = crate::key::layered::ArrayImpl<%{std.to_string num_layers}>;
 
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = crate::key::composite::DefaultNestableKey;
