@@ -14,7 +14,7 @@
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
-  keymap_json
+  serialized_json_keymap
     | doc "The keymap.json output value."
     =
       layers |> std.array.at 0 |> std.array.map make_key,
