@@ -1,7 +1,6 @@
 {
-  keymap
-    | doc "The imported keymap.json."
-    = import "keymap.json",
+  serialized_json_keymap
+    | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
   simple
     | doc "Generates type declaration and value expression for smart_keymap::key::simple::Key."
@@ -25,7 +24,7 @@
 
   keymap_len
     | doc "The keymap length."
-    = std.array.length keymap,
+    = std.array.length serialized_json_keymap,
 
   keys_id
     | doc "The identifier for the KeysN tuple struct used in the generated keymap.rs."
@@ -50,14 +49,14 @@
   key_types
     | doc "The comma-separated list of key types, passed to the KeysN generics."
     =
-      keymap
+      serialized_json_keymap
       |> std.array.map key_type_of_key
       |> std.string.join ",",
 
   key_exprs
     | doc "The comma-separated list of key expressions, passed to the KeysN constructor."
     =
-      keymap
+      serialized_json_keymap
       |> std.array.map (fun key => "%{rust_expr_of_key key},")
       |> std.string.join "",
 
