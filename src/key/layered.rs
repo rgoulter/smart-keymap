@@ -1,3 +1,5 @@
+#![doc = include_str!("doc_de_layered.md")]
+
 use core::fmt::Debug;
 use core::marker::Copy;
 
