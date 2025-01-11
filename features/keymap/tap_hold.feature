@@ -12,9 +12,6 @@ Feature: TapHold Key
 
     Let's use a keymap a tap-hold key, and a simple key.
 
-    (Recall, A=0x04, B=0x05, and modifiers show up in
-     first byte of the report).
-
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
@@ -29,9 +26,10 @@ Feature: TapHold Key
         Release(keymap_index: 0)
       ]
       """
-    Then the HID keyboard report from the next tick() should be
+    Then the HID keyboard report from the next tick() should equal
       """
-      [0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00]
+      let K = import "hid-usage-keyboard.ncl" in
+      { key_codes = [K.A] }
       """
 
   Example: acts as 'hold' when held
@@ -44,9 +42,10 @@ Feature: TapHold Key
       ]
       """
     And the keymap ticks 500 times
-    Then the HID keyboard report from the next tick() should be
+    Then the HID keyboard report from the next tick() should equal
       """
-      [0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+      let K = import "hid-usage-keyboard.ncl" in
+      { modifiers = { left_ctrl = true } }
       """
 
   Example: acts as 'hold' when interrupted
@@ -57,7 +56,8 @@ Feature: TapHold Key
         Press(keymap_index: 1)
       ]
       """
-    Then the HID keyboard report from the next tick() should be
+    Then the HID keyboard report from the next tick() should equal
       """
-      [0x01, 0x00, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00]
+      let K = import "hid-usage-keyboard.ncl" in
+      { modifiers = { left_ctrl = true }, key_codes = [K.B] }
       """

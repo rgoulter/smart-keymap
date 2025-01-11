@@ -38,6 +38,27 @@ fn nickel_json_serialization_for_keymap(keymap_ncl: &str) -> io::Result<String> 
     String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
+/// Evaluates the Nickel expr for an HID, returning the json serialization.
+fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
+    let mut nickel_command = Command::new("nickel")
+        .args([
+            "export",
+            "--format=json",
+            format!("--import-path={}/ncl", env!("CARGO_MANIFEST_DIR")).as_ref(),
+            "--field=as_bytes",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let child_stdin = nickel_command.stdin.as_mut().unwrap();
+    child_stdin.write_all(format!(r#"(import "hid-report.ncl") & ({})"#, keymap_ncl).as_bytes())?;
+
+    let output = nickel_command.wait_with_output()?;
+
+    String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+}
+
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
@@ -138,29 +159,35 @@ fn when_keymap_tick(world: &mut KeymapWorld, num_ticks: u16) {
     }
 }
 
-#[then("the HID keyboard report should be")]
+#[then("the HID keyboard report should equal")]
 fn check_report(world: &mut KeymapWorld, step: &Step) {
-    let expected_report: Vec<u8> = world
-        .input_deserializer
-        .from_str(step.docstring().as_ref().unwrap())
-        .unwrap();
+    let hid_report_ncl = step.docstring().unwrap();
+    match nickel_to_json_for_hid_report(hid_report_ncl) {
+        Ok(json) => {
+            let expected_report: Vec<u8> = serde_json::from_str(&json).unwrap();
 
-    let actual_report = world.keymap.boot_keyboard_report();
+            let actual_report = world.keymap.boot_keyboard_report();
 
-    assert_eq!(expected_report, actual_report);
+            assert_eq!(expected_report, actual_report);
+        }
+        Err(e) => panic!("Failed to convert keymap.ncl to json: {:?}", e),
+    }
 }
 
-#[then("the HID keyboard report from the next tick() should be")]
+#[then("the HID keyboard report from the next tick() should equal")]
 fn check_tick_report(world: &mut KeymapWorld, step: &Step) {
-    let expected_report: Vec<u8> = world
-        .input_deserializer
-        .from_str(step.docstring().as_ref().unwrap())
-        .unwrap();
+    let hid_report_ncl = step.docstring().unwrap();
+    match nickel_to_json_for_hid_report(hid_report_ncl) {
+        Ok(json) => {
+            let expected_report: Vec<u8> = serde_json::from_str(&json).unwrap();
 
-    world.keymap.tick();
-    let actual_report = world.keymap.boot_keyboard_report();
+            world.keymap.tick();
+            let actual_report = world.keymap.boot_keyboard_report();
 
-    assert_eq!(expected_report, actual_report);
+            assert_eq!(expected_report, actual_report);
+        }
+        Err(e) => panic!("Failed to convert keymap.ncl to json: {:?}", e),
+    }
 }
 
 fn main() {
