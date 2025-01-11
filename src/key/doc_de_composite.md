@@ -1,6 +1,6 @@
 # Simple variant
 
-# JSON
+## JSON
 
 ```rust
 use smart_keymap::key;
@@ -23,7 +23,7 @@ assert_eq!(actual_key, expected_key);
 
 # TapHold variant
 
-# JSON
+## JSON
 
 ```rust
 use smart_keymap::key;
