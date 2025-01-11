@@ -1,4 +1,6 @@
 use std::fmt::Debug;
+use std::io::{self, Write};
+use std::process::{Command, Stdio};
 
 use cucumber::gherkin::Step;
 use cucumber::{given, then, when, World};
@@ -13,6 +15,28 @@ use key::composite::Key;
 mod common;
 
 use common::Deserializer;
+
+/// Evaluates the Nickel expr for a keymap, returning the json serialization.
+fn nickel_json_serialization_for_keymap(keymap_ncl: &str) -> io::Result<String> {
+    let mut nickel_command = Command::new("nickel")
+        .args([
+            "export",
+            "--format=json",
+            format!("--import-path={}/ncl", env!("CARGO_MANIFEST_DIR")).as_ref(),
+            "--field=serialized_json_composite_keys",
+        ])
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()?;
+
+    let child_stdin = nickel_command.stdin.as_mut().unwrap();
+    child_stdin
+        .write_all(format!(r#"(import "keymap-ncl-to-json.ncl") & ({})"#, keymap_ncl).as_bytes())?;
+
+    let output = nickel_command.wait_with_output()?;
+
+    String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+}
 
 #[derive(Debug)]
 enum LoadedKeymap {
@@ -76,6 +100,18 @@ impl Default for KeymapWorld {
     }
 }
 
+#[given("a keymap.ncl:")]
+fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
+    let keymap_ncl = step.docstring().unwrap();
+    match nickel_json_serialization_for_keymap(keymap_ncl) {
+        Ok(json) => {
+            let keys_vec: Vec<Key> = Deserializer::JSON.from_str(&json).unwrap();
+            world.keymap = keys_vec.into();
+        }
+        Err(e) => panic!("Failed to convert keymap.ncl to json: {:?}", e),
+    }
+}
+
 #[given(expr = "a keymap, expressed as a {deserializer} string")]
 fn setup_keymap(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer) {
     let keys_vec: Vec<Key> = deserializer
@@ -88,10 +124,7 @@ fn setup_keymap(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer
 
 #[when("the keymap registers the following input")]
 fn perform_input(world: &mut KeymapWorld, step: &Step) {
-    let inputs: Vec<input::Event> = world
-        .input_deserializer
-        .from_str(step.docstring().as_ref().unwrap())
-        .unwrap();
+    let inputs: Vec<input::Event> = ron::from_str(step.docstring().as_ref().unwrap()).unwrap();
 
     for input in inputs {
         world.keymap.handle_input(input);
