@@ -14,6 +14,51 @@
       rust_expr = fun { Hold = layer_index } => "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
     },
 
+  layered
+    | doc "Generates type declaration and value expression for smart_keymap::key::layered::LayeredKey."
+    = {
+      # c.f. doc_de_layered.md.
+      # e.g.:
+      # ```
+      #   {
+      #     "base": 4,
+      #     "layered": [5, null, 7]
+      #   }
+      # ```
+      # JSON serialization of key::layered::Layered has variants: { base, layered }
+      is = fun k =>
+        let is_nested_key = simple.is in
+        std.is_record k
+        && std.record.has_field "base" k
+        && is_nested_key (std.record.get "base" k)
+        && std.record.has_field "layered" k
+        && std.is_array (std.record.get "layered" k)
+        && std.array.all
+           (fun lk =>
+              lk == null ||
+              is_nested_key lk)
+           (std.record.get "layered" k),
+
+      # c.f. doc_de_layered.md.
+      # ```
+      #   type L = layered::ArrayImpl<3>;
+      #   type Key = layered::LayeredKey<simple::Key, L>;
+      # ```
+      key_type = fun { layered, .. } =>
+        let nested_key_type = "crate::key::simple::Key" in
+        let num_layers = layered |> std.array.length |> std.to_string in
+        let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
+        "crate::key::layered::LayeredKey<%{nested_key_type}, %{layer_impl}>",
+
+      rust_expr = fun { base, layered } =>
+        let nested_key_expr = simple.rust_expr in
+        let base_expr = nested_key_expr base in
+        let layered_exprs = layered
+          |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nested_key_expr lk})")
+          |> std.string.join "," in
+        "crate::key::layered::LayeredKey { base: %{base_expr}, layered: [%{layered_exprs}] }",
+    },
+
   simple
     | doc "Generates type declaration and value expression for smart_keymap::key::simple::Key."
     = {
@@ -50,6 +95,7 @@
     | doc "The type declaration for the key."
     = match {
       key if layer_modifier.is key => layer_modifier.key_type,
+      key if layered.is key => layered.key_type key,
       key if simple.is key => simple.key_type,
       key if tap_hold.is key => tap_hold.key_type,
       _ => "unknown_key_type"
@@ -59,6 +105,7 @@
     | doc "The Rust expression for the key."
     = match {
       key if layer_modifier.is key => layer_modifier.rust_expr key,
+      key if layered.is key => layered.rust_expr key,
       key if simple.is key => simple.rust_expr key,
       key if tap_hold.is key => tap_hold.rust_expr key,
       _ => "unknown_key_type"
