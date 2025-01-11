@@ -1,6 +1,7 @@
 //! This module implements the `keymap::Key` for a 'composite' key,
 //!  which can be any of the other key definitions,
 //!  and is the default Key for the `keymap::KeyMap` implementation.
+#![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
 
