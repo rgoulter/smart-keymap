@@ -94,7 +94,7 @@ pub struct KeymapWorld {
 impl Default for KeymapWorld {
     fn default() -> Self {
         KeymapWorld {
-            input_deserializer: Deserializer::JSON,
+            input_deserializer: Deserializer::RON,
             keymap: LoadedKeymap::NoKeymap,
         }
     }
