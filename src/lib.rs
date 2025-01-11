@@ -56,22 +56,41 @@ pub mod keymap;
 pub mod tuples;
 
 #[allow(unused)]
-use key::composite::Key;
-#[allow(unused)]
 use key::{composite, simple, tap_hold};
 
+/// Types and initial data used for constructing [KEYMAP].
 #[cfg(not(custom_keymap))]
-/// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
-pub type KeyDefinitionsType = tuples::Keys1<Key>;
-#[cfg(not(custom_keymap))]
-/// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
-pub const KEY_DEFINITIONS: KeyDefinitionsType =
-    tuples::Keys1::new((Key::simple(simple::Key(0x04)),));
+pub mod init {
+    use crate::key::{composite, layered, simple};
+    use crate::tuples::Keys1;
+
+    /// Alias for layers impl.
+    pub type LayersImpl = layered::ArrayImpl<0>;
+
+    /// Alias for the NestedKey used for the [Context].
+    pub type NestedKey = composite::DefaultNestableKey;
+
+    /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
+    pub type Context = composite::Context<NestedKey, LayersImpl>;
+
+    /// Alias for keys.
+    pub type Key = composite::Key<NestedKey, LayersImpl>;
+
+    /// Initial [Context] value.
+    pub const CONTEXT: Context = composite::Context::new();
+
+    /// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
+    pub type KeyDefinitionsType = Keys1<Key, Context>;
+
+    /// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
+    pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((Key::simple(simple::Key(0x04)),));
+}
+
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
-static mut KEYMAP: keymap::Keymap<KeyDefinitionsType> =
-    keymap::Keymap::new(KEY_DEFINITIONS, key::composite::Context::new());
+static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType, init::LayersImpl> =
+    keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
 
 /// Initialize the global keymap instance.
 #[allow(static_mut_refs)]
