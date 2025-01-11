@@ -59,6 +59,7 @@ pub mod tuples;
 use key::{composite, simple, tap_hold};
 
 /// Types and initial data used for constructing [KEYMAP].
+/// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
     use crate::key::{composite, layered, simple};
