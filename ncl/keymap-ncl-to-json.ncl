@@ -13,6 +13,12 @@
   to_json_serialized_key
     | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."
     = match {
+      # Make key::layered::LayeredKey
+      { key_code = base_key, layered = layered_keys } =>
+        {
+          base = base_key,
+          layered = std.array.map to_json_serialized_key layered_keys
+        },
       # Make key::tap_hold::Key from keys with a "hold" modifier.
       { hold = hold_kc, key_code = tap_kc } => { hold = hold_kc, tap = tap_kc },
       # Otherwise, keys with just a base key_code are key::simple keys.
@@ -25,6 +31,13 @@
   to_composite_json_serialized_key
     | doc "Constructs a JSON-representable composite::Key value from the given value from keymap.ncl."
     = match {
+      # Make key::layered::LayeredKey
+      { key_code = base_key, layered = layered_keys } =>
+        {
+          Layered = {
+            key = { base = base_key, layered = layered_keys },
+          },
+        },
       # Make key::tap_hold::Key from keys with a "hold" modifier.
       { hold = hold_kc, key_code = tap_kc } => { TapHold = { key = { hold = hold_kc, tap = tap_kc } } },
       # Otherwise, keys with just a base key_code are key::simple keys.
