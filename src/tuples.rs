@@ -55,15 +55,15 @@ where
 }
 
 impl<
-        K0: key::Key + 'static,
-        Ctx: key::Context<Event = Ev> + Debug + 'static,
+        K0: crate::key::Key + 'static,
+        Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord + 'static,
         const N: usize,
     > IndexMut<usize> for Keys1<K0, Ctx, Ev, N>
 where
-    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-    key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
-    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
+    crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
+    crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
+    for<'c> &'c <K0 as crate::key::Key>::Context: From<&'c Ctx>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
@@ -74,15 +74,15 @@ where
 }
 
 impl<
-        K0: key::Key + 'static,
-        Ctx: key::Context<Event = Ev> + Debug + 'static,
+        K0: crate::key::Key + 'static,
+        Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord + 'static,
         const N: usize,
     > KeysReset for Keys1<K0, Ctx, Ev, N>
 where
-    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-    key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
-    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
+    crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
+    crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
+    for<'c> &'c <K0 as crate::key::Key>::Context: From<&'c Ctx>,
 {
     fn reset(&mut self) {
         <dynamic::DynamicKey<K0, Ctx, Ev> as dynamic::Key<Ev, N>>::reset(&mut self.0)
@@ -99,10 +99,10 @@ macro_rules! define_keys {
                 #[derive(core::fmt::Debug)]
                 pub struct [<Keys $n>]<
                     #(
-                        K~I: key::Key,
+                        K~I: crate::key::Key,
                     )*
-                Ctx: key::Context<Event = Ev> + core::fmt::Debug = composite::Context<composite::DefaultNestableKey>,
-                Ev: Copy + core::fmt::Debug + Ord = composite::Event,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug = crate::key::composite::Context<crate::key::composite::DefaultNestableKey>,
+                Ev: Copy + core::fmt::Debug + Ord = crate::key::composite::Event,
                 const M: usize = 2,
                 >(
                     #(
@@ -112,9 +112,9 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: key::Key,
+                        K~I: crate::key::Key,
                     )*
-                Ctx: key::Context<Event = Ev> + core::fmt::Debug,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug,
                 Ev: Copy + core::fmt::Debug + Ord,
                 const M: usize,
                 > [<Keys $n>]<
@@ -138,9 +138,9 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: key::Key + 'static,
+                        K~I: crate::key::Key + 'static,
                     )*
-                Ctx: key::Context<Event = Ev> + core::fmt::Debug + 'static,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
                 Ev: Copy + core::fmt::Debug + Ord + 'static,
                 const M: usize,
                 > core::ops::Index<usize> for [<Keys $n>]<
@@ -149,9 +149,9 @@ macro_rules! define_keys {
                     >
                 where
                     #(
-                    key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-                    key::Event<Ev>: From<key::Event<<K~I as key::Key>::Event>>,
-                    for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
+                    crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
+                    crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
+                    for<'c> &'c <K~I as crate::key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
                     type Output = dyn crate::key::dynamic::Key<Ev, M, Context = Ctx>;
@@ -168,9 +168,9 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: key::Key + 'static,
+                        K~I: crate::key::Key + 'static,
                     )*
-                Ctx: key::Context<Event = Ev> + core::fmt::Debug + 'static,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
                 Ev: Copy + core::fmt::Debug + Ord + 'static,
                 const M: usize,
                 > core::ops::IndexMut<usize> for [<Keys $n>]<
@@ -179,9 +179,9 @@ macro_rules! define_keys {
                     >
                 where
                     #(
-                    key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-                    key::Event<Ev>: From<key::Event<<K~I as key::Key>::Event>>,
-                    for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
+                    crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
+                    crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
+                    for<'c> &'c <K~I as crate::key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
                     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
@@ -196,9 +196,9 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: key::Key + 'static,
+                        K~I: crate::key::Key + 'static,
                     )*
-                Ctx: key::Context<Event = Ev> + core::fmt::Debug + 'static,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
                 Ev: Copy + core::fmt::Debug + Ord + 'static,
                 const M: usize,
                 > crate::tuples::KeysReset for [<Keys $n>]<
@@ -207,9 +207,9 @@ macro_rules! define_keys {
                     >
                 where
                     #(
-                    key::Event<<K~I as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-                    key::Event<Ev>: From<key::Event<<K~I as key::Key>::Event>>,
-                    for<'c> &'c <K~I as key::Key>::Context: From<&'c Ctx>,
+                    crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
+                    crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
+                    for<'c> &'c <K~I as crate::key::Key>::Context: From<&'c Ctx>,
                 )*
                 {
                     fn reset(&mut self) {
