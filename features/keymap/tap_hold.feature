@@ -10,11 +10,15 @@ Feature: TapHold Key
 
   Background:
 
-    Let's use a keymap with A=0x04, B=0x05, and Ctrl=0xE0.
+    Let's use a keymap a tap-hold key, and a simple key.
 
-    Given a keymap, expressed as a RON string
+    (Recall, A=0x04, B=0x05, and modifiers show up in
+     first byte of the report).
+
+    Given a keymap.ncl:
       """
-      [TapHold(key: Key(tap: 0x04, hold: 0xE0)), Simple(key: Key(0x05))]
+      let K = import "keys.ncl" in
+      { keys = [ K.A & K.hold K.LeftCtrl, K.B ] }
       """
 
   Example: acts as 'tap' when tapped
