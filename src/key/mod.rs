@@ -69,10 +69,7 @@ impl<E> IntoIterator for PressedKeyEvents<E> {
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait Key<PK: Key = Self>: Copy + Debug + PartialEq
-where
-    Self::ContextEvent: From<Self::Event>,
-{
+pub trait Key<PK: Key = Self>: Copy + Debug + PartialEq {
     /// The associated [Context] is used to provide state that
     ///  may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
