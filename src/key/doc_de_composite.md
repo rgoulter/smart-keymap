@@ -20,3 +20,26 @@ let expected_key: Key = composite::Key::Simple { key: simple::Key(0x04) };
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
+
+# TapHold variant
+
+# JSON
+
+```rust
+use smart_keymap::key;
+
+use key::{composite, layered, tap_hold};
+
+use composite::DefaultNestableKey;
+
+type L = layered::ArrayImpl<1>;
+type Ctx = composite::Context<DefaultNestableKey, L>;
+type Key = composite::Key<DefaultNestableKey, L>;
+
+let json = r#"
+  { "TapHold": { "key": { "hold": 224, "tap": 4 } } }
+"#;
+let expected_key: Key = composite::Key::TapHold { key: tap_hold::Key { tap: 4, hold: 224 } };
+let actual_key: Key = serde_json::from_str(json).unwrap();
+assert_eq!(actual_key, expected_key);
+```
