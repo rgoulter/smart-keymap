@@ -26,3 +26,14 @@ hid_codes
   H_RAlt = hold RightAlt,
   H_RGUI = hold RightGUI,
 }
+
+& {
+  layer_mod = {
+    hold = fun layer_num => {
+      layer_modifier = { hold = layer_num }
+    },
+  },
+
+  # Layer Transparency
+  TTTT = null,
+}
