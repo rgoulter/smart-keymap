@@ -205,10 +205,7 @@ impl<L: LayerImpl, K: key::Key> LayeredKey<K, L> {
     }
 }
 
-impl<L: LayerImpl, K: key::Key> key::Key<K> for LayeredKey<K, L>
-where
-    LayerEvent: From<<K as key::Key>::Event>,
-{
+impl<L: LayerImpl, K: key::Key> key::Key<K> for LayeredKey<K, L> {
     type Context = Context<K::Context, L>;
     type ContextEvent = LayerEvent;
     type Event = K::Event;
