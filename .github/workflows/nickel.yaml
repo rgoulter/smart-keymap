@@ -22,12 +22,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install dependencies
+      - name: Install nickel
         run: |
-          rustup target add riscv32imac-unknown-none-elf
           wget https://github.com/tweag/nickel/releases/download/1.9.1/nickel-x86_64-linux
           chmod +x ./nickel-x86_64-linux
           sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+
+      - name: Install dependencies
+        run: |
+          rustup target add riscv32imac-unknown-none-elf
 
       - name: Run Nickel tests
         run: |
