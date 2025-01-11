@@ -24,6 +24,14 @@ The `include/smart_keymap.h` and
 `target/riscv32imac-unknown-none-elf/release/libsmart_keymap.a`
 files should be copied into the `libsmartkeymap/` directory.
 
+Matrix key scanning is generated from files under `ncl/`.
+
+To generate the `generated/matrix.c` for the WABBLE-60, run:
+
+```
+make
+```
+
 An appropriate toolchain should be on `PATH`. e.g. using the package from the
 Nix flake from <https://github.com/rgoulter/ch32>:
 
