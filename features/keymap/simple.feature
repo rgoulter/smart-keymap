@@ -12,7 +12,8 @@ Feature: Simple Key
         Press(keymap_index: 0)
       ]
       """
-    Then the HID keyboard report should be
+    Then the HID keyboard report should equal
       """
-      [0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x00]
+      let K = import "hid-usage-keyboard.ncl" in
+      { key_codes = [K.A] }
       """
