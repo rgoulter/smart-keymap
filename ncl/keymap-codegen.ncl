@@ -5,6 +5,9 @@
   simple
     | doc "Generates type declaration and value expression for smart_keymap::key::simple::Key."
     = {
+      # c.f. doc_de_simple.md.
+      # JSON serialization of key::simple::Key is just a number.
+      is = fun k => std.is_number k,
       key_type = "crate::key::simple::Key",
       rust_expr = fun key => "crate::key::simple::Key(%{std.to_string key})",
     },
@@ -12,6 +15,15 @@
   tap_hold
     | doc "Generates type declaration and value expression for smart_keymap::key::tap_hold::Key."
     = {
+      # c.f. doc_de_tap_hold.md.
+      # JSON serialization of key::tap_hold::Key is { tap: number, hold: number }
+      is =
+        fun k =>
+          std.is_record k &&
+          std.record.has_field "tap" k &&
+          std.is_number (std.record.get "tap" k) &&
+          std.record.has_field "hold" k &&
+          std.is_number (std.record.get "hold" k),
       key_type = "crate::key::tap_hold::Key",
       rust_expr = fun { hold, tap, } =>
         m%"
@@ -25,16 +37,16 @@
   key_type_of_key
     | doc "The type declaration for the key."
     = match {
-      { simple = _ } => simple.key_type,
-      { tap_hold = _ } => tap_hold.key_type,
+      key if simple.is key => simple.key_type,
+      key if tap_hold.is key => tap_hold.key_type,
       _ => "unknown_key_type"
     },
 
   rust_expr_of_key
     | doc "The Rust expression for the key."
     = match {
-      { simple = key } => simple.rust_expr key,
-      { tap_hold = key } => tap_hold.rust_expr key,
+      key if simple.is key => simple.rust_expr key,
+      key if tap_hold.is key => tap_hold.rust_expr key,
       _ => "unknown_key_type"
     },
 
