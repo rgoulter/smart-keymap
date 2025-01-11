@@ -174,9 +174,11 @@ impl<K: key::Key, const L: usize> Layers<K> for [Option<K>; L] {
 /// A key whose behavior depends on which layer is active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub struct LayeredKey<K: key::Key, L: LayerImpl> {
-    base: K,
+    /// The base key, used when no layers are active.
+    pub base: K,
+    /// The layered keys, used when the corresponding layer is active.
     #[serde(bound(deserialize = "L::Layers<K>: serde::de::DeserializeOwned"))]
-    layered: L::Layers<K>,
+    pub layered: L::Layers<K>,
 }
 
 impl<const L: LayerIndex, K: key::Key> LayeredKey<K, ArrayImpl<L>> {
