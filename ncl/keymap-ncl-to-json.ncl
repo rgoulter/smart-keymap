@@ -17,6 +17,8 @@
       { hold = hold_kc, key_code = tap_kc } => { hold = hold_kc, tap = tap_kc },
       # Otherwise, keys with just a base key_code are key::simple keys.
       { key_code = kc } => kc,
+      # Make key::layered::ModifierKey
+      { layer_modifier = { hold = hold_layer } } => { Hold = hold_layer },
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
@@ -27,6 +29,8 @@
       { hold = hold_kc, key_code = tap_kc } => { TapHold = { key = { hold = hold_kc, tap = tap_kc } } },
       # Otherwise, keys with just a base key_code are key::simple keys.
       { key_code = kc } => { Simple = { key = kc } },
+      # Make key::layered::ModifierKey
+      { layer_modifier = { hold = hold_layer } } => { LayerModifier = { key = { Hold = hold_layer } } },
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
