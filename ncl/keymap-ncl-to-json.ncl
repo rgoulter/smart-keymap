@@ -32,18 +32,17 @@
     | doc "Constructs a JSON-representable composite::Key value from the given value from keymap.ncl."
     = match {
       # Make key::layered::LayeredKey
-      { key_code = base_key, layered = layered_keys } =>
-        {
-          Layered = {
-            key = { base = base_key, layered = layered_keys },
-          },
-        },
+      k@{ key_code = base_key, layered = layered_keys } =>
+        { Layered = { key = to_json_serialized_key k } },
       # Make key::tap_hold::Key from keys with a "hold" modifier.
-      { hold = hold_kc, key_code = tap_kc } => { TapHold = { key = { hold = hold_kc, tap = tap_kc } } },
+      k@{ hold = hold_kc, key_code = tap_kc } =>
+        { TapHold = { key = to_json_serialized_key k } },
       # Otherwise, keys with just a base key_code are key::simple keys.
-      { key_code = kc } => { Simple = { key = kc } },
+      k@{ key_code = kc } =>
+        { Simple = { key = to_json_serialized_key k } },
       # Make key::layered::ModifierKey
-      { layer_modifier = { hold = hold_layer } } => { LayerModifier = { key = { Hold = hold_layer } } },
+      k@{ layer_modifier = { hold = hold_layer } } =>
+        { LayerModifier = { key = to_json_serialized_key k } },
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
