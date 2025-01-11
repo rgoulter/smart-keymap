@@ -1,9 +1,10 @@
 Feature: Simple Key
 
-  Example: Deserialize a simple::Key
-    Given a keymap, expressed as a RON string
+  Example: Keymap with a simple Key
+    Given a keymap.ncl:
       """
-      [Simple(key: Key(0x04)), Simple(key: Key(0x05))]
+      let K = import "keys.ncl" in
+      { keys = [ K.A ] }
       """
     When the keymap registers the following input
       """
