@@ -64,8 +64,8 @@ impl key::PressedKeyState<Key> for PressedKeyState {
         _keymap_index: u16,
         _key: &Key,
         _event: key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
-        None
+    ) -> key::PressedKeyEvents<Self::Event> {
+        key::PressedKeyEvents::no_events()
     }
 
     /// Simple key always has a key_code.

@@ -5,8 +5,6 @@ use crate::{input, key};
 
 use key::PressedKey as _;
 
-use super::ScheduledEvent;
-
 /// A dyn-compatible Key trait.
 pub trait Key<Ev, const M: usize = 2>: Debug
 where
@@ -89,7 +87,7 @@ where
                     pressed_key
                         .handle_event(event)
                         .into_iter()
-                        .map(|ev| ScheduledEvent::immediate(ev).into_scheduled_event()),
+                        .map(|ev| ev.into_scheduled_event()),
                 );
             }
 
