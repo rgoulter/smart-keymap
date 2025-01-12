@@ -44,7 +44,7 @@ impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> cr
     fn handle_event(
         &mut self,
         event: crate::key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = crate::key::Event<Self::Event>> {
+    ) -> crate::key::PressedKeyEvents<Self::Event> {
         self.pressed_key_state
             .handle_event_for(self.keymap_index, &self.key, event)
     }

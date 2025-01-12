@@ -290,17 +290,17 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
         keymap_index: u16,
         key: &ModifierKey,
         event: key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
+    ) -> key::PressedKeyEvents<Self::Event> {
         match key {
             ModifierKey::Hold(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
-                        Some(key::Event::Key(LayerEvent::LayerDeactivated(*layer)))
+                        key::PressedKeyEvents::key_event(LayerEvent::LayerDeactivated(*layer))
                     } else {
-                        None
+                        key::PressedKeyEvents::no_events()
                     }
                 }
-                _ => None,
+                _ => key::PressedKeyEvents::no_events(),
             },
         }
     }
@@ -343,7 +343,7 @@ impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
         _keymap_index: u16,
         _key: &LayeredKey<K, L>,
         event: key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
+    ) -> key::PressedKeyEvents<Self::Event> {
         use crate::key::PressedKey as _;
 
         self.passthru_pk.handle_event(event)
@@ -388,7 +388,8 @@ mod tests {
             .next();
 
         // Assert: the pressed key should have emitted a layer deactivation event
-        if let Some(key::Event::Key(actual_layer_event)) = actual_events {
+        let first_ev = actual_events.into_iter().next().map(|sch_ev| sch_ev.event);
+        if let Some(key::Event::Key(actual_layer_event)) = first_ev {
             let expected_layer_event = LayerEvent::LayerDeactivated(layer);
             assert_eq!(actual_layer_event, expected_layer_event);
         } else {

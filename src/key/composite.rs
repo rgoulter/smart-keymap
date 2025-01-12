@@ -266,33 +266,33 @@ where
         keymap_index: u16,
         key: &Key<DefaultNestableKey, L>,
         event: key::Event<Self::Event>,
-    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
+    ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
             (Key::TapHold { key, .. }, PressedKeyState::TapHold(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
                     let events = pks.handle_event_for(keymap_index, key, ev);
-                    events.into_iter().map(|ev| ev.into()).collect()
+                    events.into_events()
                 } else {
-                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
+                    key::PressedKeyEvents::no_events()
                 }
             }
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
                     let events = pks.handle_event_for(keymap_index, key, ev);
-                    events.into_iter().map(|ev| ev.into()).collect()
+                    events.into_events()
                 } else {
-                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
+                    key::PressedKeyEvents::no_events()
                 }
             }
             (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
                     let events = pks.handle_event_for(keymap_index, key, ev);
-                    events.into_iter().map(|ev| ev.into()).collect()
+                    events.into_events()
                 } else {
-                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
+                    key::PressedKeyEvents::no_events()
                 }
             }
-            _ => heapless::Vec::new(),
+            _ => key::PressedKeyEvents::no_events(),
         }
     }
 
@@ -403,7 +403,7 @@ mod tests {
             .handle_event(key::Event::Input(input::Event::Release { keymap_index }));
 
         // Assert
-        let _key_ev = match events.into_iter().next() {
+        let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
             Some(key::Event::Key(Event::LayerModification(
                 layered::LayerEvent::LayerDeactivated(layer),
             ))) => {
@@ -469,7 +469,7 @@ mod tests {
         context.layer_context.activate_layer(0);
         let events = pressed_lmod_key
             .handle_event(key::Event::Input(input::Event::Release { keymap_index: 0 }));
-        let key_ev = match events.into_iter().next() {
+        let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
             Some(key::Event::Key(ev)) => ev,
             _ => panic!("Expected an Event::Key(_)"),
         };

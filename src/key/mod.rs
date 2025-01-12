@@ -26,6 +26,11 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     }
 
     /// Constructs a [PressedKeyEvents] with an immediate [Event].
+    pub fn event(event: Event<E>) -> Self {
+        PressedKeyEvents(Some(ScheduledEvent::immediate(event)).into_iter().collect())
+    }
+
+    /// Constructs a [PressedKeyEvents] with an immediate [Event].
     pub fn key_event(key_event: E) -> Self {
         PressedKeyEvents(
             Some(ScheduledEvent::immediate(Event::Key(key_event)))
@@ -41,6 +46,11 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
                 .into_iter()
                 .collect(),
         )
+    }
+
+    /// Adds an event with the schedule to the [PressedKeyEvents].
+    pub fn schedule_event(&mut self, delay: u16, event: Event<E>) {
+        self.0.push(ScheduledEvent::after(delay, event)).unwrap();
     }
 
     /// Maps the PressedKeyEvents to a new type.
@@ -148,10 +158,7 @@ pub trait PressedKey {
     type Event;
 
     /// Used to update the [PressedKey]'s state, and possibly yield event(s).
-    fn handle_event(
-        &mut self,
-        event: Event<Self::Event>,
-    ) -> impl IntoIterator<Item = Event<Self::Event>>;
+    fn handle_event(&mut self, event: Event<Self::Event>) -> PressedKeyEvents<Self::Event>;
 
     /// Output for the pressed key.
     fn key_output(&self) -> Option<KeyOutput>;
@@ -171,7 +178,7 @@ pub trait PressedKeyState<K: Key>: Debug {
         keymap_index: u16,
         key: &K,
         event: Event<Self::Event>,
-    ) -> impl IntoIterator<Item = Event<Self::Event>>;
+    ) -> PressedKeyEvents<Self::Event>;
 
     /// Output for the pressed key state.
     fn key_output(&self, key: &K) -> Option<KeyOutput>;
