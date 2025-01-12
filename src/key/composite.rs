@@ -148,6 +148,14 @@ impl<L: layered::LayerImpl> From<&Context<DefaultNestableKey, L>> for &() {
     }
 }
 
+impl<'c, L: layered::LayerImpl> From<&'c Context<DefaultNestableKey, L>>
+    for &'c layered::Context<(), L>
+{
+    fn from(ctx: &'c Context<DefaultNestableKey, L>) -> Self {
+        &ctx.layer_context
+    }
+}
+
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
 pub enum PressedKeyState<L: layered::LayerImpl = layered::ArrayImpl<0>> {
