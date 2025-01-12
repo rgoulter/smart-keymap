@@ -152,6 +152,7 @@ fn perform_input(world: &mut KeymapWorld, step: &Step) {
 
     for input in inputs {
         world.keymap.handle_input(input);
+        world.keymap.tick();
     }
 }
 
