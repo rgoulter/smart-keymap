@@ -10,8 +10,6 @@ use smart_keymap::key;
 use smart_keymap::keymap::Keymap;
 use smart_keymap::tuples;
 
-use key::composite::Key;
-
 mod common;
 
 use common::Deserializer;
@@ -59,11 +57,16 @@ fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
     String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
+type NestedKey = key::composite::DefaultNestableKey;
+type LayersImpl = key::layered::ArrayImpl<0>;
+type Key = key::composite::Key<NestedKey, LayersImpl>;
+type Context = key::composite::Context<NestedKey, LayersImpl>;
+
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap1(Keymap<tuples::Keys1<Key>>),
-    Keymap2(Keymap<tuples::Keys2<Key, Key>>),
+    Keymap1(Keymap<tuples::Keys1<Key, Context>, LayersImpl>),
+    Keymap2(Keymap<tuples::Keys2<Key, Key, Context>, LayersImpl>),
 }
 
 impl LoadedKeymap {
