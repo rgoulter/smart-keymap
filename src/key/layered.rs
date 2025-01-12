@@ -2,6 +2,7 @@
 
 use core::fmt::Debug;
 use core::marker::Copy;
+use core::marker::PhantomData;
 
 use serde::Deserialize;
 
@@ -190,40 +191,37 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<K, ArrayImpl<L>> {
     }
 }
 
-impl<L: LayerImpl, K: key::Key> LayeredKey<K, L> {
-    /// Create a new [input::PressedKey], depending on the active layers in [Context].
-    pub fn new_pressed_key(
-        &self,
-        context: &Context<K::Context, L>,
-        keymap_index: u16,
-    ) -> (
-        input::PressedKey<K, K::PressedKeyState>,
-        key::PressedKeyEvents<K::Event>,
-    ) {
-        if let Some(key) = self.layered.highest_active_key(context.layer_state()) {
-            return key.new_pressed_key(&context.inner_context, keymap_index);
-        }
-
-        self.base
-            .new_pressed_key(&context.inner_context, keymap_index)
-    }
-}
-
-impl<L: LayerImpl, K: key::Key> key::Key<K> for LayeredKey<K, L> {
+impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
     type Context = Context<K::Context, L>;
     type ContextEvent = LayerEvent;
     type Event = K::Event;
-    type PressedKeyState = K::PressedKeyState;
+    type PressedKeyState = PressedLayeredKeyState<K, L>;
 
     fn new_pressed_key(
         &self,
         context: &Self::Context,
         keymap_index: u16,
     ) -> (
-        input::PressedKey<K, Self::PressedKeyState>,
+        input::PressedKey<Self, Self::PressedKeyState>,
         key::PressedKeyEvents<Self::Event>,
     ) {
-        self.new_pressed_key(context, keymap_index)
+        let passthru_key = self
+            .layered
+            .highest_active_key(context.layer_state())
+            .unwrap_or(self.base);
+
+        let (passthru_pk, passthru_events) =
+            passthru_key.new_pressed_key(&context.inner_context, keymap_index);
+
+        let pressed_key_state = PressedLayeredKeyState::new(passthru_pk);
+        (
+            input::PressedKey {
+                keymap_index,
+                key: *self,
+                pressed_key_state,
+            },
+            passthru_events,
+        )
     }
 }
 
@@ -271,11 +269,57 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
     }
 }
 
+/// [LayeredKey's] 'pressed key' associated type.
+/// Passes through to the pressed key.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PressedLayeredKeyState<K: key::Key, L: LayerImpl> {
+    passthru_pk: input::PressedKey<K, K::PressedKeyState>,
+
+    _phantom: PhantomData<L>,
+}
+
+impl<K: key::Key, L: LayerImpl> PressedLayeredKeyState<K, L> {
+    /// Constructs [PressedLayeredKeyState].
+    pub fn new(passthru_pk: input::PressedKey<K, K::PressedKeyState>) -> Self {
+        Self {
+            passthru_pk,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// Type alias for [crate::input::PressedKey] of [LayeredKey].
+pub type PressedLayeredKey<K, L> =
+    input::PressedKey<LayeredKey<K, L>, PressedLayeredKeyState<K, L>>;
+
+impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
+    for PressedLayeredKeyState<K, L>
+{
+    type Event = K::Event;
+
+    fn handle_event_for(
+        &mut self,
+        _keymap_index: u16,
+        _key: &LayeredKey<K, L>,
+        event: key::Event<Self::Event>,
+    ) -> impl IntoIterator<Item = key::Event<Self::Event>> {
+        use crate::key::PressedKey as _;
+
+        self.passthru_pk.handle_event(event)
+    }
+
+    fn key_output(&self, _key: &LayeredKey<K, L>) -> Option<key::KeyOutput> {
+        use crate::key::PressedKey as _;
+
+        self.passthru_pk.key_output()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    use key::{simple, Context as _, Key, PressedKey as _};
+    use key::{simple, Context as _, Key, KeyOutput, PressedKey as _};
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
@@ -369,8 +413,39 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) =
             expected_key.new_pressed_key(&(), keymap_index);
-        assert_eq!(actual_pressed_key, expected_pressed_key);
+        assert_eq!(
+            actual_pressed_key.pressed_key_state.passthru_pk,
+            expected_pressed_key
+        );
         assert_eq!(actual_event, expected_event);
+    }
+
+    #[test]
+    fn test_pressing_layered_key_when_no_layers_active_has_key_code() {
+        // Assemble
+        type L = ArrayImpl<3>;
+        let context: Context<(), L> = Context::new(());
+        let expected_key = simple::Key(0x04);
+        let layered_key = LayeredKey {
+            base: expected_key,
+            layered: [
+                Some(simple::Key(0x05)),
+                Some(simple::Key(0x06)),
+                Some(simple::Key(0x07)),
+            ],
+        };
+
+        // Act: without activating a layer, press the layered key
+        let keymap_index = 9; // arbitrary
+        let (actual_pressed_key, _event) = layered_key.new_pressed_key(&context, keymap_index);
+
+        let actual_key_output = actual_pressed_key.key_output();
+
+        // Assert
+        let (expected_pressed_key, _event) = expected_key.new_pressed_key(&(), keymap_index);
+        let expected_key_output = expected_pressed_key.key_output();
+        assert_eq!(actual_key_output, expected_key_output);
+        assert_eq!(actual_key_output, Some(KeyOutput::from_key_code(0x04)));
     }
 
     // Terminology:
@@ -399,7 +474,10 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) =
             expected_key.new_pressed_key(&(), keymap_index);
-        assert_eq!(actual_pressed_key, expected_pressed_key);
+        assert_eq!(
+            actual_pressed_key.pressed_key_state.passthru_pk,
+            expected_pressed_key
+        );
         assert_eq!(actual_event, expected_event);
     }
 
@@ -429,7 +507,10 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) =
             expected_key.new_pressed_key(&(), keymap_index);
-        assert_eq!(actual_pressed_key, expected_pressed_key);
+        assert_eq!(
+            actual_pressed_key.pressed_key_state.passthru_pk,
+            expected_pressed_key
+        );
         assert_eq!(actual_event, expected_event);
     }
 
@@ -454,7 +535,10 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) =
             expected_key.new_pressed_key(&(), keymap_index);
-        assert_eq!(actual_pressed_key, expected_pressed_key);
+        assert_eq!(
+            actual_pressed_key.pressed_key_state.passthru_pk,
+            expected_pressed_key
+        );
         assert_eq!(actual_event, expected_event);
     }
 

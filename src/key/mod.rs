@@ -69,7 +69,7 @@ impl<E> IntoIterator for PressedKeyEvents<E> {
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait Key<PK: Key = Self>: Copy + Debug + PartialEq {
+pub trait Key: Copy + Debug + PartialEq {
     /// The associated [Context] is used to provide state that
     ///  may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
@@ -84,7 +84,7 @@ pub trait Key<PK: Key = Self>: Copy + Debug + PartialEq {
     ///  for the pressed key.
     /// (e.g. [tap_hold::PressedKeyState] implements behaviour resolving
     ///  the pressed tap hold key as either 'tap' or 'hold').
-    type PressedKeyState: PressedKeyState<PK, Event = Self::Event>;
+    type PressedKeyState: PressedKeyState<Self, Event = Self::Event>;
 
     /// [Key::new_pressed_key] produces a pressed key value, and may
     ///  yield some [ScheduledEvent]s.
@@ -95,7 +95,7 @@ pub trait Key<PK: Key = Self>: Copy + Debug + PartialEq {
         context: &Self::Context,
         keymap_index: u16,
     ) -> (
-        input::PressedKey<PK, Self::PressedKeyState>,
+        input::PressedKey<Self, Self::PressedKeyState>,
         PressedKeyEvents<Self::Event>,
     );
 }

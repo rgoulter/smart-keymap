@@ -80,7 +80,7 @@ where
     type Context = Context<DefaultNestableKey, L>;
     type ContextEvent = Event;
     type Event = Event;
-    type PressedKeyState = PressedKeyState;
+    type PressedKeyState = PressedKeyState<L>;
 
     fn new_pressed_key(
         &self,
@@ -149,18 +149,20 @@ impl<L: layered::LayerImpl> From<&Context<DefaultNestableKey, L>> for &() {
 }
 
 /// Aggregates the [key::PressedKeyState] types.
-#[derive(Debug, Clone, Copy)]
-pub enum PressedKeyState {
+#[derive(Debug)]
+pub enum PressedKeyState<L: layered::LayerImpl = layered::ArrayImpl<0>> {
     /// A simple key's pressed state.
     Simple(simple::PressedKeyState),
     /// A tap-hold key's pressed state.
     TapHold(tap_hold::PressedKeyState),
     /// A layer modifier key's pressed state.
     LayerModifier(layered::PressedModifierKeyState),
+    /// A layer modifier key's pressed state.
+    Layered(layered::PressedLayeredKeyState<DefaultNestableKey, L>),
 }
 
 /// Convenience type alias for a [key::PressedKey] with a [PressedKeyState].
-pub type PressedKey<L> = input::PressedKey<Key<DefaultNestableKey, L>, PressedKeyState>;
+pub type PressedKey<L> = input::PressedKey<Key<DefaultNestableKey, L>, PressedKeyState<L>>;
 
 impl<L: layered::LayerImpl> From<layered::PressedModifierKey> for PressedKey<L>
 where
@@ -180,6 +182,29 @@ where
             key: Key::layer_modifier(key),
             keymap_index,
             pressed_key_state: PressedKeyState::LayerModifier(pressed_key_state),
+        }
+    }
+}
+
+impl<L: layered::LayerImpl> From<layered::PressedLayeredKey<DefaultNestableKey, L>>
+    for PressedKey<L>
+where
+    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+{
+    fn from(
+        input::PressedKey {
+            keymap_index,
+            key,
+            pressed_key_state,
+        }: layered::PressedLayeredKey<DefaultNestableKey, L>,
+    ) -> Self
+    where
+        L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    {
+        input::PressedKey {
+            key: Key::layered(key),
+            keymap_index,
+            pressed_key_state: PressedKeyState::Layered(pressed_key_state),
         }
     }
 }
@@ -222,7 +247,7 @@ where
     }
 }
 
-impl<L: layered::LayerImpl> key::PressedKeyState<Key<DefaultNestableKey, L>> for PressedKeyState
+impl<L: layered::LayerImpl> key::PressedKeyState<Key<DefaultNestableKey, L>> for PressedKeyState<L>
 where
     L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
 {
@@ -251,6 +276,14 @@ where
                     heapless::Vec::<key::Event<Self::Event>, 2>::new()
                 }
             }
+            (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
+                if let Ok(ev) = key::Event::try_from(event) {
+                    let events = pks.handle_event_for(keymap_index, key, ev);
+                    events.into_iter().map(|ev| ev.into()).collect()
+                } else {
+                    heapless::Vec::<key::Event<Self::Event>, 2>::new()
+                }
+            }
             _ => heapless::Vec::new(),
         }
     }
@@ -260,6 +293,7 @@ where
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pk)) => {
                 pk.key_output(key)
             }
+            (Key::Layered { key, .. }, PressedKeyState::Layered(pk)) => pk.key_output(key),
             (Key::Simple { key, .. }, PressedKeyState::Simple(pk)) => pk.key_output(key),
             (Key::TapHold { key, .. }, PressedKeyState::TapHold(pk)) => pk.key_output(key),
             _ => None,
