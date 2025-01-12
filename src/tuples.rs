@@ -17,15 +17,15 @@ pub struct Keys1<
     K0: key::Key,
     Ctx: key::Context<Event = Ev> + Debug = composite::Context<composite::DefaultNestableKey>,
     Ev: Copy + Debug + Ord = composite::Event,
-    const N: usize = 2,
+    const M: usize = 2,
 >(dynamic::DynamicKey<K0, Ctx, Ev>);
 
 impl<
         K0: key::Key,
         Ctx: key::Context<Event = Ev> + Debug,
         Ev: Copy + Debug + Ord,
-        const N: usize,
-    > Keys1<K0, Ctx, Ev, N>
+        const M: usize,
+    > Keys1<K0, Ctx, Ev, M>
 {
     /// Constructs a KeysN for the given tuple.
     pub const fn new((k0,): (K0,)) -> Self {
@@ -37,14 +37,14 @@ impl<
         K0: key::Key + 'static,
         Ctx: key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord + 'static,
-        const N: usize,
-    > Index<usize> for Keys1<K0, Ctx, Ev, N>
+        const M: usize,
+    > Index<usize> for Keys1<K0, Ctx, Ev, M>
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
     for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
 {
-    type Output = dyn dynamic::Key<Ev, N, Context = Ctx>;
+    type Output = dyn dynamic::Key<Ev, M, Context = Ctx>;
 
     fn index(&self, idx: usize) -> &Self::Output {
         match idx {
@@ -58,8 +58,8 @@ impl<
         K0: crate::key::Key + 'static,
         Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord + 'static,
-        const N: usize,
-    > IndexMut<usize> for Keys1<K0, Ctx, Ev, N>
+        const M: usize,
+    > IndexMut<usize> for Keys1<K0, Ctx, Ev, M>
 where
     crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
     crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
@@ -77,15 +77,15 @@ impl<
         K0: crate::key::Key + 'static,
         Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord + 'static,
-        const N: usize,
-    > KeysReset for Keys1<K0, Ctx, Ev, N>
+        const M: usize,
+    > KeysReset for Keys1<K0, Ctx, Ev, M>
 where
     crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
     crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
     for<'c> &'c <K0 as crate::key::Key>::Context: From<&'c Ctx>,
 {
     fn reset(&mut self) {
-        <dynamic::DynamicKey<K0, Ctx, Ev> as dynamic::Key<Ev, N>>::reset(&mut self.0)
+        <dynamic::DynamicKey<K0, Ctx, Ev> as dynamic::Key<Ev, M>>::reset(&mut self.0)
     }
 }
 
