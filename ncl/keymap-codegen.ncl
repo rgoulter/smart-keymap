@@ -48,15 +48,7 @@
         let nested_key_type = "crate::key::simple::Key" in
         let num_layers = layered |> std.array.length |> std.to_string in
         let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
-        # Kludge: key::layered::LayeredKey doesn't impl key::Key<Self>.
-        #  So, wrap with a composite key.
-        m%"
-          crate::key::composite::Key<
-            crate::key::composite::DefaultNestableKey,
-            crate::key::layered::ArrayImpl<%{num_layers}>
-          >
-        "%,
-
+        "crate::key::layered::LayeredKey<%{nested_key_type}, %{layer_impl}>",
 
       rust_expr = fun { base, layered } =>
         let nested_key_expr = simple.rust_expr in
@@ -64,12 +56,8 @@
         let layered_exprs = layered
           |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nested_key_expr lk})")
           |> std.string.join "," in
-        # Kludge: key::layered::LayeredKey doesn't impl key::Key<Self>.
-        #  So, wrap with a composite key.
         m%"
-          crate::key::composite::Key::layered(
-            crate::key::layered::LayeredKey { base: %{base_expr}, layered: [%{layered_exprs}] }
-          )
+          crate::key::layered::LayeredKey { base: %{base_expr}, layered: [%{layered_exprs}] }
         "%,
     },
 
