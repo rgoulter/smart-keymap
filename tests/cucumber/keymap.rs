@@ -58,7 +58,7 @@ fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
 }
 
 type NestedKey = key::composite::DefaultNestableKey;
-type LayersImpl = key::layered::ArrayImpl<1>;
+type LayersImpl = key::layered::ArrayImpl<16>;
 type Key = key::composite::Key<NestedKey, LayersImpl>;
 type Context = key::composite::Context<NestedKey, LayersImpl>;
 
