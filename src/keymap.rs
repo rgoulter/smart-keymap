@@ -73,24 +73,6 @@ impl EventScheduler {
     }
 }
 
-/// State for a keymap that handles input, and outputs HID keyboard reports.
-#[derive(Debug)]
-pub struct Keymap<
-    I: IndexMut<
-            usize,
-            Output = dyn key::dynamic::Key<
-                key::composite::Event,
-                Context = key::composite::Context<key::composite::DefaultNestableKey, L>,
-            >,
-        > + crate::tuples::KeysReset,
-    L: key::layered::LayerImpl = key::layered::ArrayImpl<0>,
-> {
-    key_definitions: I,
-    context: composite::Context<composite::DefaultNestableKey, L>,
-    pressed_inputs: heapless::Vec<input::PressedInput, 16>,
-    event_scheduler: EventScheduler,
-}
-
 /// Output from the keymap, used to build HID reports.
 #[derive(Debug)]
 pub struct KeymapOutput {
@@ -127,6 +109,24 @@ impl KeymapOutput {
         }
         report
     }
+}
+
+/// State for a keymap that handles input, and outputs HID keyboard reports.
+#[derive(Debug)]
+pub struct Keymap<
+    I: IndexMut<
+            usize,
+            Output = dyn key::dynamic::Key<
+                key::composite::Event,
+                Context = key::composite::Context<key::composite::DefaultNestableKey, L>,
+            >,
+        > + crate::tuples::KeysReset,
+    L: key::layered::LayerImpl = key::layered::ArrayImpl<0>,
+> {
+    key_definitions: I,
+    context: composite::Context<composite::DefaultNestableKey, L>,
+    pressed_inputs: heapless::Vec<input::PressedInput, 16>,
+    event_scheduler: EventScheduler,
 }
 
 impl<
