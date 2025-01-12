@@ -287,7 +287,6 @@ mod tests {
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        keymap.tick();
         let actual_report = keymap.boot_keyboard_report();
 
         // Assert
@@ -310,7 +309,6 @@ mod tests {
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        keymap.tick();
         let actual_report = keymap.boot_keyboard_report();
 
         // Assert
@@ -340,7 +338,6 @@ mod tests {
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        keymap.tick();
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
         let actual_report = keymap.boot_keyboard_report();
 
@@ -403,7 +400,6 @@ mod tests {
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        keymap.tick();
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
         let actual_report = keymap.boot_keyboard_report();
 
@@ -435,11 +431,8 @@ mod tests {
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        keymap.tick();
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
-        keymap.tick();
         keymap.handle_input(input::Event::Release { keymap_index: 0 });
-        keymap.tick();
         let actual_report = keymap.boot_keyboard_report();
 
         // Assert
@@ -470,11 +463,8 @@ mod tests {
 
         // Act
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        keymap.tick();
         keymap.handle_input(input::Event::Release { keymap_index: 0 });
-        keymap.tick();
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
-        keymap.tick();
         let actual_report = keymap.boot_keyboard_report();
 
         // Assert
