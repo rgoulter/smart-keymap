@@ -172,6 +172,8 @@ impl<
             }
         });
 
+        self.handle_all_pending_events();
+
         match ev {
             input::Event::Press { keymap_index } => {
                 let key = &mut self.key_definitions[keymap_index as usize];
@@ -211,14 +213,13 @@ impl<
                     .map(|i| self.pressed_inputs.remove(i));
             }
         }
+
+        self.handle_all_pending_events();
     }
 
-    /// Advances the state of the keymap by one tick.
-    pub fn tick(&mut self) {
-        self.event_scheduler.tick();
-
+    fn handle_all_pending_events(&mut self) {
         // take from pending
-        if let Some(ev) = self.event_scheduler.dequeue() {
+        while let Some(ev) = self.event_scheduler.dequeue() {
             // Update each of the pressed keys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
                 if let input::PressedInput::Key { keymap_index, .. } = pi {
@@ -238,6 +239,13 @@ impl<
                 self.handle_input(input_ev);
             }
         }
+    }
+
+    /// Advances the state of the keymap by one tick.
+    pub fn tick(&mut self) {
+        self.event_scheduler.tick();
+
+        self.handle_all_pending_events();
     }
 
     /// Returns the the pressed key codes.
