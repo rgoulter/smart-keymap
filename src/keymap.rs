@@ -311,6 +311,37 @@ mod tests {
     }
 
     #[test]
+    fn test_keymap_with_layered_key_press_active_layer_when_layer_mod_held() {
+        use key::{composite, layered, simple};
+        use tuples::Keys2;
+
+        use composite::{DefaultNestableKey, Event};
+
+        // Assemble
+        type L = layered::ArrayImpl<1>;
+        type Ctx = composite::Context<DefaultNestableKey, L>;
+        type MK = layered::ModifierKey;
+        type LK = layered::LayeredKey<DefaultNestableKey, L>;
+        let keys: Keys2<MK, LK, Ctx, Event> = tuples::Keys2::new((
+            layered::ModifierKey::Hold(0),
+            layered::LayeredKey::new(simple::Key(0x04), [Some(simple::Key(0x05))]),
+        ));
+        let context = Ctx::new();
+
+        let mut keymap = Keymap::new(keys, context);
+
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.tick();
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+
+    #[test]
     fn test_keymap_with_composite_layered_key_press_base_key() {
         use key::{composite, layered, simple};
         use tuples::Keys2;
