@@ -45,11 +45,6 @@ impl<E: Copy> PressedKeyEvents<E> {
             event: scheduled_event.event.into(),
         }))
     }
-
-    /// Returns the [ScheduledEvent] if it exists.
-    pub fn into_option(self) -> Option<ScheduledEvent<E>> {
-        self.0
-    }
 }
 
 impl<E> IntoIterator for PressedKeyEvents<E> {
