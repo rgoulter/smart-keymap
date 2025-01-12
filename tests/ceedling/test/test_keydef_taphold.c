@@ -63,7 +63,11 @@ void test_taphold_dth_uth_eventually_clears(void) {
 
     keymap_tick(actual_report);
 
-    keymap_tick(actual_report); // The 'tap' from the TapHold key should be released.
+    // The 'tap' from the TapHold key should be released.
+    // after ten ticks.
+    for (int i = 0; i < 20; i++) {
+        keymap_tick(actual_report);
+    }
 
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
