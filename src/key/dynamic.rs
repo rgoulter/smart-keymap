@@ -8,7 +8,7 @@ use key::PressedKey as _;
 use super::ScheduledEvent;
 
 /// A dyn-compatible Key trait.
-pub trait Key<Ev, const N: usize = 2>: Debug
+pub trait Key<Ev, const M: usize = 2>: Debug
 where
     Ev: Copy + Debug + Ord,
 {
@@ -25,7 +25,7 @@ where
         &mut self,
         context: &Self::Context,
         event: key::Event<Ev>,
-    ) -> heapless::Vec<key::ScheduledEvent<Ev>, N>;
+    ) -> heapless::Vec<key::ScheduledEvent<Ev>, M>;
 
     /// Output HID keyboard code for the [Key].
     fn key_output(&self) -> Option<key::KeyOutput>;
@@ -67,8 +67,8 @@ impl<
         K: key::Key,
         Ctx: key::Context<Event = Ev> + Debug + 'static,
         Ev: Copy + Debug + Ord,
-        const N: usize,
-    > Key<Ev, N> for DynamicKey<K, Ctx, Ev>
+        const M: usize,
+    > Key<Ev, M> for DynamicKey<K, Ctx, Ev>
 where
     key::Event<K::Event>: TryFrom<key::Event<Ev>>,
     key::Event<Ev>: From<key::Event<K::Event>>,
@@ -80,8 +80,8 @@ where
         &mut self,
         context: &Self::Context,
         event: key::Event<Ev>,
-    ) -> heapless::Vec<key::ScheduledEvent<Ev>, N> {
-        let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, N> = heapless::Vec::new();
+    ) -> heapless::Vec<key::ScheduledEvent<Ev>, M> {
+        let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, M> = heapless::Vec::new();
 
         if let Some(ref mut pressed_key) = &mut self.pressed_key {
             if let Ok(event) = event.try_into() {
