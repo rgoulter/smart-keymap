@@ -156,10 +156,26 @@ impl<C: key::Context, L: LayerImpl> key::Context for Context<C, L> {
     }
 }
 
+/// Errors when constructing Layers.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LayersError {
+    /// Trying to construct more layers than the Layers can store.
+    Overflow,
+}
+
+impl core::fmt::Display for LayersError {
+    // This trait requires `fmt` with this exact signature.
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "{}", "LayersError::Overflow")
+    }
+}
+
 /// Trait for layers of [LayeredKey].
 pub trait Layers<K: key::Key>: Copy + Debug + PartialEq {
     /// Get the highest active key, if any, for the given [LayerState].
     fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K>;
+    /// Constructs layers; return Err if the iterable has more keys than Layers can store.
+    fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError>;
 }
 
 impl<K: key::Key, const L: usize> Layers<K> for [Option<K>; L] {
@@ -172,6 +188,18 @@ impl<K: key::Key, const L: usize> Layers<K> for [Option<K>; L] {
 
         None
     }
+
+    fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError> {
+        let mut layered: [Option<K>; L] = [None; L];
+        for (i, maybe_key) in keys.into_iter().enumerate() {
+            if i < L {
+                layered[i] = maybe_key;
+            } else {
+                return Err(LayersError::Overflow);
+            }
+        }
+        Ok(layered)
+    }
 }
 
 /// A key whose behavior depends on which layer is active.
@@ -180,8 +208,21 @@ pub struct LayeredKey<K: key::Key, L: LayerImpl> {
     /// The base key, used when no layers are active.
     pub base: K,
     /// The layered keys, used when the corresponding layer is active.
-    #[serde(bound(deserialize = "L::Layers<K>: serde::de::DeserializeOwned"))]
+    #[serde(deserialize_with = "deserialize_layered")]
+    #[serde(bound(deserialize = "K: Deserialize<'de>"))]
     pub layered: L::Layers<K>,
+}
+
+/// Deserialize a [Layers].
+///
+fn deserialize_layered<'de, K: key::Key, L: Layers<K>, D>(deserializer: D) -> Result<L, D::Error>
+where
+    K: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    let keys_vec: heapless::Vec<Option<K>, 64> = Deserialize::deserialize(deserializer)?;
+
+    L::from_iterable(keys_vec).map_err(serde::de::Error::custom)
 }
 
 impl<const L: LayerIndex, K: key::Key> LayeredKey<K, ArrayImpl<L>> {
