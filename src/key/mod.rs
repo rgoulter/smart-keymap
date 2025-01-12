@@ -17,22 +17,30 @@ pub mod dynamic;
 
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
-pub struct PressedKeyEvents<E>(Option<ScheduledEvent<E>>);
+pub struct PressedKeyEvents<E, const M: usize = 2>(heapless::Vec<ScheduledEvent<E>, M>);
 
-impl<E: Copy> PressedKeyEvents<E> {
+impl<E: Copy + Debug> PressedKeyEvents<E> {
     /// Constructs a [PressedKeyEvents] with no events scheduled.
     pub fn no_events() -> Self {
-        PressedKeyEvents(None)
+        PressedKeyEvents(None.into_iter().collect())
     }
 
     /// Constructs a [PressedKeyEvents] with an immediate [Event].
     pub fn key_event(key_event: E) -> Self {
-        PressedKeyEvents(Some(ScheduledEvent::immediate(Event::Key(key_event))))
+        PressedKeyEvents(
+            Some(ScheduledEvent::immediate(Event::Key(key_event)))
+                .into_iter()
+                .collect(),
+        )
     }
 
     /// Constructs a [PressedKeyEvents] with an [Event] scheduled after a delay.
     pub fn scheduled_key_event(delay: u16, key_event: E) -> Self {
-        PressedKeyEvents(Some(ScheduledEvent::after(delay, Event::Key(key_event))))
+        PressedKeyEvents(
+            Some(ScheduledEvent::after(delay, Event::Key(key_event)))
+                .into_iter()
+                .collect(),
+        )
     }
 
     /// Maps the PressedKeyEvents to a new type.
@@ -40,16 +48,22 @@ impl<E: Copy> PressedKeyEvents<E> {
     where
         Event<F>: From<Event<E>>,
     {
-        PressedKeyEvents(self.0.map(|scheduled_event| ScheduledEvent {
-            schedule: scheduled_event.schedule,
-            event: scheduled_event.event.into(),
-        }))
+        PressedKeyEvents(
+            self.0
+                .as_slice()
+                .iter()
+                .map(|scheduled_event| ScheduledEvent {
+                    schedule: scheduled_event.schedule,
+                    event: scheduled_event.event.into(),
+                })
+                .collect(),
+        )
     }
 }
 
-impl<E> IntoIterator for PressedKeyEvents<E> {
+impl<E: Debug, const M: usize> IntoIterator for PressedKeyEvents<E, M> {
     type Item = ScheduledEvent<E>;
-    type IntoIter = core::option::IntoIter<ScheduledEvent<E>>;
+    type IntoIter = <heapless::Vec<ScheduledEvent<E>, M> as IntoIterator>::IntoIter;
 
     fn into_iter(self) -> Self::IntoIter {
         self.0.into_iter()
