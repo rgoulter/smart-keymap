@@ -25,6 +25,8 @@
       { key_code = kc } => kc,
       # Make key::layered::ModifierKey
       { layer_modifier = { hold = hold_layer } } => { Hold = hold_layer },
+      # Null values (None) stay null
+      null => null,
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
@@ -43,6 +45,8 @@
       # Make key::layered::ModifierKey
       k@{ layer_modifier = { hold = hold_layer } } =>
         { LayerModifier = { key = to_json_serialized_key k } },
+      # Null values (None) stay null
+      null => null,
       _ => std.fail_with "unsupported item in keymap.ncl",
     },
 
