@@ -642,7 +642,7 @@ mod tests {
     fn test_deserialize_ron_layered_key_simple_0layer() {
         type L = ArrayImpl<0>;
         let actual_key: LayeredKey<key::simple::Key, L> =
-            ron::from_str("(base: (0x04), layered: ())").unwrap();
+            ron::from_str("(base: (0x04), layered: [])").unwrap();
         let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [],
@@ -666,7 +666,7 @@ mod tests {
     fn test_deserialize_ron_layered_key_simple_1layer_none() {
         type L = ArrayImpl<1>;
         let actual_key: LayeredKey<key::simple::Key, L> =
-            ron::from_str("LayeredKey(base: Key(0x04), layered: (None))").unwrap();
+            ron::from_str("LayeredKey(base: Key(0x04), layered: [None])").unwrap();
         let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
             base: key::simple::Key(0x04),
             layered: [None],
