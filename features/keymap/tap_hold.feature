@@ -26,7 +26,7 @@ Feature: TapHold Key
         Release(keymap_index: 0)
       ]
       """
-    Then the HID keyboard report from the next tick() should equal
+    Then the HID keyboard report should equal
       """
       let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.A] }
