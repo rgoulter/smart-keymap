@@ -166,7 +166,7 @@ impl<
         self.pressed_inputs.iter_mut().for_each(|pi| {
             if let input::PressedInput::Key { keymap_index, .. } = pi {
                 let key = &mut self.key_definitions[*keymap_index as usize];
-                key.handle_event(&self.context, ev.into())
+                key.handle_event(self.context, ev.into())
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
@@ -178,7 +178,7 @@ impl<
             input::Event::Press { keymap_index } => {
                 let key = &mut self.key_definitions[keymap_index as usize];
 
-                key.handle_event(&self.context, ev.into())
+                key.handle_event(self.context, ev.into())
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
@@ -224,7 +224,7 @@ impl<
             self.pressed_inputs.iter_mut().for_each(|pi| {
                 if let input::PressedInput::Key { keymap_index, .. } = pi {
                     let key = &mut self.key_definitions[*keymap_index as usize];
-                    key.handle_event(&self.context, ev)
+                    key.handle_event(self.context, ev)
                         .into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                 }

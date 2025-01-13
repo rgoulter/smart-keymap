@@ -26,7 +26,7 @@ impl key::Key for Key {
 
     fn new_pressed_key(
         &self,
-        _context: &Self::Context,
+        _context: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
