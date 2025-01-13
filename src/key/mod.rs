@@ -53,6 +53,20 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
         self.0.push(ScheduledEvent::after(delay, event)).unwrap();
     }
 
+    /// Maps over the PressedKeyEvents.
+    pub fn map_events<F>(&self, f: fn(Event<E>) -> Event<F>) -> PressedKeyEvents<F> {
+        PressedKeyEvents(
+            self.0
+                .as_slice()
+                .iter()
+                .map(|scheduled_event| ScheduledEvent {
+                    schedule: scheduled_event.schedule,
+                    event: f(scheduled_event.event),
+                })
+                .collect(),
+        )
+    }
+
     /// Maps the PressedKeyEvents to a new type.
     pub fn into_events<F>(&self) -> PressedKeyEvents<F>
     where
