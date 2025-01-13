@@ -15,7 +15,7 @@ pub trait KeysReset {
 #[derive(Debug)]
 pub struct Keys1<
     K0: key::Key,
-    Ctx: key::Context<Event = Ev> + Debug = composite::Context<composite::DefaultNestableKey>,
+    Ctx: key::Context<Event = Ev> + Debug = composite::Context,
     Ev: Copy + Debug + Ord = composite::Event,
     const M: usize = 2,
 >(dynamic::DynamicKey<K0, Ctx, Ev>);
@@ -101,7 +101,7 @@ macro_rules! define_keys {
                     #(
                         K~I: crate::key::Key,
                     )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug = crate::key::composite::Context<crate::key::composite::DefaultNestableKey>,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug = crate::key::composite::Context,
                 Ev: Copy + core::fmt::Debug + Ord = crate::key::composite::Event,
                 const M: usize = 2,
                 >(

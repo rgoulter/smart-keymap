@@ -114,22 +114,20 @@ impl<const L: usize> LayerState for [bool; L] {
 
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<C: key::Context, L: LayerImpl> {
+pub struct Context<L: LayerImpl> {
     active_layers: L::LayerState,
-    inner_context: C,
 }
 
-impl<C: key::Context, const L: usize> Context<C, ArrayImpl<L>> {
+impl<const L: usize> Context<ArrayImpl<L>> {
     /// Create a new [Context].
-    pub const fn new(inner_context: C) -> Self {
+    pub const fn new() -> Self {
         Self {
             active_layers: [false; L],
-            inner_context,
         }
     }
 }
 
-impl<C: key::Context, L: LayerImpl> Context<C, L> {
+impl<L: LayerImpl> Context<L> {
     /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
         self.active_layers.activate(layer);
@@ -141,7 +139,7 @@ impl<C: key::Context, L: LayerImpl> Context<C, L> {
     }
 }
 
-impl<C: key::Context, L: LayerImpl> key::Context for Context<C, L> {
+impl<L: LayerImpl> key::Context for Context<L> {
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: Self::Event) {
@@ -233,14 +231,17 @@ impl<const L: LayerIndex, K: key::Key> LayeredKey<K, ArrayImpl<L>> {
 }
 
 impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
-    type Context = Context<K::Context, L>;
+    type Context = key::ModifierKeyContext<Context<L>, K::Context>;
     type ContextEvent = LayerEvent;
     type Event = K::Event;
     type PressedKeyState = PressedLayeredKeyState<K, L>;
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        key::ModifierKeyContext {
+            context,
+            inner_context,
+        }: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
@@ -252,7 +253,7 @@ impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
             .unwrap_or(self.base);
 
         let (passthru_pk, passthru_events) =
-            passthru_key.new_pressed_key(context.inner_context, keymap_index);
+            passthru_key.new_pressed_key(inner_context, keymap_index);
 
         let pressed_key_state = PressedLayeredKeyState::new(passthru_pk);
         (
@@ -424,7 +425,7 @@ mod tests {
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
         type L = ArrayImpl<3>;
-        let mut context: Context<(), L> = Context::new(());
+        let mut context: Context<L> = Context::new();
 
         context.handle_event(LayerEvent::LayerActivated(1));
 
@@ -436,7 +437,10 @@ mod tests {
     fn test_pressing_layered_key_acts_as_base_key_when_no_layers_active() {
         // Assemble
         type L = ArrayImpl<3>;
-        let context: Context<(), L> = Context::new(());
+        let context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+            context: Context::new(),
+            inner_context: (),
+        };
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -464,7 +468,10 @@ mod tests {
     fn test_pressing_layered_key_when_no_layers_active_has_key_code() {
         // Assemble
         type L = ArrayImpl<3>;
-        let context: Context<(), L> = Context::new(());
+        let context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+            context: Context::new(),
+            inner_context: (),
+        };
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -496,7 +503,10 @@ mod tests {
     fn test_pressing_layered_key_falls_through_undefined_active_layers() {
         // Assemble: layered key (with no layered definitions)
         type L = ArrayImpl<3>;
-        let mut context: Context<(), L> = Context::new(());
+        let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+            context: Context::new(),
+            inner_context: (),
+        };
         let expected_key = simple::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
@@ -504,9 +514,9 @@ mod tests {
         };
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(0));
-        context.handle_event(LayerEvent::LayerActivated(1));
-        context.handle_event(LayerEvent::LayerActivated(2));
+        context.context.handle_event(LayerEvent::LayerActivated(0));
+        context.context.handle_event(LayerEvent::LayerActivated(1));
+        context.context.handle_event(LayerEvent::LayerActivated(2));
         let keymap_index = 9; // arbitrary
         let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 
@@ -523,7 +533,10 @@ mod tests {
     fn test_pressing_layered_key_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
         type L = ArrayImpl<3>;
-        let mut context: Context<(), L> = Context::new(());
+        let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+            context: Context::new(),
+            inner_context: (),
+        };
         let expected_key = simple::Key(0x09);
         let layered_key = LayeredKey {
             base: simple::Key(0x04),
@@ -535,9 +548,9 @@ mod tests {
         };
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(0));
-        context.handle_event(LayerEvent::LayerActivated(1));
-        context.handle_event(LayerEvent::LayerActivated(2));
+        context.context.handle_event(LayerEvent::LayerActivated(0));
+        context.context.handle_event(LayerEvent::LayerActivated(1));
+        context.context.handle_event(LayerEvent::LayerActivated(2));
         let keymap_index = 9; // arbitrary
         let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 
@@ -554,7 +567,10 @@ mod tests {
     fn test_pressing_layered_key_with_some_transparency_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
         type L = ArrayImpl<3>;
-        let mut context: Context<(), L> = Context::new(());
+        let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+            context: Context::new(),
+            inner_context: (),
+        };
         let expected_key = simple::Key(0x09);
         let layered_key = LayeredKey {
             base: simple::Key(0x04),
@@ -562,8 +578,8 @@ mod tests {
         };
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(0));
-        context.handle_event(LayerEvent::LayerActivated(2));
+        context.context.handle_event(LayerEvent::LayerActivated(0));
+        context.context.handle_event(LayerEvent::LayerActivated(2));
         let keymap_index = 9; // arbitrary
         let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 

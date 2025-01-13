@@ -146,7 +146,7 @@ pub mod init {
     pub type NestedKey = crate::key::composite::DefaultNestableKey;
 
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
-    pub type Context = crate::key::composite::Context<NestedKey, LayersImpl>;
+    pub type Context = crate::key::composite::Context<LayersImpl>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = crate::key::composite::Context::new();
