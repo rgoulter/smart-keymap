@@ -77,7 +77,7 @@ impl<L: layered::LayerImpl> key::Key for Key<DefaultNestableKey, L>
 where
     L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
 {
-    type Context = Context<DefaultNestableKey, L>;
+    type Context = Context<L>;
     type ContextEvent = Event;
     type Event = Event;
     type PressedKeyState = PressedKeyState<L>;
@@ -104,8 +104,7 @@ where
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
-                let Context { layer_context } = context;
-                let (pressed_key, events) = key.new_pressed_key(layer_context, keymap_index);
+                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
         }
@@ -114,25 +113,25 @@ where
 
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<K: key::Key, L: layered::LayerImpl = layered::ArrayImpl<0>> {
-    layer_context: layered::Context<K::Context, L>,
+pub struct Context<L: layered::LayerImpl = layered::ArrayImpl<0>> {
+    layer_context: layered::Context<L>,
 }
 
-impl<const L: usize> Context<DefaultNestableKey, layered::ArrayImpl<L>> {
+impl<const L: usize> Context<layered::ArrayImpl<L>> {
     /// Constructs a new [Context].
     pub const fn new() -> Self {
-        let layer_context = layered::Context::new(());
+        let layer_context = layered::Context::new();
         Self { layer_context }
     }
 }
 
-impl<const L: usize> Default for Context<DefaultNestableKey, layered::ArrayImpl<L>> {
+impl<const L: usize> Default for Context<layered::ArrayImpl<L>> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<L: layered::LayerImpl> key::Context for Context<DefaultNestableKey, L> {
+impl<L: layered::LayerImpl> key::Context for Context<L> {
     type Event = Event;
     fn handle_event(&mut self, event: Self::Event) {
         if let Event::LayerModification(ev) = event {
@@ -142,15 +141,28 @@ impl<L: layered::LayerImpl> key::Context for Context<DefaultNestableKey, L> {
 }
 
 /// simple::Context from composite::Context
-impl<L: layered::LayerImpl> From<Context<DefaultNestableKey, L>> for () {
-    fn from(_: Context<DefaultNestableKey, L>) -> Self {
+impl<L: layered::LayerImpl> From<Context<L>> for () {
+    fn from(_: Context<L>) -> Self {
         ()
     }
 }
 
-impl<L: layered::LayerImpl> From<Context<DefaultNestableKey, L>> for layered::Context<(), L> {
-    fn from(ctx: Context<DefaultNestableKey, L>) -> Self {
+impl<L: layered::LayerImpl> From<Context<L>> for layered::Context<L> {
+    fn from(ctx: Context<L>) -> Self {
         ctx.layer_context
+    }
+}
+
+impl<L: layered::LayerImpl, MC, IC> From<Context<L>> for key::ModifierKeyContext<MC, IC>
+where
+    MC: From<Context<L>>,
+    IC: From<Context<L>>,
+{
+    fn from(ctx: Context<L>) -> Self {
+        key::ModifierKeyContext {
+            context: ctx.into(),
+            inner_context: ctx.into(),
+        }
     }
 }
 
@@ -389,7 +401,7 @@ mod tests {
 
         // Assemble
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<DefaultNestableKey, L>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<DefaultNestableKey, L>;
         let keymap_index: u16 = 0;
         let key = K::layer_modifier(layered::ModifierKey::Hold(0));
@@ -417,7 +429,7 @@ mod tests {
 
         // Assemble
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<DefaultNestableKey, L>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<DefaultNestableKey, L>;
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -453,7 +465,7 @@ mod tests {
 
         // Assemble
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<DefaultNestableKey, L>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<DefaultNestableKey, L>;
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -487,7 +499,7 @@ mod tests {
 
         // Assemble
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<DefaultNestableKey, L>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<DefaultNestableKey, L>;
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -515,7 +527,7 @@ mod tests {
 
         // Assemble
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<DefaultNestableKey, L>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<DefaultNestableKey, L>;
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),

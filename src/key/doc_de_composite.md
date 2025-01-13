@@ -10,7 +10,7 @@ use key::{composite, layered, simple};
 use composite::DefaultNestableKey;
 
 type L = layered::ArrayImpl<1>;
-type Ctx = composite::Context<DefaultNestableKey, L>;
+type Ctx = composite::Context<L>;
 type Key = composite::Key<DefaultNestableKey, L>;
 
 let json = r#"
@@ -33,7 +33,7 @@ use key::{composite, layered, tap_hold};
 use composite::DefaultNestableKey;
 
 type L = layered::ArrayImpl<1>;
-type Ctx = composite::Context<DefaultNestableKey, L>;
+type Ctx = composite::Context<L>;
 type Key = composite::Key<DefaultNestableKey, L>;
 
 let json = r#"
@@ -56,7 +56,7 @@ use key::{composite, layered};
 use composite::DefaultNestableKey;
 
 type L = layered::ArrayImpl<1>;
-type Ctx = composite::Context<DefaultNestableKey, L>;
+type Ctx = composite::Context<L>;
 type Key = composite::Key<DefaultNestableKey, L>;
 
 let json = r#"
@@ -79,7 +79,7 @@ use key::{composite, layered, simple};
 use composite::DefaultNestableKey;
 
 type L = layered::ArrayImpl<3>;
-type Ctx = composite::Context<DefaultNestableKey, L>;
+type Ctx = composite::Context<L>;
 type Key = composite::Key<DefaultNestableKey, L>;
 
 let json = r#"

@@ -33,10 +33,8 @@ where
 }
 
 /// Convenience type alias for [Key] which uses [crate::key::composite::Event] and [crate::key::composite::Context].
-pub type CompositeKey<const L: key::layered::LayerIndex = 0> = dyn Key<
-    key::composite::Event,
-    Context = key::composite::Context<key::composite::DefaultNestableKey, [bool; L]>,
->;
+pub type CompositeKey<const L: key::layered::LayerIndex = 0> =
+    dyn Key<key::composite::Event, Context = key::composite::Context<[bool; L]>>;
 
 /// Generic implementation of [Key] for a [key::Key] and some `Ctx`/`Ev`.
 #[derive(Debug)]
@@ -131,7 +129,7 @@ mod tests {
     #[test]
     fn test_composite_dynamic_simple_key_has_no_key_code_when_released() {
         // Assemble
-        let dyn_key: &mut dyn Key<composite::Event, Context = composite::Context<simple::Key>> =
+        let dyn_key: &mut dyn Key<composite::Event, Context = composite::Context> =
             &mut DynamicKey::new(simple::Key(0x04));
         let context = composite::Context::new();
 
