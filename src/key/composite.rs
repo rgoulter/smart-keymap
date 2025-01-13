@@ -142,9 +142,7 @@ impl<L: layered::LayerImpl> key::Context for Context<L> {
 
 /// simple::Context from composite::Context
 impl<L: layered::LayerImpl> From<Context<L>> for () {
-    fn from(_: Context<L>) -> Self {
-        ()
-    }
+    fn from(_: Context<L>) -> Self {}
 }
 
 impl<L: layered::LayerImpl> From<Context<L>> for layered::Context<L> {

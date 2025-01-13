@@ -164,7 +164,7 @@ pub enum LayersError {
 impl core::fmt::Display for LayersError {
     // This trait requires `fmt` with this exact signature.
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{}", "LayersError::Overflow")
+        write!(f, "LayersError::Overflow")
     }
 }
 
@@ -213,9 +213,9 @@ pub struct LayeredKey<K: key::Key, L: LayerImpl> {
 
 /// Deserialize a [Layers].
 ///
-fn deserialize_layered<'de, K: key::Key, L: Layers<K>, D>(deserializer: D) -> Result<L, D::Error>
+fn deserialize_layered<'de, K, L: Layers<K>, D>(deserializer: D) -> Result<L, D::Error>
 where
-    K: Deserialize<'de>,
+    K: key::Key + Deserialize<'de>,
     D: serde::Deserializer<'de>,
 {
     let keys_vec: heapless::Vec<Option<K>, 64> = Deserialize::deserialize(deserializer)?;
