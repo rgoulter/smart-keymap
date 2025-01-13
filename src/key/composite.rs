@@ -35,19 +35,13 @@ impl NestableKey for simple::Key {
     }
 
     fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event> {
-        match event {
-            key::Event::Input(ev) => key::Event::Input(ev),
-            key::Event::Key(_) => panic!("key::simple never emits events"),
-        }
+        event.into()
     }
 
     fn try_event_from(
         event: key::Event<Event>,
-    ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError> {
-        match event {
-            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
-            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
-        }
+    ) -> Result<key::Event<simple::Event>, key::EventError> {
+        key::Event::try_from(event)
     }
 }
 
