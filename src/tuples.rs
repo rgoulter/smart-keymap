@@ -42,7 +42,7 @@ impl<
 where
     key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
     key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
-    for<'c> &'c <K0 as key::Key>::Context: From<&'c Ctx>,
+    <K0 as key::Key>::Context: From<Ctx>,
 {
     type Output = dyn dynamic::Key<Ev, M, Context = Ctx>;
 
@@ -63,7 +63,7 @@ impl<
 where
     crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
     crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
-    for<'c> &'c <K0 as crate::key::Key>::Context: From<&'c Ctx>,
+    <K0 as crate::key::Key>::Context: From<Ctx>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
@@ -82,7 +82,7 @@ impl<
 where
     crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
     crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
-    for<'c> &'c <K0 as crate::key::Key>::Context: From<&'c Ctx>,
+    <K0 as crate::key::Key>::Context: From<Ctx>,
 {
     fn reset(&mut self) {
         <dynamic::DynamicKey<K0, Ctx, Ev> as dynamic::Key<Ev, M>>::reset(&mut self.0)
@@ -151,7 +151,7 @@ macro_rules! define_keys {
                     #(
                     crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
                     crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
-                    for<'c> &'c <K~I as crate::key::Key>::Context: From<&'c Ctx>,
+                    <K~I as crate::key::Key>::Context: From<Ctx>,
                 )*
                 {
                     type Output = dyn crate::key::dynamic::Key<Ev, M, Context = Ctx>;
@@ -181,7 +181,7 @@ macro_rules! define_keys {
                     #(
                     crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
                     crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
-                    for<'c> &'c <K~I as crate::key::Key>::Context: From<&'c Ctx>,
+                    <K~I as crate::key::Key>::Context: From<Ctx>,
                 )*
                 {
                     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
@@ -209,7 +209,7 @@ macro_rules! define_keys {
                     #(
                     crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
                     crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
-                    for<'c> &'c <K~I as crate::key::Key>::Context: From<&'c Ctx>,
+                    <K~I as crate::key::Key>::Context: From<Ctx>,
                 )*
                 {
                     fn reset(&mut self) {

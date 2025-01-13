@@ -84,7 +84,7 @@ where
 
     fn new_pressed_key(
         &self,
-        context: &Self::Context,
+        context: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
@@ -92,15 +92,15 @@ where
     ) {
         match self {
             Key::Simple { key, .. } => {
-                let (pressed_key, events) = key.new_pressed_key(&(), keymap_index);
+                let (pressed_key, events) = key.new_pressed_key((), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
             Key::TapHold { key, .. } => {
-                let (pressed_key, events) = key.new_pressed_key(&(), keymap_index);
+                let (pressed_key, events) = key.new_pressed_key((), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
             Key::LayerModifier { key, .. } => {
-                let (pressed_key, events) = key::Key::new_pressed_key(key, &(), keymap_index);
+                let (pressed_key, events) = key::Key::new_pressed_key(key, (), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
@@ -142,17 +142,15 @@ impl<L: layered::LayerImpl> key::Context for Context<DefaultNestableKey, L> {
 }
 
 /// simple::Context from composite::Context
-impl<L: layered::LayerImpl> From<&Context<DefaultNestableKey, L>> for &() {
-    fn from(_: &Context<DefaultNestableKey, L>) -> Self {
-        &()
+impl<L: layered::LayerImpl> From<Context<DefaultNestableKey, L>> for () {
+    fn from(_: Context<DefaultNestableKey, L>) -> Self {
+        ()
     }
 }
 
-impl<'c, L: layered::LayerImpl> From<&'c Context<DefaultNestableKey, L>>
-    for &'c layered::Context<(), L>
-{
-    fn from(ctx: &'c Context<DefaultNestableKey, L>) -> Self {
-        &ctx.layer_context
+impl<L: layered::LayerImpl> From<Context<DefaultNestableKey, L>> for layered::Context<(), L> {
+    fn from(ctx: Context<DefaultNestableKey, L>) -> Self {
+        ctx.layer_context
     }
 }
 
@@ -396,7 +394,7 @@ mod tests {
         let keymap_index: u16 = 0;
         let key = K::layer_modifier(layered::ModifierKey::Hold(0));
         let context = Ctx::new();
-        let (mut pressed_lmod_key, _) = key.new_pressed_key(&context, keymap_index);
+        let (mut pressed_lmod_key, _) = key.new_pressed_key(context, keymap_index);
 
         // Act
         let events = pressed_lmod_key
@@ -429,7 +427,7 @@ mod tests {
             )),
         ];
         let mut context = Ctx::new();
-        let (_pressed_key, pressed_key_events) = keys[0].new_pressed_key(&context, 0);
+        let (_pressed_key, pressed_key_events) = keys[0].new_pressed_key(context, 0);
         let maybe_ev = pressed_key_events.into_iter().next();
 
         // Act
@@ -465,7 +463,7 @@ mod tests {
             )),
         ];
         let mut context = Ctx::new();
-        let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(&context, 0);
+        let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(context, 0);
         context.layer_context.activate_layer(0);
         let events = pressed_lmod_key
             .handle_event(key::Event::Input(input::Event::Release { keymap_index: 0 }));
@@ -503,7 +501,7 @@ mod tests {
 
         // Act
         let keymap_index: u16 = 2;
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, keymap_index);
         let actual_keycode = pressed_key.key_output();
 
         // Assert
@@ -531,7 +529,7 @@ mod tests {
 
         // Act
         let keymap_index: u16 = 1;
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, keymap_index);
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, keymap_index);
         let actual_keycode = pressed_key.key_output();
 
         // Assert

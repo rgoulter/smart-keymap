@@ -21,7 +21,7 @@ where
     /// - a pressed key will receive all kinds of [input::Event].
     fn handle_event(
         &mut self,
-        context: &Self::Context,
+        context: Self::Context,
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, M>;
 
@@ -70,13 +70,13 @@ impl<
 where
     key::Event<K::Event>: TryFrom<key::Event<Ev>>,
     key::Event<Ev>: From<key::Event<K::Event>>,
-    for<'c> &'c K::Context: From<&'c Ctx>,
+    K::Context: From<Ctx>,
 {
     type Context = Ctx;
 
     fn handle_event(
         &mut self,
-        context: &Self::Context,
+        context: Self::Context,
         event: key::Event<Ev>,
     ) -> heapless::Vec<key::ScheduledEvent<Ev>, M> {
         let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, M> = heapless::Vec::new();
@@ -138,11 +138,11 @@ mod tests {
         // Act
         let keymap_index: u16 = 5; // arbitrary
         let _ = dyn_key.handle_event(
-            &context,
+            context,
             key::Event::Input(input::Event::Press { keymap_index }),
         );
         let _ = dyn_key.handle_event(
-            &context,
+            context,
             key::Event::Input(input::Event::Release { keymap_index }),
         );
 

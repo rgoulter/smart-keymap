@@ -72,7 +72,7 @@ impl key::Key for ModifierKey {
 
     fn new_pressed_key(
         &self,
-        _context: &Self::Context,
+        _context: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
@@ -240,7 +240,7 @@ impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
 
     fn new_pressed_key(
         &self,
-        context: &Self::Context,
+        context: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
@@ -252,7 +252,7 @@ impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
             .unwrap_or(self.base);
 
         let (passthru_pk, passthru_events) =
-            passthru_key.new_pressed_key(&context.inner_context, keymap_index);
+            passthru_key.new_pressed_key(context.inner_context, keymap_index);
 
         let pressed_key_state = PressedLayeredKeyState::new(passthru_pk);
         (
@@ -449,12 +449,10 @@ mod tests {
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) =
-            layered_key.new_pressed_key(&context, keymap_index);
+        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) =
-            expected_key.new_pressed_key(&(), keymap_index);
+        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
             actual_pressed_key.pressed_key_state.passthru_pk,
             expected_pressed_key
@@ -479,12 +477,12 @@ mod tests {
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, _event) = layered_key.new_pressed_key(&context, keymap_index);
+        let (actual_pressed_key, _event) = layered_key.new_pressed_key(context, keymap_index);
 
         let actual_key_output = actual_pressed_key.key_output();
 
         // Assert
-        let (expected_pressed_key, _event) = expected_key.new_pressed_key(&(), keymap_index);
+        let (expected_pressed_key, _event) = expected_key.new_pressed_key((), keymap_index);
         let expected_key_output = expected_pressed_key.key_output();
         assert_eq!(actual_key_output, expected_key_output);
         assert_eq!(actual_key_output, Some(KeyOutput::from_key_code(0x04)));
@@ -510,12 +508,10 @@ mod tests {
         context.handle_event(LayerEvent::LayerActivated(1));
         context.handle_event(LayerEvent::LayerActivated(2));
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) =
-            layered_key.new_pressed_key(&context, keymap_index);
+        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) =
-            expected_key.new_pressed_key(&(), keymap_index);
+        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
             actual_pressed_key.pressed_key_state.passthru_pk,
             expected_pressed_key
@@ -543,12 +539,10 @@ mod tests {
         context.handle_event(LayerEvent::LayerActivated(1));
         context.handle_event(LayerEvent::LayerActivated(2));
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) =
-            layered_key.new_pressed_key(&context, keymap_index);
+        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) =
-            expected_key.new_pressed_key(&(), keymap_index);
+        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
             actual_pressed_key.pressed_key_state.passthru_pk,
             expected_pressed_key
@@ -571,12 +565,10 @@ mod tests {
         context.handle_event(LayerEvent::LayerActivated(0));
         context.handle_event(LayerEvent::LayerActivated(2));
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) =
-            layered_key.new_pressed_key(&context, keymap_index);
+        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) =
-            expected_key.new_pressed_key(&(), keymap_index);
+        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
             actual_pressed_key.pressed_key_state.passthru_pk,
             expected_pressed_key

@@ -111,7 +111,7 @@ pub trait Key: Copy + Debug + PartialEq {
     ///  so that holding the key resolves as a hold).
     fn new_pressed_key(
         &self,
-        context: &Self::Context,
+        context: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
@@ -123,7 +123,7 @@ pub trait Key: Copy + Debug + PartialEq {
 ///
 /// e.g. the behaviour of [layered::LayeredKey] depends on which
 ///  layers are active in [layered::Context].
-pub trait Context {
+pub trait Context: Clone + Copy {
     /// The type of `Event` the context handles.
     type Event;
 
