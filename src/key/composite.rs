@@ -11,20 +11,54 @@ use crate::{input, key};
 use key::{layered, simple, tap_hold};
 
 /// Used to implement nested combinations of [Key].
-pub trait NestableKey: key::Key + Sized {}
+pub trait NestableKey: key::Key + Sized {
+    /// Constructs a [key::ModifierKeyContext] for the given Context.
+    fn into_nested_context_for<C>(
+        context: C,
+    ) -> key::ModifierKeyContext<C, <Self as key::Key>::Context>;
+    /// Constructs an [Event] for the Nestable key's event.
+    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event>;
+    /// Tries to construct the [key::Event] for the Nestable Key's event.
+    fn try_event_from(
+        event: key::Event<Event>,
+    ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError>;
+}
 
-impl NestableKey for simple::Key {}
+impl NestableKey for simple::Key {
+    fn into_nested_context_for<C>(
+        context: C,
+    ) -> key::ModifierKeyContext<C, <Self as key::Key>::Context> {
+        key::ModifierKeyContext {
+            context,
+            inner_context: (),
+        }
+    }
+
+    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event> {
+        match event {
+            key::Event::Input(ev) => key::Event::Input(ev),
+            key::Event::Key(_) => panic!("key::simple never emits events"),
+        }
+    }
+
+    fn try_event_from(
+        event: key::Event<Event>,
+    ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError> {
+        match event {
+            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
+            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
 
 /// Default [NestableKey] for [Key] and its associated types.
 pub type DefaultNestableKey = simple::Key;
 
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub enum Key<
-    K: NestableKey + Copy = DefaultNestableKey,
-    L: layered::LayerImpl = layered::ArrayImpl<0>,
-> where
-    L::Layers<K>: serde::de::DeserializeOwned,
+pub enum Key<NK: NestableKey = DefaultNestableKey, L: layered::LayerImpl = layered::ArrayImpl<0>>
+where
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     /// A simple key.
     Simple {
@@ -44,13 +78,13 @@ pub enum Key<
     /// A layered key.
     Layered {
         /// The layered key.
-        key: layered::LayeredKey<K, L>,
+        key: layered::LayeredKey<NK, L>,
     },
 }
 
-impl<L: layered::LayerImpl> Key<DefaultNestableKey, L>
+impl<NK: NestableKey, L: layered::LayerImpl> Key<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     /// Constructs a [Key::Simple] from the given [simple::Key].
     pub const fn simple(key: simple::Key) -> Self {
@@ -68,19 +102,19 @@ where
     }
 
     /// Constructs a [Key::Layered] from the given [layered::LayeredKey].
-    pub const fn layered(key: layered::LayeredKey<DefaultNestableKey, L>) -> Self {
+    pub const fn layered(key: layered::LayeredKey<NK, L>) -> Self {
         Self::Layered { key }
     }
 }
 
-impl<L: layered::LayerImpl> key::Key for Key<DefaultNestableKey, L>
+impl<NK: NestableKey, L: layered::LayerImpl> key::Key for Key<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     type Context = Context<L>;
     type ContextEvent = Event;
     type Event = Event;
-    type PressedKeyState = PressedKeyState<L>;
+    type PressedKeyState = PressedKeyState<NK, L>;
 
     fn new_pressed_key(
         &self,
@@ -104,8 +138,9 @@ where
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
-                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
-                (pressed_key.into(), events.into_events())
+                let modifier_context = NK::into_nested_context_for(context.layer_context);
+                let (pressed_key, events) = key.new_pressed_key(modifier_context, keymap_index);
+                (pressed_key.into(), events.map_events(NK::into_event))
             }
         }
     }
@@ -166,7 +201,7 @@ where
 
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
-pub enum PressedKeyState<L: layered::LayerImpl = layered::ArrayImpl<0>> {
+pub enum PressedKeyState<NK: NestableKey, L: layered::LayerImpl = layered::ArrayImpl<0>> {
     /// A simple key's pressed state.
     Simple(simple::PressedKeyState),
     /// A tap-hold key's pressed state.
@@ -174,15 +209,15 @@ pub enum PressedKeyState<L: layered::LayerImpl = layered::ArrayImpl<0>> {
     /// A layer modifier key's pressed state.
     LayerModifier(layered::PressedModifierKeyState),
     /// A layer modifier key's pressed state.
-    Layered(layered::PressedLayeredKeyState<DefaultNestableKey, L>),
+    Layered(layered::PressedLayeredKeyState<NK, L>),
 }
 
 /// Convenience type alias for a [key::PressedKey] with a [PressedKeyState].
-pub type PressedKey<L> = input::PressedKey<Key<DefaultNestableKey, L>, PressedKeyState<L>>;
+pub type PressedKey<NK, L> = input::PressedKey<Key<NK, L>, PressedKeyState<NK, L>>;
 
-impl<L: layered::LayerImpl> From<layered::PressedModifierKey> for PressedKey<L>
+impl<NK: NestableKey, L: layered::LayerImpl> From<layered::PressedModifierKey> for PressedKey<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     fn from(
         input::PressedKey {
@@ -192,7 +227,7 @@ where
         }: layered::PressedModifierKey,
     ) -> Self
     where
-        L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+        L::Layers<NK>: serde::de::DeserializeOwned,
     {
         input::PressedKey {
             key: Key::layer_modifier(key),
@@ -202,20 +237,20 @@ where
     }
 }
 
-impl<L: layered::LayerImpl> From<layered::PressedLayeredKey<DefaultNestableKey, L>>
-    for PressedKey<L>
+impl<NK: NestableKey, L: layered::LayerImpl> From<layered::PressedLayeredKey<NK, L>>
+    for PressedKey<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     fn from(
         input::PressedKey {
             keymap_index,
             key,
             pressed_key_state,
-        }: layered::PressedLayeredKey<DefaultNestableKey, L>,
+        }: layered::PressedLayeredKey<NK, L>,
     ) -> Self
     where
-        L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+        L::Layers<NK>: serde::de::DeserializeOwned,
     {
         input::PressedKey {
             key: Key::layered(key),
@@ -225,9 +260,9 @@ where
     }
 }
 
-impl<L: layered::LayerImpl> From<simple::PressedKey> for PressedKey<L>
+impl<NK: NestableKey, L: layered::LayerImpl> From<simple::PressedKey> for PressedKey<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     fn from(
         input::PressedKey {
@@ -244,9 +279,9 @@ where
     }
 }
 
-impl<L: layered::LayerImpl> From<tap_hold::PressedKey> for PressedKey<L>
+impl<NK: NestableKey, L: layered::LayerImpl> From<tap_hold::PressedKey> for PressedKey<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     fn from(
         input::PressedKey {
@@ -263,16 +298,17 @@ where
     }
 }
 
-impl<L: layered::LayerImpl> key::PressedKeyState<Key<DefaultNestableKey, L>> for PressedKeyState<L>
+impl<NK: NestableKey, L: layered::LayerImpl> key::PressedKeyState<Key<NK, L>>
+    for PressedKeyState<NK, L>
 where
-    L::Layers<DefaultNestableKey>: serde::de::DeserializeOwned,
+    L::Layers<NK>: serde::de::DeserializeOwned,
 {
     type Event = Event;
 
     fn handle_event_for(
         &mut self,
         keymap_index: u16,
-        key: &Key<DefaultNestableKey, L>,
+        key: &Key<NK, L>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
@@ -293,9 +329,9 @@ where
                 }
             }
             (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
-                if let Ok(ev) = key::Event::try_from(event) {
+                if let Ok(ev) = NK::try_event_from(event) {
                     let events = pks.handle_event_for(keymap_index, key, ev);
-                    events.into_events()
+                    events.map_events(NK::into_event)
                 } else {
                     key::PressedKeyEvents::no_events()
                 }
@@ -304,7 +340,7 @@ where
         }
     }
 
-    fn key_output(&self, key: &Key<DefaultNestableKey, L>) -> Option<key::KeyOutput> {
+    fn key_output(&self, key: &Key<NK, L>) -> Option<key::KeyOutput> {
         match (key, self) {
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pk)) => {
                 pk.key_output(key)
