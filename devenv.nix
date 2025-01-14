@@ -1,6 +1,8 @@
 { pkgs, lib, config, inputs, ... }:
 
 {
+  devcontainer.enable = true;
+
   pre-commit.hooks = {
     clippy.enable = true;
     rustfmt.enable = true;
