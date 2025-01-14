@@ -134,13 +134,13 @@ pub struct Keymap<
             usize,
             Output = dyn key::dynamic::Key<
                 key::composite::Event,
-                Context = key::composite::Context<L>,
+                Context = key::composite::Context<T>,
             >,
         > + crate::tuples::KeysReset,
-    L: key::layered::LayerImpl = key::layered::ArrayImpl<0>,
+    T: key::composite::CompositeTypes = key::composite::CompositeImpl,
 > {
     key_definitions: I,
-    context: composite::Context<L>,
+    context: composite::Context<T>,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
     event_scheduler: EventScheduler,
 }
@@ -150,14 +150,14 @@ impl<
                 usize,
                 Output = dyn key::dynamic::Key<
                     key::composite::Event,
-                    Context = key::composite::Context<L>,
+                    Context = key::composite::Context<T>,
                 >,
             > + crate::tuples::KeysReset,
-        L: key::layered::LayerImpl,
-    > Keymap<I, L>
+        T: key::composite::CompositeTypes,
+    > Keymap<I, T>
 {
     /// Constructs a new keymap with the given key definitions and context.
-    pub const fn new(key_definitions: I, context: composite::Context<L>) -> Self {
+    pub const fn new(key_definitions: I, context: composite::Context<T>) -> Self {
         Self {
             key_definitions,
             context,
@@ -402,13 +402,15 @@ mod tests {
         use key::{composite, layered, simple};
         use tuples::Keys2;
 
-        use composite::{DefaultNestableKey, Event};
+        use composite::Event;
 
         // Assemble
+        type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
+        type T = composite::CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
         type MK = layered::ModifierKey;
-        type LK = layered::LayeredKey<DefaultNestableKey, L>;
+        type LK = layered::LayeredKey<NK, L>;
         let keys: Keys2<MK, LK, Ctx, Event> = tuples::Keys2::new((
             layered::ModifierKey::Hold(0),
             layered::LayeredKey::new(simple::Key(0x04), [Some(simple::Key(0x05))]),
@@ -432,12 +434,14 @@ mod tests {
         use key::{composite, layered, simple};
         use tuples::Keys2;
 
-        use composite::{DefaultNestableKey, Event};
+        use composite::Event;
 
         // Assemble
+        type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = composite::CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
@@ -462,12 +466,14 @@ mod tests {
         use key::{composite, layered, simple};
         use tuples::Keys2;
 
-        use composite::{DefaultNestableKey, Event};
+        use composite::Event;
 
         // Assemble
+        type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = composite::CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
@@ -494,12 +500,14 @@ mod tests {
         use key::{composite, layered, simple};
         use tuples::Keys2;
 
-        use composite::{DefaultNestableKey, Event};
+        use composite::Event;
 
         // Assemble
+        type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = composite::CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
@@ -526,12 +534,14 @@ mod tests {
         use key::{composite, layered, simple};
         use tuples::Keys2;
 
-        use composite::{DefaultNestableKey, Event};
+        use composite::Event;
 
         // Assemble
+        type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = composite::CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Event> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(

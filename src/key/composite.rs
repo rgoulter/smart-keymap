@@ -4,6 +4,7 @@
 #![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
+use core::marker::PhantomData;
 
 use serde::Deserialize;
 
@@ -45,15 +46,41 @@ impl NestableKey for simple::Key {
     }
 }
 
+/// Related types used by [Key], [Context] and [Event].
+pub trait CompositeTypes: Copy + Debug + PartialEq
+where
+    <<Self as CompositeTypes>::L as layered::LayerImpl>::Layers<Self::NK>:
+        serde::de::DeserializeOwned,
+    <Self as CompositeTypes>::NK: serde::de::DeserializeOwned,
+{
+    /// The nested key type used within composite keys.
+    type NK: NestableKey;
+    /// The layer impl. used within composite keys.
+    type L: layered::LayerImpl;
+}
+
+/// Struct to use as an impl of [CompositeImpl].
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct CompositeImpl<
+    NK: NestableKey = DefaultNestableKey,
+    L: layered::LayerImpl = layered::ArrayImpl<0>,
+>(PhantomData<(NK, L)>);
+
+impl<NK: NestableKey, L: layered::LayerImpl> CompositeTypes for CompositeImpl<NK, L>
+where
+    <L as layered::LayerImpl>::Layers<NK>: serde::de::DeserializeOwned,
+    NK: serde::de::DeserializeOwned,
+{
+    type NK = NK;
+    type L = L;
+}
+
 /// Default [NestableKey] for [Key] and its associated types.
 pub type DefaultNestableKey = simple::Key;
 
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub enum Key<NK: NestableKey = DefaultNestableKey, L: layered::LayerImpl = layered::ArrayImpl<0>>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+pub enum Key<T: CompositeTypes = CompositeImpl> {
     /// A simple key.
     Simple {
         /// The simple key.
@@ -72,14 +99,11 @@ where
     /// A layered key.
     Layered {
         /// The layered key.
-        key: layered::LayeredKey<NK, L>,
+        key: layered::LayeredKey<T::NK, T::L>,
     },
 }
 
-impl<NK: NestableKey, L: layered::LayerImpl> Key<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+impl<T: CompositeTypes> Key<T> {
     /// Constructs a [Key::Simple] from the given [simple::Key].
     pub const fn simple(key: simple::Key) -> Self {
         Self::Simple { key }
@@ -96,19 +120,16 @@ where
     }
 
     /// Constructs a [Key::Layered] from the given [layered::LayeredKey].
-    pub const fn layered(key: layered::LayeredKey<NK, L>) -> Self {
+    pub const fn layered(key: layered::LayeredKey<T::NK, T::L>) -> Self {
         Self::Layered { key }
     }
 }
 
-impl<NK: NestableKey, L: layered::LayerImpl> key::Key for Key<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
-    type Context = Context<L>;
+impl<T: CompositeTypes> key::Key for Key<T> {
+    type Context = Context<T>;
     type ContextEvent = Event;
     type Event = Event;
-    type PressedKeyState = PressedKeyState<NK, L>;
+    type PressedKeyState = PressedKeyState<T>;
 
     fn new_pressed_key(
         &self,
@@ -132,9 +153,9 @@ where
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
-                let modifier_context = NK::into_nested_context_for(context.layer_context);
+                let modifier_context = T::NK::into_nested_context_for(context.layer_context);
                 let (pressed_key, events) = key.new_pressed_key(modifier_context, keymap_index);
-                (pressed_key.into(), events.map_events(NK::into_event))
+                (pressed_key.into(), events.map_events(T::NK::into_event))
             }
         }
     }
@@ -142,26 +163,30 @@ where
 
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<L: layered::LayerImpl = layered::ArrayImpl<0>> {
-    /// Context for [layered].
-    pub layer_context: layered::Context<L>,
+pub struct Context<T: CompositeTypes = CompositeImpl> {
+    /// The layered key context.
+    pub layer_context: layered::Context<T::L>,
 }
 
-impl<L: layered::LayerImpl> Context<L> {
+impl<T: CompositeTypes> Context<T> {
     /// Constructs a new [Context].
-    pub const fn new(layer_context: layered::Context<L>) -> Self {
+    pub const fn new(layer_context: layered::Context<T::L>) -> Self {
         Self { layer_context }
     }
 }
 
-impl<const L: usize> Default for Context<layered::ArrayImpl<L>> {
+impl<NK: NestableKey, const L: usize> Default for Context<CompositeImpl<NK, layered::ArrayImpl<L>>>
+where
+    <layered::ArrayImpl<L> as layered::LayerImpl>::Layers<NK>: serde::de::DeserializeOwned,
+    NK: serde::de::DeserializeOwned,
+{
     fn default() -> Self {
         let layer_context = layered::Context::default();
         Self { layer_context }
     }
 }
 
-impl<L: layered::LayerImpl> key::Context for Context<L> {
+impl<T: CompositeTypes> key::Context for Context<T> {
     type Event = Event;
     fn handle_event(&mut self, event: Self::Event) {
         if let Event::LayerModification(ev) = event {
@@ -171,22 +196,22 @@ impl<L: layered::LayerImpl> key::Context for Context<L> {
 }
 
 /// simple::Context from composite::Context
-impl<L: layered::LayerImpl> From<Context<L>> for () {
-    fn from(_: Context<L>) -> Self {}
+impl<T: CompositeTypes> From<Context<T>> for () {
+    fn from(_: Context<T>) -> Self {}
 }
 
-impl<L: layered::LayerImpl> From<Context<L>> for layered::Context<L> {
-    fn from(ctx: Context<L>) -> Self {
+impl<T: CompositeTypes> From<Context<T>> for layered::Context<T::L> {
+    fn from(ctx: Context<T>) -> Self {
         ctx.layer_context
     }
 }
 
-impl<L: layered::LayerImpl, MC, IC> From<Context<L>> for key::ModifierKeyContext<MC, IC>
+impl<T: CompositeTypes, MC, IC> From<Context<T>> for key::ModifierKeyContext<MC, IC>
 where
-    MC: From<Context<L>>,
-    IC: From<Context<L>>,
+    MC: From<Context<T>>,
+    IC: From<Context<T>>,
 {
-    fn from(ctx: Context<L>) -> Self {
+    fn from(ctx: Context<T>) -> Self {
         key::ModifierKeyContext {
             context: ctx.into(),
             inner_context: ctx.into(),
@@ -196,7 +221,7 @@ where
 
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
-pub enum PressedKeyState<NK: NestableKey, L: layered::LayerImpl = layered::ArrayImpl<0>> {
+pub enum PressedKeyState<T: CompositeTypes> {
     /// A simple key's pressed state.
     Simple(simple::PressedKeyState),
     /// A tap-hold key's pressed state.
@@ -204,26 +229,20 @@ pub enum PressedKeyState<NK: NestableKey, L: layered::LayerImpl = layered::Array
     /// A layer modifier key's pressed state.
     LayerModifier(layered::PressedModifierKeyState),
     /// A layer modifier key's pressed state.
-    Layered(layered::PressedLayeredKeyState<NK, L>),
+    Layered(layered::PressedLayeredKeyState<T::NK, T::L>),
 }
 
 /// Convenience type alias for a [key::PressedKey] with a [PressedKeyState].
-pub type PressedKey<NK, L> = input::PressedKey<Key<NK, L>, PressedKeyState<NK, L>>;
+pub type PressedKey<T> = input::PressedKey<Key<T>, PressedKeyState<T>>;
 
-impl<NK: NestableKey, L: layered::LayerImpl> From<layered::PressedModifierKey> for PressedKey<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+impl<T: CompositeTypes> From<layered::PressedModifierKey> for PressedKey<T> {
     fn from(
         input::PressedKey {
             keymap_index,
             key,
             pressed_key_state,
         }: layered::PressedModifierKey,
-    ) -> Self
-    where
-        L::Layers<NK>: serde::de::DeserializeOwned,
-    {
+    ) -> Self {
         input::PressedKey {
             key: Key::layer_modifier(key),
             keymap_index,
@@ -232,21 +251,14 @@ where
     }
 }
 
-impl<NK: NestableKey, L: layered::LayerImpl> From<layered::PressedLayeredKey<NK, L>>
-    for PressedKey<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+impl<T: CompositeTypes> From<layered::PressedLayeredKey<T::NK, T::L>> for PressedKey<T> {
     fn from(
         input::PressedKey {
             keymap_index,
             key,
             pressed_key_state,
-        }: layered::PressedLayeredKey<NK, L>,
-    ) -> Self
-    where
-        L::Layers<NK>: serde::de::DeserializeOwned,
-    {
+        }: layered::PressedLayeredKey<T::NK, T::L>,
+    ) -> Self {
         input::PressedKey {
             key: Key::layered(key),
             keymap_index,
@@ -255,10 +267,7 @@ where
     }
 }
 
-impl<NK: NestableKey, L: layered::LayerImpl> From<simple::PressedKey> for PressedKey<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+impl<T: CompositeTypes> From<simple::PressedKey> for PressedKey<T> {
     fn from(
         input::PressedKey {
             keymap_index,
@@ -274,10 +283,7 @@ where
     }
 }
 
-impl<NK: NestableKey, L: layered::LayerImpl> From<tap_hold::PressedKey> for PressedKey<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+impl<T: CompositeTypes> From<tap_hold::PressedKey> for PressedKey<T> {
     fn from(
         input::PressedKey {
             keymap_index,
@@ -293,17 +299,13 @@ where
     }
 }
 
-impl<NK: NestableKey, L: layered::LayerImpl> key::PressedKeyState<Key<NK, L>>
-    for PressedKeyState<NK, L>
-where
-    L::Layers<NK>: serde::de::DeserializeOwned,
-{
+impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
     type Event = Event;
 
     fn handle_event_for(
         &mut self,
         keymap_index: u16,
-        key: &Key<NK, L>,
+        key: &Key<T>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
@@ -324,9 +326,9 @@ where
                 }
             }
             (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
-                if let Ok(ev) = NK::try_event_from(event) {
+                if let Ok(ev) = T::NK::try_event_from(event) {
                     let events = pks.handle_event_for(keymap_index, key, ev);
-                    events.map_events(NK::into_event)
+                    events.map_events(T::NK::into_event)
                 } else {
                     key::PressedKeyEvents::no_events()
                 }
@@ -335,7 +337,7 @@ where
         }
     }
 
-    fn key_output(&self, key: &Key<NK, L>) -> Option<key::KeyOutput> {
+    fn key_output(&self, key: &Key<T>) -> Option<key::KeyOutput> {
         match (key, self) {
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pk)) => {
                 pk.key_output(key)
@@ -415,9 +417,11 @@ mod tests {
         use key::{composite, layered, Key, PressedKey};
 
         // Assemble
+        type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keymap_index: u16 = 0;
         let key = K::layer_modifier(layered::ModifierKey::Hold(0));
         let context = Ctx::default();
@@ -444,9 +448,11 @@ mod tests {
         use key::{composite, layered, simple, Context, Key};
 
         // Assemble
+        type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
@@ -480,9 +486,11 @@ mod tests {
         use key::{composite, layered, simple, Context, Key, PressedKey};
 
         // Assemble
+        type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
@@ -514,9 +522,11 @@ mod tests {
         use key::{composite, layered, simple, Key, PressedKey};
 
         // Assemble
+        type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
@@ -542,9 +552,11 @@ mod tests {
         use key::{composite, layered, simple, Key, PressedKey};
 
         // Assemble
+        type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<1>;
-        type Ctx = composite::Context<L>;
-        type K = composite::Key<DefaultNestableKey, L>;
+        type T = CompositeImpl<NK, L>;
+        type Ctx = composite::Context<T>;
+        type K = composite::Key<T>;
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(

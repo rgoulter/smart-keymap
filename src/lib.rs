@@ -73,14 +73,17 @@ pub mod init {
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = composite::DefaultNestableKey;
 
+    /// Types used in Composite keys.
+    pub type CompositeImpl = composite::CompositeImpl<NestedKey, LayersImpl>;
+
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
-    pub type Context = composite::Context<LayersImpl>;
+    pub type Context = composite::Context<CompositeImpl>;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
     pub type Event = composite::Event;
 
     /// Alias for keys.
-    pub type Key = composite::Key<NestedKey, LayersImpl>;
+    pub type Key = composite::Key<CompositeImpl>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = composite::Context {
@@ -99,7 +102,7 @@ pub mod init {
 #[cfg(custom_keymap)]
 include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
 
-static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType, init::LayersImpl> =
+static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType, init::CompositeImpl> =
     keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
 
 /// Initialize the global keymap instance.
