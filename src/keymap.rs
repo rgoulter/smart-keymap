@@ -207,6 +207,9 @@ impl<
                         _ => false,
                     })
                     .map(|i| self.pressed_inputs.remove(i));
+
+                self.event_scheduler
+                    .cancel_events_for_keymap_index(keymap_index);
             }
             input::Event::VirtualKeyPress { key_code } => {
                 // Add to pressed keys.
