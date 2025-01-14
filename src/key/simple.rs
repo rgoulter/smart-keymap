@@ -61,6 +61,7 @@ impl key::PressedKeyState<Key> for PressedKeyState {
     /// Simple key never emits events.
     fn handle_event_for(
         &mut self,
+        _context: (),
         _keymap_index: u16,
         _key: &Key,
         _event: key::Event<Self::Event>,

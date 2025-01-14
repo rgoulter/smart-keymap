@@ -13,10 +13,6 @@ use key::{layered, simple, tap_hold};
 
 /// Used to implement nested combinations of [Key].
 pub trait NestableKey: key::Key + Sized {
-    /// Constructs a [key::ModifierKeyContext] for the given Context.
-    fn into_nested_context_for<C>(
-        context: C,
-    ) -> key::ModifierKeyContext<C, <Self as key::Key>::Context>;
     /// Constructs an [Event] for the Nestable key's event.
     fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event>;
     /// Tries to construct the [key::Event] for the Nestable Key's event.
@@ -26,15 +22,6 @@ pub trait NestableKey: key::Key + Sized {
 }
 
 impl NestableKey for simple::Key {
-    fn into_nested_context_for<C>(
-        context: C,
-    ) -> key::ModifierKeyContext<C, <Self as key::Key>::Context> {
-        key::ModifierKeyContext {
-            context,
-            inner_context: (),
-        }
-    }
-
     fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event> {
         event.into()
     }
@@ -153,9 +140,8 @@ impl<T: CompositeTypes> key::Key for Key<T> {
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
-                let modifier_context = T::NK::into_nested_context_for(context.layer_context);
-                let (pressed_key, events) = key.new_pressed_key(modifier_context, keymap_index);
-                (pressed_key.into(), events.map_events(T::NK::into_event))
+                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
+                (pressed_key.into(), events.map_events(NK::into_event))
             }
         }
     }
@@ -304,6 +290,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
 
     fn handle_event_for(
         &mut self,
+        context: Context<T>,
         keymap_index: u16,
         key: &Key<T>,
         event: key::Event<Self::Event>,
@@ -311,7 +298,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
         match (key, self) {
             (Key::TapHold { key, .. }, PressedKeyState::TapHold(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
-                    let events = pks.handle_event_for(keymap_index, key, ev);
+                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
                     events.into_events()
                 } else {
                     key::PressedKeyEvents::no_events()
@@ -319,7 +306,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
             }
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = key::Event::try_from(event) {
-                    let events = pks.handle_event_for(keymap_index, key, ev);
+                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
                     events.into_events()
                 } else {
                     key::PressedKeyEvents::no_events()
@@ -327,7 +314,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
             }
             (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
                 if let Ok(ev) = T::NK::try_event_from(event) {
-                    let events = pks.handle_event_for(keymap_index, key, ev);
+                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
                     events.map_events(T::NK::into_event)
                 } else {
                     key::PressedKeyEvents::no_events()
@@ -428,8 +415,10 @@ mod tests {
         let (mut pressed_lmod_key, _) = key.new_pressed_key(context, keymap_index);
 
         // Act
-        let events = pressed_lmod_key
-            .handle_event(key::Event::Input(input::Event::Release { keymap_index }));
+        let events = pressed_lmod_key.handle_event(
+            context,
+            key::Event::Input(input::Event::Release { keymap_index }),
+        );
 
         // Assert
         let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
@@ -501,8 +490,10 @@ mod tests {
         let mut context = Ctx::default();
         let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(context, 0);
         context.layer_context.activate_layer(0);
-        let events = pressed_lmod_key
-            .handle_event(key::Event::Input(input::Event::Release { keymap_index: 0 }));
+        let events = pressed_lmod_key.handle_event(
+            context,
+            key::Event::Input(input::Event::Release { keymap_index: 0 }),
+        );
         let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
             Some(key::Event::Key { key_event, .. }) => key_event,
             _ => panic!("Expected an Event::Key(_)"),

@@ -39,14 +39,16 @@ pub struct PressedKey<K, S> {
 impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> crate::key::PressedKey
     for PressedKey<K, S>
 {
+    type Context = K::Context;
     type Event = K::Event;
 
     fn handle_event(
         &mut self,
+        context: Self::Context,
         event: crate::key::Event<Self::Event>,
     ) -> crate::key::PressedKeyEvents<Self::Event> {
         self.pressed_key_state
-            .handle_event_for(self.keymap_index, &self.key, event)
+            .handle_event_for(context, self.keymap_index, &self.key, event)
     }
 
     fn key_output(&self) -> Option<crate::key::KeyOutput> {

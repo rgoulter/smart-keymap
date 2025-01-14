@@ -83,7 +83,7 @@ where
             if let Ok(event) = event.try_into() {
                 scheduled_events.extend(
                     pressed_key
-                        .handle_event(event)
+                        .handle_event(context.into(), event)
                         .into_iter()
                         .map(|ev| ev.into_scheduled_event()),
                 );
