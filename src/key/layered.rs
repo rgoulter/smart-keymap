@@ -390,7 +390,11 @@ mod tests {
 
         // Assert: the pressed key should have emitted a layer deactivation event
         let first_ev = actual_events.into_iter().next().map(|sch_ev| sch_ev.event);
-        if let Some(key::Event::Key(actual_layer_event)) = first_ev {
+        if let Some(key::Event::Key {
+            key_event: actual_layer_event,
+            ..
+        }) = first_ev
+        {
             let expected_layer_event = LayerEvent::LayerDeactivated(layer);
             assert_eq!(actual_layer_event, expected_layer_event);
         } else {

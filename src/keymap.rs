@@ -228,8 +228,8 @@ impl<
             });
 
             // Update context with the event
-            if let key::Event::Key(ev) = ev {
-                self.context.handle_event(ev);
+            if let key::Event::Key { key_event, .. } = ev {
+                self.context.handle_event(key_event);
             }
 
             if let Event::Input(input_ev) = ev {
