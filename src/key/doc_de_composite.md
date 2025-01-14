@@ -9,9 +9,11 @@ use key::{composite, layered, simple};
 
 use composite::DefaultNestableKey;
 
+type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<1>;
-type Ctx = composite::Context<L>;
-type Key = composite::Key<DefaultNestableKey, L>;
+type T = composite::CompositeImpl<NK, L>;
+type Ctx = composite::Context<T>;
+type Key = composite::Key<T>;
 
 let json = r#"
   { "Simple": { "key": 4 } }
@@ -32,9 +34,11 @@ use key::{composite, layered, tap_hold};
 
 use composite::DefaultNestableKey;
 
+type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<1>;
-type Ctx = composite::Context<L>;
-type Key = composite::Key<DefaultNestableKey, L>;
+type T = composite::CompositeImpl<NK, L>;
+type Ctx = composite::Context<T>;
+type Key = composite::Key<T>;
 
 let json = r#"
   { "TapHold": { "key": { "hold": 224, "tap": 4 } } }
@@ -55,9 +59,11 @@ use key::{composite, layered};
 
 use composite::DefaultNestableKey;
 
+type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<1>;
-type Ctx = composite::Context<L>;
-type Key = composite::Key<DefaultNestableKey, L>;
+type T = composite::CompositeImpl<NK, L>;
+type Ctx = composite::Context<T>;
+type Key = composite::Key<T>;
 
 let json = r#"
   { "LayerModifier": { "key": { "Hold": 2 } } }
@@ -78,9 +84,11 @@ use key::{composite, layered, simple};
 
 use composite::DefaultNestableKey;
 
+type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<3>;
-type Ctx = composite::Context<L>;
-type Key = composite::Key<DefaultNestableKey, L>;
+type T = composite::CompositeImpl<NK, L>;
+type Ctx = composite::Context<T>;
+type Key = composite::Key<T>;
 
 let json = r#"
   {

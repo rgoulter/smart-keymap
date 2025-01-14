@@ -59,15 +59,16 @@ fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
 
 type NestedKey = key::composite::DefaultNestableKey;
 type LayersImpl = key::layered::ArrayImpl<16>;
-type Key = key::composite::Key<NestedKey, LayersImpl>;
-type Context = key::composite::Context<LayersImpl>;
+type CompositeImpl = key::composite::CompositeImpl<NestedKey, LayersImpl>;
+type Key = key::composite::Key<CompositeImpl>;
+type Context = key::composite::Context<CompositeImpl>;
 type Event = key::composite::Event;
 
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap1(Keymap<tuples::Keys1<Key, Context, Event>, LayersImpl>),
-    Keymap2(Keymap<tuples::Keys2<Key, Key, Context, Event>, LayersImpl>),
+    Keymap1(Keymap<tuples::Keys1<Key, Context, Event>, CompositeImpl>),
+    Keymap2(Keymap<tuples::Keys2<Key, Key, Context, Event>, CompositeImpl>),
 }
 
 impl LoadedKeymap {
