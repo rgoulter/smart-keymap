@@ -42,7 +42,7 @@ impl key::Key for Key {
             },
             key::PressedKeyEvents::scheduled_event(
                 200,
-                key::Event::key_event(Event::TapHoldTimeout { keymap_index }),
+                key::Event::key_event(keymap_index, Event::TapHoldTimeout { keymap_index }),
             ),
         )
     }
