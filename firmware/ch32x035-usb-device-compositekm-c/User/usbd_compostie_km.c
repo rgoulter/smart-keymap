@@ -132,6 +132,14 @@ void KB_Scan_Init( void )
 {
     keyboard_matrix_init();
 
+    GPIO_ResetBits(GPIOB, GPIO_Pin_1); // col0
+    Delay_Us(5);
+    bool is_boot = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4) != 1; // row0
+    if (is_boot) {
+        SystemReset_StartMode(Start_Mode_BOOT);
+        NVIC_SystemReset();
+    }
+
     keymap_init();
 
     // Init LED
