@@ -229,6 +229,16 @@ pub enum Event<T> {
     Key(T),
 }
 
+impl<T: Copy> Event<T> {
+    /// Maps the Event into a new type.
+    pub fn map_key_event<U>(&self, f: fn(T) -> U) -> Event<U> {
+        match self {
+            Event::Input(event) => Event::Input(*event),
+            Event::Key(key_event) => Event::Key(f(*key_event)),
+        }
+    }
+}
+
 impl<T> From<input::Event> for Event<T> {
     fn from(event: input::Event) -> Self {
         Event::Input(event)
