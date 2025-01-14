@@ -143,20 +143,21 @@ where
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context<L: layered::LayerImpl = layered::ArrayImpl<0>> {
-    layer_context: layered::Context<L>,
+    /// Context for [layered].
+    pub layer_context: layered::Context<L>,
 }
 
-impl<const L: usize> Context<layered::ArrayImpl<L>> {
+impl<L: layered::LayerImpl> Context<L> {
     /// Constructs a new [Context].
-    pub const fn new() -> Self {
-        let layer_context = layered::Context::new();
+    pub const fn new(layer_context: layered::Context<L>) -> Self {
         Self { layer_context }
     }
 }
 
 impl<const L: usize> Default for Context<layered::ArrayImpl<L>> {
     fn default() -> Self {
-        Self::new()
+        let layer_context = layered::Context::default();
+        Self { layer_context }
     }
 }
 

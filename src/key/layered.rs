@@ -118,12 +118,19 @@ impl<const L: usize> LayerState for [bool; L] {
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
 pub struct Context<L: LayerImpl> {
-    active_layers: L::LayerState,
+    /// The active layers.
+    pub active_layers: L::LayerState,
 }
 
-impl<const L: usize> Context<ArrayImpl<L>> {
+impl<L: LayerImpl> Context<L> {
     /// Create a new [Context].
-    pub const fn new() -> Self {
+    pub const fn new(active_layers: L::LayerState) -> Self {
+        Self { active_layers }
+    }
+}
+
+impl<const L: usize> Default for Context<ArrayImpl<L>> {
+    fn default() -> Self {
         Self {
             active_layers: [false; L],
         }

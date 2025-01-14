@@ -65,8 +65,10 @@ pub mod init {
     use crate::key::{composite, layered, simple};
     use crate::tuples::Keys1;
 
+    const NUM_LAYERS: usize = 0;
+
     /// Alias for layers impl.
-    pub type LayersImpl = layered::ArrayImpl<0>;
+    pub type LayersImpl = layered::ArrayImpl<NUM_LAYERS>;
 
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = composite::DefaultNestableKey;
@@ -81,7 +83,11 @@ pub mod init {
     pub type Key = composite::Key<NestedKey, LayersImpl>;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = composite::Context::new();
+    pub const CONTEXT: Context = composite::Context {
+        layer_context: layered::Context {
+            active_layers: [false; NUM_LAYERS],
+        },
+    };
 
     /// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
     pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
