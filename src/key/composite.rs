@@ -420,7 +420,7 @@ mod tests {
         type K = composite::Key<DefaultNestableKey, L>;
         let keymap_index: u16 = 0;
         let key = K::layer_modifier(layered::ModifierKey::Hold(0));
-        let context = Ctx::new();
+        let context = Ctx::default();
         let (mut pressed_lmod_key, _) = key.new_pressed_key(context, keymap_index);
 
         // Act
@@ -454,7 +454,7 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let mut context = Ctx::new();
+        let mut context = Ctx::default();
         let (_pressed_key, pressed_key_events) = keys[0].new_pressed_key(context, 0);
         let maybe_ev = pressed_key_events.into_iter().next();
 
@@ -490,7 +490,7 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let mut context = Ctx::new();
+        let mut context = Ctx::default();
         let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(context, 0);
         context.layer_context.activate_layer(0);
         let events = pressed_lmod_key
@@ -525,7 +525,7 @@ mod tests {
             )),
             K::simple(simple::Key(0x06)),
         ];
-        let context = Ctx::new();
+        let context = Ctx::default();
 
         // Act
         let keymap_index: u16 = 2;
@@ -553,7 +553,7 @@ mod tests {
             )),
             K::simple(simple::Key(0x06)),
         ];
-        let context = Ctx::new();
+        let context = Ctx::default();
 
         // Act
         let keymap_index: u16 = 1;

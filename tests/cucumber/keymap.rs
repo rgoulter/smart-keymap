@@ -99,11 +99,11 @@ impl From<Vec<Key>> for LoadedKeymap {
         match keys.len() {
             1 => LoadedKeymap::Keymap1(Keymap::new(
                 tuples::Keys1::new((keys[0],)),
-                key::composite::Context::new(),
+                key::composite::Context::default(),
             )),
             2 => LoadedKeymap::Keymap2(Keymap::new(
                 tuples::Keys2::new((keys[0], keys[1])),
-                key::composite::Context::new(),
+                key::composite::Context::default(),
             )),
             _ => panic!("Cucumber impl doesn't support Keys{}", keys.len()),
         }

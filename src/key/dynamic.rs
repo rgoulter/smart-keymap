@@ -131,7 +131,7 @@ mod tests {
         // Assemble
         let dyn_key: &mut dyn Key<composite::Event, Context = composite::Context> =
             &mut DynamicKey::new(simple::Key(0x04));
-        let context = composite::Context::new();
+        let context = composite::Context::default();
 
         // Act
         let keymap_index: u16 = 5; // arbitrary

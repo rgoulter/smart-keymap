@@ -442,7 +442,7 @@ mod tests {
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
         type L = ArrayImpl<3>;
-        let mut context: Context<L> = Context::new();
+        let mut context: Context<L> = Context::default();
 
         context.handle_event(LayerEvent::LayerActivated(1));
 
@@ -455,7 +455,7 @@ mod tests {
         // Assemble
         type L = ArrayImpl<3>;
         let context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
-            context: Context::new(),
+            context: Context::default(),
             inner_context: (),
         };
         let expected_key = simple::Key(0x04);
@@ -486,7 +486,7 @@ mod tests {
         // Assemble
         type L = ArrayImpl<3>;
         let context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
-            context: Context::new(),
+            context: Context::default(),
             inner_context: (),
         };
         let expected_key = simple::Key(0x04);
@@ -521,7 +521,7 @@ mod tests {
         // Assemble: layered key (with no layered definitions)
         type L = ArrayImpl<3>;
         let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
-            context: Context::new(),
+            context: Context::default(),
             inner_context: (),
         };
         let expected_key = simple::Key(0x04);
@@ -551,7 +551,7 @@ mod tests {
         // Assemble: layered key (with no layered definitions)
         type L = ArrayImpl<3>;
         let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
-            context: Context::new(),
+            context: Context::default(),
             inner_context: (),
         };
         let expected_key = simple::Key(0x09);
@@ -585,7 +585,7 @@ mod tests {
         // Assemble: layered key (with no layered definitions)
         type L = ArrayImpl<3>;
         let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
-            context: Context::new(),
+            context: Context::default(),
             inner_context: (),
         };
         let expected_key = simple::Key(0x09);
