@@ -250,22 +250,22 @@ impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
         input::PressedKey<Self, Self::PressedKeyState>,
         key::PressedKeyEvents<Self::Event>,
     ) {
-        let passthru_key = self
+        let passthrough_key = self
             .layered
             .highest_active_key(context.layer_state())
             .unwrap_or(self.base);
 
-        let (passthru_pk, passthru_events) =
-            passthru_key.new_pressed_key(inner_context, keymap_index);
+        let (passthrough_pk, passthrough_events) =
+            passthrough_key.new_pressed_key(inner_context, keymap_index);
 
-        let pressed_key_state = PressedLayeredKeyState::new(passthru_pk);
+        let pressed_key_state = PressedLayeredKeyState::new(passthrough_pk);
         (
             input::PressedKey {
                 keymap_index,
                 key: *self,
                 pressed_key_state,
             },
-            passthru_events,
+            passthrough_events,
         )
     }
 }
@@ -321,16 +321,16 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
 /// Passes through to the pressed key.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedLayeredKeyState<K: key::Key, L: LayerImpl> {
-    passthru_pk: input::PressedKey<K, K::PressedKeyState>,
+    passthrough_pk: input::PressedKey<K, K::PressedKeyState>,
 
     _phantom: PhantomData<L>,
 }
 
 impl<K: key::Key, L: LayerImpl> PressedLayeredKeyState<K, L> {
     /// Constructs [PressedLayeredKeyState].
-    pub fn new(passthru_pk: input::PressedKey<K, K::PressedKeyState>) -> Self {
+    pub fn new(passthrough_pk: input::PressedKey<K, K::PressedKeyState>) -> Self {
         Self {
-            passthru_pk,
+            passthrough_pk,
             _phantom: PhantomData,
         }
     }
@@ -353,13 +353,13 @@ impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
     ) -> key::PressedKeyEvents<Self::Event> {
         use crate::key::PressedKey as _;
 
-        self.passthru_pk.handle_event(event)
+        self.passthrough_pk.handle_event(event)
     }
 
     fn key_output(&self, _key: &LayeredKey<K, L>) -> Option<key::KeyOutput> {
         use crate::key::PressedKey as _;
 
-        self.passthru_pk.key_output()
+        self.passthrough_pk.key_output()
     }
 }
 
@@ -468,7 +468,7 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthru_pk,
+            actual_pressed_key.pressed_key_state.passthrough_pk,
             expected_pressed_key
         );
         assert_eq!(actual_event, expected_event);
@@ -533,7 +533,7 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthru_pk,
+            actual_pressed_key.pressed_key_state.passthrough_pk,
             expected_pressed_key
         );
         assert_eq!(actual_event, expected_event);
@@ -567,7 +567,7 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthru_pk,
+            actual_pressed_key.pressed_key_state.passthrough_pk,
             expected_pressed_key
         );
         assert_eq!(actual_event, expected_event);
@@ -596,7 +596,7 @@ mod tests {
         // Assert
         let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthru_pk,
+            actual_pressed_key.pressed_key_state.passthrough_pk,
             expected_pressed_key
         );
         assert_eq!(actual_event, expected_event);
