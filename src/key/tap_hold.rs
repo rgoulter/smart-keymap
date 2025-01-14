@@ -66,12 +66,6 @@ pub enum Event {
     },
 }
 
-impl From<Event> for key::Event<Event> {
-    fn from(event: Event) -> Self {
-        key::Event::Key(event)
-    }
-}
-
 /// The state of a pressed tap-hold key.
 #[derive(Debug, Clone, Copy)]
 pub struct PressedKeyState {
