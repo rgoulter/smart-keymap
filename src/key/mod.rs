@@ -217,6 +217,9 @@ pub enum EventError {
     UnmappableEvent,
 }
 
+/// Convenience alias for a [Result] with an [EventError].
+type EventResult<T> = Result<T, EventError>;
+
 /// Events which are either input, or for a particular [Key::Event].
 ///
 /// It's useful for [Key] implementations to use [Event] with [Key::Event],
@@ -235,6 +238,14 @@ impl<T: Copy> Event<T> {
         match self {
             Event::Input(event) => Event::Input(*event),
             Event::Key(key_event) => Event::Key(f(*key_event)),
+        }
+    }
+
+    /// Maps the Event into a new type.
+    pub fn try_map_key_event<U>(&self, f: fn(T) -> EventResult<U>) -> EventResult<Event<U>> {
+        match self {
+            Event::Input(event) => Ok(Event::Input(*event)),
+            Event::Key(key_event) => f(*key_event).map(Event::Key),
         }
     }
 }
