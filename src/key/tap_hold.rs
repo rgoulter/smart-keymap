@@ -119,7 +119,10 @@ impl key::PressedKeyState<Key> for PressedKeyState {
                     _ => key::PressedKeyEvents::no_events(),
                 }
             }
-            key::Event::Key(Event::TapHoldTimeout { .. }) => {
+            key::Event::Key {
+                key_event: Event::TapHoldTimeout { .. },
+                ..
+            } => {
                 // Key held long enough to resolve as hold.
                 self.resolve(TapHoldState::Hold);
                 key::PressedKeyEvents::no_events()

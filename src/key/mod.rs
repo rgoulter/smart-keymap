@@ -33,7 +33,7 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     /// Constructs a [PressedKeyEvents] with an immediate [Event].
     pub fn key_event(key_event: E) -> Self {
         PressedKeyEvents(
-            Some(ScheduledEvent::immediate(Event::Key(key_event)))
+            Some(ScheduledEvent::immediate(Event::Key { key_event }))
                 .into_iter()
                 .collect(),
         )
@@ -42,7 +42,7 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     /// Constructs a [PressedKeyEvents] with an [Event] scheduled after a delay.
     pub fn scheduled_key_event(delay: u16, key_event: E) -> Self {
         PressedKeyEvents(
-            Some(ScheduledEvent::after(delay, Event::Key(key_event)))
+            Some(ScheduledEvent::after(delay, Event::Key { key_event }))
                 .into_iter()
                 .collect(),
         )
@@ -229,7 +229,10 @@ pub enum Event<T> {
     /// Keymap input events, such as physical key presses.
     Input(input::Event),
     /// [Key] implementation specific events.
-    Key(T),
+    Key {
+        /// A [Key::Event] event.
+        key_event: T,
+    },
 }
 
 impl<T: Copy> Event<T> {
@@ -237,7 +240,9 @@ impl<T: Copy> Event<T> {
     pub fn map_key_event<U>(&self, f: fn(T) -> U) -> Event<U> {
         match self {
             Event::Input(event) => Event::Input(*event),
-            Event::Key(key_event) => Event::Key(f(*key_event)),
+            Event::Key { key_event } => Event::Key {
+                key_event: f(*key_event),
+            },
         }
     }
 
@@ -245,7 +250,7 @@ impl<T: Copy> Event<T> {
     pub fn try_map_key_event<U>(&self, f: fn(T) -> EventResult<U>) -> EventResult<Event<U>> {
         match self {
             Event::Input(event) => Ok(Event::Input(*event)),
-            Event::Key(key_event) => f(*key_event).map(Event::Key),
+            Event::Key { key_event } => f(*key_event).map(|key_event| Event::Key { key_event }),
         }
     }
 }

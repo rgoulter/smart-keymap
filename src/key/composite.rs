@@ -428,9 +428,10 @@ mod tests {
 
         // Assert
         let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key::Event::Key(Event::LayerModification(
-                layered::LayerEvent::LayerDeactivated(layer),
-            ))) => {
+            Some(key::Event::Key {
+                key_event: Event::LayerModification(layered::LayerEvent::LayerDeactivated(layer)),
+                ..
+            }) => {
                 assert_eq!(layer, 0);
             }
             _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
@@ -459,9 +460,9 @@ mod tests {
         // Act
         let event = match maybe_ev {
             Some(key::ScheduledEvent {
-                event: key::Event::Key(ev),
+                event: key::Event::Key { key_event, .. },
                 ..
-            }) => ev,
+            }) => key_event,
             _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
         };
         context.handle_event(event);
@@ -494,7 +495,7 @@ mod tests {
         let events = pressed_lmod_key
             .handle_event(key::Event::Input(input::Event::Release { keymap_index: 0 }));
         let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key::Event::Key(ev)) => ev,
+            Some(key::Event::Key { key_event, .. }) => key_event,
             _ => panic!("Expected an Event::Key(_)"),
         };
 
