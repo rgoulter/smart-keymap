@@ -378,11 +378,10 @@ impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
     type Error = key::EventError;
 
     fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
-        match ev {
-            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
-            key::Event::Key(Event::LayerModification(ev)) => Ok(key::Event::Key(ev)),
-            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
-        }
+        ev.try_map_key_event(|ev| match ev {
+            Event::LayerModification(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        })
     }
 }
 
@@ -390,10 +389,7 @@ impl TryFrom<key::Event<Event>> for key::Event<simple::Event> {
     type Error = key::EventError;
 
     fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
-        match ev {
-            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
-            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
-        }
+        ev.try_map_key_event(|_| Err(key::EventError::UnmappableEvent))
     }
 }
 
@@ -401,11 +397,10 @@ impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
     type Error = key::EventError;
 
     fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
-        match ev {
-            key::Event::Input(ev) => Ok(key::Event::Input(ev)),
-            key::Event::Key(Event::TapHold(ev)) => Ok(key::Event::Key(ev)),
-            key::Event::Key(_) => Err(key::EventError::UnmappableEvent),
-        }
+        ev.try_map_key_event(|ev| match ev {
+            Event::TapHold(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        })
     }
 }
 
