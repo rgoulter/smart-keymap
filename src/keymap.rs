@@ -295,7 +295,7 @@ mod tests {
 
         // Assemble
         let keys: Keys1<simple::Key, Context, Event> = Keys1::new((simple::Key(0x04),));
-        let context = composite::Context::new();
+        let context = composite::Context::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -318,7 +318,7 @@ mod tests {
             tap: 0x04,
             hold: 0xE0,
         },));
-        let context = composite::Context::new();
+        let context = composite::Context::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -347,7 +347,7 @@ mod tests {
             tap: 0x04,
             hold: 0xE0,
         },));
-        let context = composite::Context::new();
+        let context = composite::Context::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -383,7 +383,7 @@ mod tests {
         // Assemble
         let keys: Keys1<composite::Key, Context, Event> =
             Keys1::new((composite::Key::simple(simple::Key(0x04)),));
-        let context = composite::Context::new();
+        let context = composite::Context::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -411,7 +411,7 @@ mod tests {
             layered::ModifierKey::Hold(0),
             layered::LayeredKey::new(simple::Key(0x04), [Some(simple::Key(0x05))]),
         ));
-        let context = Ctx::new();
+        let context = Ctx::default();
 
         let mut keymap = Keymap::new(keys, context);
 
@@ -443,7 +443,7 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = Ctx::new();
+        let context = Ctx::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -473,7 +473,7 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = Ctx::new();
+        let context = Ctx::default();
 
         let mut keymap = Keymap::new(keys, context);
 
@@ -505,7 +505,7 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = Ctx::new();
+        let context = Ctx::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -537,7 +537,7 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ));
-        let context = Ctx::new();
+        let context = Ctx::default();
         let mut keymap = Keymap::new(keys, context);
 
         // Act
