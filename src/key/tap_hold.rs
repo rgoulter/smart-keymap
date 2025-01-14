@@ -40,7 +40,10 @@ impl key::Key for Key {
                     state: TapHoldState::Pending,
                 },
             },
-            key::PressedKeyEvents::scheduled_key_event(200, Event::TapHoldTimeout { keymap_index }),
+            key::PressedKeyEvents::scheduled_event(
+                200,
+                key::Event::key_event(Event::TapHoldTimeout { keymap_index }),
+            ),
         )
     }
 }

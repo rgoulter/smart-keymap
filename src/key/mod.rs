@@ -30,19 +30,10 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
         PressedKeyEvents(Some(ScheduledEvent::immediate(event)).into_iter().collect())
     }
 
-    /// Constructs a [PressedKeyEvents] with an immediate [Event].
-    pub fn key_event(key_event: E) -> Self {
-        PressedKeyEvents(
-            Some(ScheduledEvent::immediate(Event::Key { key_event }))
-                .into_iter()
-                .collect(),
-        )
-    }
-
     /// Constructs a [PressedKeyEvents] with an [Event] scheduled after a delay.
-    pub fn scheduled_key_event(delay: u16, key_event: E) -> Self {
+    pub fn scheduled_event(delay: u16, event: Event<E>) -> Self {
         PressedKeyEvents(
-            Some(ScheduledEvent::after(delay, Event::Key { key_event }))
+            Some(ScheduledEvent::after(delay, event))
                 .into_iter()
                 .collect(),
         )
@@ -236,6 +227,11 @@ pub enum Event<T> {
 }
 
 impl<T: Copy> Event<T> {
+    /// Constructs an [Event] from an [Key::Event].
+    pub fn key_event(key_event: T) -> Self {
+        Event::Key { key_event }
+    }
+
     /// Maps the Event into a new type.
     pub fn map_key_event<U>(&self, f: fn(T) -> U) -> Event<U> {
         match self {
