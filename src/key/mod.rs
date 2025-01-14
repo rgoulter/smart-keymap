@@ -221,6 +221,8 @@ pub enum Event<T> {
     Input(input::Event),
     /// [Key] implementation specific events.
     Key {
+        /// The keymap index the event was generated from.
+        keymap_index: u16,
         /// A [Key::Event] event.
         key_event: T,
     },
@@ -228,16 +230,23 @@ pub enum Event<T> {
 
 impl<T: Copy> Event<T> {
     /// Constructs an [Event] from an [Key::Event].
-    pub fn key_event(key_event: T) -> Self {
-        Event::Key { key_event }
+    pub fn key_event(keymap_index: u16, key_event: T) -> Self {
+        Event::Key {
+            keymap_index,
+            key_event,
+        }
     }
 
     /// Maps the Event into a new type.
     pub fn map_key_event<U>(&self, f: fn(T) -> U) -> Event<U> {
         match self {
             Event::Input(event) => Event::Input(*event),
-            Event::Key { key_event } => Event::Key {
+            Event::Key {
+                key_event,
+                keymap_index,
+            } => Event::Key {
                 key_event: f(*key_event),
+                keymap_index: *keymap_index,
             },
         }
     }
@@ -246,7 +255,13 @@ impl<T: Copy> Event<T> {
     pub fn try_map_key_event<U>(&self, f: fn(T) -> EventResult<U>) -> EventResult<Event<U>> {
         match self {
             Event::Input(event) => Ok(Event::Input(*event)),
-            Event::Key { key_event } => f(*key_event).map(|key_event| Event::Key { key_event }),
+            Event::Key {
+                key_event,
+                keymap_index,
+            } => f(*key_event).map(|key_event| Event::Key {
+                key_event,
+                keymap_index: *keymap_index,
+            }),
         }
     }
 }
