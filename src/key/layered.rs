@@ -79,7 +79,7 @@ impl key::Key for ModifierKey {
         key::PressedKeyEvents<Self::Event>,
     ) {
         let (pk, ev) = ModifierKey::new_pressed_key(self, keymap_index);
-        (pk, key::PressedKeyEvents::key_event(ev))
+        (pk, key::PressedKeyEvents::event(key::Event::key_event(ev)))
     }
 }
 
@@ -296,7 +296,9 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
             ModifierKey::Hold(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
-                        key::PressedKeyEvents::key_event(LayerEvent::LayerDeactivated(*layer))
+                        key::PressedKeyEvents::event(key::Event::key_event(
+                            LayerEvent::LayerDeactivated(*layer),
+                        ))
                     } else {
                         key::PressedKeyEvents::no_events()
                     }
