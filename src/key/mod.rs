@@ -169,11 +169,17 @@ impl KeyOutput {
 
 /// [PressedKeyState] for a stateful pressed key value.
 pub trait PressedKey {
+    /// The type of `Context` the pressed key handles.
+    type Context;
     /// The type of `Event` the pressed key handles.
     type Event;
 
     /// Used to update the [PressedKey]'s state, and possibly yield event(s).
-    fn handle_event(&mut self, event: Event<Self::Event>) -> PressedKeyEvents<Self::Event>;
+    fn handle_event(
+        &mut self,
+        context: Self::Context,
+        event: Event<Self::Event>,
+    ) -> PressedKeyEvents<Self::Event>;
 
     /// Output for the pressed key.
     fn key_output(&self) -> Option<KeyOutput>;
@@ -190,6 +196,7 @@ pub trait PressedKeyState<K: Key>: Debug {
     /// Used to update the [PressedKeyState]'s state, and possibly yield event(s).
     fn handle_event_for(
         &mut self,
+        context: K::Context,
         keymap_index: u16,
         key: &K,
         event: Event<Self::Event>,

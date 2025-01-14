@@ -93,6 +93,7 @@ impl key::PressedKeyState<Key> for PressedKeyState {
     /// Returns at most 2 events
     fn handle_event_for(
         &mut self,
+        _context: (),
         keymap_index: u16,
         key: &Key,
         event: key::Event<Event>,

@@ -298,6 +298,7 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
 
     fn handle_event_for(
         &mut self,
+        _context: (),
         keymap_index: u16,
         key: &ModifierKey,
         event: key::Event<Self::Event>,
@@ -354,13 +355,15 @@ impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
 
     fn handle_event_for(
         &mut self,
+        context: <LayeredKey<K, L> as key::Key>::Context,
         _keymap_index: u16,
         _key: &LayeredKey<K, L>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         use crate::key::PressedKey as _;
 
-        self.passthrough_pk.handle_event(event)
+        self.passthrough_pk
+            .handle_event(context.inner_context, event)
     }
 
     fn key_output(&self, _key: &LayeredKey<K, L>) -> Option<key::KeyOutput> {
@@ -397,7 +400,10 @@ mod tests {
 
         // Act: the modifier key handles "release key" input event
         let actual_events = pressed_key
-            .handle_event(key::Event::Input(input::Event::Release { keymap_index }))
+            .handle_event(
+                (),
+                key::Event::Input(input::Event::Release { keymap_index }),
+            )
             .into_iter()
             .next();
 
@@ -429,7 +435,7 @@ mod tests {
             keymap_index: different_keymap_index,
         });
         let actual_events = pressed_key
-            .handle_event(different_key_released_ev)
+            .handle_event((), different_key_released_ev)
             .into_iter()
             .next();
 
