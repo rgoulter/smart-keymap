@@ -61,12 +61,13 @@ type NestedKey = key::composite::DefaultNestableKey;
 type LayersImpl = key::layered::ArrayImpl<16>;
 type Key = key::composite::Key<NestedKey, LayersImpl>;
 type Context = key::composite::Context<LayersImpl>;
+type Event = key::composite::Event;
 
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap1(Keymap<tuples::Keys1<Key, Context>, LayersImpl>),
-    Keymap2(Keymap<tuples::Keys2<Key, Key, Context>, LayersImpl>),
+    Keymap1(Keymap<tuples::Keys1<Key, Context, Event>, LayersImpl>),
+    Keymap2(Keymap<tuples::Keys2<Key, Key, Context, Event>, LayersImpl>),
 }
 
 impl LoadedKeymap {

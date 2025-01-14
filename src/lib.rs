@@ -74,6 +74,9 @@ pub mod init {
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = composite::Context<LayersImpl>;
 
+    /// Alias for Event type; i.e. [crate::key::context::Event].
+    pub type Event = composite::Event;
+
     /// Alias for keys.
     pub type Key = composite::Key<NestedKey, LayersImpl>;
 
@@ -81,7 +84,7 @@ pub mod init {
     pub const CONTEXT: Context = composite::Context::new();
 
     /// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
-    pub type KeyDefinitionsType = Keys1<Key, Context>;
+    pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
 
     /// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((Key::simple(simple::Key(0x04)),));
