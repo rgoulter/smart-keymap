@@ -44,6 +44,11 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
         self.0.push(ScheduledEvent::after(delay, event)).unwrap();
     }
 
+    /// Adds events from the other [PressedKeyEvents] to the [PressedKeyEvents].
+    pub fn extend(&mut self, other: PressedKeyEvents<E>) {
+        self.0.extend(other.0);
+    }
+
     /// Maps over the PressedKeyEvents.
     pub fn map_events<F>(&self, f: fn(Event<E>) -> Event<F>) -> PressedKeyEvents<F> {
         PressedKeyEvents(
@@ -162,7 +167,7 @@ impl KeyOutput {
     }
 
     /// Returns the key code value.
-    pub fn key_code(self) -> u8 {
+    pub fn key_code(&self) -> u8 {
         self.0
     }
 }
