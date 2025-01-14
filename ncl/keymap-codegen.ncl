@@ -147,8 +147,11 @@ pub mod init {
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = crate::key::composite::DefaultNestableKey;
 
+    /// Types used in Composite keys.
+    pub type CompositeImpl = crate::key::composite::CompositeImpl<NestedKey, LayersImpl>;
+
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
-    pub type Context = crate::key::composite::Context<LayersImpl>;
+    pub type Context = crate::key::composite::Context<CompositeImpl>;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
     pub type Event = crate::key::composite::Event;
