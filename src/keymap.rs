@@ -16,7 +16,7 @@ struct ScheduledEvent<E> {
 struct EventScheduler {
     pending_events: heapless::spsc::Queue<Event<composite::Event>, 256>,
     scheduled_events:
-        heapless::BinaryHeap<ScheduledEvent<composite::Event>, heapless::binary_heap::Min, 256>,
+        heapless::BinaryHeap<ScheduledEvent<composite::Event>, heapless::binary_heap::Min, 16>,
     schedule_counter: u32,
 }
 
