@@ -291,6 +291,72 @@ mod tests {
     }
 
     #[test]
+    fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
+        use key::composite::{Context, Event};
+        use key::tap_hold;
+        use tuples::Keys1;
+
+        // Assemble
+        let keys: Keys1<tap_hold::Key, Context, Event> = Keys1::new((tap_hold::Key {
+            tap: 0x04,
+            hold: 0xE0,
+        },));
+        let context = composite::Context::new();
+        let mut keymap = Keymap::new(keys, context);
+
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+
+    #[test]
+    fn test_keymap_with_tap_hold_key_with_composite_context_key_unaffected_by_prev_key_release() {
+        use key::composite::{Context, Event};
+        use key::tap_hold;
+        use tuples::Keys1;
+
+        // When a tap-hold key is pressed,
+        //  it schedules a Timeout event after 200 ticks.
+        // In case of releasing, then pressing the key a second time within 200 ticks,
+        //  we do not want the first Timeout to affect the second key press.
+
+        // Assemble
+        let keys: Keys1<tap_hold::Key, Context, Event> = Keys1::new((tap_hold::Key {
+            tap: 0x04,
+            hold: 0xE0,
+        },));
+        let context = composite::Context::new();
+        let mut keymap = Keymap::new(keys, context);
+
+        // Act
+        // Press key (starting a 200 tick timeout),
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        // Release, then press key a second time before 200 ticks.
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        for _ in 0..150 {
+            keymap.tick();
+        }
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        // Tick a few more times, until the first timeout would be scheduled,
+        // (but before the second timeout is scheduled)
+        for _ in 0..100 {
+            // 250
+            keymap.tick();
+        }
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        // Second timeout not invoked, key is still "Pending" state.
+        let expected_report: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+
+    #[test]
     fn test_keymap_with_composite_simple_key() {
         use key::{composite, simple};
         use tuples::Keys1;
