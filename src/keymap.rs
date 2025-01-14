@@ -53,6 +53,20 @@ impl EventScheduler {
             .unwrap();
     }
 
+    pub fn cancel_events_for_keymap_index(&mut self, keymap_index: u16) {
+        let old_scheduled_events_heap = core::mem::take(&mut self.scheduled_events);
+        let mut old_events = old_scheduled_events_heap.into_vec();
+        old_events.retain(|ScheduledEvent { event, .. }| match event {
+            Event::Key {
+                keymap_index: ki, ..
+            } => *ki != keymap_index,
+            _ => true,
+        });
+        for scheduled_event in old_events {
+            self.scheduled_events.push(scheduled_event).unwrap();
+        }
+    }
+
     pub fn tick(&mut self) {
         self.schedule_counter += 1;
         let scheduled_ready =
