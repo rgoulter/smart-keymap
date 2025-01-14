@@ -358,28 +358,19 @@ pub enum Event {
 
 impl From<key::Event<layered::LayerEvent>> for key::Event<Event> {
     fn from(ev: key::Event<layered::LayerEvent>) -> Self {
-        match ev {
-            key::Event::Input(ev) => key::Event::Input(ev),
-            key::Event::Key(ev) => key::Event::Key(Event::LayerModification(ev)),
-        }
+        ev.map_key_event(Event::LayerModification)
     }
 }
 
 impl From<key::Event<simple::Event>> for key::Event<Event> {
     fn from(ev: key::Event<simple::Event>) -> Self {
-        match ev {
-            key::Event::Input(ev) => key::Event::Input(ev),
-            key::Event::Key(_) => panic!("key::simple never emits events"),
-        }
+        ev.map_key_event(|_| panic!("key::simple never emits events"))
     }
 }
 
 impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
     fn from(ev: key::Event<tap_hold::Event>) -> Self {
-        match ev {
-            key::Event::Input(ev) => key::Event::Input(ev),
-            key::Event::Key(ev) => key::Event::Key(Event::TapHold(ev)),
-        }
+        ev.map_key_event(Event::TapHold)
     }
 }
 
