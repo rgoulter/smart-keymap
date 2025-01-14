@@ -1,7 +1,10 @@
 { pkgs, lib, config, inputs, ... }:
 
 {
-  devcontainer.enable = true;
+  devcontainer = {
+    enable = true;
+    settings.updateContentCommand = "";
+  };
 
   pre-commit.hooks = {
     clippy.enable = true;
