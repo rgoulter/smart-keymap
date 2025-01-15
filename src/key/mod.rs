@@ -103,7 +103,7 @@ pub trait Key: Copy + Debug + PartialEq {
     type ContextEvent;
     /// The associated `Event` is to be handled by the associated [Context],
     ///  and any active [PressedKeyState]s.
-    type Event: Copy + Debug + Ord;
+    type Event: Copy + Debug;
     /// The associated [PressedKeyState] implements functionality
     ///  for the pressed key.
     /// (e.g. [tap_hold::PressedKeyState] implements behaviour resolving
