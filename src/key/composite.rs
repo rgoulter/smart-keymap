@@ -14,20 +14,24 @@ use key::{layered, simple, tap_hold};
 /// Used to implement nested combinations of [Key].
 pub trait NestableKey: key::Key + Sized {
     /// Constructs an [Event] for the Nestable key's event.
-    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event>;
+    fn into_event<T: CompositeTypes>(
+        event: key::Event<<Self as key::Key>::Event>,
+    ) -> key::Event<Event<T>>;
     /// Tries to construct the [key::Event] for the Nestable Key's event.
-    fn try_event_from(
-        event: key::Event<Event>,
+    fn try_event_from<T: CompositeTypes>(
+        event: key::Event<Event<T>>,
     ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError>;
 }
 
 impl NestableKey for simple::Key {
-    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event> {
+    fn into_event<T: CompositeTypes>(
+        event: key::Event<<Self as key::Key>::Event>,
+    ) -> key::Event<Event<T>> {
         event.into()
     }
 
-    fn try_event_from(
-        event: key::Event<Event>,
+    fn try_event_from<T: CompositeTypes>(
+        event: key::Event<Event<T>>,
     ) -> Result<key::Event<simple::Event>, key::EventError> {
         key::Event::try_from(event)
     }
@@ -36,8 +40,10 @@ impl NestableKey for simple::Key {
 /// Related types used by [Key], [Context] and [Event].
 pub trait CompositeTypes: Copy + Debug + PartialEq
 where
+    // The LayerImpl must be deserializable (and not contain references).
     <<Self as CompositeTypes>::L as layered::LayerImpl>::Layers<Self::NK>:
         serde::de::DeserializeOwned,
+    // The NestedKey must be deserializable (and not contain references).
     <Self as CompositeTypes>::NK: serde::de::DeserializeOwned,
 {
     /// The nested key type used within composite keys.
@@ -57,6 +63,7 @@ impl<NK: NestableKey, L: layered::LayerImpl> CompositeTypes for CompositeImpl<NK
 where
     <L as layered::LayerImpl>::Layers<NK>: serde::de::DeserializeOwned,
     NK: serde::de::DeserializeOwned,
+    // <NK as key::Key>::Context: From<Context<Self>>,
 {
     type NK = NK;
     type L = L;
@@ -76,7 +83,7 @@ pub enum Key<T: CompositeTypes = CompositeImpl> {
     /// A tap-hold key.
     TapHold {
         /// The tap-hold key.
-        key: tap_hold::Key,
+        key: tap_hold::Key<T::NK>,
     },
     /// A layer modifier key.
     LayerModifier {
@@ -97,7 +104,7 @@ impl<T: CompositeTypes> Key<T> {
     }
 
     /// Constructs a [Key::TapHold] from the given [tap_hold::Key].
-    pub const fn tap_hold(key: tap_hold::Key) -> Self {
+    pub const fn tap_hold(key: tap_hold::Key<T::NK>) -> Self {
         Self::TapHold { key }
     }
 
@@ -112,10 +119,13 @@ impl<T: CompositeTypes> Key<T> {
     }
 }
 
-impl<T: CompositeTypes> key::Key for Key<T> {
+impl<T: CompositeTypes> key::Key for Key<T>
+where
+    <T::NK as key::Key>::Context: From<Context<T>>,
+{
     type Context = Context<T>;
-    type ContextEvent = Event;
-    type Event = Event;
+    type ContextEvent = Event<T>;
+    type Event = Event<T>;
     type PressedKeyState = PressedKeyState<T>;
 
     fn new_pressed_key(
@@ -132,7 +142,7 @@ impl<T: CompositeTypes> key::Key for Key<T> {
                 (pressed_key.into(), events.into_events())
             }
             Key::TapHold { key, .. } => {
-                let (pressed_key, events) = key.new_pressed_key((), keymap_index);
+                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
             Key::LayerModifier { key, .. } => {
@@ -141,7 +151,7 @@ impl<T: CompositeTypes> key::Key for Key<T> {
             }
             Key::Layered { key, .. } => {
                 let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
-                (pressed_key.into(), events.map_events(NK::into_event))
+                (pressed_key.into(), events.map_events(T::NK::into_event))
             }
         }
     }
@@ -165,6 +175,7 @@ impl<NK: NestableKey, const L: usize> Default for Context<CompositeImpl<NK, laye
 where
     <layered::ArrayImpl<L> as layered::LayerImpl>::Layers<NK>: serde::de::DeserializeOwned,
     NK: serde::de::DeserializeOwned,
+    <NK as key::Key>::Context: From<Context<CompositeImpl<NK, layered::ArrayImpl<L>>>>,
 {
     fn default() -> Self {
         let layer_context = layered::Context::default();
@@ -173,7 +184,7 @@ where
 }
 
 impl<T: CompositeTypes> key::Context for Context<T> {
-    type Event = Event;
+    type Event = Event<T>;
     fn handle_event(&mut self, event: Self::Event) {
         if let Event::LayerModification(ev) = event {
             self.layer_context.handle_event(ev);
@@ -211,7 +222,7 @@ pub enum PressedKeyState<T: CompositeTypes> {
     /// A simple key's pressed state.
     Simple(simple::PressedKeyState),
     /// A tap-hold key's pressed state.
-    TapHold(tap_hold::PressedKeyState),
+    TapHold(tap_hold::PressedKeyState<T::NK>),
     /// A layer modifier key's pressed state.
     LayerModifier(layered::PressedModifierKeyState),
     /// A layer modifier key's pressed state.
@@ -269,13 +280,13 @@ impl<T: CompositeTypes> From<simple::PressedKey> for PressedKey<T> {
     }
 }
 
-impl<T: CompositeTypes> From<tap_hold::PressedKey> for PressedKey<T> {
+impl<T: CompositeTypes> From<tap_hold::PressedKey<T::NK>> for PressedKey<T> {
     fn from(
         input::PressedKey {
             keymap_index,
             key,
             pressed_key_state,
-        }: tap_hold::PressedKey,
+        }: tap_hold::PressedKey<T::NK>,
     ) -> Self {
         input::PressedKey {
             key: Key::tap_hold(key),
@@ -285,8 +296,11 @@ impl<T: CompositeTypes> From<tap_hold::PressedKey> for PressedKey<T> {
     }
 }
 
-impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
-    type Event = Event;
+impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T>
+where
+    <T::NK as key::Key>::Context: From<Context<T>>,
+{
+    type Event = Event<T>;
 
     fn handle_event_for(
         &mut self,
@@ -338,36 +352,38 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
 }
 
 /// Aggregates the [key::Event] types.
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum Event {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Event<T: CompositeTypes = CompositeImpl> {
     /// A tap-hold event.
-    TapHold(tap_hold::Event),
+    TapHold(tap_hold::Event<<T::NK as key::Key>::Event>),
     /// A layer modification event.
     LayerModification(layered::LayerEvent),
 }
 
-impl From<key::Event<layered::LayerEvent>> for key::Event<Event> {
+impl<T: CompositeTypes> From<key::Event<layered::LayerEvent>> for key::Event<Event<T>> {
     fn from(ev: key::Event<layered::LayerEvent>) -> Self {
         ev.map_key_event(Event::LayerModification)
     }
 }
 
-impl From<key::Event<simple::Event>> for key::Event<Event> {
+impl<T: CompositeTypes> From<key::Event<simple::Event>> for key::Event<Event<T>> {
     fn from(ev: key::Event<simple::Event>) -> Self {
         ev.map_key_event(|_| panic!("key::simple never emits events"))
     }
 }
 
-impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
-    fn from(ev: key::Event<tap_hold::Event>) -> Self {
+impl<T: CompositeTypes> From<key::Event<tap_hold::Event<<T::NK as key::Key>::Event>>>
+    for key::Event<Event<T>>
+{
+    fn from(ev: key::Event<tap_hold::Event<<T::NK as key::Key>::Event>>) -> Self {
         ev.map_key_event(Event::TapHold)
     }
 }
 
-impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
+impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>> for key::Event<layered::LayerEvent> {
     type Error = key::EventError;
 
-    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<Event<T>>) -> Result<Self, Self::Error> {
         ev.try_map_key_event(|ev| match ev {
             Event::LayerModification(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
@@ -375,18 +391,20 @@ impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
     }
 }
 
-impl TryFrom<key::Event<Event>> for key::Event<simple::Event> {
+impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>> for key::Event<simple::Event> {
     type Error = key::EventError;
 
-    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<Event<T>>) -> Result<Self, Self::Error> {
         ev.try_map_key_event(|_| Err(key::EventError::UnmappableEvent))
     }
 }
 
-impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
+impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>>
+    for key::Event<tap_hold::Event<<T::NK as key::Key>::Event>>
+{
     type Error = key::EventError;
 
-    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<Event<T>>) -> Result<Self, Self::Error> {
         ev.try_map_key_event(|ev| match ev {
             Event::TapHold(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
