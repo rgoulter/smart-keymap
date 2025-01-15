@@ -13,13 +13,13 @@ struct ScheduledEvent<E> {
 }
 
 #[derive(Debug)]
-struct EventScheduler {
-    pending_events: heapless::spsc::Queue<Event<composite::Event>, 256>,
-    scheduled_events: heapless::Vec<ScheduledEvent<composite::Event>, 16>,
+struct EventScheduler<E> {
+    pending_events: heapless::spsc::Queue<Event<E>, 256>,
+    scheduled_events: heapless::Vec<ScheduledEvent<E>, 16>,
     schedule_counter: u32,
 }
 
-impl EventScheduler {
+impl<E> EventScheduler<E> {
     pub const fn new() -> Self {
         Self {
             pending_events: heapless::spsc::Queue::new(),
@@ -34,7 +34,7 @@ impl EventScheduler {
         self.schedule_counter = 0;
     }
 
-    pub fn schedule_event(&mut self, scheduled_event: key::ScheduledEvent<composite::Event>) {
+    pub fn schedule_event(&mut self, scheduled_event: key::ScheduledEvent<E>) {
         match scheduled_event.schedule {
             key::Schedule::Immediate => {
                 self.pending_events.enqueue(scheduled_event.event).unwrap();
@@ -45,7 +45,7 @@ impl EventScheduler {
         }
     }
 
-    pub fn schedule_after(&mut self, delay: u32, event: Event<composite::Event>) {
+    pub fn schedule_after(&mut self, delay: u32, event: Event<E>) {
         let time = self.schedule_counter + delay;
         // binary sort insertion;
         //  smallest at *end* (quick to pop off),
@@ -84,7 +84,7 @@ impl EventScheduler {
         }
     }
 
-    pub fn dequeue(&mut self) -> Option<Event<composite::Event>> {
+    pub fn dequeue(&mut self) -> Option<Event<E>> {
         self.pending_events.dequeue()
     }
 }
@@ -142,7 +142,7 @@ pub struct Keymap<
     key_definitions: I,
     context: composite::Context<T>,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
-    event_scheduler: EventScheduler,
+    event_scheduler: EventScheduler<composite::Event<T>>,
 }
 
 impl<
