@@ -278,7 +278,7 @@ impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
 }
 
 /// Events from [ModifierKey] which affect [Context].
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LayerEvent {
     /// Activates the given layer.
     LayerActivated(LayerIndex),
