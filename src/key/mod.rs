@@ -16,7 +16,7 @@ pub mod composite;
 pub mod dynamic;
 
 /// Events emitted when a [Key] is pressed.
-#[derive(Debug, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, PartialEq, Eq)]
 pub struct PressedKeyEvents<E, const M: usize = 2>(heapless::Vec<ScheduledEvent<E>, M>);
 
 impl<E: Copy + Debug> PressedKeyEvents<E> {
@@ -215,7 +215,7 @@ type EventResult<T> = Result<T, EventError>;
 ///
 /// It's useful for [Key] implementations to use [Event] with [Key::Event],
 ///  and map [Key::Event] to and partially from [composite::Event].
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event<T> {
     /// Keymap input events, such as physical key presses.
     Input(input::Event),
@@ -283,7 +283,7 @@ pub enum Schedule {
 }
 
 /// Schedules a given `T` with [Event], for some [Schedule].
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScheduledEvent<T> {
     /// Whether to handle the event immediately, or after some delay.
     pub schedule: Schedule,
