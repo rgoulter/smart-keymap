@@ -8,7 +8,7 @@ use key::PressedKey as _;
 /// A dyn-compatible Key trait.
 pub trait Key<Ev, const M: usize = 2>: Debug
 where
-    Ev: Copy + Debug + Ord,
+    Ev: Copy + Debug,
 {
     /// The context type for the key.
     type Context: key::Context<Event = Ev>;
@@ -62,7 +62,7 @@ impl<K: key::Key, Ctx, Ev> DynamicKey<K, Ctx, Ev> {
 impl<
         K: key::Key,
         Ctx: key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + Ord,
+        Ev: Copy + Debug,
         const M: usize,
     > Key<Ev, M> for DynamicKey<K, Ctx, Ev>
 where
