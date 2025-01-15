@@ -30,7 +30,7 @@ assert_eq!(actual_key, expected_key);
 ```rust
 use smart_keymap::key;
 
-use key::{composite, layered, tap_hold};
+use key::{composite, layered, simple, tap_hold};
 
 use composite::DefaultNestableKey;
 
@@ -43,7 +43,12 @@ type Key = composite::Key<T>;
 let json = r#"
   { "TapHold": { "key": { "hold": 224, "tap": 4 } } }
 "#;
-let expected_key: Key = composite::Key::TapHold { key: tap_hold::Key { tap: 4, hold: 224 } };
+let expected_key: Key = composite::Key::TapHold {
+  key: tap_hold::Key {
+    tap: simple::Key(4),
+    hold: simple::Key(224),
+  },
+};
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
