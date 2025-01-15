@@ -73,6 +73,7 @@
         (std.array.length base_keys),
 
   serialized_json_keymap
+    | default
     | doc "The keymap.json output value."
     =
       layered_keys |> std.array.map to_json_serialized_key,
