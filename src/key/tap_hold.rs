@@ -60,7 +60,7 @@ pub enum TapHoldState {
 }
 
 /// Events emitted by a tap-hold key.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Event {
     /// Event indicating the key has been held long enough to resolve as hold.
     TapHoldTimeout {
