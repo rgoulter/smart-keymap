@@ -1,7 +1,7 @@
 use serde::Deserialize;
 
 /// Input events for [crate::keymap::Keymap].
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
     /// A physical key press for a given `keymap_index`.
     Press {
