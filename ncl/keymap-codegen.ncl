@@ -83,12 +83,13 @@
           std.is_number (std.record.get "tap" k) &&
           std.record.has_field "hold" k &&
           std.is_number (std.record.get "hold" k),
-      key_type = "crate::key::tap_hold::Key",
+      # kludge: support tap_hold::Key<K> in Rust first, then impl. NCL support later.
+      key_type = "crate::key::tap_hold::Key<crate::key::simple::Key>",
       rust_expr = fun { hold, tap, } =>
         m%"
         crate::key::tap_hold::Key {
-          hold: %{std.to_string hold},
-          tap: %{std.to_string tap},
+          hold: crate::key::simple::Key(%{std.to_string hold}),
+          tap: crate::key::simple::Key(%{std.to_string tap}),
         }
         "%,
     },
@@ -154,7 +155,7 @@ pub mod init {
     pub type Context = crate::key::composite::Context<CompositeImpl>;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
-    pub type Event = crate::key::composite::Event;
+    pub type Event = crate::key::composite::Event<CompositeImpl>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = crate::key::composite::Context {
