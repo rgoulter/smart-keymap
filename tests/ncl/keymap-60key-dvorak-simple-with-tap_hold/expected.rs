@@ -15,7 +15,7 @@ pub mod init {
     pub type Context = crate::key::composite::Context<CompositeImpl>;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
-    pub type Event = crate::key::composite::Event;
+    pub type Event = crate::key::composite::Event<CompositeImpl>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = crate::key::composite::Context {
@@ -53,16 +53,16 @@ pub mod init {
         crate::key::simple::Key,
         crate::key::simple::Key,
         crate::key::simple::Key,
-        crate::key::tap_hold::Key,
-        crate::key::tap_hold::Key,
-        crate::key::tap_hold::Key,
-        crate::key::tap_hold::Key,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
         crate::key::simple::Key,
         crate::key::simple::Key,
-        crate::key::tap_hold::Key,
-        crate::key::tap_hold::Key,
-        crate::key::tap_hold::Key,
-        crate::key::tap_hold::Key,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
+        crate::key::tap_hold::Key<crate::key::simple::Key>,
         crate::key::simple::Key,
         crate::key::simple::Key,
         crate::key::simple::Key,
@@ -119,16 +119,40 @@ pub mod init {
         crate::key::simple::Key(15),
         crate::key::simple::Key(42),
         crate::key::simple::Key(41),
-        crate::key::tap_hold::Key { hold: 226, tap: 4 },
-        crate::key::tap_hold::Key { hold: 227, tap: 18 },
-        crate::key::tap_hold::Key { hold: 224, tap: 8 },
-        crate::key::tap_hold::Key { hold: 225, tap: 24 },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(226),
+            tap: crate::key::simple::Key(4),
+        },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(227),
+            tap: crate::key::simple::Key(18),
+        },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(224),
+            tap: crate::key::simple::Key(8),
+        },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(225),
+            tap: crate::key::simple::Key(24),
+        },
         crate::key::simple::Key(12),
         crate::key::simple::Key(7),
-        crate::key::tap_hold::Key { hold: 229, tap: 11 },
-        crate::key::tap_hold::Key { hold: 228, tap: 23 },
-        crate::key::tap_hold::Key { hold: 231, tap: 17 },
-        crate::key::tap_hold::Key { hold: 230, tap: 22 },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(229),
+            tap: crate::key::simple::Key(11),
+        },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(228),
+            tap: crate::key::simple::Key(23),
+        },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(231),
+            tap: crate::key::simple::Key(17),
+        },
+        crate::key::tap_hold::Key {
+            hold: crate::key::simple::Key(230),
+            tap: crate::key::simple::Key(22),
+        },
         crate::key::simple::Key(40),
         crate::key::simple::Key(225),
         crate::key::simple::Key(51),
