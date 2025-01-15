@@ -13,7 +13,7 @@ Feature: Key Deserialization
   Example: Deserialize a tap_hold::Key
     When a tap_hold::Key is deserialized from the RON string
       """
-      Key(tap: 0x04, hold: 0xE0)
+      Key(tap: Key(0x04), hold: Key(0xE0))
       """
     Then the result is same value as deserializing the JSON string
       """
@@ -23,7 +23,7 @@ Feature: Key Deserialization
   Example: Deserialize a composite::Key (TapHold variant)
     When a composite::Key is deserialized from the RON string
       """
-      TapHold(key: Key(tap: 0x04, hold: 0xE0))
+      TapHold(key: Key(tap: Key(0x04), hold: Key(0xE0)))
       """
     Then the result is same value as deserializing the JSON string
       """

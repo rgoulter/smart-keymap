@@ -82,11 +82,11 @@ fn check_value(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer)
             assert_eq!(deserialized_lhs, deserialized_rhs);
         }
         KeyType::TapHold => {
-            let deserialized_lhs: key::tap_hold::Key = world
+            let deserialized_lhs: key::tap_hold::Key<key::simple::Key> = world
                 .input_deserializer
                 .from_str(&world.input_string)
                 .unwrap();
-            let deserialized_rhs: key::tap_hold::Key = deserializer
+            let deserialized_rhs: key::tap_hold::Key<key::simple::Key> = deserializer
                 .from_str(step.docstring.as_ref().unwrap())
                 .unwrap();
             assert_eq!(deserialized_lhs, deserialized_rhs);
