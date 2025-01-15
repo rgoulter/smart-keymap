@@ -6,7 +6,7 @@ use crate::key;
 
 use key::{composite, Context, Event};
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct ScheduledEvent<E> {
     time: u32,
     event: Event<E>,
