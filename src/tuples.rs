@@ -3,7 +3,7 @@ use core::ops::{Index, IndexMut};
 
 use crate::key;
 
-use key::{composite, dynamic};
+use key::dynamic;
 
 /// A trait for resetting all keys in a tuple struct.
 pub trait KeysReset {
@@ -15,8 +15,8 @@ pub trait KeysReset {
 #[derive(Debug)]
 pub struct Keys1<
     K0: key::Key,
-    Ctx: key::Context<Event = Ev> + Debug = composite::Context,
-    Ev: Copy + Debug = composite::Event,
+    Ctx: key::Context<Event = Ev> + Debug,
+    Ev: Copy + Debug,
     const M: usize = 2,
 >(dynamic::DynamicKey<K0, Ctx, Ev>);
 
@@ -97,8 +97,8 @@ macro_rules! define_keys {
                     #(
                         K~I: crate::key::Key,
                     )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug = crate::key::composite::Context,
-                Ev: Copy + core::fmt::Debug = crate::key::composite::Event,
+                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug,
+                Ev: Copy + core::fmt::Debug,
                 const M: usize = 2,
                 >(
                     #(
