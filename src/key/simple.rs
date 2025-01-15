@@ -41,7 +41,7 @@ impl key::Key for Key {
 }
 
 /// Unit-like struct for event. (crate::key::simple doesn't use events).
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Event();
 
 /// Unit-like struct for [crate::key::PressedKeyState]. (crate::key::simple pressed keys don't have state).
