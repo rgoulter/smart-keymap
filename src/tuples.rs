@@ -16,16 +16,12 @@ pub trait KeysReset {
 pub struct Keys1<
     K0: key::Key,
     Ctx: key::Context<Event = Ev> + Debug = composite::Context,
-    Ev: Copy + Debug + Ord = composite::Event,
+    Ev: Copy + Debug = composite::Event,
     const M: usize = 2,
 >(dynamic::DynamicKey<K0, Ctx, Ev>);
 
-impl<
-        K0: key::Key,
-        Ctx: key::Context<Event = Ev> + Debug,
-        Ev: Copy + Debug + Ord,
-        const M: usize,
-    > Keys1<K0, Ctx, Ev, M>
+impl<K0: key::Key, Ctx: key::Context<Event = Ev> + Debug, Ev: Copy + Debug, const M: usize>
+    Keys1<K0, Ctx, Ev, M>
 {
     /// Constructs a KeysN for the given tuple.
     pub const fn new((k0,): (K0,)) -> Self {
@@ -36,7 +32,7 @@ impl<
 impl<
         K0: key::Key + 'static,
         Ctx: key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + Ord + 'static,
+        Ev: Copy + Debug + 'static,
         const M: usize,
     > Index<usize> for Keys1<K0, Ctx, Ev, M>
 where
@@ -57,7 +53,7 @@ where
 impl<
         K0: crate::key::Key + 'static,
         Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + Ord + 'static,
+        Ev: Copy + Debug + 'static,
         const M: usize,
     > IndexMut<usize> for Keys1<K0, Ctx, Ev, M>
 where
@@ -76,7 +72,7 @@ where
 impl<
         K0: crate::key::Key + 'static,
         Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + Ord + 'static,
+        Ev: Copy + Debug + 'static,
         const M: usize,
     > KeysReset for Keys1<K0, Ctx, Ev, M>
 where
@@ -102,7 +98,7 @@ macro_rules! define_keys {
                         K~I: crate::key::Key,
                     )*
                 Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug = crate::key::composite::Context,
-                Ev: Copy + core::fmt::Debug + Ord = crate::key::composite::Event,
+                Ev: Copy + core::fmt::Debug = crate::key::composite::Event,
                 const M: usize = 2,
                 >(
                     #(
@@ -115,7 +111,7 @@ macro_rules! define_keys {
                         K~I: crate::key::Key,
                     )*
                 Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug,
-                Ev: Copy + core::fmt::Debug + Ord,
+                Ev: Copy + core::fmt::Debug,
                 const M: usize,
                 > [<Keys $n>]<
                     #(K~I,)*
@@ -141,7 +137,7 @@ macro_rules! define_keys {
                         K~I: crate::key::Key + 'static,
                     )*
                 Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
-                Ev: Copy + core::fmt::Debug + Ord + 'static,
+                Ev: Copy + core::fmt::Debug + 'static,
                 const M: usize,
                 > core::ops::Index<usize> for [<Keys $n>]<
                     #(K~I,)*
@@ -171,7 +167,7 @@ macro_rules! define_keys {
                         K~I: crate::key::Key + 'static,
                     )*
                 Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
-                Ev: Copy + core::fmt::Debug + Ord + 'static,
+                Ev: Copy + core::fmt::Debug + 'static,
                 const M: usize,
                 > core::ops::IndexMut<usize> for [<Keys $n>]<
                     #(K~I,)*
@@ -199,7 +195,7 @@ macro_rules! define_keys {
                         K~I: crate::key::Key + 'static,
                     )*
                 Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
-                Ev: Copy + core::fmt::Debug + Ord + 'static,
+                Ev: Copy + core::fmt::Debug + 'static,
                 const M: usize,
                 > crate::tuples::KeysReset for [<Keys $n>]<
                     #(K~I,)*
