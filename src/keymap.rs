@@ -15,8 +15,7 @@ struct ScheduledEvent<E> {
 #[derive(Debug)]
 struct EventScheduler {
     pending_events: heapless::spsc::Queue<Event<composite::Event>, 256>,
-    scheduled_events:
-        heapless::BinaryHeap<ScheduledEvent<composite::Event>, heapless::binary_heap::Min, 16>,
+    scheduled_events: heapless::Vec<ScheduledEvent<composite::Event>, 16>,
     schedule_counter: u32,
 }
 
@@ -24,7 +23,7 @@ impl EventScheduler {
     pub const fn new() -> Self {
         Self {
             pending_events: heapless::spsc::Queue::new(),
-            scheduled_events: heapless::BinaryHeap::new(),
+            scheduled_events: heapless::Vec::new(),
             schedule_counter: 0,
         }
     }
@@ -48,29 +47,32 @@ impl EventScheduler {
 
     pub fn schedule_after(&mut self, delay: u32, event: Event<composite::Event>) {
         let time = self.schedule_counter + delay;
+        // binary sort insertion;
+        //  smallest at *end* (quick to pop off),
+        //  highest at *start*.
+        let pos = self
+            .scheduled_events
+            .binary_search_by(|&sch_item| sch_item.time.cmp(&delay).reverse())
+            .unwrap_or_else(|e| e);
         self.scheduled_events
-            .push(ScheduledEvent { time, event })
+            .insert(pos, ScheduledEvent { time, event })
             .unwrap();
     }
 
     pub fn cancel_events_for_keymap_index(&mut self, keymap_index: u16) {
-        let old_scheduled_events_heap = core::mem::take(&mut self.scheduled_events);
-        let mut old_events = old_scheduled_events_heap.into_vec();
-        old_events.retain(|ScheduledEvent { event, .. }| match event {
-            Event::Key {
-                keymap_index: ki, ..
-            } => *ki != keymap_index,
-            _ => true,
-        });
-        for scheduled_event in old_events {
-            self.scheduled_events.push(scheduled_event).unwrap();
-        }
+        self.scheduled_events
+            .retain(|ScheduledEvent { event, .. }| match event {
+                Event::Key {
+                    keymap_index: ki, ..
+                } => *ki != keymap_index,
+                _ => true,
+            });
     }
 
     pub fn tick(&mut self) {
         self.schedule_counter += 1;
         let scheduled_ready =
-            if let Some(ScheduledEvent { time, .. }) = self.scheduled_events.peek() {
+            if let Some(ScheduledEvent { time, .. }) = self.scheduled_events.last() {
                 *time <= self.schedule_counter
             } else {
                 false
