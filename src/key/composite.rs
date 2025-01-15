@@ -349,7 +349,7 @@ where
 }
 
 /// Aggregates the [key::Event] types.
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Event {
     /// A tap-hold event.
     TapHold(tap_hold::Event),
