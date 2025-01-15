@@ -80,7 +80,7 @@ pub mod init {
     pub type Context = composite::Context<CompositeImpl>;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
-    pub type Event = composite::Event;
+    pub type Event = composite::Event<CompositeImpl>;
 
     /// Alias for keys.
     pub type Key = composite::Key<CompositeImpl>;

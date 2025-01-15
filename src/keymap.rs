@@ -7,19 +7,19 @@ use crate::key;
 use key::{composite, Context, Event};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
-struct ScheduledEvent<E> {
+struct ScheduledEvent<E: Debug> {
     time: u32,
     event: Event<E>,
 }
 
 #[derive(Debug)]
-struct EventScheduler<E> {
+struct EventScheduler<E: Debug> {
     pending_events: heapless::spsc::Queue<Event<E>, 256>,
     scheduled_events: heapless::Vec<ScheduledEvent<E>, 16>,
     schedule_counter: u32,
 }
 
-impl<E> EventScheduler<E> {
+impl<E: Debug> EventScheduler<E> {
     pub const fn new() -> Self {
         Self {
             pending_events: heapless::spsc::Queue::new(),
@@ -52,7 +52,7 @@ impl<E> EventScheduler<E> {
         //  highest at *start*.
         let pos = self
             .scheduled_events
-            .binary_search_by(|&sch_item| sch_item.time.cmp(&delay).reverse())
+            .binary_search_by(|sch_item| sch_item.time.cmp(&delay).reverse())
             .unwrap_or_else(|e| e);
         self.scheduled_events
             .insert(pos, ScheduledEvent { time, event })
@@ -133,7 +133,7 @@ pub struct Keymap<
     I: IndexMut<
             usize,
             Output = dyn key::dynamic::Key<
-                key::composite::Event,
+                key::composite::Event<T>,
                 Context = key::composite::Context<T>,
             >,
         > + crate::tuples::KeysReset,
@@ -149,7 +149,7 @@ impl<
         I: IndexMut<
                 usize,
                 Output = dyn key::dynamic::Key<
-                    key::composite::Event,
+                    key::composite::Event<T>,
                     Context = key::composite::Context<T>,
                 >,
             > + crate::tuples::KeysReset,
