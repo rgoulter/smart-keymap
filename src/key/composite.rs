@@ -128,11 +128,11 @@ impl<T: CompositeTypes> Key<T> {
 
 impl<T: CompositeTypes> key::Key for Key<T>
 where
-    <T::NK as key::Key>::Context: From<Context<T>>,
+    <T::NK as key::Key>::Context: From<Context<T::L>>,
     key::Event<Event>: From<key::Event<<T::NK as key::Key>::Event>>,
     key::Event<<T::NK as key::Key>::Event>: TryFrom<key::Event<Event>, Error = key::EventError>,
 {
-    type Context = Context<T>;
+    type Context = Context<T::L>;
     type ContextEvent = Event;
     type Event = Event;
     type PressedKeyState = PressedKeyState<T>;
@@ -168,31 +168,19 @@ where
 
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<T: CompositeTypes = CompositeImpl> {
+pub struct Context<L: layered::LayerImpl = layered::ArrayImpl<0>> {
     /// The layered key context.
-    pub layer_context: layered::Context<T::L>,
+    pub layer_context: layered::Context<L>,
 }
 
-impl<T: CompositeTypes> Context<T> {
+impl<L: layered::LayerImpl> Context<L> {
     /// Constructs a new [Context].
-    pub const fn new(layer_context: layered::Context<T::L>) -> Self {
+    pub const fn new(layer_context: layered::Context<L>) -> Self {
         Self { layer_context }
     }
 }
 
-impl<NK: NestableKey, const L: usize> Default for Context<CompositeImpl<NK, layered::ArrayImpl<L>>>
-where
-    <layered::ArrayImpl<L> as layered::LayerImpl>::Layers<NK>: serde::de::DeserializeOwned,
-    NK: serde::de::DeserializeOwned,
-    <NK as key::Key>::Context: From<Context<CompositeImpl<NK, layered::ArrayImpl<L>>>>,
-{
-    fn default() -> Self {
-        let layer_context = layered::Context::default();
-        Self { layer_context }
-    }
-}
-
-impl<T: CompositeTypes> key::Context for Context<T> {
+impl<L: layered::LayerImpl> key::Context for Context<L> {
     type Event = Event;
     fn handle_event(&mut self, event: Self::Event) {
         if let Event::LayerModification(ev) = event {
@@ -202,22 +190,22 @@ impl<T: CompositeTypes> key::Context for Context<T> {
 }
 
 /// simple::Context from composite::Context
-impl<T: CompositeTypes> From<Context<T>> for () {
-    fn from(_: Context<T>) -> Self {}
+impl<L: layered::LayerImpl> From<Context<L>> for () {
+    fn from(_: Context<L>) -> Self {}
 }
 
-impl<T: CompositeTypes> From<Context<T>> for layered::Context<T::L> {
-    fn from(ctx: Context<T>) -> Self {
+impl<L: layered::LayerImpl> From<Context<L>> for layered::Context<L> {
+    fn from(ctx: Context<L>) -> Self {
         ctx.layer_context
     }
 }
 
-impl<T: CompositeTypes, MC, IC> From<Context<T>> for key::ModifierKeyContext<MC, IC>
+impl<L: layered::LayerImpl, MC, IC> From<Context<L>> for key::ModifierKeyContext<MC, IC>
 where
-    MC: From<Context<T>>,
-    IC: From<Context<T>>,
+    MC: From<Context<L>>,
+    IC: From<Context<L>>,
 {
-    fn from(ctx: Context<T>) -> Self {
+    fn from(ctx: Context<L>) -> Self {
         key::ModifierKeyContext {
             context: ctx.into(),
             inner_context: ctx.into(),
@@ -307,7 +295,7 @@ impl<T: CompositeTypes> From<tap_hold::PressedKey<T::NK>> for PressedKey<T> {
 
 impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T>
 where
-    <T::NK as key::Key>::Context: From<Context<T>>,
+    <T::NK as key::Key>::Context: From<Context<T::L>>,
     key::Event<Event>: From<key::Event<<T::NK as key::Key>::Event>>,
     key::Event<<T::NK as key::Key>::Event>: TryFrom<key::Event<Event>, Error = key::EventError>,
 {
@@ -315,7 +303,7 @@ where
 
     fn handle_event_for(
         &mut self,
-        context: Context<T>,
+        context: Context<T::L>,
         keymap_index: u16,
         key: &Key<T>,
         event: key::Event<Self::Event>,
@@ -503,14 +491,19 @@ mod tests {
         use key::{composite, layered, Key, PressedKey};
 
         // Assemble
+        const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
-        type L = layered::ArrayImpl<1>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
         type T = CompositeImpl<NK, L>;
-        type Ctx = composite::Context<T>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keymap_index: u16 = 0;
         let key = K::layer_modifier(layered::ModifierKey::Hold(0));
-        let context = Ctx::default();
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
         let (mut pressed_lmod_key, _) = key.new_pressed_key(context, keymap_index);
 
         // Act
@@ -536,10 +529,11 @@ mod tests {
         use key::{composite, layered, simple, Context, Key};
 
         // Assemble
+        const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
-        type L = layered::ArrayImpl<1>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
         type T = CompositeImpl<NK, L>;
-        type Ctx = composite::Context<T>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -548,7 +542,11 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let mut context = Ctx::default();
+        let mut context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
         let (_pressed_key, pressed_key_events) = keys[0].new_pressed_key(context, 0);
         let maybe_ev = pressed_key_events.into_iter().next();
 
@@ -574,10 +572,11 @@ mod tests {
         use key::{composite, layered, simple, Context, Key, PressedKey};
 
         // Assemble
+        const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
-        type L = layered::ArrayImpl<1>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
         type T = CompositeImpl<NK, L>;
-        type Ctx = composite::Context<T>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -586,7 +585,11 @@ mod tests {
                 [Some(simple::Key(0x05))],
             )),
         ];
-        let mut context = Ctx::default();
+        let mut context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
         let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(context, 0);
         context.layer_context.activate_layer(0);
         let events = pressed_lmod_key.handle_event(
@@ -612,10 +615,11 @@ mod tests {
         use key::{composite, layered, simple, Key, PressedKey};
 
         // Assemble
+        const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
-        type L = layered::ArrayImpl<1>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
         type T = CompositeImpl<NK, L>;
-        type Ctx = composite::Context<T>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -625,7 +629,11 @@ mod tests {
             )),
             K::simple(simple::Key(0x06)),
         ];
-        let context = Ctx::default();
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
 
         // Act
         let keymap_index: u16 = 2;
@@ -642,10 +650,11 @@ mod tests {
         use key::{composite, layered, simple, Key, PressedKey};
 
         // Assemble
+        const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
-        type L = layered::ArrayImpl<1>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
         type T = CompositeImpl<NK, L>;
-        type Ctx = composite::Context<T>;
+        type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -655,7 +664,11 @@ mod tests {
             )),
             K::simple(simple::Key(0x06)),
         ];
-        let context = Ctx::default();
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
 
         // Act
         let keymap_index: u16 = 1;
