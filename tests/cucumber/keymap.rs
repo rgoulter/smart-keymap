@@ -62,7 +62,7 @@ type LayersImpl = key::layered::ArrayImpl<16>;
 type CompositeImpl = key::composite::CompositeImpl<NestedKey, LayersImpl>;
 type Key = key::composite::Key<CompositeImpl>;
 type Context = key::composite::Context<CompositeImpl>;
-type Event = key::composite::Event<CompositeImpl>;
+type Event = key::composite::Event;
 
 #[derive(Debug)]
 enum LoadedKeymap {

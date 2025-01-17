@@ -14,26 +14,23 @@ use key::{layered, simple, tap_hold};
 /// Used to implement nested combinations of [Key].
 pub trait NestableKey: key::Key + Sized {
     /// Constructs an [Event] for the Nestable key's event.
-    fn into_event<T: CompositeTypes>(
-        event: key::Event<<Self as key::Key>::Event>,
-    ) -> key::Event<Event<T>>;
+    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event>;
     /// Tries to construct the [key::Event] for the Nestable Key's event.
-    fn try_event_from<T: CompositeTypes>(
-        event: key::Event<Event<T>>,
+    fn try_event_from(
+        event: key::Event<Event>,
     ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError>;
 }
 
 impl NestableKey for simple::Key {
-    fn into_event<T: CompositeTypes>(
-        event: key::Event<<Self as key::Key>::Event>,
-    ) -> key::Event<Event<T>> {
+    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event> {
         event.into()
     }
 
-    fn try_event_from<T: CompositeTypes>(
-        event: key::Event<Event<T>>,
+    fn try_event_from(
+        event: key::Event<Event>,
     ) -> Result<key::Event<simple::Event>, key::EventError> {
-        key::Event::try_from(event)
+        let res: key::EventResult<key::Event<simple::Event>> = event.try_into();
+        res
     }
 }
 
@@ -122,10 +119,12 @@ impl<T: CompositeTypes> Key<T> {
 impl<T: CompositeTypes> key::Key for Key<T>
 where
     <T::NK as key::Key>::Context: From<Context<T>>,
+    key::Event<Event>: From<key::Event<<T::NK as key::Key>::Event>>,
+    key::Event<<T::NK as key::Key>::Event>: TryFrom<key::Event<Event>, Error = key::EventError>,
 {
     type Context = Context<T>;
-    type ContextEvent = Event<T>;
-    type Event = Event<T>;
+    type ContextEvent = Event;
+    type Event = Event;
     type PressedKeyState = PressedKeyState<T>;
 
     fn new_pressed_key(
@@ -184,7 +183,7 @@ where
 }
 
 impl<T: CompositeTypes> key::Context for Context<T> {
-    type Event = Event<T>;
+    type Event = Event;
     fn handle_event(&mut self, event: Self::Event) {
         if let Event::LayerModification(ev) = event {
             self.layer_context.handle_event(ev);
@@ -299,8 +298,10 @@ impl<T: CompositeTypes> From<tap_hold::PressedKey<T::NK>> for PressedKey<T> {
 impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T>
 where
     <T::NK as key::Key>::Context: From<Context<T>>,
+    key::Event<Event>: From<key::Event<<T::NK as key::Key>::Event>>,
+    key::Event<<T::NK as key::Key>::Event>: TryFrom<key::Event<Event>, Error = key::EventError>,
 {
-    type Event = Event<T>;
+    type Event = Event;
 
     fn handle_event_for(
         &mut self,
@@ -311,7 +312,10 @@ where
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
             (Key::TapHold { key, .. }, PressedKeyState::TapHold(pks)) => {
-                if let Ok(ev) = key::Event::try_from(event) {
+                if let Ok(ev) = key::Event::<
+                    key::ModifierKeyEvent<tap_hold::Event, <T::NK as key::Key>::Event>,
+                >::try_from(event)
+                {
                     let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
                     events.into_events()
                 } else {
@@ -319,7 +323,7 @@ where
                 }
             }
             (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pks)) => {
-                if let Ok(ev) = key::Event::try_from(event) {
+                if let Ok(ev) = key::Event::<layered::LayerEvent>::try_from(event) {
                     let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
                     events.into_events()
                 } else {
@@ -351,39 +355,66 @@ where
     }
 }
 
-/// Aggregates the [key::Event] types.
+/// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Event<T: CompositeTypes = CompositeImpl> {
+pub enum Event {
     /// A tap-hold event.
-    TapHold(tap_hold::Event<<T::NK as key::Key>::Event>),
+    TapHold(tap_hold::Event),
     /// A layer modification event.
     LayerModification(layered::LayerEvent),
 }
 
-impl<T: CompositeTypes> From<key::Event<layered::LayerEvent>> for key::Event<Event<T>> {
+impl From<key::Event<layered::LayerEvent>> for key::Event<Event> {
     fn from(ev: key::Event<layered::LayerEvent>) -> Self {
         ev.map_key_event(Event::LayerModification)
     }
 }
 
-impl<T: CompositeTypes> From<key::Event<simple::Event>> for key::Event<Event<T>> {
+impl From<key::Event<simple::Event>> for key::Event<Event> {
     fn from(ev: key::Event<simple::Event>) -> Self {
         ev.map_key_event(|_| panic!("key::simple never emits events"))
     }
 }
 
-impl<T: CompositeTypes> From<key::Event<tap_hold::Event<<T::NK as key::Key>::Event>>>
-    for key::Event<Event<T>>
-{
-    fn from(ev: key::Event<tap_hold::Event<<T::NK as key::Key>::Event>>) -> Self {
+impl From<key::Event<tap_hold::Event>> for key::Event<Event> {
+    fn from(ev: key::Event<tap_hold::Event>) -> Self {
         ev.map_key_event(Event::TapHold)
     }
 }
 
-impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>> for key::Event<layered::LayerEvent> {
+impl<ME: Copy, IE: Copy> From<key::Event<key::ModifierKeyEvent<ME, IE>>> for key::Event<Event>
+where
+    key::Event<Event>: From<key::Event<ME>>,
+    key::Event<Event>: From<key::Event<IE>>,
+{
+    fn from(ev: key::Event<key::ModifierKeyEvent<ME, IE>>) -> Self {
+        // Can't just map_event .into(), because
+        // the From<E> is impl. for key::Event<E>.
+        match ev {
+            key::Event::Input(ev) => key::Event::Input(ev),
+            key::Event::Key {
+                key_event,
+                keymap_index,
+            } => match key_event {
+                key::ModifierKeyEvent::Modifier(key_event) => (key::Event::Key {
+                    key_event,
+                    keymap_index,
+                })
+                .into(),
+                key::ModifierKeyEvent::Inner(key_event) => (key::Event::Key {
+                    key_event,
+                    keymap_index,
+                })
+                .into(),
+            },
+        }
+    }
+}
+
+impl TryFrom<key::Event<Event>> for key::Event<layered::LayerEvent> {
     type Error = key::EventError;
 
-    fn try_from(ev: key::Event<Event<T>>) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
         ev.try_map_key_event(|ev| match ev {
             Event::LayerModification(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
@@ -391,24 +422,64 @@ impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>> for key::Event<layered::La
     }
 }
 
-impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>> for key::Event<simple::Event> {
+impl TryFrom<key::Event<Event>> for key::Event<simple::Event> {
     type Error = key::EventError;
 
-    fn try_from(ev: key::Event<Event<T>>) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
         ev.try_map_key_event(|_| Err(key::EventError::UnmappableEvent))
     }
 }
 
-impl<T: CompositeTypes> TryFrom<key::Event<Event<T>>>
-    for key::Event<tap_hold::Event<<T::NK as key::Key>::Event>>
-{
+impl TryFrom<key::Event<Event>> for key::Event<tap_hold::Event> {
     type Error = key::EventError;
 
-    fn try_from(ev: key::Event<Event<T>>) -> Result<Self, Self::Error> {
+    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
         ev.try_map_key_event(|ev| match ev {
             Event::TapHold(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
         })
+    }
+}
+
+impl<ME: Copy, IE: Copy> TryFrom<key::Event<Event>> for key::Event<key::ModifierKeyEvent<ME, IE>>
+where
+    key::Event<ME>: TryFrom<key::Event<Event>, Error = key::EventError>,
+    key::Event<IE>: TryFrom<key::Event<Event>, Error = key::EventError>,
+{
+    type Error = key::EventError;
+
+    fn try_from(ev: key::Event<Event>) -> Result<Self, Self::Error> {
+        // Can't just try map_event .try_from(), because
+        // the TryFrom<E> is impl. for key::Event<E>.
+        let res: Result<key::Event<ME>, key::EventError> = ev.try_into();
+        if let Ok(key_event) = res {
+            match key_event {
+                key::Event::Input(ev) => Ok(key::Event::Input(ev)),
+                key::Event::Key {
+                    key_event,
+                    keymap_index,
+                } => Ok(key::Event::Key {
+                    key_event: key::ModifierKeyEvent::Modifier(key_event),
+                    keymap_index,
+                }),
+            }
+        } else {
+            let res: Result<key::Event<IE>, key::EventError> = ev.try_into();
+            if let Ok(key_event) = res {
+                match key_event {
+                    key::Event::Input(ev) => Ok(key::Event::Input(ev)),
+                    key::Event::Key {
+                        key_event,
+                        keymap_index,
+                    } => Ok(key::Event::Key {
+                        key_event: key::ModifierKeyEvent::Inner(key_event),
+                        keymap_index,
+                    }),
+                }
+            } else {
+                Err(key::EventError::UnmappableEvent)
+            }
+        }
     }
 }
 
