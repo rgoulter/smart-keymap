@@ -303,6 +303,21 @@ impl<T: Copy, U: Copy> ModifierKeyEvent<T, U> {
             ModifierKeyEvent::Inner(u) => g(u),
         }
     }
+
+    /// Tries to construct either variant.
+    pub fn try_from<V: Copy>(
+        v: V,
+        f: fn(V) -> EventResult<T>,
+        g: fn(V) -> EventResult<U>,
+    ) -> EventResult<ModifierKeyEvent<T, U>> {
+        if let Ok(t) = f(v) {
+            Ok(ModifierKeyEvent::Modifier(t))
+        } else if let Ok(u) = g(v) {
+            Ok(ModifierKeyEvent::Inner(u))
+        } else {
+            Err(EventError::UnmappableEvent)
+        }
+    }
 }
 
 /// Schedule for a [ScheduledEvent].
