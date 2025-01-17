@@ -129,11 +129,7 @@ impl<T: CompositeTypes> Key<T> {
     }
 }
 
-impl<T: CompositeTypes> key::Key for Key<T>
-where
-    Event: From<<T::NK as key::Key>::Event>,
-    <T::NK as key::Key>::Event: TryFrom<Event, Error = key::EventError>,
-{
+impl<T: CompositeTypes> key::Key for Key<T> {
     type Context = Context<T::L>;
     type ContextEvent = Event;
     type Event = Event;
@@ -312,11 +308,7 @@ impl<T: CompositeTypes> From<tap_hold::PressedKey<T::NK>> for PressedKey<T> {
     }
 }
 
-impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T>
-where
-    Event: From<<T::NK as key::Key>::Event>,
-    <T::NK as key::Key>::Event: TryFrom<Event, Error = key::EventError>,
-{
+impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
     type Event = Event;
 
     fn handle_event_for(
@@ -328,7 +320,9 @@ where
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
             (Key::TapHold { key, .. }, PressedKeyState::TapHold(pks)) => {
-                if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+                if let Ok(ev) = event.try_into_key_event(|event| {
+                    key::ModifierKeyEvent::try_from(event, |e| e.try_into(), T::NK::try_event_from)
+                }) {
                     let tap_hold_context = context.into();
                     let inner_context = T::NK::pluck_context(context);
                     let modifier_key_context = key::ModifierKeyContext {
@@ -336,7 +330,7 @@ where
                         inner_context,
                     };
                     let events = pks.handle_event_for(modifier_key_context, keymap_index, key, ev);
-                    events.into_events()
+                    events.map_events(|mke| mke.map_events(|th_e| th_e.into(), T::NK::into_event))
                 } else {
                     key::PressedKeyEvents::no_events()
                 }
