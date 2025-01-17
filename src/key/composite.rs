@@ -21,19 +21,28 @@ pub trait NestableKey: key::Key + Sized {
     ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError>;
 }
 
-impl NestableKey for crate::key::simple::Key {
-    fn into_event(
-        event: crate::key::Event<<Self as crate::key::Key>::Event>,
-    ) -> crate::key::Event<Event> {
-        event.into()
-    }
+macro_rules! impl_nestable_key {
+    ($key_type:path) => {
+        impl NestableKey for $key_type {
+            fn into_event(
+                event: crate::key::Event<<Self as crate::key::Key>::Event>,
+            ) -> crate::key::Event<Event> {
+                event.into()
+            }
 
-    fn try_event_from(
-        event: crate::key::Event<Event>,
-    ) -> Result<crate::key::Event<<Self as crate::key::Key>::Event>, crate::key::EventError> {
-        event.try_into()
-    }
+            fn try_event_from(
+                event: crate::key::Event<Event>,
+            ) -> Result<crate::key::Event<<Self as crate::key::Key>::Event>, crate::key::EventError>
+            {
+                event.try_into()
+            }
+        }
+    };
 }
+
+impl_nestable_key!(simple::Key);
+impl_nestable_key!(tap_hold::Key<simple::Key>);
+impl_nestable_key!(layered::ModifierKey);
 
 /// Related types used by [Key], [Context] and [Event].
 pub trait CompositeTypes: Copy + Debug + PartialEq
