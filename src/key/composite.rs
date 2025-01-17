@@ -21,16 +21,17 @@ pub trait NestableKey: key::Key + Sized {
     ) -> Result<key::Event<<Self as key::Key>::Event>, key::EventError>;
 }
 
-impl NestableKey for simple::Key {
-    fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event> {
+impl NestableKey for crate::key::simple::Key {
+    fn into_event(
+        event: crate::key::Event<<Self as crate::key::Key>::Event>,
+    ) -> crate::key::Event<Event> {
         event.into()
     }
 
     fn try_event_from(
-        event: key::Event<Event>,
-    ) -> Result<key::Event<simple::Event>, key::EventError> {
-        let res: key::EventResult<key::Event<simple::Event>> = event.try_into();
-        res
+        event: crate::key::Event<Event>,
+    ) -> Result<crate::key::Event<<Self as crate::key::Key>::Event>, crate::key::EventError> {
+        event.try_into()
     }
 }
 
