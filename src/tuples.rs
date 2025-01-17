@@ -36,8 +36,8 @@ impl<
         const M: usize,
     > Index<usize> for Keys1<K0, Ctx, Ev, M>
 where
-    key::Event<<K0 as key::Key>::Event>: TryFrom<key::Event<Ev>>,
-    key::Event<Ev>: From<key::Event<<K0 as key::Key>::Event>>,
+    <K0 as key::Key>::Event: TryFrom<Ev>,
+    Ev: From<<K0 as key::Key>::Event>,
     <K0 as key::Key>::Context: From<Ctx>,
 {
     type Output = dyn dynamic::Key<Ev, M, Context = Ctx>;
@@ -57,8 +57,8 @@ impl<
         const M: usize,
     > IndexMut<usize> for Keys1<K0, Ctx, Ev, M>
 where
-    crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
-    crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
+    <K0 as crate::key::Key>::Event: TryFrom<Ev>,
+    Ev: From<<K0 as crate::key::Key>::Event>,
     <K0 as crate::key::Key>::Context: From<Ctx>,
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
@@ -76,8 +76,8 @@ impl<
         const M: usize,
     > KeysReset for Keys1<K0, Ctx, Ev, M>
 where
-    crate::key::Event<<K0 as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
-    crate::key::Event<Ev>: From<crate::key::Event<<K0 as crate::key::Key>::Event>>,
+    <K0 as crate::key::Key>::Event: TryFrom<Ev>,
+    Ev: From<<K0 as crate::key::Key>::Event>,
     <K0 as crate::key::Key>::Context: From<Ctx>,
 {
     fn reset(&mut self) {
@@ -145,8 +145,8 @@ macro_rules! define_keys {
                     >
                 where
                     #(
-                    crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
-                    crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
+                    <K~I as crate::key::Key>::Event: TryFrom<Ev>,
+                    Ev: From<<K~I as crate::key::Key>::Event>,
                     <K~I as crate::key::Key>::Context: From<Ctx>,
                 )*
                 {
@@ -175,8 +175,8 @@ macro_rules! define_keys {
                     >
                 where
                     #(
-                    crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
-                    crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
+                    <K~I as crate::key::Key>::Event: TryFrom<Ev>,
+                    Ev: From<<K~I as crate::key::Key>::Event>,
                     <K~I as crate::key::Key>::Context: From<Ctx>,
                 )*
                 {
@@ -203,8 +203,8 @@ macro_rules! define_keys {
                     >
                 where
                     #(
-                    crate::key::Event<<K~I as crate::key::Key>::Event>: TryFrom<crate::key::Event<Ev>>,
-                    crate::key::Event<Ev>: From<crate::key::Event<<K~I as crate::key::Key>::Event>>,
+                    <K~I as crate::key::Key>::Event: TryFrom<Ev>,
+                    Ev: From<<K~I as crate::key::Key>::Event>,
                     <K~I as crate::key::Key>::Context: From<Ctx>,
                 )*
                 {

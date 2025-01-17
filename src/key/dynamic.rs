@@ -67,8 +67,8 @@ impl<
         const M: usize,
     > Key<Ev, M> for DynamicKey<K, Ctx, Ev>
 where
-    key::Event<K::Event>: TryFrom<key::Event<Ev>>,
-    key::Event<Ev>: From<key::Event<K::Event>>,
+    K::Event: TryFrom<Ev>,
+    Ev: From<K::Event>,
     K::Context: From<Ctx>,
 {
     type Context = Ctx;
@@ -81,7 +81,9 @@ where
         let mut scheduled_events: heapless::Vec<key::ScheduledEvent<Ev>, M> = heapless::Vec::new();
 
         if let Some(ref mut pressed_key) = &mut self.pressed_key {
-            if let Ok(event) = event.try_into() {
+            if let Ok(event) = event
+                .try_into_key_event(|e| e.try_into().map_err(|_| key::EventError::UnmappableEvent))
+            {
                 scheduled_events.extend(
                     pressed_key
                         .handle_event(context.into(), event)

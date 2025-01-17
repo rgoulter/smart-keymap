@@ -107,9 +107,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 // TapHold: any interruption resolves pending TapHold as Hold.
                 let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.resolve(TapHoldState::Hold(hold_pk));
-                hold_pke.map_events(|sch_ev| {
-                    sch_ev.map_key_event(|ev| key::ModifierKeyEvent::Inner(ev))
-                })
+                hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev))
             }
             key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                 let mut pke = key::PressedKeyEvents::no_events();
@@ -117,9 +115,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     // TapHold: resolved as tap.
                     let (tap_pk, tap_pke) = key.tap.new_pressed_key(inner_context, keymap_index);
                     self.resolve(TapHoldState::Tap(tap_pk));
-                    pke.extend(tap_pke.map_events(|sch_ev| {
-                        sch_ev.map_key_event(|ev| key::ModifierKeyEvent::Inner(ev))
-                    }));
+                    pke.extend(tap_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
                 }
 
                 match &self {
@@ -146,9 +142,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 // Key held long enough to resolve as hold.
                 let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.resolve(TapHoldState::Hold(hold_pk));
-                hold_pke.map_events(|sch_ev| {
-                    sch_ev.map_key_event(|ev| key::ModifierKeyEvent::Inner(ev))
-                })
+                hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev))
             }
             _ => key::PressedKeyEvents::no_events(),
         }
