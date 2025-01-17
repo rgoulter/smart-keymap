@@ -50,7 +50,7 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     }
 
     /// Maps over the PressedKeyEvents.
-    pub fn map_events<F>(&self, f: fn(Event<E>) -> Event<F>) -> PressedKeyEvents<F> {
+    pub fn map_events<F>(&self, f: fn(E) -> F) -> PressedKeyEvents<F> {
         PressedKeyEvents(
             self.0
                 .as_slice()
@@ -63,16 +63,13 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     /// Maps the PressedKeyEvents to a new type.
     pub fn into_events<F>(&self) -> PressedKeyEvents<F>
     where
-        Event<F>: From<Event<E>>,
+        E: Into<F>,
     {
         PressedKeyEvents(
             self.0
                 .as_slice()
                 .iter()
-                .map(|scheduled_event| ScheduledEvent {
-                    schedule: scheduled_event.schedule,
-                    event: scheduled_event.event.into(),
-                })
+                .map(|sch_ev| sch_ev.map_scheduled_event(|ev| ev.into()))
                 .collect(),
         )
     }
@@ -261,7 +258,15 @@ impl<T: Copy> Event<T> {
     }
 
     /// Maps the Event into a new type.
-    pub fn try_map_key_event<U>(&self, f: fn(T) -> EventResult<U>) -> EventResult<Event<U>> {
+    pub fn into_key_event<U>(&self) -> Event<U>
+    where
+        T: Into<U>,
+    {
+        self.map_key_event(|ke| ke.into())
+    }
+
+    /// Maps the Event into a new type.
+    pub fn try_into_key_event<U>(&self, f: fn(T) -> EventResult<U>) -> EventResult<Event<U>> {
         match self {
             Event::Input(event) => Ok(Event::Input(*event)),
             Event::Key {
@@ -288,6 +293,16 @@ pub enum ModifierKeyEvent<T, U> {
     Modifier(T),
     /// The inner key's event type.
     Inner(U),
+}
+
+impl<T: Copy, U: Copy> ModifierKeyEvent<T, U> {
+    /// Applies a function to either Modifier or Inner.
+    pub fn map_events<V>(self, f: fn(T) -> V, g: fn(U) -> V) -> V {
+        match self {
+            ModifierKeyEvent::Modifier(t) => f(t),
+            ModifierKeyEvent::Inner(u) => g(u),
+        }
+    }
 }
 
 /// Schedule for a [ScheduledEvent].
@@ -328,9 +343,9 @@ impl<T: Copy> ScheduledEvent<T> {
     }
 
     /// Maps the Event of the ScheduledEvent into a new type.
-    pub fn map_scheduled_event<U>(&self, f: fn(Event<T>) -> Event<U>) -> ScheduledEvent<U> {
+    pub fn map_scheduled_event<U>(&self, f: fn(T) -> U) -> ScheduledEvent<U> {
         ScheduledEvent {
-            event: f(self.event),
+            event: self.event.map_key_event(f),
             schedule: self.schedule,
         }
     }
@@ -338,7 +353,7 @@ impl<T: Copy> ScheduledEvent<T> {
     /// Maps the ScheduledEvent into a new type.
     pub fn into_scheduled_event<U>(&self) -> ScheduledEvent<U>
     where
-        Event<U>: From<Event<T>>,
+        T: Into<U>,
     {
         self.map_scheduled_event(|e| e.into())
     }
