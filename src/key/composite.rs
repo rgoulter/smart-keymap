@@ -13,6 +13,8 @@ use key::{layered, simple, tap_hold};
 
 /// Used to implement nested combinations of [Key].
 pub trait NestableKey: key::Key + Sized {
+    /// Get the context for the nestable key from the given Context
+    fn pluck_context<L: layered::LayerImpl>(context: Context<L>) -> <Self as key::Key>::Context;
     /// Constructs an [Event] for the Nestable key's event.
     fn into_event(event: key::Event<<Self as key::Key>::Event>) -> key::Event<Event>;
     /// Tries to construct the [key::Event] for the Nestable Key's event.
@@ -24,6 +26,12 @@ pub trait NestableKey: key::Key + Sized {
 macro_rules! impl_nestable_key {
     ($key_type:path) => {
         impl NestableKey for $key_type {
+            fn pluck_context<L: layered::LayerImpl>(
+                context: Context<L>,
+            ) -> <Self as key::Key>::Context {
+                context.into()
+            }
+
             fn into_event(
                 event: crate::key::Event<<Self as crate::key::Key>::Event>,
             ) -> crate::key::Event<Event> {
@@ -128,7 +136,6 @@ impl<T: CompositeTypes> Key<T> {
 
 impl<T: CompositeTypes> key::Key for Key<T>
 where
-    <T::NK as key::Key>::Context: From<Context<T::L>>,
     key::Event<Event>: From<key::Event<<T::NK as key::Key>::Event>>,
     key::Event<<T::NK as key::Key>::Event>: TryFrom<key::Event<Event>, Error = key::EventError>,
 {
@@ -151,7 +158,13 @@ where
                 (pressed_key.into(), events.into_events())
             }
             Key::TapHold { key, .. } => {
-                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
+                let taphold_context = context.into();
+                let inner_context = T::NK::pluck_context(context);
+                let modifier_key_context = key::ModifierKeyContext {
+                    context: taphold_context,
+                    inner_context,
+                };
+                let (pressed_key, events) = key.new_pressed_key(modifier_key_context, keymap_index);
                 (pressed_key.into(), events.into_events())
             }
             Key::LayerModifier { key, .. } => {
@@ -159,7 +172,13 @@ where
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
-                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
+                let layered_context = context.into();
+                let inner_context = T::NK::pluck_context(context);
+                let modifier_key_context = key::ModifierKeyContext {
+                    context: layered_context,
+                    inner_context,
+                };
+                let (pressed_key, events) = key.new_pressed_key(modifier_key_context, keymap_index);
                 (pressed_key.into(), events.map_events(T::NK::into_event))
             }
         }
@@ -295,7 +314,6 @@ impl<T: CompositeTypes> From<tap_hold::PressedKey<T::NK>> for PressedKey<T> {
 
 impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T>
 where
-    <T::NK as key::Key>::Context: From<Context<T::L>>,
     key::Event<Event>: From<key::Event<<T::NK as key::Key>::Event>>,
     key::Event<<T::NK as key::Key>::Event>: TryFrom<key::Event<Event>, Error = key::EventError>,
 {
@@ -314,7 +332,13 @@ where
                     key::ModifierKeyEvent<tap_hold::Event, <T::NK as key::Key>::Event>,
                 >::try_from(event)
                 {
-                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
+                    let tap_hold_context = context.into();
+                    let inner_context = T::NK::pluck_context(context);
+                    let modifier_key_context = key::ModifierKeyContext {
+                        context: tap_hold_context,
+                        inner_context,
+                    };
+                    let events = pks.handle_event_for(modifier_key_context, keymap_index, key, ev);
                     events.into_events()
                 } else {
                     key::PressedKeyEvents::no_events()
@@ -330,7 +354,13 @@ where
             }
             (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
                 if let Ok(ev) = T::NK::try_event_from(event) {
-                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
+                    let layered_context = context.into();
+                    let inner_context = T::NK::pluck_context(context);
+                    let modifier_key_context = key::ModifierKeyContext {
+                        context: layered_context,
+                        inner_context,
+                    };
+                    let events = pks.handle_event_for(modifier_key_context, keymap_index, key, ev);
                     events.map_events(T::NK::into_event)
                 } else {
                     key::PressedKeyEvents::no_events()
