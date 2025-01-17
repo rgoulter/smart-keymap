@@ -55,10 +55,7 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
             self.0
                 .as_slice()
                 .iter()
-                .map(|scheduled_event| ScheduledEvent {
-                    schedule: scheduled_event.schedule,
-                    event: f(scheduled_event.event),
-                })
+                .map(|sch_ev| sch_ev.map_scheduled_event(f))
                 .collect(),
         )
     }
@@ -330,14 +327,19 @@ impl<T: Copy> ScheduledEvent<T> {
         }
     }
 
+    /// Maps the Event of the ScheduledEvent into a new type.
+    pub fn map_scheduled_event<U>(&self, f: fn(Event<T>) -> Event<U>) -> ScheduledEvent<U> {
+        ScheduledEvent {
+            event: f(self.event),
+            schedule: self.schedule,
+        }
+    }
+
     /// Maps the ScheduledEvent into a new type.
     pub fn into_scheduled_event<U>(&self) -> ScheduledEvent<U>
     where
         Event<U>: From<Event<T>>,
     {
-        ScheduledEvent {
-            event: self.event.into(),
-            schedule: self.schedule,
-        }
+        self.map_scheduled_event(|e| e.into())
     }
 }
