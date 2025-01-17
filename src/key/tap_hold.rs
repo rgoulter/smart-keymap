@@ -21,7 +21,7 @@ pub struct Key<K: key::Key> {
 impl<K: key::Key> key::Key for Key<K> {
     type Context = key::ModifierKeyContext<(), K::Context>;
     type ContextEvent = ();
-    type Event = Event<K::Event>;
+    type Event = key::ModifierKeyEvent<Event, K::Event>;
     type PressedKeyState = PressedKeyState<K>;
 
     fn new_pressed_key(
@@ -32,6 +32,7 @@ impl<K: key::Key> key::Key for Key<K> {
         input::PressedKey<Self, Self::PressedKeyState>,
         key::PressedKeyEvents<Self::Event>,
     ) {
+        let timeout_ev = Event::TapHoldTimeout { keymap_index };
         (
             input::PressedKey {
                 keymap_index,
@@ -40,7 +41,7 @@ impl<K: key::Key> key::Key for Key<K> {
             },
             key::PressedKeyEvents::scheduled_event(
                 200,
-                key::Event::key_event(keymap_index, Event::TapHoldTimeout { keymap_index }),
+                key::Event::key_event(keymap_index, key::ModifierKeyEvent::Modifier(timeout_ev)),
             ),
         )
     }
@@ -59,16 +60,11 @@ pub enum TapHoldState<T> {
 
 /// Events emitted by a tap-hold key.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Event<KE: Copy + Debug + PartialEq> {
+pub enum Event {
     /// Event indicating the key has been held long enough to resolve as hold.
     TapHoldTimeout {
         /// The keymap index of the key the timeout is for.
         keymap_index: u16,
-    },
-    /// Event for (or from) the tap or hold keys of the tap-hold key.
-    Passthrough {
-        /// The event for the nested key.
-        event: KE,
     },
 }
 
@@ -93,7 +89,7 @@ impl<K: key::Key> PressedKeyState<K> {
 }
 
 impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
-    type Event = Event<K::Event>;
+    type Event = key::ModifierKeyEvent<Event, K::Event>;
 
     /// Returns at most 2 events
     fn handle_event_for(
@@ -104,7 +100,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         }: <Key<K> as key::Key>::Context,
         keymap_index: u16,
         key: &Key<K>,
-        event: key::Event<Event<K::Event>>,
+        event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         match event {
             key::Event::Input(input::Event::Press { .. }) => {
@@ -112,7 +108,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.resolve(TapHoldState::Hold(hold_pk));
                 hold_pke.map_events(|sch_ev| {
-                    sch_ev.map_key_event(|ev| Event::Passthrough { event: ev })
+                    sch_ev.map_key_event(|ev| key::ModifierKeyEvent::Inner(ev))
                 })
             }
             key::Event::Input(input::Event::Release { keymap_index: ki }) => {
@@ -122,7 +118,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     let (tap_pk, tap_pke) = key.tap.new_pressed_key(inner_context, keymap_index);
                     self.resolve(TapHoldState::Tap(tap_pk));
                     pke.extend(tap_pke.map_events(|sch_ev| {
-                        sch_ev.map_key_event(|ev| Event::Passthrough { event: ev })
+                        sch_ev.map_key_event(|ev| key::ModifierKeyEvent::Inner(ev))
                     }));
                 }
 
@@ -144,14 +140,14 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 }
             }
             key::Event::Key {
-                key_event: Event::TapHoldTimeout { .. },
+                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout { .. }),
                 ..
             } => {
                 // Key held long enough to resolve as hold.
                 let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.resolve(TapHoldState::Hold(hold_pk));
                 hold_pke.map_events(|sch_ev| {
-                    sch_ev.map_key_event(|ev| Event::Passthrough { event: ev })
+                    sch_ev.map_key_event(|ev| key::ModifierKeyEvent::Inner(ev))
                 })
             }
             _ => key::PressedKeyEvents::no_events(),

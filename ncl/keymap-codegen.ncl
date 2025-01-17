@@ -155,7 +155,7 @@ pub mod init {
     pub type Context = crate::key::composite::Context<CompositeImpl>;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
-    pub type Event = crate::key::composite::Event<CompositeImpl>;
+    pub type Event = crate::key::composite::Event;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = crate::key::composite::Context {

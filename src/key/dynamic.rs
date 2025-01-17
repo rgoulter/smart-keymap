@@ -35,7 +35,7 @@ where
 /// Convenience type alias for [Key] which uses [crate::key::composite::Event] and [crate::key::composite::Context].
 #[allow(type_alias_bounds)]
 pub type CompositeKey<T: key::composite::CompositeTypes = key::composite::CompositeImpl> =
-    dyn Key<key::composite::Event<T>, Context = key::composite::Context<T>>;
+    dyn Key<key::composite::Event, Context = key::composite::Context<T>>;
 
 /// Generic implementation of [Key] for a [key::Key] and some `Ctx`/`Ev`.
 #[derive(Debug)]

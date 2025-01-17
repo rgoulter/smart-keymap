@@ -284,6 +284,15 @@ impl<T> From<input::Event> for Event<T> {
     }
 }
 
+/// Sum type for events which modify other keys.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ModifierKeyEvent<T, U> {
+    /// The modifier's event type.
+    Modifier(T),
+    /// The inner key's event type.
+    Inner(U),
+}
+
 /// Schedule for a [ScheduledEvent].
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]

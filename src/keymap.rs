@@ -133,7 +133,7 @@ pub struct Keymap<
     I: IndexMut<
             usize,
             Output = dyn key::dynamic::Key<
-                key::composite::Event<T>,
+                key::composite::Event,
                 Context = key::composite::Context<T>,
             >,
         > + crate::tuples::KeysReset,
@@ -142,14 +142,14 @@ pub struct Keymap<
     key_definitions: I,
     context: composite::Context<T>,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
-    event_scheduler: EventScheduler<composite::Event<T>>,
+    event_scheduler: EventScheduler<composite::Event>,
 }
 
 impl<
         I: IndexMut<
                 usize,
                 Output = dyn key::dynamic::Key<
-                    key::composite::Event<T>,
+                    key::composite::Event,
                     Context = key::composite::Context<T>,
                 >,
             > + crate::tuples::KeysReset,
@@ -407,7 +407,7 @@ mod tests {
         type L = layered::ArrayImpl<1>;
         type T = composite::CompositeImpl<NK, L>;
         type Ctx = composite::Context<T>;
-        type Ev = composite::Event<T>;
+        type Ev = composite::Event;
         type MK = layered::ModifierKey;
         type LK = layered::LayeredKey<NK, L>;
         let keys: Keys2<MK, LK, Ctx, Ev> = tuples::Keys2::new((
@@ -438,7 +438,7 @@ mod tests {
         type L = layered::ArrayImpl<1>;
         type T = composite::CompositeImpl<NK, L>;
         type Ctx = composite::Context<T>;
-        type Ev = composite::Event<T>;
+        type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -469,7 +469,7 @@ mod tests {
         type L = layered::ArrayImpl<1>;
         type T = composite::CompositeImpl<NK, L>;
         type Ctx = composite::Context<T>;
-        type Ev = composite::Event<T>;
+        type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -502,7 +502,7 @@ mod tests {
         type L = layered::ArrayImpl<1>;
         type T = composite::CompositeImpl<NK, L>;
         type Ctx = composite::Context<T>;
-        type Ev = composite::Event<T>;
+        type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
@@ -535,7 +535,7 @@ mod tests {
         type L = layered::ArrayImpl<1>;
         type T = composite::CompositeImpl<NK, L>;
         type Ctx = composite::Context<T>;
-        type Ev = composite::Event<T>;
+        type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
