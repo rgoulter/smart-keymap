@@ -20,7 +20,7 @@ Feature: TapHold Key
 
   Background:
 
-    Let's use a keymap a tap-hold key, and a simple key.
+    Let's use a keymap a tap-hold key, and a keyboard key.
 
     Given a keymap.ncl:
       """

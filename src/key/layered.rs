@@ -377,7 +377,7 @@ impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
 mod tests {
     use super::*;
 
-    use key::{simple, Context as _, Key, KeyOutput, PressedKey as _};
+    use key::{keyboard, Context as _, Key, KeyOutput, PressedKey as _};
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
@@ -464,13 +464,13 @@ mod tests {
             context: Context::default(),
             inner_context: (),
         };
-        let expected_key = simple::Key(0x04);
+        let expected_key = keyboard::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
             layered: [
-                Some(simple::Key(0x05)),
-                Some(simple::Key(0x06)),
-                Some(simple::Key(0x07)),
+                Some(keyboard::Key(0x05)),
+                Some(keyboard::Key(0x06)),
+                Some(keyboard::Key(0x07)),
             ],
         };
 
@@ -495,13 +495,13 @@ mod tests {
             context: Context::default(),
             inner_context: (),
         };
-        let expected_key = simple::Key(0x04);
+        let expected_key = keyboard::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
             layered: [
-                Some(simple::Key(0x05)),
-                Some(simple::Key(0x06)),
-                Some(simple::Key(0x07)),
+                Some(keyboard::Key(0x05)),
+                Some(keyboard::Key(0x06)),
+                Some(keyboard::Key(0x07)),
             ],
         };
 
@@ -530,7 +530,7 @@ mod tests {
             context: Context::default(),
             inner_context: (),
         };
-        let expected_key = simple::Key(0x04);
+        let expected_key = keyboard::Key(0x04);
         let layered_key = LayeredKey {
             base: expected_key,
             layered: [None, None, None],
@@ -560,12 +560,12 @@ mod tests {
             context: Context::default(),
             inner_context: (),
         };
-        let expected_key = simple::Key(0x09);
+        let expected_key = keyboard::Key(0x09);
         let layered_key = LayeredKey {
-            base: simple::Key(0x04),
+            base: keyboard::Key(0x04),
             layered: [
-                Some(simple::Key(0x05)),
-                Some(simple::Key(0x06)),
+                Some(keyboard::Key(0x05)),
+                Some(keyboard::Key(0x06)),
                 Some(expected_key),
             ],
         };
@@ -594,10 +594,10 @@ mod tests {
             context: Context::default(),
             inner_context: (),
         };
-        let expected_key = simple::Key(0x09);
+        let expected_key = keyboard::Key(0x09);
         let layered_key = LayeredKey {
-            base: simple::Key(0x04),
-            layered: [Some(expected_key), Some(simple::Key(0x06)), None],
+            base: keyboard::Key(0x04),
+            layered: [Some(expected_key), Some(keyboard::Key(0x06)), None],
         };
 
         // Act: activate all layers, press layered key
@@ -616,20 +616,20 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_ron_simple() {
-        use key::simple;
+    fn test_deserialize_ron_keyboard() {
+        use key::keyboard;
 
-        let actual_key: key::simple::Key = ron::from_str("Key(0x04)").unwrap();
-        let expected_key: key::simple::Key = simple::Key(0x04);
+        let actual_key: key::keyboard::Key = ron::from_str("Key(0x04)").unwrap();
+        let expected_key: key::keyboard::Key = keyboard::Key(0x04);
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
-    fn test_deserialize_ron_option_simple() {
-        use key::simple;
+    fn test_deserialize_ron_option_keyboard() {
+        use key::keyboard;
 
-        let actual_key: Option<key::simple::Key> = ron::from_str("Some(Key(0x04))").unwrap();
-        let expected_key: Option<key::simple::Key> = Some(simple::Key(0x04));
+        let actual_key: Option<key::keyboard::Key> = ron::from_str("Some(Key(0x04))").unwrap();
+        let expected_key: Option<key::keyboard::Key> = Some(keyboard::Key(0x04));
         assert_eq!(actual_key, expected_key);
     }
 
@@ -641,66 +641,66 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_ron_array1_option_simple() {
-        let actual: [Option<key::simple::Key>; 1] = ron::from_str("(Some(Key(0x04)))").unwrap();
-        let expected: [Option<key::simple::Key>; 1] = [Some(simple::Key(0x04))];
+    fn test_deserialize_ron_array1_option_keyboard() {
+        let actual: [Option<key::keyboard::Key>; 1] = ron::from_str("(Some(Key(0x04)))").unwrap();
+        let expected: [Option<key::keyboard::Key>; 1] = [Some(keyboard::Key(0x04))];
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn test_deserialize_json_option_simple() {
-        let actual: Option<key::simple::Key> = serde_json::from_str(r#"4"#).unwrap();
-        let expected: Option<key::simple::Key> = Some(simple::Key(0x04));
+    fn test_deserialize_json_option_keyboard() {
+        let actual: Option<key::keyboard::Key> = serde_json::from_str(r#"4"#).unwrap();
+        let expected: Option<key::keyboard::Key> = Some(keyboard::Key(0x04));
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn test_deserialize_json_vec1_option_simple() {
-        let actual: heapless::Vec<Option<key::simple::Key>, 1> =
+    fn test_deserialize_json_vec1_option_keyboard() {
+        let actual: heapless::Vec<Option<key::keyboard::Key>, 1> =
             serde_json::from_str(r#"[4]"#).unwrap();
-        let mut expected: heapless::Vec<Option<key::simple::Key>, 1> = heapless::Vec::new();
-        expected.push(Some(simple::Key(0x04))).unwrap();
+        let mut expected: heapless::Vec<Option<key::keyboard::Key>, 1> = heapless::Vec::new();
+        expected.push(Some(keyboard::Key(0x04))).unwrap();
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn test_deserialize_json_array1_option_simple() {
-        let actual: [Option<key::simple::Key>; 1] = serde_json::from_str("[4]").unwrap();
-        let expected: [Option<key::simple::Key>; 1] = [Some(simple::Key(0x04))];
+    fn test_deserialize_json_array1_option_keyboard() {
+        let actual: [Option<key::keyboard::Key>; 1] = serde_json::from_str("[4]").unwrap();
+        let expected: [Option<key::keyboard::Key>; 1] = [Some(keyboard::Key(0x04))];
         assert_eq!(actual, expected);
     }
 
     #[test]
-    fn test_deserialize_ron_layered_key_simple_0layer() {
+    fn test_deserialize_ron_layered_key_keyboard_0layer() {
         type L = ArrayImpl<0>;
-        let actual_key: LayeredKey<key::simple::Key, L> =
+        let actual_key: LayeredKey<key::keyboard::Key, L> =
             ron::from_str("(base: (0x04), layered: [])").unwrap();
-        let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
-            base: key::simple::Key(0x04),
+        let expected_key: LayeredKey<key::keyboard::Key, L> = LayeredKey {
+            base: key::keyboard::Key(0x04),
             layered: [],
         };
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
-    fn test_deserialize_json_layered_key_simple_0layer() {
+    fn test_deserialize_json_layered_key_keyboard_0layer() {
         type L = ArrayImpl<0>;
-        let actual_key: LayeredKey<key::simple::Key, L> =
+        let actual_key: LayeredKey<key::keyboard::Key, L> =
             serde_json::from_str(r#"{"base": 4, "layered": []}"#).unwrap();
-        let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
-            base: key::simple::Key(0x04),
+        let expected_key: LayeredKey<key::keyboard::Key, L> = LayeredKey {
+            base: key::keyboard::Key(0x04),
             layered: [],
         };
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
-    fn test_deserialize_ron_layered_key_simple_1layer_none() {
+    fn test_deserialize_ron_layered_key_keyboard_1layer_none() {
         type L = ArrayImpl<1>;
-        let actual_key: LayeredKey<key::simple::Key, L> =
+        let actual_key: LayeredKey<key::keyboard::Key, L> =
             ron::from_str("LayeredKey(base: Key(0x04), layered: [None])").unwrap();
-        let expected_key: LayeredKey<key::simple::Key, L> = LayeredKey {
-            base: key::simple::Key(0x04),
+        let expected_key: LayeredKey<key::keyboard::Key, L> = LayeredKey {
+            base: key::keyboard::Key(0x04),
             layered: [None],
         };
         assert_eq!(actual_key, expected_key);

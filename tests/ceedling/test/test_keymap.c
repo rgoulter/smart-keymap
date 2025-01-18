@@ -22,7 +22,7 @@ void test_copy_hid_boot_keyboard_report(void) {
 
 // KEYMAP: [A, A, A, B]
 
-void test_simple_keypress(void) {
+void test_keyboard_keypress(void) {
     uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
     uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -35,7 +35,7 @@ void test_simple_keypress(void) {
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
-void test_simple_keyrelease(void) {
+void test_keyboard_keyrelease(void) {
     uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
     uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
@@ -49,7 +49,7 @@ void test_simple_keyrelease(void) {
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
-void test_simple_keypress_sequence_da_db(void) {
+void test_keyboard_keypress_sequence_da_db(void) {
     // Pressing A, then B, should report "A B"
 
     uint8_t expected_report[8] = {0, 0, KC_A, KC_B, 0, 0, 0, 0};
@@ -64,7 +64,7 @@ void test_simple_keypress_sequence_da_db(void) {
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
-void test_simple_keypress_sequence_db_da(void) {
+void test_keyboard_keypress_sequence_db_da(void) {
     // Pressing B, then A, should report "B A"
 
     uint8_t expected_report[8] = {0, 0, KC_B, KC_A, 0, 0, 0, 0};
@@ -79,7 +79,7 @@ void test_simple_keypress_sequence_db_da(void) {
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
-void test_simple_keypress_sequence_da_db_ub(void) {
+void test_keyboard_keypress_sequence_da_db_ub(void) {
     // Pressing A, then B; then releasing B, should report "A"
 
     uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
@@ -95,7 +95,7 @@ void test_simple_keypress_sequence_da_db_ub(void) {
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
-void test_simple_keypress_sequence_da_db_ua(void) {
+void test_keyboard_keypress_sequence_da_db_ua(void) {
     // Pressing A, then B; then releasing A, should report "B"
 
     uint8_t expected_report[8] = {0, 0, KC_B, 0, 0, 0, 0, 0};

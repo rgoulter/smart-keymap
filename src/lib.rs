@@ -56,13 +56,13 @@ pub mod keymap;
 pub mod tuples;
 
 #[allow(unused)]
-use key::{composite, simple, tap_hold};
+use key::{composite, keyboard, tap_hold};
 
 /// Types and initial data used for constructing [KEYMAP].
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate::key::{composite, layered, simple};
+    use crate::key::{composite, keyboard, layered};
     use crate::tuples::Keys1;
 
     const NUM_LAYERS: usize = 0;
@@ -96,7 +96,8 @@ pub mod init {
     pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
 
     /// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((Key::simple(simple::Key(0x04)),));
+    pub const KEY_DEFINITIONS: KeyDefinitionsType =
+        Keys1::new((Key::keyboard(keyboard::Key(0x04)),));
 }
 
 #[cfg(custom_keymap)]

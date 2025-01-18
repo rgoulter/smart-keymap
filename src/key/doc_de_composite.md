@@ -1,11 +1,11 @@
-# Simple variant
+# Keyboard variant
 
 ## JSON
 
 ```rust
 use smart_keymap::key;
 
-use key::{composite, layered, simple};
+use key::{composite, keyboard, layered};
 
 use composite::DefaultNestableKey;
 
@@ -16,9 +16,9 @@ type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
 let json = r#"
-  { "Simple": { "key": 4 } }
+  { "Keyboard": { "key": 4 } }
 "#;
-let expected_key: Key = composite::Key::Simple { key: simple::Key(0x04) };
+let expected_key: Key = composite::Key::Keyboard { key: keyboard::Key(0x04) };
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -30,7 +30,7 @@ assert_eq!(actual_key, expected_key);
 ```rust
 use smart_keymap::key;
 
-use key::{composite, layered, simple, tap_hold};
+use key::{composite, keyboard, layered, tap_hold};
 
 use composite::DefaultNestableKey;
 
@@ -45,8 +45,8 @@ let json = r#"
 "#;
 let expected_key: Key = composite::Key::TapHold {
   key: tap_hold::Key {
-    tap: simple::Key(4),
-    hold: simple::Key(224),
+    tap: keyboard::Key(4),
+    hold: keyboard::Key(224),
   },
 };
 let actual_key: Key = serde_json::from_str(json).unwrap();
@@ -85,7 +85,7 @@ assert_eq!(actual_key, expected_key);
 ```rust
 use smart_keymap::key;
 
-use key::{composite, layered, simple};
+use key::{composite, keyboard, layered};
 
 use composite::DefaultNestableKey;
 
@@ -107,8 +107,8 @@ let json = r#"
 "#;
 let expected_key: Key = composite::Key::Layered {
   key: layered::LayeredKey {
-    base: simple::Key(0x04),
-    layered: [Some(simple::Key(0x05)), None, Some(simple::Key(0x07))],
+    base: keyboard::Key(0x04),
+    layered: [Some(keyboard::Key(0x05)), None, Some(keyboard::Key(0x07))],
   }
 };
 let actual_key: Key = serde_json::from_str(json).unwrap();

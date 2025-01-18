@@ -1,7 +1,7 @@
 Feature: Key Deserialization
 
-  Example: Deserialize a simple::Key
-    When a simple::Key is deserialized from the RON string
+  Example: Deserialize a keyboard::Key
+    When a keyboard::Key is deserialized from the RON string
       """
       Key(0x04)
       """

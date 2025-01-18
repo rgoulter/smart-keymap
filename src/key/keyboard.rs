@@ -1,10 +1,10 @@
-#![doc = include_str!("doc_de_simple.md")]
+#![doc = include_str!("doc_de_keyboard.md")]
 
 use serde::Deserialize;
 
 use crate::{input, key};
 
-/// A simple key that only has a key code.
+/// A key for HID Keyboard usage codes.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key(pub u8);
 
@@ -40,11 +40,11 @@ impl key::Key for Key {
     }
 }
 
-/// Unit-like struct for event. (crate::key::simple doesn't use events).
+/// Unit-like struct for event. (crate::key::keyboard doesn't use events).
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub struct Event();
 
-/// Unit-like struct for [crate::key::PressedKeyState]. (crate::key::simple pressed keys don't have state).
+/// Unit-like struct for [crate::key::PressedKeyState]. (crate::key::keyboard pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKeyState;
 
@@ -58,7 +58,7 @@ impl From<Event> for () {
 impl key::PressedKeyState<Key> for PressedKeyState {
     type Event = Event;
 
-    /// Simple key never emits events.
+    /// Keyboard key never emits events.
     fn handle_event_for(
         &mut self,
         _context: (),
@@ -69,7 +69,7 @@ impl key::PressedKeyState<Key> for PressedKeyState {
         key::PressedKeyEvents::no_events()
     }
 
-    /// Simple key always has a key_code.
+    /// Keyboard key always has a key_output.
     fn key_output(&self, key: &Key) -> Option<key::KeyOutput> {
         Some(key::KeyOutput::from_key_code(key.key_code()))
     }

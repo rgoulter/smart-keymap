@@ -1,6 +1,6 @@
-Feature: Simple Key
+Feature: HID Keyboard Key
 
-  Example: Keymap with a simple Key
+  Example: Keymap with a keyboard Key
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
