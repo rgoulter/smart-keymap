@@ -67,8 +67,8 @@ impl<
         const M: usize,
     > Key<Ev, M> for DynamicKey<K, Ctx, Ev>
 where
-    K::Event: TryFrom<Ev>,
-    Ev: From<K::Event>,
+    Ev: TryInto<K::Event>,
+    K::Event: Into<Ev>,
     K::Context: From<Ctx>,
 {
     type Context = Ctx;
