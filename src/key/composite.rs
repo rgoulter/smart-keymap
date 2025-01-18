@@ -149,12 +149,11 @@ impl<T: CompositeTypes> key::Key for Key<T> {
                 (pressed_key.into(), events.into_events())
             }
             Key::TapHold { key, .. } => {
-                let taphold_context = context.into();
-                let inner_context = T::NK::pluck_context(context);
-                let modifier_key_context = key::ModifierKeyContext {
-                    context: taphold_context,
-                    inner_context,
-                };
+                let modifier_key_context = key::ModifierKeyContext::from_context(
+                    context,
+                    |c| c.into(),
+                    T::NK::pluck_context,
+                );
                 let (pressed_key, events) = key.new_pressed_key(modifier_key_context, keymap_index);
                 (
                     pressed_key.into(),
@@ -168,12 +167,11 @@ impl<T: CompositeTypes> key::Key for Key<T> {
                 (pressed_key.into(), events.into_events())
             }
             Key::Layered { key, .. } => {
-                let layered_context = context.into();
-                let inner_context = T::NK::pluck_context(context);
-                let modifier_key_context = key::ModifierKeyContext {
-                    context: layered_context,
-                    inner_context,
-                };
+                let modifier_key_context = key::ModifierKeyContext::from_context(
+                    context,
+                    |c| c.into(),
+                    T::NK::pluck_context,
+                );
                 let (pressed_key, events) = key.new_pressed_key(modifier_key_context, keymap_index);
                 (pressed_key.into(), events.map_events(T::NK::into_event))
             }
@@ -323,12 +321,11 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
                 if let Ok(ev) = event.try_into_key_event(|event| {
                     key::ModifierKeyEvent::try_from(event, |e| e.try_into(), T::NK::try_event_from)
                 }) {
-                    let tap_hold_context = context.into();
-                    let inner_context = T::NK::pluck_context(context);
-                    let modifier_key_context = key::ModifierKeyContext {
-                        context: tap_hold_context,
-                        inner_context,
-                    };
+                    let modifier_key_context = key::ModifierKeyContext::from_context(
+                        context,
+                        |c| c.into(),
+                        T::NK::pluck_context,
+                    );
                     let events = pks.handle_event_for(modifier_key_context, keymap_index, key, ev);
                     events.map_events(|mke| mke.map_events(|th_e| th_e.into(), T::NK::into_event))
                 } else {
@@ -345,12 +342,11 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
             }
             (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(T::NK::try_event_from) {
-                    let layered_context = context.into();
-                    let inner_context = T::NK::pluck_context(context);
-                    let modifier_key_context = key::ModifierKeyContext {
-                        context: layered_context,
-                        inner_context,
-                    };
+                    let modifier_key_context = key::ModifierKeyContext::from_context(
+                        context,
+                        |c| c.into(),
+                        T::NK::pluck_context,
+                    );
                     let events = pks.handle_event_for(modifier_key_context, keymap_index, key, ev);
                     events.map_events(T::NK::into_event)
                 } else {
