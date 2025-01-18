@@ -25,8 +25,8 @@ do
 done
 
 pandoc \
-  --standalone=true \
-  --table-of-contents=true \
+  --standalone \
+  --table-of-contents \
   --toc-depth=4 \
   --metadata=title="Smart Keymap Features" \
   ${KEYMAP_FEATURE_MD} \
