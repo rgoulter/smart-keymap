@@ -21,7 +21,7 @@
         },
       # Make key::tap_hold::Key from keys with a "hold" modifier.
       { hold = hold_kc, key_code = tap_kc } => { hold = hold_kc, tap = tap_kc },
-      # Otherwise, keys with just a base key_code are key::simple keys.
+      # Otherwise, keys with just a base key_code are key::keyboard keys.
       { key_code = kc } => kc,
       # Make key::layered::ModifierKey
       { layer_modifier = { hold = hold_layer } } => { Hold = hold_layer },
@@ -39,9 +39,9 @@
       # Make key::tap_hold::Key from keys with a "hold" modifier.
       k@{ hold = hold_kc, key_code = tap_kc } =>
         { TapHold = { key = to_json_serialized_key k } },
-      # Otherwise, keys with just a base key_code are key::simple keys.
+      # Otherwise, keys with just a base key_code are key::keyboard keys.
       k@{ key_code = kc } =>
-        { Simple = { key = to_json_serialized_key k } },
+        { Keyboard = { key = to_json_serialized_key k } },
       # Make key::layered::ModifierKey
       k@{ layer_modifier = { hold = hold_layer } } =>
         { LayerModifier = { key = to_json_serialized_key k } },

@@ -2,10 +2,10 @@ use core::fmt::Debug;
 
 use crate::input;
 
+/// HID Keyboard keys.
+pub mod keyboard;
 /// Layered keys. (Layering functionality).
 pub mod layered;
-/// Simple keys.
-pub mod simple;
 /// Tap-Hold keys.
 pub mod tap_hold;
 

@@ -9,7 +9,7 @@ FEATURES_DIR="${REPOSITORY_DIR}/features"
 KEYMAP_FEATURES_DIR="${FEATURES_DIR}/keymap"
 
 keymap_features=(
-    "simple"
+    "keyboard"
     "tap_hold"
     "layered"
 )

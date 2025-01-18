@@ -290,16 +290,16 @@ mod tests {
     use crate::tuples;
 
     #[test]
-    fn test_keymap_with_simple_key_with_composite_context() {
+    fn test_keymap_with_keyboard_key_with_composite_context() {
         use key::composite::{Context, Event};
-        use key::simple;
+        use key::keyboard;
         use tuples::Keys1;
 
         // Assemble
         const NUM_LAYERS: usize = 0;
         type L = crate::key::layered::ArrayImpl<NUM_LAYERS>;
         type Ctx = Context<L>;
-        let keys: Keys1<simple::Key, Context, Event> = Keys1::new((simple::Key(0x04),));
+        let keys: Keys1<keyboard::Key, Context, Event> = Keys1::new((keyboard::Key(0x04),));
         let context: Ctx = Ctx {
             layer_context: crate::key::layered::Context {
                 active_layers: [false; NUM_LAYERS],
@@ -319,14 +319,15 @@ mod tests {
     #[test]
     fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
         use key::composite::{Context, Event};
-        use key::{simple, tap_hold};
+        use key::{keyboard, tap_hold};
         use tuples::Keys1;
 
         // Assemble
-        let keys: Keys1<tap_hold::Key<simple::Key>, Context, Event> = Keys1::new((tap_hold::Key {
-            tap: simple::Key(0x04),
-            hold: simple::Key(0xE0),
-        },));
+        let keys: Keys1<tap_hold::Key<keyboard::Key>, Context, Event> =
+            Keys1::new((tap_hold::Key {
+                tap: keyboard::Key(0x04),
+                hold: keyboard::Key(0xE0),
+            },));
         let context: Context = Context {
             layer_context: crate::key::layered::Context {
                 active_layers: [false; 0],
@@ -347,7 +348,7 @@ mod tests {
     #[test]
     fn test_keymap_with_tap_hold_key_with_composite_context_key_unaffected_by_prev_key_release() {
         use key::composite::{Context, Event};
-        use key::{simple, tap_hold};
+        use key::{keyboard, tap_hold};
         use tuples::Keys1;
 
         // When a tap-hold key is pressed,
@@ -356,10 +357,11 @@ mod tests {
         //  we do not want the first Timeout to affect the second key press.
 
         // Assemble
-        let keys: Keys1<tap_hold::Key<simple::Key>, Context, Event> = Keys1::new((tap_hold::Key {
-            tap: simple::Key(0x04),
-            hold: simple::Key(0xE0),
-        },));
+        let keys: Keys1<tap_hold::Key<keyboard::Key>, Context, Event> =
+            Keys1::new((tap_hold::Key {
+                tap: keyboard::Key(0x04),
+                hold: keyboard::Key(0xE0),
+            },));
         let context: Context = Context {
             layer_context: crate::key::layered::Context {
                 active_layers: [false; 0],
@@ -391,15 +393,15 @@ mod tests {
     }
 
     #[test]
-    fn test_keymap_with_composite_simple_key() {
-        use key::{composite, simple};
+    fn test_keymap_with_composite_keyboard_key() {
+        use key::{composite, keyboard};
         use tuples::Keys1;
 
         use composite::{Context, Event};
 
         // Assemble
         let keys: Keys1<composite::Key, Context, Event> =
-            Keys1::new((composite::Key::simple(simple::Key(0x04)),));
+            Keys1::new((composite::Key::keyboard(keyboard::Key(0x04)),));
         let context: Context = Context {
             layer_context: crate::key::layered::Context {
                 active_layers: [false; 0],
@@ -418,7 +420,7 @@ mod tests {
 
     #[test]
     fn test_keymap_with_layered_key_press_active_layer_when_layer_mod_held() {
-        use key::{composite, layered, simple};
+        use key::{composite, keyboard, layered};
         use tuples::Keys2;
 
         // Assemble
@@ -431,7 +433,7 @@ mod tests {
         type LK = layered::LayeredKey<NK, L>;
         let keys: Keys2<MK, LK, Ctx, Ev> = tuples::Keys2::new((
             layered::ModifierKey::Hold(0),
-            layered::LayeredKey::new(simple::Key(0x04), [Some(simple::Key(0x05))]),
+            layered::LayeredKey::new(keyboard::Key(0x04), [Some(keyboard::Key(0x05))]),
         ));
         let context: Ctx = Ctx {
             layer_context: layered::Context {
@@ -453,7 +455,7 @@ mod tests {
 
     #[test]
     fn test_keymap_with_composite_layered_key_press_base_key() {
-        use key::{composite, layered, simple};
+        use key::{composite, keyboard, layered};
         use tuples::Keys2;
 
         // Assemble
@@ -467,8 +469,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                simple::Key(0x04),
-                [Some(simple::Key(0x05))],
+                keyboard::Key(0x04),
+                [Some(keyboard::Key(0x05))],
             )),
         ));
         let context: Ctx = Ctx {
@@ -489,7 +491,7 @@ mod tests {
 
     #[test]
     fn test_keymap_with_composite_layered_key_press_active_layer_when_layer_mod_held() {
-        use key::{composite, layered, simple};
+        use key::{composite, keyboard, layered};
         use tuples::Keys2;
 
         // Assemble
@@ -503,8 +505,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                simple::Key(0x04),
-                [Some(simple::Key(0x05))],
+                keyboard::Key(0x04),
+                [Some(keyboard::Key(0x05))],
             )),
         ));
         let context: Ctx = Ctx {
@@ -527,7 +529,7 @@ mod tests {
 
     #[test]
     fn test_keymap_with_composite_layered_key_press_retained_when_layer_mod_released() {
-        use key::{composite, layered, simple};
+        use key::{composite, keyboard, layered};
         use tuples::Keys2;
 
         // Assemble
@@ -541,8 +543,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                simple::Key(0x04),
-                [Some(simple::Key(0x05))],
+                keyboard::Key(0x04),
+                [Some(keyboard::Key(0x05))],
             )),
         ));
         let context: Ctx = Ctx {
@@ -565,7 +567,7 @@ mod tests {
 
     #[test]
     fn test_keymap_with_composite_layered_key_uses_base_when_pressed_after_layer_mod_released() {
-        use key::{composite, layered, simple};
+        use key::{composite, keyboard, layered};
         use tuples::Keys2;
 
         // Assemble
@@ -579,8 +581,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                simple::Key(0x04),
-                [Some(simple::Key(0x05))],
+                keyboard::Key(0x04),
+                [Some(keyboard::Key(0x05))],
             )),
         ));
         let context: Ctx = Ctx {

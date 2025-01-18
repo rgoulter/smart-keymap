@@ -1,7 +1,7 @@
 # JSON
 
 ```rust
-use smart_keymap::key::simple::Key;
+use smart_keymap::key::keyboard::Key;
 let json = r#"
   4
 "#;

@@ -20,10 +20,10 @@ assert_eq!(actual_key, expected_key);
 ```rust
 use smart_keymap::key;
 
-use key::{composite, layered, simple};
+use key::{composite, keyboard, layered};
 
 type L = layered::ArrayImpl<3>;
-type Key = layered::LayeredKey<simple::Key, L>;
+type Key = layered::LayeredKey<keyboard::Key, L>;
 
 let json = r#"
   {
@@ -32,8 +32,8 @@ let json = r#"
   }
 "#;
 let expected_key: Key = layered::LayeredKey {
-  base: simple::Key(0x04),
-  layered: [Some(simple::Key(0x05)), None, Some(simple::Key(0x07))],
+  base: keyboard::Key(0x04),
+  layered: [Some(keyboard::Key(0x05)), None, Some(keyboard::Key(0x07))],
 };
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);

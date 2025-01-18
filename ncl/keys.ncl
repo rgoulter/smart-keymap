@@ -1,5 +1,5 @@
 let key_extensions = {
-  simple
+  keyboard
     = fun K =>
       (import "hid-usage-keyboard.ncl")
       |> std.record.map_values (fun kc => { key_code = kc }),
@@ -41,7 +41,7 @@ std.array.fold_left
   extend_keys
   {}
   [
-    key_extensions.simple,
+    key_extensions.keyboard,
     key_extensions.tap_hold,
     key_extensions.layered,
   ]

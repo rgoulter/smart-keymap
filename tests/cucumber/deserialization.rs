@@ -8,11 +8,11 @@ mod common;
 use common::Deserializer;
 
 #[derive(Debug, Default, cucumber::Parameter)]
-#[param(name = "key_type", regex = "(?:composite|simple|tap_hold)::Key")]
+#[param(name = "key_type", regex = "(?:composite|keyboard|tap_hold)::Key")]
 enum KeyType {
     Composite,
     #[default]
-    Simple,
+    Keyboard,
     TapHold,
 }
 
@@ -22,7 +22,7 @@ impl std::str::FromStr for KeyType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "composite::Key" => Self::Composite,
-            "simple::Key" => Self::Simple,
+            "keyboard::Key" => Self::Keyboard,
             "tap_hold::Key" => Self::TapHold,
             invalid => return Err(format!("Invalid `KeyType`: {invalid}")),
         })
@@ -40,7 +40,7 @@ impl Default for KeymapWorld {
     fn default() -> Self {
         KeymapWorld {
             input_deserializer: Deserializer::JSON,
-            input_key_type: KeyType::Simple,
+            input_key_type: KeyType::Keyboard,
             input_string: String::new(),
         }
     }
@@ -71,22 +71,22 @@ fn check_value(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer)
                 .unwrap();
             assert_eq!(deserialized_lhs, deserialized_rhs);
         }
-        KeyType::Simple => {
-            let deserialized_lhs: key::simple::Key = world
+        KeyType::Keyboard => {
+            let deserialized_lhs: key::keyboard::Key = world
                 .input_deserializer
                 .from_str(&world.input_string)
                 .unwrap();
-            let deserialized_rhs: key::simple::Key = deserializer
+            let deserialized_rhs: key::keyboard::Key = deserializer
                 .from_str(step.docstring.as_ref().unwrap())
                 .unwrap();
             assert_eq!(deserialized_lhs, deserialized_rhs);
         }
         KeyType::TapHold => {
-            let deserialized_lhs: key::tap_hold::Key<key::simple::Key> = world
+            let deserialized_lhs: key::tap_hold::Key<key::keyboard::Key> = world
                 .input_deserializer
                 .from_str(&world.input_string)
                 .unwrap();
-            let deserialized_rhs: key::tap_hold::Key<key::simple::Key> = deserializer
+            let deserialized_rhs: key::tap_hold::Key<key::keyboard::Key> = deserializer
                 .from_str(step.docstring.as_ref().unwrap())
                 .unwrap();
             assert_eq!(deserialized_lhs, deserialized_rhs);

@@ -27,7 +27,7 @@
       # ```
       # JSON serialization of key::layered::Layered has variants: { base, layered }
       is = fun k =>
-        let is_nested_key = simple.is in
+        let is_nested_key = keyboard.is in
         std.is_record k
         && std.record.has_field "base" k
         && is_nested_key (std.record.get "base" k)
@@ -42,16 +42,16 @@
       # c.f. doc_de_layered.md.
       # ```
       #   type L = layered::ArrayImpl<3>;
-      #   type Key = layered::LayeredKey<simple::Key, L>;
+      #   type Key = layered::LayeredKey<keyboard::Key, L>;
       # ```
       key_type = fun { layered, .. } =>
-        let nested_key_type = "crate::key::simple::Key" in
+        let nested_key_type = "crate::key::keyboard::Key" in
         let num_layers = layered |> std.array.length |> std.to_string in
         let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
         "crate::key::layered::LayeredKey<%{nested_key_type}, %{layer_impl}>",
 
       rust_expr = fun { base, layered } =>
-        let nested_key_expr = simple.rust_expr in
+        let nested_key_expr = keyboard.rust_expr in
         let base_expr = nested_key_expr base in
         let layered_exprs = layered
           |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nested_key_expr lk})")
@@ -61,14 +61,14 @@
         "%,
     },
 
-  simple
-    | doc "Generates type declaration and value expression for smart_keymap::key::simple::Key."
+  keyboard
+    | doc "Generates type declaration and value expression for smart_keymap::key::keyboard::Key."
     = {
-      # c.f. doc_de_simple.md.
-      # JSON serialization of key::simple::Key is just a number.
+      # c.f. doc_de_keyboard.md.
+      # JSON serialization of key::keyboard::Key is just a number.
       is = fun k => std.is_number k,
-      key_type = "crate::key::simple::Key",
-      rust_expr = fun key => "crate::key::simple::Key(%{std.to_string key})",
+      key_type = "crate::key::keyboard::Key",
+      rust_expr = fun key => "crate::key::keyboard::Key(%{std.to_string key})",
     },
 
   tap_hold
@@ -84,12 +84,12 @@
           std.record.has_field "hold" k &&
           std.is_number (std.record.get "hold" k),
       # kludge: support tap_hold::Key<K> in Rust first, then impl. NCL support later.
-      key_type = "crate::key::tap_hold::Key<crate::key::simple::Key>",
+      key_type = "crate::key::tap_hold::Key<crate::key::keyboard::Key>",
       rust_expr = fun { hold, tap, } =>
         m%"
         crate::key::tap_hold::Key {
-          hold: crate::key::simple::Key(%{std.to_string hold}),
-          tap: crate::key::simple::Key(%{std.to_string tap}),
+          hold: crate::key::keyboard::Key(%{std.to_string hold}),
+          tap: crate::key::keyboard::Key(%{std.to_string tap}),
         }
         "%,
     },
@@ -97,9 +97,9 @@
   key_type_of_key
     | doc "The type declaration for the key."
     = match {
+      key if keyboard.is key => keyboard.key_type,
       key if layer_modifier.is key => layer_modifier.key_type,
       key if layered.is key => layered.key_type key,
-      key if simple.is key => simple.key_type,
       key if tap_hold.is key => tap_hold.key_type,
       _ => "unknown_key_type"
     },
@@ -107,9 +107,9 @@
   rust_expr_of_key
     | doc "The Rust expression for the key."
     = match {
+      key if keyboard.is key => keyboard.rust_expr key,
       key if layer_modifier.is key => layer_modifier.rust_expr key,
       key if layered.is key => layered.rust_expr key,
-      key if simple.is key => simple.rust_expr key,
       key if tap_hold.is key => tap_hold.rust_expr key,
       _ => "unknown_key_type"
     },
