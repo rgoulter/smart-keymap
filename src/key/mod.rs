@@ -1,5 +1,7 @@
 use core::fmt::Debug;
 
+use serde::Deserialize;
+
 use crate::input;
 
 /// HID Keyboard keys.
@@ -160,6 +162,35 @@ impl<MC, IC> ModifierKeyContext<MC, IC> {
         ModifierKeyContext {
             context: f(fc),
             inner_context: g(fc),
+        }
+    }
+}
+
+/// Bool flags for each of the modifier keys (left ctrl, etc.).
+#[derive(Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+pub struct KeyboardModifiers {
+    left_ctrl: bool,
+    left_shift: bool,
+    left_alt: bool,
+    left_gui: bool,
+    right_ctrl: bool,
+    right_shift: bool,
+    right_alt: bool,
+    right_gui: bool,
+}
+
+impl KeyboardModifiers {
+    /// Constructs with modifiers defaulting to false.
+    pub const fn new() -> Self {
+        KeyboardModifiers {
+            left_ctrl: false,
+            left_shift: false,
+            left_alt: false,
+            left_gui: false,
+            right_ctrl: false,
+            right_shift: false,
+            right_alt: false,
+            right_gui: false,
         }
     }
 }
