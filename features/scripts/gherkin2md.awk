@@ -52,7 +52,7 @@ function strip_indent(str, indent) {
 
 # Background becomes `####` heading
 /^[[:space:]]*Background:/ {
-    print "\n#### Background"
+    print "\n#### Demonstrative Keymap"
     next
 }
 
