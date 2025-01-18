@@ -66,9 +66,12 @@
     = {
       # c.f. doc_de_keyboard.md.
       # JSON serialization of key::keyboard::Key is just a number.
-      is = fun k => std.is_number k,
+      is = fun k =>
+          std.is_record k &&
+          std.record.has_field "key_code" k &&
+          std.is_number (std.record.get "key_code" k),
       key_type = "crate::key::keyboard::Key",
-      rust_expr = fun key => "crate::key::keyboard::Key(%{std.to_string key})",
+      rust_expr = fun { key_code } => "crate::key::keyboard::Key::new(%{std.to_string key_code})",
     },
 
   tap_hold
@@ -78,18 +81,21 @@
       # JSON serialization of key::tap_hold::Key is { tap: number, hold: number }
       is =
         fun k =>
+          let is_nested_key = keyboard.is in
           std.is_record k &&
           std.record.has_field "tap" k &&
-          std.is_number (std.record.get "tap" k) &&
+          is_nested_key (std.record.get "tap" k) &&
           std.record.has_field "hold" k &&
-          std.is_number (std.record.get "hold" k),
+          is_nested_key (std.record.get "hold" k),
       # kludge: support tap_hold::Key<K> in Rust first, then impl. NCL support later.
       key_type = "crate::key::tap_hold::Key<crate::key::keyboard::Key>",
       rust_expr = fun { hold, tap, } =>
+        let hold_expr = rust_expr_of_key hold in
+        let tap_expr = rust_expr_of_key tap in
         m%"
         crate::key::tap_hold::Key {
-          hold: crate::key::keyboard::Key(%{std.to_string hold}),
-          tap: crate::key::keyboard::Key(%{std.to_string tap}),
+          hold: %{hold_expr},
+          tap: %{tap_expr},
         }
         "%,
     },

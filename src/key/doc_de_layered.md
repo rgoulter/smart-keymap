@@ -27,13 +27,13 @@ type Key = layered::LayeredKey<keyboard::Key, L>;
 
 let json = r#"
   {
-    "base": 4,
-    "layered": [5, null, 7]
+    "base": { "key_code": 4 },
+    "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
   }
 "#;
 let expected_key: Key = layered::LayeredKey {
-  base: keyboard::Key(0x04),
-  layered: [Some(keyboard::Key(0x05)), None, Some(keyboard::Key(0x07))],
+  base: keyboard::Key::new(0x04),
+  layered: [Some(keyboard::Key::new(0x05)), None, Some(keyboard::Key::new(0x07))],
 };
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);

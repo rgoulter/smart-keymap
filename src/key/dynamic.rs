@@ -133,7 +133,7 @@ mod tests {
     fn test_composite_dynamic_keyboard_key_has_no_key_code_when_released() {
         // Assemble
         let dyn_key: &mut dyn Key<composite::Event, Context = composite::Context> =
-            &mut DynamicKey::new(keyboard::Key(0x04));
+            &mut DynamicKey::new(keyboard::Key::new(0x04));
         let context: composite::Context = composite::Context {
             layer_context: layered::Context {
                 active_layers: [false; 0],

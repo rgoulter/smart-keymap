@@ -97,7 +97,7 @@ pub mod init {
 
     /// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: KeyDefinitionsType =
-        Keys1::new((Key::keyboard(keyboard::Key(0x04)),));
+        Keys1::new((Key::keyboard(keyboard::Key::new(0x04)),));
 }
 
 #[cfg(custom_keymap)]

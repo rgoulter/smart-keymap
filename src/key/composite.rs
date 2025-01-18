@@ -519,8 +519,8 @@ mod tests {
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
         ];
         let mut context: Ctx = Ctx {
@@ -562,8 +562,8 @@ mod tests {
         let keys: [K; 2] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
         ];
         let mut context: Ctx = Ctx {
@@ -605,10 +605,10 @@ mod tests {
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
-            K::keyboard(keyboard::Key(0x06)),
+            K::keyboard(keyboard::Key::new(0x06)),
         ];
         let context: Ctx = Ctx {
             layer_context: layered::Context {
@@ -640,10 +640,10 @@ mod tests {
         let keys: [K; 3] = [
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
-            K::keyboard(keyboard::Key(0x06)),
+            K::keyboard(keyboard::Key::new(0x06)),
         ];
         let context: Ctx = Ctx {
             layer_context: layered::Context {

@@ -16,9 +16,9 @@ type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
 let json = r#"
-  { "Keyboard": { "key": 4 } }
+  { "Keyboard": { "key": { "key_code": 4 } } }
 "#;
-let expected_key: Key = composite::Key::Keyboard { key: keyboard::Key(0x04) };
+let expected_key: Key = composite::Key::Keyboard { key: keyboard::Key::new(0x04) };
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -41,12 +41,12 @@ type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
 let json = r#"
-  { "TapHold": { "key": { "hold": 224, "tap": 4 } } }
+  { "TapHold": { "key": { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } } } }
 "#;
 let expected_key: Key = composite::Key::TapHold {
   key: tap_hold::Key {
-    tap: keyboard::Key(4),
-    hold: keyboard::Key(224),
+    tap: keyboard::Key::new(4),
+    hold: keyboard::Key::new(224),
   },
 };
 let actual_key: Key = serde_json::from_str(json).unwrap();
@@ -99,16 +99,16 @@ let json = r#"
   {
     "Layered": {
       "key": {
-        "base": 4,
-        "layered": [5, null, 7]
+        "base": { "key_code": 4 },
+        "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
       }
     }
   }
 "#;
 let expected_key: Key = composite::Key::Layered {
   key: layered::LayeredKey {
-    base: keyboard::Key(0x04),
-    layered: [Some(keyboard::Key(0x05)), None, Some(keyboard::Key(0x07))],
+    base: keyboard::Key::new(0x04),
+    layered: [Some(keyboard::Key::new(0x05)), None, Some(keyboard::Key::new(0x07))],
   }
 };
 let actual_key: Key = serde_json::from_str(json).unwrap();
