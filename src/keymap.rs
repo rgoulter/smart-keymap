@@ -330,7 +330,7 @@ mod tests {
         const NUM_LAYERS: usize = 0;
         type L = crate::key::layered::ArrayImpl<NUM_LAYERS>;
         type Ctx = Context<L>;
-        let keys: Keys1<keyboard::Key, Context, Event> = Keys1::new((keyboard::Key(0x04),));
+        let keys: Keys1<keyboard::Key, Context, Event> = Keys1::new((keyboard::Key::new(0x04),));
         let context: Ctx = Ctx {
             layer_context: crate::key::layered::Context {
                 active_layers: [false; NUM_LAYERS],
@@ -356,8 +356,8 @@ mod tests {
         // Assemble
         let keys: Keys1<tap_hold::Key<keyboard::Key>, Context, Event> =
             Keys1::new((tap_hold::Key {
-                tap: keyboard::Key(0x04),
-                hold: keyboard::Key(0xE0),
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
             },));
         let context: Context = Context {
             layer_context: crate::key::layered::Context {
@@ -390,8 +390,8 @@ mod tests {
         // Assemble
         let keys: Keys1<tap_hold::Key<keyboard::Key>, Context, Event> =
             Keys1::new((tap_hold::Key {
-                tap: keyboard::Key(0x04),
-                hold: keyboard::Key(0xE0),
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
             },));
         let context: Context = Context {
             layer_context: crate::key::layered::Context {
@@ -432,7 +432,7 @@ mod tests {
 
         // Assemble
         let keys: Keys1<composite::Key, Context, Event> =
-            Keys1::new((composite::Key::keyboard(keyboard::Key(0x04)),));
+            Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
         let context: Context = Context {
             layer_context: crate::key::layered::Context {
                 active_layers: [false; 0],
@@ -464,7 +464,7 @@ mod tests {
         type LK = layered::LayeredKey<NK, L>;
         let keys: Keys2<MK, LK, Ctx, Ev> = tuples::Keys2::new((
             layered::ModifierKey::Hold(0),
-            layered::LayeredKey::new(keyboard::Key(0x04), [Some(keyboard::Key(0x05))]),
+            layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
         ));
         let context: Ctx = Ctx {
             layer_context: layered::Context {
@@ -500,8 +500,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
         ));
         let context: Ctx = Ctx {
@@ -536,8 +536,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
         ));
         let context: Ctx = Ctx {
@@ -574,8 +574,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
         ));
         let context: Ctx = Ctx {
@@ -612,8 +612,8 @@ mod tests {
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key(0x04),
-                [Some(keyboard::Key(0x05))],
+                keyboard::Key::new(0x04),
+                [Some(keyboard::Key::new(0x05))],
             )),
         ));
         let context: Ctx = Ctx {

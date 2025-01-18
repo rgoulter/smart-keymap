@@ -6,12 +6,19 @@ use crate::{input, key};
 
 /// A key for HID Keyboard usage codes.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key(pub u8);
+pub struct Key {
+    key_code: u8,
+}
 
 impl Key {
+    /// Constructs a key with the given key_code.
+    pub const fn new(key_code: u8) -> Self {
+        Key { key_code }
+    }
+
     /// Gets the key code from [Key].
     pub fn key_code(&self) -> u8 {
-        self.0
+        self.key_code
     }
 }
 

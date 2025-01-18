@@ -16,13 +16,17 @@
       # Make key::layered::LayeredKey
       { key_code = base_key, layered = layered_keys } =>
         {
-          base = base_key,
+          base = { key_code = base_key },
           layered = std.array.map to_json_serialized_key layered_keys
         },
       # Make key::tap_hold::Key from keys with a "hold" modifier.
-      { hold = hold_kc, key_code = tap_kc } => { hold = hold_kc, tap = tap_kc },
+      { hold = hold_kc, key_code = tap_kc } =>
+        {
+          hold = { key_code = hold_kc },
+          tap = { key_code = tap_kc },
+        },
       # Otherwise, keys with just a base key_code are key::keyboard keys.
-      { key_code = kc } => kc,
+      { key_code = kc } => { key_code = kc },
       # Make key::layered::ModifierKey
       { layer_modifier = { hold = hold_layer } } => { Hold = hold_layer },
       # Null values (None) stay null

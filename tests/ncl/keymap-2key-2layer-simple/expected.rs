@@ -41,8 +41,8 @@ pub mod init {
     pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys2::new((
         crate::key::layered::ModifierKey::Hold(0),
         crate::key::layered::LayeredKey {
-            base: crate::key::keyboard::Key(4),
-            layered: [Some(crate::key::keyboard::Key(5))],
+            base: crate::key::keyboard::Key::new(4),
+            layered: [Some(crate::key::keyboard::Key::new(5))],
         },
     ));
 }
