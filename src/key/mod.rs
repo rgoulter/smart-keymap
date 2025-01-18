@@ -150,6 +150,20 @@ pub struct ModifierKeyContext<Ctx, NCtx> {
     pub inner_context: NCtx,
 }
 
+impl<MC, IC> ModifierKeyContext<MC, IC> {
+    /// Constructs a ModifierKeyContext from the given context, using the provided functions for context/inner_context.
+    pub fn from_context<FC: Copy>(
+        fc: FC,
+        f: fn(FC) -> MC,
+        g: fn(FC) -> IC,
+    ) -> ModifierKeyContext<MC, IC> {
+        ModifierKeyContext {
+            context: f(fc),
+            inner_context: g(fc),
+        }
+    }
+}
+
 /// Struct for the output from [PressedKey].
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub struct KeyOutput(u8);
