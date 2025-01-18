@@ -1,9 +1,23 @@
 Feature: Layers
 
+  Layers are a basic part of smart keyboard firmware.
+
+  Layers are like the Fn key on laptop keyboards,
+   where holding the Fn key allows alternate functionality
+   for other keys on the keyboard.
+
+  For examples of this key in other smart keyboard firmware, see e.g.:
+
+  - [QMK's layers feature](https://docs.qmk.fm/feature_layers),
+
+  - [ZMK's layers keymap behaviors](https://zmk.dev/docs/keymaps/behaviors/layers)
+
   Background:
 
     Layers can be used by setting using the `layers` property
      of a keymap.ncl.
+
+    Here, a keymap.ncl file with 2 keys, and 2 layers (base layer + 1 layer).
 
     Given a keymap.ncl:
       """
@@ -11,29 +25,36 @@ Feature: Layers
       {
         layers = [
           [
-            { layer_modifier = { hold = 0 } }, K.A,
+            { layer_modifier = { hold = 0 } },
+            K.A,
           ],
           [
-            K.TTTT, K.B,
+            K.TTTT,
+            K.B,
           ],
         ],
       }
       """
 
-  Example: acts base key when no layer active
+  Example: acts as the base key when no layer is active
+
+    If no layers are active, the key will be the key
+     on the base layer.
+
     When the keymap registers the following input
       """
       [
         Press(keymap_index: 1),
       ]
       """
-    Then the HID keyboard report from the next tick() should equal
+    Then the HID keyboard report should equal
       """
       let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.A] }
       """
 
-  Example: acts the key on that layer when layer modifier held
+  Example: acts as the key on that layer when its layer modifier held
+
     When the keymap registers the following input
       """
       [
@@ -41,7 +62,7 @@ Feature: Layers
         Press(keymap_index: 1),
       ]
       """
-    Then the HID keyboard report from the next tick() should equal
+    Then the HID keyboard report should equal
       """
       let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.B] }
