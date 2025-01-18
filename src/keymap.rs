@@ -290,6 +290,37 @@ mod tests {
     use crate::tuples;
 
     #[test]
+    fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {
+        // Assemble - include modifier key left ctrl
+        let mut input: heapless::Vec<u8, 16> = heapless::Vec::new();
+        input.push(0x04).unwrap();
+        input.push(0xE0).unwrap();
+
+        // Act - construct the output
+        let keymap_output = KeymapOutput::new(input);
+        let pressed_key_codes = keymap_output.pressed_key_codes();
+
+        // Assert - check the 0xE0 gets included as a key code.
+        assert!(pressed_key_codes.contains(&0xE0))
+    }
+
+    #[test]
+    fn test_keymap_output_as_hid_boot_keyboard_report_gathers_modifiers() {
+        // Assemble - include modifier key left ctrl
+        let mut input: heapless::Vec<u8, 16> = heapless::Vec::new();
+        input.push(0x04).unwrap();
+        input.push(0xE0).unwrap();
+
+        // Act - construct the output
+        let keymap_output = KeymapOutput::new(input);
+        let actual_report: [u8; 8] = keymap_output.as_hid_boot_keyboard_report();
+
+        // Assert - check the 0xE0 gets considered as a "modifier".
+        let expected_report: [u8; 8] = [0x01, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
+
+    #[test]
     fn test_keymap_with_keyboard_key_with_composite_context() {
         use key::composite::{Context, Event};
         use key::keyboard;
