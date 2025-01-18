@@ -8,12 +8,18 @@ use crate::{input, key};
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key {
     key_code: u8,
+    #[serde(default)]
+    modifiers: key::KeyboardModifiers,
 }
 
 impl Key {
     /// Constructs a key with the given key_code.
     pub const fn new(key_code: u8) -> Self {
-        Key { key_code }
+        let modifiers = key::KeyboardModifiers::new();
+        Key {
+            key_code,
+            modifiers,
+        }
     }
 
     /// Gets the key code from [Key].
