@@ -32,6 +32,12 @@ jobs:
           mkdir -p _site
           cargo doc --no-deps
           cp -r target/doc _site/doc
+      - name: features.html
+        run: |
+          sudo apt update
+          sudo apt install -y gawk pandoc
+          ./features/scripts/generate-doc.sh
+          cp features/generated-features.html _site/features.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
       - name: Deploy to GitHub Pages
