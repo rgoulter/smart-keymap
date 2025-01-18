@@ -1,39 +1,47 @@
-let hid_codes = import "hid-usage-keyboard.ncl" in
-hid_codes
-|> std.record.map_values (fun kc => { key_code = kc })
+let key_extensions = {
+  simple
+    = fun K =>
+      (import "hid-usage-keyboard.ncl")
+      |> std.record.map_values (fun kc => { key_code = kc }),
 
-& {
-  hold
-  | doc "creates a hold key modifier"
-  # TapHold's hold is just the key_code, not a nested key.
-  = fun { key_code, .. } => { hold = key_code },
+  tap_hold
+    = fun K => {
+      hold
+      | doc "creates a hold key modifier"
+      # TapHold's hold is just the key_code, not a nested key.
+      = fun { key_code, .. } => { hold = key_code },
 
-  LeftCtrl,
-  LeftShift,
-  LeftAlt,
-  LeftGUI,
-  RightCtrl,
-  RightShift,
-  RightAlt,
-  RightGUI,
-
-  H_LCtrl = hold LeftCtrl,
-  H_LShift = hold LeftShift,
-  H_LAlt = hold LeftAlt,
-  H_LGUI = hold LeftGUI,
-  H_RCtrl = hold RightCtrl,
-  H_RShift = hold RightShift,
-  H_RAlt = hold RightAlt,
-  H_RGUI = hold RightGUI,
-}
-
-& {
-  layer_mod = {
-    hold = fun layer_num => {
-      layer_modifier = { hold = layer_num }
+      H_LCtrl = hold K.LeftCtrl,
+      H_LShift = hold K.LeftShift,
+      H_LAlt = hold K.LeftAlt,
+      H_LGUI = hold K.LeftGUI,
+      H_RCtrl = hold K.RightCtrl,
+      H_RShift = hold K.RightShift,
+      H_RAlt = hold K.RightAlt,
+      H_RGUI = hold K.RightGUI,
     },
-  },
 
-  # Layer Transparency
-  TTTT = null,
-}
+  layered
+    = fun K => {
+      layer_mod = {
+        hold = fun layer_num => {
+          layer_modifier = { hold = layer_num }
+        },
+      },
+
+      # Layer Transparency
+      TTTT = null,
+    },
+} in
+
+let extend_keys = fun K key_module =>
+  K & key_module K in
+
+std.array.fold_left
+  extend_keys
+  {}
+  [
+    key_extensions.simple,
+    key_extensions.tap_hold,
+    key_extensions.layered,
+  ]
