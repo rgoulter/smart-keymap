@@ -2,6 +2,14 @@
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
+
+  checks.layer_modifier_is = {
+    # Use a serialized value to check the "is" predicate.
+    check_serialized_is =
+      let serialized_value = { Hold = 0 } in
+      layer_modifier.is serialized_value
+  },
+
   layer_modifier
     | doc "Generates type declaration and value expression for smart_keymap::key::layered::ModifierKey."
     = {
@@ -13,6 +21,19 @@
       key_type = "crate::key::layered::ModifierKey",
       rust_expr = fun { Hold = layer_index } => "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
     },
+
+  checks.layered_is = {
+    # Use a serialized value to check the "is" predicate.
+    check_serialized_base_keyboard_layered_keyboard_is =
+      let serialized_value = {
+        base = { key_code = 0x04 },
+        layered = [
+          null,
+          { key_code = 0x06 },
+        ]
+      } in
+      layered.is serialized_value
+  },
 
   layered
     | doc "Generates type declaration and value expression for smart_keymap::key::layered::LayeredKey."
@@ -61,6 +82,13 @@
         "%,
     },
 
+  checks.keyboard_is = {
+    # Use a serialized value to check the "is" predicate.
+    check_serialized_is =
+      let serialized_value = { key_code = 0x04 } in
+      keyboard.is serialized_value
+  },
+
   keyboard
     | doc "Generates type declaration and value expression for smart_keymap::key::keyboard::Key."
     = {
@@ -73,6 +101,16 @@
       key_type = "crate::key::keyboard::Key",
       rust_expr = fun { key_code } => "crate::key::keyboard::Key::new(%{std.to_string key_code})",
     },
+
+  checks.tap_hold_is = {
+    # Use a serialized value to check the "is" predicate.
+    check_serialized_tap_keyboard_hold_keyboard_is =
+      let serialized_value = {
+        hold = { key_code = 0xE0 },
+        tap = { key_code = 0x04 },
+      } in
+      tap_hold.is serialized_value
+  },
 
   tap_hold
     | doc "Generates type declaration and value expression for smart_keymap::key::tap_hold::Key."
