@@ -130,7 +130,9 @@ pub mod init {
         crate::key::keyboard::Key::new(17),
         crate::key::keyboard::Key::new(22),
         crate::key::keyboard::Key::new(40),
-        crate::key::keyboard::Key::new(225),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::LEFT_SHIFT.union(&crate::key::KeyboardModifiers::new()),
+        ),
         crate::key::keyboard::Key::new(51),
         crate::key::keyboard::Key::new(20),
         crate::key::keyboard::Key::new(13),
@@ -141,18 +143,32 @@ pub mod init {
         crate::key::keyboard::Key::new(26),
         crate::key::keyboard::Key::new(25),
         crate::key::keyboard::Key::new(29),
-        crate::key::keyboard::Key::new(229),
-        crate::key::keyboard::Key::new(224),
-        crate::key::keyboard::Key::new(227),
-        crate::key::keyboard::Key::new(226),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&crate::key::KeyboardModifiers::new()),
+        ),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::LEFT_CTRL.union(&crate::key::KeyboardModifiers::new()),
+        ),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::LEFT_GUI.union(&crate::key::KeyboardModifiers::new()),
+        ),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::LEFT_ALT.union(&crate::key::KeyboardModifiers::new()),
+        ),
         crate::key::keyboard::Key::new(43),
         crate::key::keyboard::Key::new(41),
         crate::key::keyboard::Key::new(44),
         crate::key::keyboard::Key::new(42),
         crate::key::keyboard::Key::new(40),
         crate::key::keyboard::Key::new(76),
-        crate::key::keyboard::Key::new(230),
-        crate::key::keyboard::Key::new(231),
-        crate::key::keyboard::Key::new(228),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::RIGHT_ALT.union(&crate::key::KeyboardModifiers::new()),
+        ),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::RIGHT_GUI.union(&crate::key::KeyboardModifiers::new()),
+        ),
+        crate::key::keyboard::Key::from_modifiers(
+            crate::key::KeyboardModifiers::RIGHT_CTRL.union(&crate::key::KeyboardModifiers::new()),
+        ),
     ));
 }
