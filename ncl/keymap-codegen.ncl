@@ -2,6 +2,25 @@
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
+  checks.keyboard_is = {
+    # Use a serialized value to check the "is" predicate.
+    check_serialized_is =
+      let serialized_value = { key_code = 0x04 } in
+      keyboard.is serialized_value
+  },
+
+  keyboard
+    | doc "Generates type declaration and value expression for smart_keymap::key::keyboard::Key."
+    = {
+      # c.f. doc_de_keyboard.md.
+      # JSON serialization of key::keyboard::Key is just a number.
+      is = fun k =>
+          std.is_record k &&
+          std.record.has_field "key_code" k &&
+          std.is_number (std.record.get "key_code" k),
+      key_type = "crate::key::keyboard::Key",
+      rust_expr = fun { key_code } => "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+    },
 
   checks.layer_modifier_is = {
     # Use a serialized value to check the "is" predicate.
@@ -80,26 +99,6 @@
         m%"
           crate::key::layered::LayeredKey { base: %{base_expr}, layered: [%{layered_exprs}] }
         "%,
-    },
-
-  checks.keyboard_is = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_is =
-      let serialized_value = { key_code = 0x04 } in
-      keyboard.is serialized_value
-  },
-
-  keyboard
-    | doc "Generates type declaration and value expression for smart_keymap::key::keyboard::Key."
-    = {
-      # c.f. doc_de_keyboard.md.
-      # JSON serialization of key::keyboard::Key is just a number.
-      is = fun k =>
-          std.is_record k &&
-          std.record.has_field "key_code" k &&
-          std.is_number (std.record.get "key_code" k),
-      key_type = "crate::key::keyboard::Key",
-      rust_expr = fun { key_code } => "crate::key::keyboard::Key::new(%{std.to_string key_code})",
     },
 
   checks.tap_hold_is = {
