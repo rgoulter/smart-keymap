@@ -100,6 +100,7 @@ impl key::PressedKeyState<Key> for PressedKeyState {
 
     /// Keyboard key always has a key_output.
     fn key_output(&self, key: &Key) -> Option<key::KeyOutput> {
-        Some(key::KeyOutput::from_key_code(key.key_code()))
+        let key_output = key::KeyOutput::from_key_code_with_modifiers(key.key_code, key.modifiers);
+        Some(key_output)
     }
 }
