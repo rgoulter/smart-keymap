@@ -193,6 +193,38 @@ impl KeyboardModifiers {
             right_gui: false,
         }
     }
+
+    /// Constructs a Vec of key codes from the modifiers.
+    pub fn as_key_codes(&self) -> heapless::Vec<u8, 8> {
+        let mut key_codes = heapless::Vec::new();
+
+        if self.left_ctrl {
+            key_codes.push(0xE0).unwrap();
+        }
+        if self.left_shift {
+            key_codes.push(0xE1).unwrap();
+        }
+        if self.left_alt {
+            key_codes.push(0xE2).unwrap();
+        }
+        if self.left_gui {
+            key_codes.push(0xE3).unwrap();
+        }
+        if self.right_ctrl {
+            key_codes.push(0xE4).unwrap();
+        }
+        if self.right_shift {
+            key_codes.push(0xE5).unwrap();
+        }
+        if self.right_alt {
+            key_codes.push(0xE6).unwrap();
+        }
+        if self.right_gui {
+            key_codes.push(0xE7).unwrap();
+        }
+
+        key_codes
+    }
 }
 
 /// Struct for the output from [PressedKey].
