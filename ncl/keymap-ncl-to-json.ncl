@@ -10,69 +10,10 @@
     | doc "The layers of the keymap that gets rendered to JSON"
     = [keys],
 
-  checks.check_to_json_serialized_key =
-    let K = import "keys.ncl" in
-    {
-      keyboard = {
-        keymap_example_key_code = {
-          actual = K.A,
-          expected = { key_code = 0x04 },
-        },
-        check_serialized_key_code = {
-          actual = K.A |> to_json_serialized_key,
-          expected = { key_code = 0x04 },
-        },
-      },
-
-      layered = {
-        keymap_example_layered_keyboard = {
-          actual = K.A & { layered = [null, K.C] },
-          expected = {
-            key_code = 0x04,
-            layered = [
-              null,
-              { key_code = 0x06 },
-            ],
-          },
-        },
-        check_serialized_layered_keyboard = {
-          actual = K.A & { layered = [null, K.C] } |> to_json_serialized_key,
-          expected = {
-            base = { key_code = 0x04 },
-            layered = [
-              null,
-              { key_code = 0x06 },
-            ],
-          },
-        },
-      },
-
-      layer_modifier = {
-        keymap_example_hold = {
-          actual = K.layer_mod.hold 0,
-          expected = { layer_modifier.hold = 0 },
-        },
-        check_serialized_hold = {
-          actual = K.layer_mod.hold 0 |> to_json_serialized_key,
-          expected = { Hold = 0 },
-        },
-      },
-
-      tap_hold = {
-        keymap_example_tap_keyboard_hold_keyboard = {
-          actual = K.A & K.hold K.LeftCtrl,
-          expected = { key_code = 0x04, hold = 0xE0 },
-        },
-        check_serialized_tap_keyboard_hold_keyboard = {
-          actual = K.A & K.hold K.LeftCtrl |> to_json_serialized_key,
-          expected = { tap = { key_code = 0x04 }, hold = { key_code = 0xE0 }  },
-        },
-      },
-    },
-
   checks.nestable = {
     check_nestable_is_key_keyboard =
       nestable.is_key { key_code = 0x04 },
+
     check_nestable_to_json_serialized_keyboard = {
       actual = { key_code = 0x04 } |> nestable.to_json_serialized,
       expected = { key_code = 0x04 },
@@ -82,10 +23,25 @@
   nestable = {
     is_key
       = keyboard.is_key,
+
     to_json_serialized = match {
       k if keyboard.is_key k => keyboard.to_json_serialized k,
     }
   },
+
+  checks.keyboard =
+    let K = import "keys.ncl" in
+    {
+      keymap_example_key_code = {
+        actual = K.A,
+        expected = { key_code = 0x04 },
+      },
+
+      check_serialized_key_code = {
+        actual = K.A |> to_json_serialized_key,
+        expected = { key_code = 0x04 },
+      },
+    },
 
   keyboard = {
     is_key
@@ -93,27 +49,65 @@
         { key_code } => true,
         _ => false,
       },
+
     to_json_serialized = fun { key_code = kc } => { key_code = kc },
   },
+
+  checks.layer_modifier =
+    let K = import "keys.ncl" in {
+      keymap_example_hold = {
+        actual = K.layer_mod.hold 0,
+        expected = { layer_modifier.hold = 0 },
+      },
+
+      check_serialized_hold = {
+        actual = K.layer_mod.hold 0 |> to_json_serialized_key,
+        expected = { Hold = 0 },
+      },
+    },
 
   layer_modifier = {
     is_key = match {
       { layer_modifier = { hold } } => true,
       _ => false,
     },
+
     to_json_serialized = fun { layer_modifier = { hold = hold_layer } } =>
       { Hold = hold_layer },
   },
 
   checks.layered =
     let K = import "keys.ncl" in {
+      keymap_example_layered_keyboard = {
+        actual = K.A & { layered = [null, K.C] },
+        expected = {
+          key_code = 0x04,
+          layered = [
+            null,
+            { key_code = 0x06 },
+          ],
+        },
+      },
+
       check_layered_base_keyboard_base_is_nestable_key =
         let key = K.A & { layered = [null, K.C] } in
         let { layered, ..base_key } = key in
         nestable.is_key base_key,
+
       check_layered_base_keyboard_is_key =
         let key = K.A & { layered = [null, K.C] } in
         layered.is_key key,
+
+      check_serialized_layered_keyboard = {
+        actual = K.A & { layered = [null, K.C] } |> to_json_serialized_key,
+        expected = {
+          base = { key_code = 0x04 },
+          layered = [
+            null,
+            { key_code = 0x06 },
+          ],
+        },
+      },
     },
 
   layered = {
@@ -123,6 +117,7 @@
         std.array.all (fun k => nestable.is_key k || k == null) layered,
       _ => false,
     },
+
     to_json_serialized = fun { layered = layered_keys, ..base_key } =>
       {
         base = to_json_serialized_key base_key,
@@ -132,15 +127,27 @@
 
   checks.tap_hold =
     let K = import "keys.ncl" in {
+      keymap_example_tap_keyboard_hold_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl,
+        expected = { key_code = 0x04, hold = 0xE0 },
+      },
+
       check_tap_hold_tap_keyboard_is_nestable_key =
         let key = K.A & K.hold K.LeftCtrl  in
         let { hold, ..tap_key } = key in
         nestable.is_key tap_key,
+
       check_tap_keyboard_hold_keyboard_is_key =
         let key = K.A & K.hold K.LeftCtrl  in
         tap_hold.is_key key,
+
       check_tap_keyboard_hold_keyboard_to_json_serialized_keyboard = {
         actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_serialized,
+        expected = { tap = { key_code = 0x04 }, hold = { key_code = 0xE0 }  },
+      },
+
+      check_serialized_tap_keyboard_hold_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl |> to_json_serialized_key,
         expected = { tap = { key_code = 0x04 }, hold = { key_code = 0xE0 }  },
       },
     },
@@ -150,6 +157,7 @@
       { hold = hold_kc, ..tap_key } => nestable.is_key tap_key,
       _ => false,
     },
+
     to_json_serialized = fun { hold = hold_kc, ..tap_key } =>
       {
         hold = { key_code = hold_kc },
