@@ -164,13 +164,13 @@
     | doc "for key::tap_hold::Key."
     = {
       is_key = match {
-        { hold = hold_kc, ..tap_key } => nestable.is_key tap_key,
+        { hold = hold_key, ..tap_key } => nestable.is_key hold_key &&  nestable.is_key tap_key,
         _ => false,
       },
 
-      to_json_serialized = fun { hold = hold_kc, ..tap_key } =>
+      to_json_serialized = fun { hold = hold_key, ..tap_key } =>
         {
-          hold = { key_code = hold_kc },
+          hold = to_json_serialized_key hold_key,
           tap = to_json_serialized_key tap_key,
         },
     },
