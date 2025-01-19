@@ -194,6 +194,14 @@ impl KeyboardModifiers {
         }
     }
 
+    /// Predicate for whether the key code is a modifier key code.
+    pub const fn is_modifier_key_code(key_code: u8) -> bool {
+        match key_code {
+            0xE0..=0xE7 => true,
+            _ => false,
+        }
+    }
+
     /// Constructs a Vec of key codes from the modifiers.
     pub fn as_key_codes(&self) -> heapless::Vec<u8, 8> {
         let mut key_codes = heapless::Vec::new();
