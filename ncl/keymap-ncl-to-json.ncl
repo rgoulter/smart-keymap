@@ -18,6 +18,10 @@
           actual = K.A,
           expected = { key_code = 0x04 },
         },
+        check_serialized_key_code = {
+          actual = K.A |> to_json_serialized_key,
+          expected = { key_code = 0x04 },
+        },
       },
 
       layered = {
@@ -31,12 +35,26 @@
             ],
           },
         },
+        check_serialized_layered_keyboard = {
+          actual = K.A & { layered = [null, K.C] } |> to_json_serialized_key,
+          expected = {
+            base = { key_code = 0x04 },
+            layered = [
+              null,
+              { key_code = 0x06 },
+            ],
+          },
+        },
       },
 
       layer_modifier = {
         keymap_example_hold = {
           actual = K.layer_mod.hold 0,
           expected = { layer_modifier.hold = 0 },
+        },
+        check_serialized_hold = {
+          actual = K.layer_mod.hold 0 |> to_json_serialized_key,
+          expected = { Hold = 0 },
         },
       },
 
