@@ -24,7 +24,17 @@ impl Deserializer {
         T: serde::de::Deserialize<'a>,
     {
         match self {
-            Self::JSON => serde_json::from_str(s).ok(),
+            Self::JSON => {
+                let deser_res: serde_json::Result<T> = serde_json::from_str(s);
+
+                match deser_res {
+                    Ok(value) => Some(value),
+                    Err(err) => {
+                        eprintln!("Failed to deserialize JSON: {}", err);
+                        None
+                    }
+                }
+            }
             Self::RON => ron::from_str(s).ok(),
         }
     }
