@@ -10,6 +10,44 @@
     | doc "The layers of the keymap that gets rendered to JSON"
     = [keys],
 
+  checks.check_to_json_serialized_key =
+    let K = import "keys.ncl" in
+    {
+      keyboard = {
+        keymap_example_key_code = {
+          actual = K.A,
+          expected = { key_code = 0x04 },
+        },
+      },
+
+      layered = {
+        keymap_example_layered_keyboard = {
+          actual = K.A & { layered = [null, K.C] },
+          expected = {
+            key_code = 0x04,
+            layered = [
+              null,
+              { key_code = 0x06 },
+            ],
+          },
+        },
+      },
+
+      layer_modifier = {
+        keymap_example_hold = {
+          actual = K.layer_mod.hold 0,
+          expected = { layer_modifier.hold = 0 },
+        },
+      },
+
+      tap_hold = {
+        keymap_example_tap_keyboard_hold_keyboard = {
+          actual = K.A & { hold = K.LeftCtrl },
+          expected = { key_code = 0x04, hold = { key_code = 0xE0 }  },
+        },
+      },
+    },
+
   to_json_serialized_key
     | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."
     = match {
