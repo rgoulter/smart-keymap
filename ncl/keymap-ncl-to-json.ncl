@@ -63,6 +63,10 @@
           actual = K.A & { hold = K.LeftCtrl },
           expected = { key_code = 0x04, hold = { key_code = 0xE0 }  },
         },
+        check_serialized_tap_keyboard_hold_keyboard = {
+          actual = K.A & K.hold K.LeftCtrl |> to_json_serialized_key,
+          expected = { tap = { key_code = 0x04 }, hold = { key_code = 0xE0 }  },
+        },
       },
     },
 
