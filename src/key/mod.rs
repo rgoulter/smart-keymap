@@ -212,9 +212,30 @@ impl KeyOutput {
         }
     }
 
+    /// Constructs a [KeyOutput] from a key code with the given keyboard modifiers.
+    pub fn from_key_code_with_modifiers(key_code: u8, key_modifiers: KeyboardModifiers) -> Self {
+        KeyOutput {
+            key_code,
+            key_modifiers,
+        }
+    }
+
+    /// Constructs a [KeyOutput] for just the given keyboard modifiers.
+    pub fn from_key_modifiers(key_modifiers: KeyboardModifiers) -> Self {
+        KeyOutput {
+            key_code: 0x00,
+            key_modifiers,
+        }
+    }
+
     /// Returns the key code value.
     pub fn key_code(&self) -> u8 {
         self.key_code
+    }
+
+    /// Returns the keyboard modifiers of the key output.
+    pub fn key_modifiers(&self) -> KeyboardModifiers {
+        self.key_modifiers
     }
 }
 
