@@ -51,10 +51,13 @@
       is_key
         = match {
           { key_code } => true,
+          { modifiers } => true,
+          { key_code, modifiers } => true,
           _ => false,
         },
 
-      to_json_serialized = fun { key_code = kc } => { key_code = kc },
+      to_json_serialized
+        = fun key => key,
     },
 
   checks.layer_modifier =
