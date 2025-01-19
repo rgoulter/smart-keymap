@@ -233,6 +233,20 @@ impl KeyboardModifiers {
 
         key_codes
     }
+
+    /// Union of two KeyboardModifiers, taking "or" of each modifier.
+    pub const fn union(&self, other: &KeyboardModifiers) -> KeyboardModifiers {
+        KeyboardModifiers {
+            left_ctrl: self.left_ctrl || other.left_ctrl,
+            left_shift: self.left_shift || other.left_shift,
+            left_alt: self.left_alt || other.left_alt,
+            left_gui: self.left_gui || other.left_gui,
+            right_ctrl: self.right_ctrl || other.right_ctrl,
+            right_shift: self.right_shift || other.right_shift,
+            right_alt: self.right_alt || other.right_alt,
+            right_gui: self.right_gui || other.right_gui,
+        }
+    }
 }
 
 /// Struct for the output from [PressedKey].
