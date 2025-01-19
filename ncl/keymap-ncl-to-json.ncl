@@ -140,7 +140,7 @@
     let K = import "keys.ncl" in {
       keymap_example_tap_keyboard_hold_keyboard = {
         actual = K.A & K.hold K.LeftCtrl,
-        expected = { key_code = 0x04, hold = 0xE0 },
+        expected = { key_code = 0x04, hold = { modifiers = { left_ctrl = true } } },
       },
 
       check_tap_hold_tap_keyboard_is_nestable_key =
@@ -154,12 +154,12 @@
 
       check_tap_keyboard_hold_keyboard_to_json_serialized_keyboard = {
         actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_serialized,
-        expected = { tap = { key_code = 0x04 }, hold = { key_code = 0xE0 }  },
+        expected = { tap = { key_code = 0x04 }, hold = { modifiers = { left_ctrl = true } } },
       },
 
       check_serialized_tap_keyboard_hold_keyboard = {
         actual = K.A & K.hold K.LeftCtrl |> to_json_serialized_key,
-        expected = { tap = { key_code = 0x04 }, hold = { key_code = 0xE0 }  },
+        expected = { tap = { key_code = 0x04 }, hold = { modifiers = { left_ctrl = true } } },
       },
     },
 
