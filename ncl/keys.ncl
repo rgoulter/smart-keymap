@@ -2,7 +2,24 @@ let key_extensions = {
   keyboard
     = fun K =>
       (import "hid-usage-keyboard.ncl")
-      |> std.record.map_values (fun kc => { key_code = kc }),
+      |> std.record.map_values
+           (fun kc =>
+             kc |> match {
+               _ if 0xE0 <= kc && kc <= 0xE7 => {
+                 modifiers = kc |> match {
+                   0xE0 => { left_ctrl = true },
+                   0xE1 => { left_shift = true },
+                   0xE2 => { left_alt = true },
+                   0xE3 => { left_gui = true },
+                   0xE4 => { right_ctrl = true },
+                   0xE5 => { right_shift = true },
+                   0xE6 => { right_alt = true },
+                   0xE7 => { right_gui = true },
+                 },
+               },
+
+               kc => { key_code = kc },
+             }),
 
   tap_hold
     = fun K => {
