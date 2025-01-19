@@ -199,41 +199,65 @@ impl KeyboardModifiers {
     /// Returns None if the key_code is not a modifier key code.
     pub const fn from_key_code(key_code: u8) -> Option<Self> {
         match key_code {
-            0xE0 => Some(KeyboardModifiers {
-                left_ctrl: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE1 => Some(KeyboardModifiers {
-                left_shift: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE2 => Some(KeyboardModifiers {
-                left_alt: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE3 => Some(KeyboardModifiers {
-                left_gui: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE4 => Some(KeyboardModifiers {
-                right_ctrl: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE5 => Some(KeyboardModifiers {
-                right_shift: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE6 => Some(KeyboardModifiers {
-                right_alt: true,
-                ..KeyboardModifiers::new()
-            }),
-            0xE7 => Some(KeyboardModifiers {
-                right_gui: true,
-                ..KeyboardModifiers::new()
-            }),
+            0xE0 => Some(Self::LEFT_CTRL),
+            0xE1 => Some(Self::LEFT_SHIFT),
+            0xE2 => Some(Self::LEFT_ALT),
+            0xE3 => Some(Self::LEFT_GUI),
+            0xE4 => Some(Self::RIGHT_CTRL),
+            0xE5 => Some(Self::RIGHT_SHIFT),
+            0xE6 => Some(Self::RIGHT_ALT),
+            0xE7 => Some(Self::RIGHT_GUI),
             _ => None,
         }
     }
+
+    /// Const for left ctrl.
+    pub const LEFT_CTRL: KeyboardModifiers = KeyboardModifiers {
+        left_ctrl: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for left shift.
+    pub const LEFT_SHIFT: KeyboardModifiers = KeyboardModifiers {
+        left_shift: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for left alt.
+    pub const LEFT_ALT: KeyboardModifiers = KeyboardModifiers {
+        left_alt: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for left gui.
+    pub const LEFT_GUI: KeyboardModifiers = KeyboardModifiers {
+        left_gui: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for right ctrl.
+    pub const RIGHT_CTRL: KeyboardModifiers = KeyboardModifiers {
+        right_ctrl: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for right shift.
+    pub const RIGHT_SHIFT: KeyboardModifiers = KeyboardModifiers {
+        right_shift: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for right alt.
+    pub const RIGHT_ALT: KeyboardModifiers = KeyboardModifiers {
+        right_alt: true,
+        ..KeyboardModifiers::new()
+    };
+
+    /// Const for right gui.
+    pub const RIGHT_GUI: KeyboardModifiers = KeyboardModifiers {
+        right_gui: true,
+        ..KeyboardModifiers::new()
+    };
 
     /// Predicate for whether the key code is a modifier key code.
     pub const fn is_modifier_key_code(key_code: u8) -> bool {
