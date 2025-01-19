@@ -12,6 +12,13 @@
   fail
     = std.function.const ('Error {}),
 
+  is_number
+    = fun v =>
+      if std.is_number v then
+        'Ok
+      else
+        'Error { message = "Expected number" },
+
   checks.all_of = {
     all_ok_is_ok = {
       expected = 'Ok,
