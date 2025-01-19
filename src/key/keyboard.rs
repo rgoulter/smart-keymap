@@ -22,6 +22,22 @@ impl Key {
         }
     }
 
+    /// Constructs a key with the given key_code and modifiers.
+    pub const fn new_with_modifiers(key_code: u8, modifiers: key::KeyboardModifiers) -> Self {
+        Key {
+            key_code,
+            modifiers,
+        }
+    }
+
+    /// Constructs a key with the given modifiers.
+    pub const fn from_modifiers(modifiers: key::KeyboardModifiers) -> Self {
+        Key {
+            key_code: 0x00,
+            modifiers,
+        }
+    }
+
     /// Gets the key code from [Key].
     pub fn key_code(&self) -> u8 {
         self.key_code
