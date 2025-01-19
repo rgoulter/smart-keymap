@@ -8,6 +8,12 @@ set -ex
 
 SCRIPTS_DIR="$(dirname "$0")"
 
+# Run the nickel checks first.
+"${SCRIPTS_DIR}/run-ncl-checks.sh"
+
+# Then with each of the listed `tests/ncl`, check its generated keymap.rs:
+#  - matches the expected snapshot,
+#  - can be compiled.
 ncl_tests=(
     "keymap-1key-simple"
     "keymap-1key-tap_hold"
