@@ -169,13 +169,21 @@ impl<MC, IC> ModifierKeyContext<MC, IC> {
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
 #[derive(Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardModifiers {
+    #[serde(default)]
     left_ctrl: bool,
+    #[serde(default)]
     left_shift: bool,
+    #[serde(default)]
     left_alt: bool,
+    #[serde(default)]
     left_gui: bool,
+    #[serde(default)]
     right_ctrl: bool,
+    #[serde(default)]
     right_shift: bool,
+    #[serde(default)]
     right_alt: bool,
+    #[serde(default)]
     right_gui: bool,
 }
 
