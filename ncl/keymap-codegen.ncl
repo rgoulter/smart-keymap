@@ -145,7 +145,7 @@
       key if layer_modifier.is key => layer_modifier.key_type,
       key if layered.is key => layered.key_type key,
       key if tap_hold.is key => tap_hold.key_type,
-      _ => "unknown_key_type"
+      _ => 'unknown_key_type
     },
 
   rust_expr_of_key
@@ -155,7 +155,7 @@
       key if layer_modifier.is key => layer_modifier.rust_expr key,
       key if layered.is key => layered.rust_expr key,
       key if tap_hold.is key => tap_hold.rust_expr key,
-      _ => "unknown_key_type"
+      _ => 'unknown_key_type
     },
 
   keymap_rs
