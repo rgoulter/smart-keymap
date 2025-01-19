@@ -307,18 +307,28 @@ pub struct KeyOutput {
 impl KeyOutput {
     /// Constructs a [KeyOutput] from a key code.
     pub fn from_key_code(key_code: u8) -> Self {
-        let key_modifiers = KeyboardModifiers::new();
-        KeyOutput {
-            key_code,
-            key_modifiers,
+        if let Some(key_modifiers) = KeyboardModifiers::from_key_code(key_code) {
+            KeyOutput {
+                key_code: 0x00,
+                key_modifiers,
+            }
+        } else {
+            KeyOutput {
+                key_code,
+                key_modifiers: KeyboardModifiers::new(),
+            }
         }
     }
 
     /// Constructs a [KeyOutput] from a key code with the given keyboard modifiers.
     pub fn from_key_code_with_modifiers(key_code: u8, key_modifiers: KeyboardModifiers) -> Self {
+        let KeyOutput {
+            key_code,
+            key_modifiers: km,
+        } = Self::from_key_code(key_code);
         KeyOutput {
             key_code,
-            key_modifiers,
+            key_modifiers: km.union(&key_modifiers),
         }
     }
 
