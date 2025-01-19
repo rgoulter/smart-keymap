@@ -60,7 +60,36 @@
 
       key_type = "crate::key::keyboard::Key",
 
-      rust_expr = fun { key_code } => "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+      rust_expr
+        = fun key =>
+          let rec modifiers_expr = fun m =>
+            m |> match {
+              {} => "crate::key::KeyboardModifiers::new()",
+              { left_ctrl, ..modifiers } if left_ctrl =>
+                "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{modifiers_expr modifiers})",
+              { left_alt, ..modifiers } if left_alt =>
+                "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{modifiers_expr modifiers})",
+              { left_shift, ..modifiers } if left_shift =>
+                "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{modifiers_expr modifiers})",
+              { left_gui, ..modifiers } if left_gui =>
+                "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{modifiers_expr modifiers})",
+              { right_ctrl, ..modifiers } if right_ctrl =>
+                "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{modifiers_expr modifiers})",
+              { right_alt, ..modifiers } if right_alt =>
+                "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{modifiers_expr modifiers})",
+              { right_shift, ..modifiers } if right_shift =>
+                "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{modifiers_expr modifiers})",
+              { right_gui, ..modifiers } if right_gui =>
+                "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{modifiers_expr modifiers})",
+            } in
+          key |> match {
+            { key_code } =>
+              "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+            { modifiers } =>
+              "crate::key::keyboard::Key::from_modifiers(%{modifiers_expr modifiers})",
+            { key_code, modifiers } =>
+              "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{modifiers_expr modifiers})",
+          },
     },
 
   checks.layer_modifier_is = {
