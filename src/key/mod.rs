@@ -196,18 +196,25 @@ impl KeyboardModifiers {
 }
 
 /// Struct for the output from [PressedKey].
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
-pub struct KeyOutput(u8);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct KeyOutput {
+    key_code: u8,
+    key_modifiers: KeyboardModifiers,
+}
 
 impl KeyOutput {
     /// Constructs a [KeyOutput] from a key code.
     pub fn from_key_code(key_code: u8) -> Self {
-        KeyOutput(key_code)
+        let key_modifiers = KeyboardModifiers::new();
+        KeyOutput {
+            key_code,
+            key_modifiers,
+        }
     }
 
     /// Returns the key code value.
     pub fn key_code(&self) -> u8 {
-        self.0
+        self.key_code
     }
 }
 
