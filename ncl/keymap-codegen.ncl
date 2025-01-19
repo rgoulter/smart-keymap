@@ -1,4 +1,7 @@
 {
+  validators
+    = (import "validators.ncl"),
+
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
@@ -6,19 +9,29 @@
     # Use a serialized value to check the "is" predicate.
     check_serialized_is =
       let serialized_value = { key_code = 0x04 } in
-      keyboard.is_serialized_json serialized_value
+      keyboard.is_serialized_json serialized_value,
   },
 
   keyboard
     | doc "for key::keyboard::Key."
     = {
       # c.f. doc_de_keyboard.md.
-      # JSON serialization of key::keyboard::Key is just a number.
+      serialized_json_validator
+        = validators.record.validator {
+            fields_validator = validators.all_of [
+              validators.record.has_any_field_of ["key_code"],
+              validators.record.has_only_fields ["key_code"],
+            ],
+            field_validators = {
+              key_code = validators.is_number
+            },
+          },
+
       is_serialized_json = fun k =>
-          std.is_record k &&
-          std.record.has_field "key_code" k &&
-          std.is_number (std.record.get "key_code" k),
+        'Ok == serialized_json_validator k,
+
       key_type = "crate::key::keyboard::Key",
+
       rust_expr = fun { key_code } => "crate::key::keyboard::Key::new(%{std.to_string key_code})",
     },
 
