@@ -10,6 +10,12 @@
     check_serialized_is =
       let serialized_value = { key_code = 0x04 } in
       keyboard.is_serialized_json serialized_value,
+    check_serialized_with_modifier_is =
+      let serialized_value = { key_code = 0x04, modifiers = { left_ctrl = true} } in
+      keyboard.is_serialized_json serialized_value,
+    check_serialized_modifiers_is =
+      let serialized_value = { modifiers = { left_ctrl = true} } in
+      keyboard.is_serialized_json serialized_value,
   },
 
   keyboard
@@ -19,11 +25,33 @@
       serialized_json_validator
         = validators.record.validator {
             fields_validator = validators.all_of [
-              validators.record.has_any_field_of ["key_code"],
-              validators.record.has_only_fields ["key_code"],
+              validators.record.has_any_field_of ["key_code", "modifiers"],
+              validators.record.has_only_fields ["key_code", "modifiers"],
             ],
             field_validators = {
-              key_code = validators.is_number
+              key_code = validators.is_number,
+              modifiers = validators.record.validator {
+                fields_validator = validators.record.has_only_fields [
+                  "left_ctrl",
+                  "left_shift",
+                  "left_alt",
+                  "left_gui",
+                  "right_ctrl",
+                  "right_shift",
+                  "right_alt",
+                  "right_gui",
+                ],
+                field_validators = {
+                  left_ctrl = validators.is_bool,
+                  left_shift = validators.is_bool,
+                  left_alt = validators.is_bool,
+                  left_gui = validators.is_bool,
+                  right_ctrl = validators.is_bool,
+                  right_shift = validators.is_bool,
+                  right_alt = validators.is_bool,
+                  right_gui = validators.is_bool,
+                },
+              },
             },
           },
 
