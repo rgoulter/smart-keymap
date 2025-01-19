@@ -92,37 +92,56 @@ impl<E: Debug> EventScheduler<E> {
 /// Output from the keymap, used to build HID reports.
 #[derive(Debug)]
 pub struct KeymapOutput {
-    pressed_key_codes: heapless::Vec<u8, 16>,
+    pressed_key_codes: heapless::Vec<key::KeyOutput, 16>,
 }
 
 impl KeymapOutput {
     /// Constructs a new keymap output.
-    pub fn new(pressed_key_codes: heapless::Vec<u8, 16>) -> Self {
+    pub fn new(pressed_key_codes: heapless::Vec<key::KeyOutput, 16>) -> Self {
         Self { pressed_key_codes }
     }
 
     /// Returns the pressed key codes.
-    pub fn pressed_key_codes(&self) -> &[u8] {
-        self.pressed_key_codes.as_slice()
+    pub fn pressed_key_codes(&self) -> heapless::Vec<u8, 24> {
+        let mut result = heapless::Vec::new();
+
+        let modifiers = self
+            .pressed_key_codes
+            .iter()
+            .fold(key::KeyboardModifiers::new(), |acc, &ko| {
+                acc.union(&ko.key_modifiers())
+            });
+
+        result.extend(modifiers.as_key_codes());
+
+        result.extend(self.pressed_key_codes.iter().map(|ko| ko.key_code()));
+
+        result
     }
 
     /// Returns the current HID keyboard report.
     pub fn as_hid_boot_keyboard_report(&self) -> [u8; 8] {
         let mut report = [0u8; 8];
 
-        let (modifier_keys, key_codes): (heapless::Vec<u8, 16>, heapless::Vec<u8, 16>) = self
+        let modifiers = self
             .pressed_key_codes
             .iter()
-            .partition(|&kc| (0xE0..=0xE7).contains(kc));
+            .fold(key::KeyboardModifiers::new(), |acc, &ko| {
+                acc.union(&ko.key_modifiers())
+            });
 
-        let modifier = modifier_keys
+        report[0] = modifiers.as_byte();
+
+        let key_codes = self
+            .pressed_key_codes
             .iter()
-            .fold(0u8, |acc, &kc| acc | (1 << (kc - 0xE0)));
-        report[0] = modifier;
+            .map(|ko| ko.key_code())
+            .filter(|&kc| kc != 0);
 
-        for (i, key_code) in key_codes.iter().take(6).enumerate() {
-            report[i + 2] = *key_code;
+        for (i, key_code) in key_codes.take(6).enumerate() {
+            report[i + 2] = key_code;
         }
+
         report
     }
 }
@@ -269,9 +288,11 @@ impl<
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key { keymap_index, .. } => {
                 let key = &self.key_definitions[*keymap_index as usize];
-                key.key_output().map(|ko| ko.key_code())
+                key.key_output()
             }
-            input::PressedInput::Virtual { key_code } => Some(*key_code),
+            input::PressedInput::Virtual { key_code } => {
+                Some(key::KeyOutput::from_key_code(*key_code))
+            }
         });
 
         KeymapOutput::new(pressed_key_codes.collect())
@@ -292,9 +313,9 @@ mod tests {
     #[test]
     fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {
         // Assemble - include modifier key left ctrl
-        let mut input: heapless::Vec<u8, 16> = heapless::Vec::new();
-        input.push(0x04).unwrap();
-        input.push(0xE0).unwrap();
+        let mut input: heapless::Vec<key::KeyOutput, 16> = heapless::Vec::new();
+        input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
+        input.push(key::KeyOutput::from_key_code(0xE0)).unwrap();
 
         // Act - construct the output
         let keymap_output = KeymapOutput::new(input);
@@ -307,9 +328,9 @@ mod tests {
     #[test]
     fn test_keymap_output_as_hid_boot_keyboard_report_gathers_modifiers() {
         // Assemble - include modifier key left ctrl
-        let mut input: heapless::Vec<u8, 16> = heapless::Vec::new();
-        input.push(0x04).unwrap();
-        input.push(0xE0).unwrap();
+        let mut input: heapless::Vec<key::KeyOutput, 16> = heapless::Vec::new();
+        input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
+        input.push(key::KeyOutput::from_key_code(0xE0)).unwrap();
 
         // Act - construct the output
         let keymap_output = KeymapOutput::new(input);
