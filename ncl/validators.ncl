@@ -12,6 +12,13 @@
   fail
     = std.function.const ('Error {}),
 
+  is_bool
+    = fun v =>
+      if std.is_bool v then
+        'Ok
+      else
+        'Error { message = "Expected bool" },
+
   is_number
     = fun v =>
       if std.is_number v then
