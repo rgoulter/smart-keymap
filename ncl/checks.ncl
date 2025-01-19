@@ -13,12 +13,12 @@
       std.is_record c && std.record.has_field "expected" c && std.record.has_field "actual" c,
 
   evaluate_check
-    = fun c =>
+    = fun c id =>
       if std.is_bool c then
-        c == true || std.fail_with "check failed"
+        c == true || std.fail_with "%{id}: check failed"
       else
         (c.expected == c.actual) ||
-          std.fail_with "expected equal: %{std.serialize 'Json c}",
+          std.fail_with "%{id}: expected != actual:\n\n%{std.serialize 'Json c}",
 
   NamedChecks
     | doc "a record, with Check values. e.g. { check_add = { expected = 4, actual = add 2 2 } }"
@@ -35,14 +35,15 @@
     = { _ | CheckOrChecks },
 
   evaluate_check_or_checks
-    = fun c =>
+    = fun c id =>
      if is_check c then
-        evaluate_check c
+        evaluate_check c id
       else
-        std.record.map_values evaluate_check_or_checks c,
+        std.record.map (fun k v => evaluate_check_or_checks v "%{id}.%{k}") c,
 
   evaluate_checks
-    = fun c => std.record.map_values evaluate_check_or_checks c,
+    = fun c =>
+        std.record.map (fun k v => evaluate_check_or_checks v k) c,
 
   checks | Checks | default = {},
 
