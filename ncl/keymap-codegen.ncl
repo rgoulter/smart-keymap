@@ -6,7 +6,7 @@
     # Use a serialized value to check the "is" predicate.
     check_serialized_is =
       let serialized_value = { key_code = 0x04 } in
-      keyboard.is serialized_value
+      keyboard.is_serialized_json serialized_value
   },
 
   keyboard
@@ -14,7 +14,7 @@
     = {
       # c.f. doc_de_keyboard.md.
       # JSON serialization of key::keyboard::Key is just a number.
-      is = fun k =>
+      is_serialized_json = fun k =>
           std.is_record k &&
           std.record.has_field "key_code" k &&
           std.is_number (std.record.get "key_code" k),
@@ -26,7 +26,7 @@
     # Use a serialized value to check the "is" predicate.
     check_serialized_is =
       let serialized_value = { Hold = 0 } in
-      layer_modifier.is serialized_value
+      layer_modifier.is_serialized_json serialized_value
   },
 
   layer_modifier
@@ -34,7 +34,7 @@
     = {
       # c.f. doc_de_layered.md.
       # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
-      is = fun k => std.is_record k
+      is_serialized_json = fun k => std.is_record k
         && std.record.has_field "Hold" k
         && std.is_number (std.record.get "Hold" k),
       key_type = "crate::key::layered::ModifierKey",
@@ -51,7 +51,7 @@
           { key_code = 0x06 },
         ]
       } in
-      layered.is serialized_value
+      layered.is_serialized_json serialized_value
   },
 
   layered
@@ -66,8 +66,8 @@
       #   }
       # ```
       # JSON serialization of key::layered::Layered has variants: { base, layered }
-      is = fun k =>
-        let is_nested_key = keyboard.is in
+      is_serialized_json = fun k =>
+        let is_nested_key = keyboard.is_serialized_json in
         std.is_record k
         && std.record.has_field "base" k
         && is_nested_key (std.record.get "base" k)
@@ -108,7 +108,7 @@
         hold = { key_code = 0xE0 },
         tap = { key_code = 0x04 },
       } in
-      tap_hold.is serialized_value
+      tap_hold.is_serialized_json serialized_value
   },
 
   tap_hold
@@ -116,9 +116,9 @@
     = {
       # c.f. doc_de_tap_hold.md.
       # JSON serialization of key::tap_hold::Key is { tap: number, hold: number }
-      is =
+      is_serialized_json =
         fun k =>
-          let is_nested_key = keyboard.is in
+          let is_nested_key = keyboard.is_serialized_json in
           std.is_record k &&
           std.record.has_field "tap" k &&
           is_nested_key (std.record.get "tap" k) &&
@@ -140,20 +140,20 @@
   key_type_of_key
     | doc "The type declaration for the key."
     = match {
-      key if keyboard.is key => keyboard.key_type,
-      key if layer_modifier.is key => layer_modifier.key_type,
-      key if layered.is key => layered.key_type key,
-      key if tap_hold.is key => tap_hold.key_type,
+      key if keyboard.is_serialized_json key => keyboard.key_type,
+      key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
+      key if layered.is_serialized_json key => layered.key_type key,
+      key if tap_hold.is_serialized_json key => tap_hold.key_type,
       _ => 'unknown_key_type
     },
 
   rust_expr_of_key
     | doc "The Rust expression for the key."
     = match {
-      key if keyboard.is key => keyboard.rust_expr key,
-      key if layer_modifier.is key => layer_modifier.rust_expr key,
-      key if layered.is key => layered.rust_expr key,
-      key if tap_hold.is key => tap_hold.rust_expr key,
+      key if keyboard.is_serialized_json key => keyboard.rust_expr key,
+      key if layer_modifier.is_serialized_json key => layer_modifier.rust_expr key,
+      key if layered.is_serialized_json key => layered.rust_expr key,
+      key if tap_hold.is_serialized_json key => tap_hold.rust_expr key,
       _ => 'unknown_key_type
     },
 
