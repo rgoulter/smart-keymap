@@ -7,6 +7,7 @@ use crate::{input, key};
 /// A key for HID Keyboard usage codes.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key {
+    #[serde(default)]
     key_code: u8,
     #[serde(default)]
     modifiers: key::KeyboardModifiers,
