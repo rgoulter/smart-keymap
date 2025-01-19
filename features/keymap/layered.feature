@@ -25,7 +25,7 @@ Feature: Layers
       {
         layers = [
           [
-            { layer_modifier = { hold = 0 } },
+            K.layer_mod.hold 0,
             K.A,
           ],
           [
