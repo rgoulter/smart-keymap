@@ -31,5 +31,25 @@
           'Ok => all_of validators v,
           err => err,
         },
-    }
+    },
+
+  checks.check_record_validators = {
+    check_has_only_fields
+      = 'Ok == record.has_only_fields ["x", "y"] { x = 3 },
+  },
+
+  record = {
+    has_only_fields
+      = fun fields r =>
+        if r |> std.record.fields |> std.array.all (fun f => std.array.elem f fields) then
+          'Ok
+        else
+          'Error {
+            message = "Unexpected fields",
+            notes = [
+              "Expected only: %{fields |> std.serialize},",
+              "Found: %{r |> std.record.fields}"
+            ],
+          },
+  },
 }
