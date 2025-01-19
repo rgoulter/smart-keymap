@@ -10,7 +10,7 @@
   },
 
   keyboard
-    | doc "Generates type declaration and value expression for smart_keymap::key::keyboard::Key."
+    | doc "for key::keyboard::Key."
     = {
       # c.f. doc_de_keyboard.md.
       # JSON serialization of key::keyboard::Key is just a number.
@@ -30,7 +30,7 @@
   },
 
   layer_modifier
-    | doc "Generates type declaration and value expression for smart_keymap::key::layered::ModifierKey."
+    | doc "for key::layered::ModifierKey."
     = {
       # c.f. doc_de_layered.md.
       # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
@@ -55,7 +55,7 @@
   },
 
   layered
-    | doc "Generates type declaration and value expression for smart_keymap::key::layered::LayeredKey."
+    | doc "for key::layered::LayeredKey."
     = {
       # c.f. doc_de_layered.md.
       # e.g.:
@@ -112,7 +112,7 @@
   },
 
   tap_hold
-    | doc "Generates type declaration and value expression for smart_keymap::key::tap_hold::Key."
+    | doc "for key::tap_hold::Key."
     = {
       # c.f. doc_de_tap_hold.md.
       # JSON serialization of key::tap_hold::Key is { tap: number, hold: number }

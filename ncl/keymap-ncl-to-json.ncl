@@ -20,14 +20,16 @@
     },
   },
 
-  nestable = {
-    is_key
-      = keyboard.is_key,
+  nestable
+    | doc "for key::composite::NestableKey implementors."
+    = {
+      is_key
+        = keyboard.is_key,
 
-    to_json_serialized = match {
-      k if keyboard.is_key k => keyboard.to_json_serialized k,
-    }
-  },
+      to_json_serialized = match {
+        k if keyboard.is_key k => keyboard.to_json_serialized k,
+      }
+    },
 
   checks.keyboard =
     let K = import "keys.ncl" in
@@ -43,15 +45,17 @@
       },
     },
 
-  keyboard = {
-    is_key
-      = match {
-        { key_code } => true,
-        _ => false,
-      },
+  keyboard
+    | doc "for key::keyboard::Key."
+    = {
+      is_key
+        = match {
+          { key_code } => true,
+          _ => false,
+        },
 
-    to_json_serialized = fun { key_code = kc } => { key_code = kc },
-  },
+      to_json_serialized = fun { key_code = kc } => { key_code = kc },
+    },
 
   checks.layer_modifier =
     let K = import "keys.ncl" in {
@@ -66,15 +70,17 @@
       },
     },
 
-  layer_modifier = {
-    is_key = match {
-      { layer_modifier = { hold } } => true,
-      _ => false,
-    },
+  layer_modifier
+    | doc "for key::layered::ModifierKey."
+    = {
+      is_key = match {
+        { layer_modifier = { hold } } => true,
+        _ => false,
+      },
 
-    to_json_serialized = fun { layer_modifier = { hold = hold_layer } } =>
-      { Hold = hold_layer },
-  },
+      to_json_serialized = fun { layer_modifier = { hold = hold_layer } } =>
+        { Hold = hold_layer },
+    },
 
   checks.layered =
     let K = import "keys.ncl" in {
@@ -110,20 +116,22 @@
       },
     },
 
-  layered = {
-    is_key = match {
-      { layered, ..base_key } if std.is_array layered =>
-        nestable.is_key base_key &&
-        std.array.all (fun k => nestable.is_key k || k == null) layered,
-      _ => false,
-    },
-
-    to_json_serialized = fun { layered = layered_keys, ..base_key } =>
-      {
-        base = to_json_serialized_key base_key,
-        layered = std.array.map to_json_serialized_key layered_keys,
+  layered
+    | doc "for key::layered::LayeredKey."
+    = {
+      is_key = match {
+        { layered, ..base_key } if std.is_array layered =>
+          nestable.is_key base_key &&
+          std.array.all (fun k => nestable.is_key k || k == null) layered,
+        _ => false,
       },
-  },
+
+      to_json_serialized = fun { layered = layered_keys, ..base_key } =>
+        {
+          base = to_json_serialized_key base_key,
+          layered = std.array.map to_json_serialized_key layered_keys,
+        },
+    },
 
   checks.tap_hold =
     let K = import "keys.ncl" in {
@@ -152,18 +160,20 @@
       },
     },
 
-  tap_hold = {
-    is_key = match {
-      { hold = hold_kc, ..tap_key } => nestable.is_key tap_key,
-      _ => false,
-    },
-
-    to_json_serialized = fun { hold = hold_kc, ..tap_key } =>
-      {
-        hold = { key_code = hold_kc },
-        tap = to_json_serialized_key tap_key,
+  tap_hold
+    | doc "for key::tap_hold::Key."
+    = {
+      is_key = match {
+        { hold = hold_kc, ..tap_key } => nestable.is_key tap_key,
+        _ => false,
       },
-  },
+
+      to_json_serialized = fun { hold = hold_kc, ..tap_key } =>
+        {
+          hold = { key_code = hold_kc },
+          tap = to_json_serialized_key tap_key,
+        },
+    },
 
   to_json_serialized_key
     | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."
