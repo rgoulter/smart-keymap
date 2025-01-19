@@ -46,6 +46,18 @@
 
     check_has_only_fields
       = 'Ok == record.has_only_fields ["x", "y"] { x = 3 },
+
+    check_validate
+      = 'Ok
+        ==
+        record.validate
+          {
+            fields_validator = record.has_only_fields ["x", "y"],
+            field_validators = {
+              x = is_number,
+            },
+          }
+          { x = 3 },
   },
 
   record = {
@@ -76,5 +88,28 @@
               "Found: %{r |> std.record.fields}"
             ],
           },
+
+    validator
+      = fun { fields_validator, field_validators } r =>
+        r |> fields_validator |> match {
+          'Ok =>
+            let rec validate_fields = fun fields =>
+              fields |> match {
+                [] => 'Ok,
+                [field, ..fields] =>
+                  (if std.record.has_field field field_validators then
+                     let v = std.record.get field r in
+                     let validator = std.record.get field field_validators in
+                     validator v
+                   else
+                     'Ok) |> match {
+                    'Ok => validate_fields fields,
+                    err => err,
+                  }
+              } in
+              r |> std.record.fields |> validate_fields,
+
+          err => err,
+        },
   },
 }
