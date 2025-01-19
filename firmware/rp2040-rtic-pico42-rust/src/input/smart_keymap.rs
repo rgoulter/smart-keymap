@@ -38,7 +38,7 @@ impl KeyboardBackend {
         self.keymap.tick();
 
         let keymap_output = self.keymap.pressed_keys();
-        let pressed_keycodes: &[u8] = keymap_output.pressed_key_codes();
+        let pressed_keycodes = keymap_output.pressed_key_codes();
         self.pressed_key_codes = pressed_keycodes.iter().map(|&key| key.into()).collect();
     }
 
