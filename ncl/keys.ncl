@@ -8,8 +8,7 @@ let key_extensions = {
     = fun K => {
       hold
       | doc "creates a hold key modifier"
-      # TapHold's hold is just the key_code, not a nested key.
-      = fun { key_code, .. } => { hold = key_code },
+      = fun key => { hold = key },
 
       H_LCtrl = hold K.LeftCtrl,
       H_LShift = hold K.LeftShift,
