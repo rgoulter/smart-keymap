@@ -234,6 +234,13 @@ impl KeyboardModifiers {
         key_codes
     }
 
+    /// Constructs the byte for the modifiers of an HID keyboard report.
+    pub fn as_byte(&self) -> u8 {
+        self.as_key_codes()
+            .iter()
+            .fold(0u8, |acc, &kc| acc | (1 << (kc - 0xE0)))
+    }
+
     /// Union of two KeyboardModifiers, taking "or" of each modifier.
     pub const fn union(&self, other: &KeyboardModifiers) -> KeyboardModifiers {
         KeyboardModifiers {
