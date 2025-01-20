@@ -654,4 +654,52 @@ mod tests {
         let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
         assert_eq!(actual_report, expected_report);
     }
+
+    #[test]
+    fn test_keymap_with_tap_keyboard_hold_layermod_press_active_layer_when_held() {
+        // Check TapHold { tap: Keyboard, hold: LayerModifier } works
+
+        use key::{composite, keyboard, layered, tap_hold};
+        use tuples::Keys2;
+
+        // Assemble
+        // - In order to have { tap: Keyboard, hold: LayerMod },
+        //    we need to use the aggregate composite::Key
+        //    as the nested key type.
+        const NUM_LAYERS: usize = 1;
+        type NK = composite::Key<composite::CompositeImpl<L, keyboard::Key>>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
+        type Ctx = composite::Context<L>;
+        type Ev = composite::Event;
+
+        type K0 = tap_hold::Key<NK>;
+        type K1 = layered::LayeredKey<keyboard::Key, L>;
+
+        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
+            tap_hold::Key {
+                tap: NK::keyboard(keyboard::Key::new(0x04)),
+                hold: NK::layer_modifier(layered::ModifierKey::Hold(0)),
+            },
+            layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
+        ));
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
+
+        let mut keymap = Keymap::new(keys, context);
+
+        // Act
+        // - Press the tap-hold key.
+        // - Press the layered key.
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        // - Check the keycode from the layer is used.
+        let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
 }
