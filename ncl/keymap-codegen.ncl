@@ -166,7 +166,7 @@ let validators = import "validators.ncl" in
         = validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["base", "layered"],
           field_validators = {
-            base = keyboard.serialized_json_validator,
+            base = nestable.serialized_json_validator,
             layered = validators.array.validator
               (validators.any_of [
                 validators.is_null,
@@ -184,17 +184,15 @@ let validators = import "validators.ncl" in
       #   type Key = layered::LayeredKey<keyboard::Key, L>;
       # ```
       key_type = fun { layered, .. } =>
-        let nested_key_type = "crate::key::keyboard::Key" in
         let num_layers = layered |> std.array.length |> std.to_string in
         let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
-        "crate::key::layered::LayeredKey<%{nested_key_type}, %{layer_impl}>",
+        "crate::key::layered::LayeredKey<%{nestable.key_type}, %{layer_impl}>",
 
       rust_expr
         = fun { base, layered } =>
-          let nested_key_expr = keyboard.rust_expr in
-          let base_expr = nested_key_expr base in
+          let base_expr = nestable.rust_expr base in
           let layered_exprs = layered
-            |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nested_key_expr lk})")
+            |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nestable.rust_expr lk})")
             |> std.string.join "," in
           "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
     },
@@ -226,13 +224,12 @@ let validators = import "validators.ncl" in
       is_serialized_json
         = fun k => 'Ok == serialized_json_validator k,
 
-      # kludge: support tap_hold::Key<K> in Rust first, then impl. NCL support later.
-      key_type = "crate::key::tap_hold::Key<crate::key::keyboard::Key>",
+      key_type = "crate::key::tap_hold::Key<%{nestable.key_type}>",
 
       rust_expr
         = fun { hold, tap, } =>
-          let hold_expr = rust_expr_of_key hold in
-          let tap_expr = rust_expr_of_key tap in
+          let hold_expr = nestable.rust_expr hold in
+          let tap_expr = nestable.rust_expr tap in
           "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
     },
 
