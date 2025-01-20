@@ -178,10 +178,10 @@ let validators = import "validators.ncl" in
       is_key
         = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { layered = layered_keys, ..base_key } =>
-        {
-          base = to_json_serialized_key base_key,
-          layered = std.array.map to_json_serialized_key layered_keys,
+      to_json_serialized
+        = fun { layered = layered_keys, ..base_key } => {
+          base = nestable.to_json_serialized base_key,
+          layered = std.array.map nestable.to_json_serialized layered_keys,
         },
     },
 
@@ -231,11 +231,11 @@ let validators = import "validators.ncl" in
       is_key
         = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { hold = hold_key, ..tap_key } =>
-        {
-          hold = to_json_serialized_key hold_key,
-          tap = to_json_serialized_key tap_key,
-        },
+      to_json_serialized
+        = fun { hold = hold_key, ..tap_key } => {
+            hold = nestable.to_json_serialized hold_key,
+            tap = nestable.to_json_serialized tap_key,
+          },
     },
 
   to_json_serialized_key
