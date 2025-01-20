@@ -8,20 +8,40 @@ REPOSITORY_DIR="${SCRIPTS_DIR}/../.."
 FEATURES_DIR="${REPOSITORY_DIR}/features"
 KEYMAP_FEATURES_DIR="${FEATURES_DIR}/keymap"
 
-keymap_features=(
+KEYMAP_FEATURE_MD=""
+
+keymap_key_features=(
     "keyboard"
     "tap_hold"
     "layered"
 )
 
-KEYMAP_FEATURE_MD="${KEYMAP_FEATURES_DIR}/keys.md"
-for keymap_feature in "${keymap_features[@]}"
-do
-    gawk --file="${SCRIPTS_DIR}/gherkin2md.awk" -- \
-      "${KEYMAP_FEATURES_DIR}/${keymap_feature}.feature" \
-      >  "${FEATURES_DIR}/generated-${keymap_feature}.md"
+keymap_ncl_features=(
+    "layers"
+)
 
-    KEYMAP_FEATURE_MD="${KEYMAP_FEATURE_MD} ${FEATURES_DIR}/generated-${keymap_feature}.md"
+KEYMAP_KEY_FEATURES_DIR="${KEYMAP_FEATURES_DIR}/key"
+KEYMAP_FEATURE_MD="${KEYMAP_FEATURE_MD} ${KEYMAP_KEY_FEATURES_DIR}/readme.md"
+for keymap_feature in "${keymap_key_features[@]}"
+do
+    MD_FILE="${KEYMAP_KEY_FEATURES_DIR}/generated-${keymap_feature}.md"
+    gawk --file="${SCRIPTS_DIR}/gherkin2md.awk" -- \
+      "${KEYMAP_KEY_FEATURES_DIR}/${keymap_feature}.feature" \
+      >  "${MD_FILE}"
+
+    KEYMAP_FEATURE_MD="${KEYMAP_FEATURE_MD} ${MD_FILE}"
+done
+
+KEYMAP_NCL_FEATURES_DIR="${KEYMAP_FEATURES_DIR}/ncl"
+KEYMAP_FEATURE_MD="${KEYMAP_FEATURE_MD} ${KEYMAP_NCL_FEATURES_DIR}/readme.md"
+for keymap_feature in "${keymap_ncl_features[@]}"
+do
+    MD_FILE="${KEYMAP_NCL_FEATURES_DIR}/generated-${keymap_feature}.md"
+    gawk --file="${SCRIPTS_DIR}/gherkin2md.awk" -- \
+      "${KEYMAP_NCL_FEATURES_DIR}/${keymap_feature}.feature" \
+      >  "${MD_FILE}"
+
+    KEYMAP_FEATURE_MD="${KEYMAP_FEATURE_MD} ${MD_FILE}"
 done
 
 pandoc \
