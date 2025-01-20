@@ -6,6 +6,13 @@
         'Error { message | String | optional, notes | Array String | optional, }
       |],
 
+  check_is_error
+    = fun c =>
+      c |> match {
+        'Error _ => true,
+        _ => false,
+      },
+
   ok
     = std.function.const 'Ok,
 
