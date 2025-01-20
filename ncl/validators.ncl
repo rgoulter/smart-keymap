@@ -122,6 +122,19 @@
   },
 
   record = {
+    has_all_fields
+      = fun fields r =>
+        if fields |> std.array.all (fun f => std.array.elem f (std.record.fields r)) then
+          'Ok
+        else
+          'Error {
+            message = "Missing fields",
+            notes = [
+              "Expected all of: %{fields |> std.serialize},",
+              "Found: %{r |> std.record.fields}"
+            ],
+          },
+
     has_any_field_of
       = fun fields r =>
         if r |> std.record.fields |> std.array.length == 0 then
