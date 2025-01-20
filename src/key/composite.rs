@@ -45,6 +45,25 @@ impl_nestable_key!(keyboard::Key);
 impl_nestable_key!(tap_hold::Key<keyboard::Key>);
 impl_nestable_key!(layered::ModifierKey);
 
+impl<L: layered::LayerImpl> NestableKey<L> for Key<CompositeImpl<L, keyboard::Key>>
+where
+    <L as layered::LayerImpl>::Layers<keyboard::Key>: serde::de::DeserializeOwned,
+{
+    fn pluck_context(context: Context<L>) -> <Self as key::Key>::Context {
+        context
+    }
+
+    fn into_event(event: <Self as crate::key::Key>::Event) -> Event {
+        event.into()
+    }
+
+    fn try_event_from(
+        event: Event,
+    ) -> Result<<Self as crate::key::Key>::Event, crate::key::EventError> {
+        Ok(event)
+    }
+}
+
 /// Related types used by [Key], [Context] and [Event].
 pub trait CompositeTypes: Copy + Debug + PartialEq
 where
