@@ -12,6 +12,13 @@
   fail
     = std.function.const ('Error {}),
 
+  is_array
+    = fun v =>
+      if std.is_array v then
+        'Ok
+      else
+        'Error { message = "Expected array" },
+
   is_bool
     = fun v =>
       if std.is_bool v then
@@ -19,12 +26,33 @@
       else
         'Error { message = "Expected bool" },
 
+  is_null
+    = fun v =>
+      if v == null then
+        'Ok
+      else
+        'Error { message = "Expected null" },
+
   is_number
     = fun v =>
       if std.is_number v then
         'Ok
       else
         'Error { message = "Expected number" },
+
+  is_record
+    = fun v =>
+      if std.is_record v then
+        'Ok
+      else
+        'Error { message = "Expected record" },
+
+  is_string
+    = fun v =>
+      if std.is_string v then
+        'Ok
+      else
+        'Error { message = "Expected string" },
 
   checks.all_of = {
     all_ok_is_ok = {
