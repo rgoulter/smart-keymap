@@ -18,7 +18,12 @@
         c == true || std.fail_with "%{id}: check failed"
       else
         (c.expected == c.actual) ||
-          std.fail_with "%{id}: expected != actual:\n\n%{std.serialize 'Json c}",
+          (let ser = fun v =>
+            v |> std.typeof |> match {
+              'Enum => v |> std.enum.to_tag_and_arg |> std.serialize 'Json,
+              _ => v |> std.serialize 'Json,
+            } in
+            std.fail_with "%{id}: expected != actual:\n\nexpected:\n%{ser c.expected}\n\nactual:\n%{ser c.actual}"),
 
   NamedChecks
     | doc "a record, with Check values. e.g. { check_add = { expected = 4, actual = add 2 2 } }"
