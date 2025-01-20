@@ -119,64 +119,64 @@ pub mod init {
         crate::key::keyboard::Key::new(15),
         crate::key::keyboard::Key::new(42),
         crate::key::keyboard::Key::new(41),
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(4),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_ALT
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(4),
-        },
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        ),
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(18),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_GUI
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(18),
-        },
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        ),
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(8),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_CTRL
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(8),
-        },
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        ),
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(24),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_SHIFT
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(24),
-        },
+        ),
         crate::key::keyboard::Key::new(12),
         crate::key::keyboard::Key::new(7),
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(11),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_SHIFT
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(11),
-        },
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        ),
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(23),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_CTRL
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(23),
-        },
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        ),
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(17),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_GUI
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(17),
-        },
-        crate::key::tap_hold::Key {
-            hold: crate::key::keyboard::Key::from_modifiers(
+        ),
+        crate::key::tap_hold::Key::new(
+            crate::key::keyboard::Key::new(22),
+            crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_ALT
                     .union(&crate::key::KeyboardModifiers::new()),
             ),
-            tap: crate::key::keyboard::Key::new(22),
-        },
+        ),
         crate::key::keyboard::Key::new(40),
         crate::key::keyboard::Key::from_modifiers(
             crate::key::KeyboardModifiers::LEFT_SHIFT.union(&crate::key::KeyboardModifiers::new()),
