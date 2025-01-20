@@ -5,6 +5,23 @@
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
+  nestable
+    | doc "for key::composite::NestableKey implementors."
+    = {
+      serialized_json_validator
+        = keyboard.serialized_json_validator,
+
+      is_serialized_json
+        = keyboard.is_serialized_json,
+
+      key_type
+        = keyboard.key_type,
+
+      rust_expr
+        = keyboard.rust_expr,
+    },
+
+
   checks.keyboard_is = {
     # Use a serialized value to check the "is" predicate.
     check_serialized_is =
@@ -55,8 +72,8 @@
             },
           },
 
-      is_serialized_json = fun k =>
-        'Ok == serialized_json_validator k,
+      is_serialized_json
+        = fun k => 'Ok == serialized_json_validator k,
 
       key_type = "crate::key::keyboard::Key",
 
@@ -104,10 +121,19 @@
     = {
       # c.f. doc_de_layered.md.
       # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
-      is_serialized_json = fun k => std.is_record k
-        && std.record.has_field "Hold" k
-        && std.is_number (std.record.get "Hold" k),
+      serialized_json_validator
+        = validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["Hold"],
+          field_validators = {
+            Hold = validators.is_number,
+          },
+        },
+
+      is_serialized_json
+        = fun k => 'Ok == serialized_json_validator k,
+
       key_type = "crate::key::layered::ModifierKey",
+
       rust_expr = fun { Hold = layer_index } => "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
     },
 
@@ -136,18 +162,21 @@
       #   }
       # ```
       # JSON serialization of key::layered::Layered has variants: { base, layered }
-      is_serialized_json = fun k =>
-        let is_nested_key = keyboard.is_serialized_json in
-        std.is_record k
-        && std.record.has_field "base" k
-        && is_nested_key (std.record.get "base" k)
-        && std.record.has_field "layered" k
-        && std.is_array (std.record.get "layered" k)
-        && std.array.all
-           (fun lk =>
-              lk == null ||
-              is_nested_key lk)
-           (std.record.get "layered" k),
+      serialized_json_validator
+        = validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["base", "layered"],
+          field_validators = {
+            base = keyboard.serialized_json_validator,
+            layered = validators.array.validator
+              (validators.any_of [
+                validators.is_null,
+                nestable.serialized_json_validator,
+              ]),
+          },
+        },
+
+      is_serialized_json
+        = fun k => 'Ok == serialized_json_validator k,
 
       # c.f. doc_de_layered.md.
       # ```
@@ -185,15 +214,19 @@
     | doc "for key::tap_hold::Key."
     = {
       # c.f. doc_de_tap_hold.md.
-      # JSON serialization of key::tap_hold::Key is { tap: number, hold: number }
-      is_serialized_json =
-        fun k =>
-          let is_nested_key = keyboard.is_serialized_json in
-          std.is_record k &&
-          std.record.has_field "tap" k &&
-          is_nested_key (std.record.get "tap" k) &&
-          std.record.has_field "hold" k &&
-          is_nested_key (std.record.get "hold" k),
+      # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
+      serialized_json_validator
+        = validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["tap", "hold"],
+          field_validators = {
+            tap = nestable.serialized_json_validator,
+            hold = nestable.serialized_json_validator,
+          },
+        },
+
+      is_serialized_json
+        = fun k => 'Ok == serialized_json_validator k,
+
       # kludge: support tap_hold::Key<K> in Rust first, then impl. NCL support later.
       key_type = "crate::key::tap_hold::Key<crate::key::keyboard::Key>",
       rust_expr = fun { hold, tap, } =>
