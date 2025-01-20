@@ -94,7 +94,7 @@ fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
 const NUM_LAYERS: usize = 16;
 type NestedKey = key::composite::DefaultNestableKey;
 type LayersImpl = key::layered::ArrayImpl<NUM_LAYERS>;
-type CompositeImpl = key::composite::CompositeImpl<NestedKey, LayersImpl>;
+type CompositeImpl = key::composite::CompositeImpl<LayersImpl, NestedKey>;
 type Key = key::composite::Key<CompositeImpl>;
 type Context = key::composite::Context<LayersImpl>;
 type Event = key::composite::Event;

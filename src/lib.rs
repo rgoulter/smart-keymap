@@ -74,7 +74,7 @@ pub mod init {
     pub type NestedKey = composite::DefaultNestableKey;
 
     /// Types used in Composite keys.
-    pub type CompositeImpl = composite::CompositeImpl<NestedKey, LayersImpl>;
+    pub type CompositeImpl = composite::CompositeImpl<LayersImpl, NestedKey>;
 
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = composite::Context<LayersImpl>;
