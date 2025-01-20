@@ -18,6 +18,13 @@ pub struct Key<K: key::Key> {
     pub hold: K,
 }
 
+impl<K: key::Key> Key<K> {
+    /// Constructs a new tap-hold key.
+    pub const fn new(tap: K, hold: K) -> Key<K> {
+        Key { tap, hold }
+    }
+}
+
 impl<K: key::Key> key::Key for Key<K> {
     type Context = key::ModifierKeyContext<(), K::Context>;
     type ContextEvent = ();
