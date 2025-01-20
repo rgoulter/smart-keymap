@@ -54,10 +54,10 @@
     check_has_only_fields
       = 'Ok == record.has_only_fields ["x", "y"] { x = 3 },
 
-    check_validate
+    check_validator
       = 'Ok
         ==
-        record.validate
+        record.validator
           {
             fields_validator = record.has_only_fields ["x", "y"],
             field_validators = {
