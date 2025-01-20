@@ -12,9 +12,9 @@ use crate::{input, key};
 use key::{keyboard, layered, tap_hold};
 
 /// Used to implement nested combinations of [Key].
-pub trait NestableKey: key::Key + Sized {
+pub trait NestableKey<L: layered::LayerImpl>: key::Key + Sized {
     /// Get the context for the nestable key from the given Context
-    fn pluck_context<L: layered::LayerImpl>(context: Context<L>) -> <Self as key::Key>::Context;
+    fn pluck_context(context: Context<L>) -> <Self as key::Key>::Context;
     /// Constructs an [Event] for the Nestable key's event.
     fn into_event(event: <Self as key::Key>::Event) -> Event;
     /// Tries to construct the [key::Event] for the Nestable Key's event.
@@ -23,10 +23,8 @@ pub trait NestableKey: key::Key + Sized {
 
 macro_rules! impl_nestable_key {
     ($key_type:path) => {
-        impl NestableKey for $key_type {
-            fn pluck_context<L: layered::LayerImpl>(
-                context: Context<L>,
-            ) -> <Self as key::Key>::Context {
+        impl<L: layered::LayerImpl> NestableKey<L> for $key_type {
+            fn pluck_context(context: Context<L>) -> <Self as key::Key>::Context {
                 context.into()
             }
 
@@ -57,7 +55,7 @@ where
     <Self as CompositeTypes>::NK: serde::de::DeserializeOwned,
 {
     /// The nested key type used within composite keys.
-    type NK: NestableKey;
+    type NK: NestableKey<Self::L>;
     /// The layer impl. used within composite keys.
     type L: layered::LayerImpl;
 }
@@ -65,11 +63,11 @@ where
 /// Struct to use as an impl of [CompositeImpl].
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct CompositeImpl<
-    NK: NestableKey = DefaultNestableKey,
     L: layered::LayerImpl = layered::ArrayImpl<0>,
+    NK: NestableKey<L> = DefaultNestableKey,
 >(PhantomData<(NK, L)>);
 
-impl<NK: NestableKey, L: layered::LayerImpl> CompositeTypes for CompositeImpl<NK, L>
+impl<NK: NestableKey<L>, L: layered::LayerImpl> CompositeTypes for CompositeImpl<L, NK>
 where
     <L as layered::LayerImpl>::Layers<NK>: serde::de::DeserializeOwned,
     NK: serde::de::DeserializeOwned,
@@ -475,7 +473,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = CompositeImpl<NK, L>;
+        type T = CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keymap_index: u16 = 0;
@@ -513,7 +511,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = CompositeImpl<NK, L>;
+        type T = CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 2] = [
@@ -556,7 +554,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = CompositeImpl<NK, L>;
+        type T = CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 2] = [
@@ -599,7 +597,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = CompositeImpl<NK, L>;
+        type T = CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 3] = [
@@ -634,7 +632,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = CompositeImpl<NK, L>;
+        type T = CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type K = composite::Key<T>;
         let keys: [K; 3] = [

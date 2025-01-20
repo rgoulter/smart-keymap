@@ -11,7 +11,7 @@ use composite::DefaultNestableKey;
 
 type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<1>;
-type T = composite::CompositeImpl<NK, L>;
+type T = composite::CompositeImpl<L, NK>;
 type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
@@ -36,7 +36,7 @@ use composite::DefaultNestableKey;
 
 type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<1>;
-type T = composite::CompositeImpl<NK, L>;
+type T = composite::CompositeImpl<L, NK>;
 type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
@@ -66,7 +66,7 @@ use composite::DefaultNestableKey;
 
 type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<1>;
-type T = composite::CompositeImpl<NK, L>;
+type T = composite::CompositeImpl<L, NK>;
 type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
@@ -91,7 +91,7 @@ use composite::DefaultNestableKey;
 
 type NK = composite::DefaultNestableKey;
 type L = layered::ArrayImpl<3>;
-type T = composite::CompositeImpl<NK, L>;
+type T = composite::CompositeImpl<L, NK>;
 type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 

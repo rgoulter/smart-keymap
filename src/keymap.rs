@@ -514,7 +514,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<NK, L>;
+        type T = composite::CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type Ev = composite::Event;
         type K = composite::Key<T>;
@@ -550,7 +550,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<NK, L>;
+        type T = composite::CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type Ev = composite::Event;
         type K = composite::Key<T>;
@@ -588,7 +588,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<NK, L>;
+        type T = composite::CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type Ev = composite::Event;
         type K = composite::Key<T>;
@@ -626,7 +626,7 @@ mod tests {
         const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
         type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<NK, L>;
+        type T = composite::CompositeImpl<L, NK>;
         type Ctx = composite::Context<L>;
         type Ev = composite::Event;
         type K = composite::Key<T>;
