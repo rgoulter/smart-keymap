@@ -6,252 +6,258 @@ let validators = import "validators.ncl" in
   nestable
     | doc "for key::composite::NestableKey implementors."
     = {
-      serialized_json_validator
-        = keyboard.serialized_json_validator,
+        serialized_json_validator
+          = keyboard.serialized_json_validator,
 
-      is_serialized_json
-        = keyboard.is_serialized_json,
+        is_serialized_json
+          = keyboard.is_serialized_json,
 
-      key_type
-        = keyboard.key_type,
+        key_type
+          = keyboard.key_type,
 
-      rust_expr
-        = keyboard.rust_expr,
-    },
+        rust_expr
+          = keyboard.rust_expr,
+      },
 
-
-  checks.keyboard_is = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_is =
-      let serialized_value = { key_code = 0x04 } in
-      keyboard.is_serialized_json serialized_value,
-    check_serialized_with_modifier_is =
-      let serialized_value = { key_code = 0x04, modifiers = { left_ctrl = true} } in
-      keyboard.is_serialized_json serialized_value,
-    check_serialized_modifiers_is =
-      let serialized_value = { modifiers = { left_ctrl = true} } in
-      keyboard.is_serialized_json serialized_value,
-  },
+  checks.keyboard_is
+    = {
+        # Use a serialized value to check the "is" predicate.
+        check_serialized_is =
+          let serialized_value = { key_code = 0x04 } in
+          keyboard.is_serialized_json serialized_value,
+        check_serialized_with_modifier_is =
+          let serialized_value = { key_code = 0x04, modifiers = { left_ctrl = true} } in
+          keyboard.is_serialized_json serialized_value,
+        check_serialized_modifiers_is =
+          let serialized_value = { modifiers = { left_ctrl = true} } in
+          keyboard.is_serialized_json serialized_value,
+      },
 
   keyboard
     | doc "for key::keyboard::Key."
     = {
-      # c.f. doc_de_keyboard.md.
-      serialized_json_validator
-        = validators.record.validator {
-            fields_validator = validators.all_of [
-              validators.record.has_any_field_of ["key_code", "modifiers"],
-              validators.record.has_only_fields ["key_code", "modifiers"],
-            ],
-            field_validators = {
-              key_code = validators.is_number,
-              modifiers = validators.record.validator {
-                fields_validator = validators.record.has_only_fields [
-                  "left_ctrl",
-                  "left_shift",
-                  "left_alt",
-                  "left_gui",
-                  "right_ctrl",
-                  "right_shift",
-                  "right_alt",
-                  "right_gui",
-                ],
-                field_validators = {
-                  left_ctrl = validators.is_bool,
-                  left_shift = validators.is_bool,
-                  left_alt = validators.is_bool,
-                  left_gui = validators.is_bool,
-                  right_ctrl = validators.is_bool,
-                  right_shift = validators.is_bool,
-                  right_alt = validators.is_bool,
-                  right_gui = validators.is_bool,
+        # c.f. doc_de_keyboard.md.
+        serialized_json_validator
+          = validators.record.validator {
+              fields_validator = validators.all_of [
+                validators.record.has_any_field_of ["key_code", "modifiers"],
+                validators.record.has_only_fields ["key_code", "modifiers"],
+              ],
+              field_validators = {
+                key_code = validators.is_number,
+                modifiers = validators.record.validator {
+                  fields_validator = validators.record.has_only_fields [
+                    "left_ctrl",
+                    "left_shift",
+                    "left_alt",
+                    "left_gui",
+                    "right_ctrl",
+                    "right_shift",
+                    "right_alt",
+                    "right_gui",
+                  ],
+                  field_validators = {
+                    left_ctrl = validators.is_bool,
+                    left_shift = validators.is_bool,
+                    left_alt = validators.is_bool,
+                    left_gui = validators.is_bool,
+                    right_ctrl = validators.is_bool,
+                    right_shift = validators.is_bool,
+                    right_alt = validators.is_bool,
+                    right_gui = validators.is_bool,
+                  },
                 },
               },
             },
-          },
 
-      is_serialized_json
-        = fun k => 'Ok == serialized_json_validator k,
+        is_serialized_json
+          = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = "crate::key::keyboard::Key",
+        key_type
+          = "crate::key::keyboard::Key",
 
-      rust_expr
-        = fun key =>
-          let rec modifiers_expr = fun m =>
-            m |> match {
-              {} => "crate::key::KeyboardModifiers::new()",
-              { left_ctrl, ..modifiers } if left_ctrl =>
-                "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{modifiers_expr modifiers})",
-              { left_alt, ..modifiers } if left_alt =>
-                "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{modifiers_expr modifiers})",
-              { left_shift, ..modifiers } if left_shift =>
-                "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{modifiers_expr modifiers})",
-              { left_gui, ..modifiers } if left_gui =>
-                "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{modifiers_expr modifiers})",
-              { right_ctrl, ..modifiers } if right_ctrl =>
-                "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{modifiers_expr modifiers})",
-              { right_alt, ..modifiers } if right_alt =>
-                "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{modifiers_expr modifiers})",
-              { right_shift, ..modifiers } if right_shift =>
-                "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{modifiers_expr modifiers})",
-              { right_gui, ..modifiers } if right_gui =>
-                "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{modifiers_expr modifiers})",
-            } in
-          key |> match {
-            { key_code } =>
-              "crate::key::keyboard::Key::new(%{std.to_string key_code})",
-            { modifiers } =>
-              "crate::key::keyboard::Key::from_modifiers(%{modifiers_expr modifiers})",
-            { key_code, modifiers } =>
-              "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{modifiers_expr modifiers})",
-          },
-    },
+        rust_expr
+          = fun key =>
+              let rec modifiers_expr = fun m =>
+                m |> match {
+                  {} => "crate::key::KeyboardModifiers::new()",
+                  { left_ctrl, ..modifiers } if left_ctrl =>
+                    "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{modifiers_expr modifiers})",
+                  { left_alt, ..modifiers } if left_alt =>
+                    "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{modifiers_expr modifiers})",
+                  { left_shift, ..modifiers } if left_shift =>
+                    "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{modifiers_expr modifiers})",
+                  { left_gui, ..modifiers } if left_gui =>
+                    "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{modifiers_expr modifiers})",
+                  { right_ctrl, ..modifiers } if right_ctrl =>
+                    "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{modifiers_expr modifiers})",
+                  { right_alt, ..modifiers } if right_alt =>
+                    "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{modifiers_expr modifiers})",
+                  { right_shift, ..modifiers } if right_shift =>
+                    "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{modifiers_expr modifiers})",
+                  { right_gui, ..modifiers } if right_gui =>
+                    "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{modifiers_expr modifiers})",
+                } in
+              key |> match {
+                { key_code } =>
+                  "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+                { modifiers } =>
+                  "crate::key::keyboard::Key::from_modifiers(%{modifiers_expr modifiers})",
+                { key_code, modifiers } =>
+                  "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{modifiers_expr modifiers})",
+              },
+      },
 
-  checks.layer_modifier_is = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_is =
-      let serialized_value = { Hold = 0 } in
-      layer_modifier.is_serialized_json serialized_value
-  },
+  checks.layer_modifier_is
+    = {
+        # Use a serialized value to check the "is" predicate.
+        check_serialized_is
+          = let serialized_value = { Hold = 0 } in
+            layer_modifier.is_serialized_json serialized_value
+      },
 
   layer_modifier
     | doc "for key::layered::ModifierKey."
     = {
-      # c.f. doc_de_layered.md.
-      # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
-      serialized_json_validator
-        = validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["Hold"],
-          field_validators = {
-            Hold = validators.is_number,
-          },
-        },
+        # c.f. doc_de_layered.md.
+        # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
+        serialized_json_validator
+          = validators.record.validator {
+              fields_validator = validators.record.has_exact_fields ["Hold"],
+              field_validators = {
+                Hold = validators.is_number,
+              },
+            },
 
-      is_serialized_json
-        = fun k => 'Ok == serialized_json_validator k,
+        is_serialized_json
+          = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = "crate::key::layered::ModifierKey",
+        key_type
+          = "crate::key::layered::ModifierKey",
 
-      rust_expr
-        = fun { Hold = layer_index } =>
-        "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
-    },
+        rust_expr
+          = fun { Hold = layer_index } =>
+            "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
+      },
 
-  checks.layered_is = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_base_keyboard_layered_keyboard_is =
-      let serialized_value = {
-        base = { key_code = 0x04 },
-        layered = [
-          null,
-          { key_code = 0x06 },
-        ]
-      } in
-      layered.is_serialized_json serialized_value
-  },
+  checks.layered_is
+    = {
+        # Use a serialized value to check the "is" predicate.
+        check_serialized_base_keyboard_layered_keyboard_is
+          = let serialized_value = {
+              base = { key_code = 0x04 },
+              layered = [
+                null,
+                { key_code = 0x06 },
+              ]
+            } in
+            layered.is_serialized_json serialized_value
+      },
 
   layered
     | doc "for key::layered::LayeredKey."
     = {
-      # c.f. doc_de_layered.md.
-      # e.g.:
-      # ```
-      #   {
-      #     "base": 4,
-      #     "layered": [5, null, 7]
-      #   }
-      # ```
-      # JSON serialization of key::layered::Layered has variants: { base, layered }
-      serialized_json_validator
-        = validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["base", "layered"],
-          field_validators = {
-            base = nestable.serialized_json_validator,
-            layered = validators.array.validator
-              (validators.any_of [
-                validators.is_null,
-                nestable.serialized_json_validator,
-              ]),
-          },
-        },
+        # c.f. doc_de_layered.md.
+        # e.g.:
+        # ```
+        #   {
+        #     "base": 4,
+        #     "layered": [5, null, 7]
+        #   }
+        # ```
+        # JSON serialization of key::layered::Layered has variants: { base, layered }
+        serialized_json_validator
+          = validators.record.validator {
+              fields_validator = validators.record.has_exact_fields ["base", "layered"],
+              field_validators = {
+                base = nestable.serialized_json_validator,
+                layered = validators.array.validator
+                  (validators.any_of [
+                    validators.is_null,
+                    nestable.serialized_json_validator,
+                  ]),
+              },
+            },
 
-      is_serialized_json
-        = fun k => 'Ok == serialized_json_validator k,
+        is_serialized_json
+          = fun k => 'Ok == serialized_json_validator k,
 
-      # c.f. doc_de_layered.md.
-      # ```
-      #   type L = layered::ArrayImpl<3>;
-      #   type Key = layered::LayeredKey<keyboard::Key, L>;
-      # ```
-      key_type = fun { layered, .. } =>
-        let num_layers = layered |> std.array.length |> std.to_string in
-        let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
-        "crate::key::layered::LayeredKey<%{nestable.key_type}, %{layer_impl}>",
+        # c.f. doc_de_layered.md.
+        # ```
+        #   type L = layered::ArrayImpl<3>;
+        #   type Key = layered::LayeredKey<keyboard::Key, L>;
+        # ```
+        key_type
+          = fun { layered, .. } =>
+              let num_layers = layered |> std.array.length |> std.to_string in
+              let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
+              "crate::key::layered::LayeredKey<%{nestable.key_type}, %{layer_impl}>",
 
-      rust_expr
-        = fun { base, layered } =>
-          let base_expr = nestable.rust_expr base in
-          let layered_exprs = layered
-            |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nestable.rust_expr lk})")
-            |> std.string.join "," in
-          "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
-    },
+        rust_expr
+          = fun { base, layered } =>
+              let base_expr = nestable.rust_expr base in
+              let layered_exprs = layered
+                |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nestable.rust_expr lk})")
+                |> std.string.join "," in
+              "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+      },
 
   checks.tap_hold_is = {
     # Use a serialized value to check the "is" predicate.
-    check_serialized_tap_keyboard_hold_keyboard_is =
-      let serialized_value = {
-        hold = { key_code = 0xE0 },
-        tap = { key_code = 0x04 },
-      } in
-      tap_hold.is_serialized_json serialized_value
+    check_serialized_tap_keyboard_hold_keyboard_is
+      = let serialized_value = {
+          hold = { key_code = 0xE0 },
+          tap = { key_code = 0x04 },
+        } in
+        tap_hold.is_serialized_json serialized_value
   },
 
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
-      # c.f. doc_de_tap_hold.md.
-      # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
-      serialized_json_validator
-        = validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["tap", "hold"],
-          field_validators = {
-            tap = nestable.serialized_json_validator,
-            hold = nestable.serialized_json_validator,
+        # c.f. doc_de_tap_hold.md.
+        # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
+        serialized_json_validator
+          = validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["tap", "hold"],
+            field_validators = {
+              tap = nestable.serialized_json_validator,
+              hold = nestable.serialized_json_validator,
+            },
           },
-        },
 
-      is_serialized_json
-        = fun k => 'Ok == serialized_json_validator k,
+        is_serialized_json
+          = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = "crate::key::tap_hold::Key<%{nestable.key_type}>",
+        key_type
+          = "crate::key::tap_hold::Key<%{nestable.key_type}>",
 
-      rust_expr
-        = fun { hold, tap, } =>
-          let hold_expr = nestable.rust_expr hold in
-          let tap_expr = nestable.rust_expr tap in
-          "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
-    },
+        rust_expr
+          = fun { hold, tap, } =>
+              let hold_expr = nestable.rust_expr hold in
+              let tap_expr = nestable.rust_expr tap in
+              "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
+      },
 
   key_type_of_key
     | doc "The type declaration for the key."
     = match {
-      key if keyboard.is_serialized_json key => keyboard.key_type,
-      key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
-      key if layered.is_serialized_json key => layered.key_type key,
-      key if tap_hold.is_serialized_json key => tap_hold.key_type,
-      _ => 'unknown_key_type
-    },
+        key if keyboard.is_serialized_json key => keyboard.key_type,
+        key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
+        key if layered.is_serialized_json key => layered.key_type key,
+        key if tap_hold.is_serialized_json key => tap_hold.key_type,
+        _ => 'unknown_key_type
+      },
 
   rust_expr_of_key
     | doc "The Rust expression for the key."
     = match {
-      key if keyboard.is_serialized_json key => keyboard.rust_expr key,
-      key if layer_modifier.is_serialized_json key => layer_modifier.rust_expr key,
-      key if layered.is_serialized_json key => layered.rust_expr key,
-      key if tap_hold.is_serialized_json key => tap_hold.rust_expr key,
-      _ => 'unknown_key_type
-    },
+        key if keyboard.is_serialized_json key => keyboard.rust_expr key,
+        key if layer_modifier.is_serialized_json key => layer_modifier.rust_expr key,
+        key if layered.is_serialized_json key => layered.rust_expr key,
+        key if tap_hold.is_serialized_json key => tap_hold.rust_expr key,
+        _ => 'unknown_key_type
+      },
 
   keymap_rs
     | doc "Text contents of the keymap.rs generated from the keymap.json"
