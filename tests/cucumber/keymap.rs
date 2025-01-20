@@ -17,6 +17,7 @@ use common::Deserializer;
 /// Likely reasons why running `nickel` may fail.
 enum NickelError {
     NickelNotFound,
+    EvalError(String),
 }
 
 /// Result of Nickel evaluation.
@@ -50,8 +51,16 @@ fn nickel_json_serialization_for_keymap(keymap_ncl: &str) -> NickelResult {
                 .unwrap_or_else(|e| panic!("Failed to write to stdin: {:?}", e));
 
             match nickel_command.wait_with_output() {
-                Ok(output) => String::from_utf8(output.stdout)
-                    .map_err(|e| panic!("Failed to decode UTF-8: {:?}", e)),
+                Ok(output) => {
+                    if output.status.success() {
+                        String::from_utf8(output.stdout)
+                            .map_err(|e| panic!("Failed to decode UTF-8: {:?}", e))
+                    } else {
+                        let nickel_error_message = String::from_utf8(output.stderr)
+                            .unwrap_or_else(|e| panic!("Failed to decode UTF-8: {:?}", e));
+                        Err(NickelError::EvalError(nickel_error_message))
+                    }
+                }
                 Err(io_e) => {
                     panic!("Unhandled IO error: {:?}", io_e)
                 }
@@ -170,6 +179,10 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
         }
         Err(e) => match e {
             NickelError::NickelNotFound => panic!("`nickel` not found on PATH. Please install it."),
+            NickelError::EvalError(nickel_error_message) => panic!(
+                "\n\nerror evaluating step's doc string nickel:\n\n{}",
+                nickel_error_message
+            ),
         },
     }
 }
