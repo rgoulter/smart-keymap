@@ -82,6 +82,25 @@
         },
     },
 
+  checks.check_any_of = {
+    any_ok_is_ok = {
+      expected = 'Ok,
+      actual = any_of [fail, fail, ok] {},
+    },
+    empty_is_error =
+       any_of [] {} |> check_is_error,
+  },
+
+  any_of = fun validators v =>
+    validators |> match {
+      [] => 'Error { message = "No validators satisfied" },
+      [validator, ..validators] =>
+        validator v |> match {
+          'Ok => 'Ok,
+          err => any_of validators v,
+        },
+    },
+
   checks.check_record_validators = {
     check_has_any_field_of
       = 'Ok == record.has_any_field_of ["x", "y"] { x = 3, z = 5 },
