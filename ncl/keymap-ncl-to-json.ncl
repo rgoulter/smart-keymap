@@ -1,3 +1,4 @@
+let validators = import "validators.ncl" in
 {
   KeymapKey = Dyn,
 
@@ -23,6 +24,9 @@
   nestable
     | doc "for key::composite::NestableKey implementors."
     = {
+      key_validator
+        = keyboard.key_validator,
+
       is_key
         = keyboard.is_key,
 
@@ -48,13 +52,41 @@
   keyboard
     | doc "for key::keyboard::Key."
     = {
+      key_validator
+        = validators.record.validator {
+            fields_validator = validators.all_of [
+              validators.record.has_any_field_of ["key_code", "modifiers"],
+              validators.record.has_only_fields ["key_code", "modifiers"],
+            ],
+            field_validators = {
+              key_code = validators.is_number,
+              modifiers = validators.record.validator {
+                fields_validator = validators.record.has_only_fields [
+                  "left_ctrl",
+                  "left_shift",
+                  "left_alt",
+                  "left_gui",
+                  "right_ctrl",
+                  "right_shift",
+                  "right_alt",
+                  "right_gui",
+                ],
+                field_validators = {
+                  left_ctrl = validators.is_bool,
+                  left_shift = validators.is_bool,
+                  left_alt = validators.is_bool,
+                  left_gui = validators.is_bool,
+                  right_ctrl = validators.is_bool,
+                  right_shift = validators.is_bool,
+                  right_alt = validators.is_bool,
+                  right_gui = validators.is_bool,
+                },
+              },
+            },
+          },
+
       is_key
-        = match {
-          { key_code } => true,
-          { modifiers } => true,
-          { key_code, modifiers } => true,
-          _ => false,
-        },
+        = fun k => 'Ok == key_validator k,
 
       to_json_serialized
         = fun key => key,
@@ -76,10 +108,14 @@
   layer_modifier
     | doc "for key::layered::ModifierKey."
     = {
-      is_key = match {
-        { layer_modifier = { hold } } => true,
-        _ => false,
-      },
+      key_validator
+        = fun k => k |> match {
+          { layer_modifier = { hold } } => validators.is_number hold,
+          _ => 'Error { message = "expected { layer_modifier = { hold } }" },
+        },
+
+      is_key
+        = fun k => 'Ok == key_validator k,
 
       to_json_serialized = fun { layer_modifier = { hold = hold_layer } } =>
         { Hold = hold_layer },
@@ -122,12 +158,25 @@
   layered
     | doc "for key::layered::LayeredKey."
     = {
-      is_key = match {
-        { layered, ..base_key } if std.is_array layered =>
-          nestable.is_key base_key &&
-          std.array.all (fun k => nestable.is_key k || k == null) layered,
-        _ => false,
-      },
+      key_validator
+        = fun k => k |> match {
+          { layered, ..base_key } =>
+            let valid_layered =
+              layered |>
+                validators.array.validator (
+                  validators.any_of [validators.is_null, nestable.key_validator]
+                ) in
+            let valid_base_key = nestable.key_validator base_key in
+            [valid_layered, valid_base_key] |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
+            },
+          _ => 'Error { message = "expected { layered = Array NestableKey, ..base_key }" },
+        },
+
+      is_key
+        = fun k => 'Ok == key_validator k,
 
       to_json_serialized = fun { layered = layered_keys, ..base_key } =>
         {
@@ -166,10 +215,21 @@
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
-      is_key = match {
-        { hold = hold_key, ..tap_key } => nestable.is_key hold_key &&  nestable.is_key tap_key,
-        _ => false,
-      },
+      key_validator
+        = fun k => k |> match {
+          { hold = hold_key, ..tap_key } =>
+            let valid_hold_key = nestable.key_validator hold_key in
+            let valid_tap_key = nestable.key_validator tap_key in
+            [valid_hold_key, valid_tap_key] |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
+            },
+          _ => 'Error { message = "expected { hold = NestableKey, ..tap_key }" },
+        },
+
+      is_key
+        = fun k => 'Ok == key_validator k,
 
       to_json_serialized = fun { hold = hold_key, ..tap_key } =>
         {
