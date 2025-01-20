@@ -235,7 +235,7 @@ where
 
 impl<const L: LayerIndex, K: key::Key> LayeredKey<K, ArrayImpl<L>> {
     /// Constructs a new [LayeredKey].
-    pub fn new(base: K, layered: [Option<K>; L]) -> Self {
+    pub const fn new(base: K, layered: [Option<K>; L]) -> Self {
         Self { base, layered }
     }
 }
