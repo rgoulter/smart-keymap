@@ -14,9 +14,17 @@ mod common;
 
 use common::Deserializer;
 
+/// Likely reasons why running `nickel` may fail.
+enum NickelError {
+    NickelNotFound,
+}
+
+/// Result of Nickel evaluation.
+type NickelResult = Result<String, NickelError>;
+
 /// Evaluates the Nickel expr for a keymap, returning the json serialization.
-fn nickel_json_serialization_for_keymap(keymap_ncl: &str) -> io::Result<String> {
-    let mut nickel_command = Command::new("nickel")
+fn nickel_json_serialization_for_keymap(keymap_ncl: &str) -> NickelResult {
+    let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
             "--format=json",
@@ -24,16 +32,33 @@ fn nickel_json_serialization_for_keymap(keymap_ncl: &str) -> io::Result<String> 
             "--field=serialized_json_composite_keys",
         ])
         .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
         .stdout(Stdio::piped())
-        .spawn()?;
+        .spawn()
+        .map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => return Err(NickelError::NickelNotFound),
+            _ => panic!("Failed to spawn nickel: {:?}", e),
+        });
 
-    let child_stdin = nickel_command.stdin.as_mut().unwrap();
-    child_stdin
-        .write_all(format!(r#"(import "keymap-ncl-to-json.ncl") & ({})"#, keymap_ncl).as_bytes())?;
+    match spawn_nickel_result {
+        Ok(mut nickel_command) => {
+            let child_stdin = nickel_command.stdin.as_mut().unwrap();
+            child_stdin
+                .write_all(
+                    format!(r#"(import "keymap-ncl-to-json.ncl") & ({})"#, keymap_ncl).as_bytes(),
+                )
+                .unwrap_or_else(|e| panic!("Failed to write to stdin: {:?}", e));
 
-    let output = nickel_command.wait_with_output()?;
-
-    String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+            match nickel_command.wait_with_output() {
+                Ok(output) => String::from_utf8(output.stdout)
+                    .map_err(|e| panic!("Failed to decode UTF-8: {:?}", e)),
+                Err(io_e) => {
+                    panic!("Unhandled IO error: {:?}", io_e)
+                }
+            }
+        }
+        Err(e) => Err(e?),
+    }
 }
 
 /// Evaluates the Nickel expr for an HID, returning the json serialization.
@@ -143,7 +168,9 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
             let keys_vec: Vec<Key> = Deserializer::JSON.from_str(&json).unwrap();
             world.keymap = keys_vec.into();
         }
-        Err(e) => panic!("Failed to convert keymap.ncl to json: {:?}", e),
+        Err(e) => match e {
+            NickelError::NickelNotFound => panic!("`nickel` not found on PATH. Please install it."),
+        },
     }
 }
 
