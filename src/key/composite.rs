@@ -440,17 +440,17 @@ impl TryFrom<Event> for tap_hold::Event {
 
 impl<ME: Copy, IE: Copy> TryFrom<Event> for key::ModifierKeyEvent<ME, IE>
 where
-    ME: TryFrom<Event, Error = key::EventError>,
-    IE: TryFrom<Event, Error = key::EventError>,
+    ME: TryFrom<Event>,
+    IE: TryFrom<Event>,
 {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        let res: Result<ME, key::EventError> = ev.try_into();
+        let res: Result<ME, _> = ev.try_into();
         if let Ok(key_event) = res {
             Ok(key::ModifierKeyEvent::Modifier(key_event))
         } else {
-            let res: Result<IE, key::EventError> = ev.try_into();
+            let res: Result<IE, _> = ev.try_into();
             if let Ok(key_event) = res {
                 Ok(key::ModifierKeyEvent::Inner(key_event))
             } else {
