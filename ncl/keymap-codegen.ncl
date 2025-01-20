@@ -1,7 +1,5 @@
+let validators = import "validators.ncl" in
 {
-  validators
-    = (import "validators.ncl"),
-
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
