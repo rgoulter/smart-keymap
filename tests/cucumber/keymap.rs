@@ -174,8 +174,19 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
     let keymap_ncl = step.docstring().unwrap();
     match nickel_json_serialization_for_keymap(keymap_ncl) {
         Ok(json) => {
-            let keys_vec: Vec<Key> = Deserializer::JSON.from_str(&json).unwrap();
-            world.keymap = keys_vec.into();
+            let keys_vec_result: serde_json::Result<Vec<Key>> = serde_json::from_str(&json);
+            match keys_vec_result {
+                Ok(keys_vec) => {
+                    world.keymap = keys_vec.into();
+                }
+                Err(e) => {
+                    panic!(
+                        "\n\nerror deserailizing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
+                        e,
+                        json,
+                    )
+                }
+            }
         }
         Err(e) => match e {
             NickelError::NickelNotFound => panic!("`nickel` not found on PATH. Please install it."),
