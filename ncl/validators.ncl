@@ -133,6 +133,15 @@
     check_has_only_fields
       = 'Ok == record.has_only_fields ["x", "y"] { x = 3 },
 
+    check_has_exact_fields
+      = 'Ok == record.has_exact_fields ["x"] { x = 3 },
+
+    check_has_exact_fields_missing_err
+      = record.has_exact_fields ["x", "y"] { x = 3 } |> check_is_error,
+
+    check_has_exact_fields_extra_err
+      = record.has_exact_fields ["x"] { x = 3, y = 4 } |> check_is_error,
+
     check_validator
       = 'Ok
         ==
@@ -174,6 +183,12 @@
               "Found: %{r |> std.record.fields}"
             ],
           },
+
+    has_exact_fields = fun fields r =>
+      all_of [
+        has_all_fields fields,
+        has_only_fields fields,
+      ] r,
 
     has_only_fields
       = fun fields r =>
