@@ -101,6 +101,31 @@
         },
     },
 
+  checks.check_array_validators = {
+    check_validator
+      = 'Ok == array.validator is_number [1, 2, 3],
+  },
+
+  array = {
+    validator
+      = fun elements_validator a =>
+        a |> is_array |> match {
+          'Ok =>
+            let rec validate_elements = fun elements =>
+              elements |> match {
+                [] => 'Ok,
+                [element, ..elements] =>
+                  elements_validator element |> match {
+                    'Ok => validate_elements elements,
+                    err => err,
+                  }
+              } in
+              a |> validate_elements,
+
+          err => err,
+        },
+  },
+
   checks.check_record_validators = {
     check_has_any_field_of
       = 'Ok == record.has_any_field_of ["x", "y"] { x = 3, z = 5 },
