@@ -3,22 +3,6 @@ let validators = import "validators.ncl" in
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
-  nestable
-    | doc "for key::composite::NestableKey implementors."
-    = {
-        serialized_json_validator
-          = keyboard.serialized_json_validator,
-
-        is_serialized_json
-          = keyboard.is_serialized_json,
-
-        key_type
-          = keyboard.key_type,
-
-        rust_expr
-          = keyboard.rust_expr,
-      },
-
   checks.keyboard_is
     = {
         # Use a serialized value to check the "is" predicate.
@@ -170,11 +154,11 @@ let validators = import "validators.ncl" in
           = validators.record.validator {
               fields_validator = validators.record.has_exact_fields ["base", "layered"],
               field_validators = {
-                base = nestable.serialized_json_validator,
+                base = key.serialized_json_validator,
                 layered = validators.array.validator
                   (validators.any_of [
                     validators.is_null,
-                    nestable.serialized_json_validator,
+                    key.serialized_json_validator,
                   ]),
               },
             },
@@ -188,18 +172,21 @@ let validators = import "validators.ncl" in
         #   type Key = layered::LayeredKey<keyboard::Key, L>;
         # ```
         key_type
-          = fun { layered, .. } =>
+          = fun { base, layered } =>
               let num_layers = layered |> std.array.length |> std.to_string in
               let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
-              let nested_type_path = nestable.key_type.as_rust_type_path in
+              let nested_type_path =
+                let base_key_type = key.key_type base in
+                let layered_key_types = std.array.map (fun nk => key.key_type nk) layered in
+                base_key_type.as_rust_type_path in
               let type_path = "crate::key::layered::LayeredKey<%{nested_type_path}, %{layer_impl}>" in
               { as_rust_type_path = type_path },
 
         rust_expr
           = fun { base, layered } =>
-              let base_expr = nestable.rust_expr base in
+              let base_expr = key.rust_expr base in
               let layered_exprs = layered
-                |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nestable.rust_expr lk})")
+                |> std.array.map (fun lk => if lk == null then "None" else "Some(%{key.rust_expr lk})")
                 |> std.string.join "," in
               "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
       },
@@ -223,8 +210,8 @@ let validators = import "validators.ncl" in
           = validators.record.validator {
             fields_validator = validators.record.has_exact_fields ["tap", "hold"],
             field_validators = {
-              tap = nestable.serialized_json_validator,
-              hold = nestable.serialized_json_validator,
+              tap = key.serialized_json_validator,
+              hold = key.serialized_json_validator,
             },
           },
 
@@ -232,13 +219,17 @@ let validators = import "validators.ncl" in
           = fun k => 'Ok == serialized_json_validator k,
 
         key_type
-          = let nested_type_path = nestable.key_type.as_rust_type_path in
-            { as_rust_type_path = "crate::key::tap_hold::Key<%{nested_type_path}>" },
+          = fun { hold, tap } =>
+              let nested_type_path =
+                let hold_key_type = key.key_type hold in
+                let tap_key_type = key.key_type tap in
+                tap_key_type.as_rust_type_path in
+              { as_rust_type_path = "crate::key::tap_hold::Key<%{nested_type_path}>" },
 
         rust_expr
           = fun { hold, tap, } =>
-              let hold_expr = nestable.rust_expr hold in
-              let tap_expr = nestable.rust_expr tap in
+              let hold_expr = key.rust_expr hold in
+              let tap_expr = key.rust_expr tap in
               "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
       },
 
@@ -261,7 +252,7 @@ let validators = import "validators.ncl" in
               key if keyboard.is_serialized_json key => keyboard.key_type,
               key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
               key if layered.is_serialized_json key => layered.key_type key,
-              key if tap_hold.is_serialized_json key => tap_hold.key_type,
+              key if tap_hold.is_serialized_json key => tap_hold.key_type key,
               _ => 'unknown_key_type
             },
 
