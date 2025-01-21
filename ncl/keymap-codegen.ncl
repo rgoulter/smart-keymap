@@ -338,20 +338,28 @@ let nested_key_type_for
               let base_key_type = key.key_type base in
               let non_null_layered = std.array.filter ((!=) null) layered in
               let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
-              let nested_key_type_ =
-                base_key_type in
-              let nested_type_path = nested_key_type_.as_rust_type_path in
+              let nested_key_type = nested_key_type_for ([base_key_type] @ layered_key_types) in
+              let nested_type_path = nested_key_type.as_nested_key_type in
               {
                 key_type = "crate::key::layered::LayeredKey",
-                nested_depth = (nested_key_type_for ([base_key_type] @ layered_key_types)).nested_depth,
+                nested_depth = nested_key_type.nested_depth,
                 as_rust_type_path = "%{key_type}<%{nested_type_path}, %{layer_impl}>",
               },
 
         rust_expr
           = fun { base, layered } =>
-              let base_expr = key.rust_expr base in
+              let base_key_type = key.key_type base in
+              let non_null_layered = std.array.filter ((!=) null) layered in
+              let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
+              let nested_kt = nested_key_type_for ([base_key_type] @ layered_key_types) in
+              let nk_expr =
+                if nested_kt.key_type == "crate::key::composite::Key" then
+                  composite.wrap_rust_expr
+                else
+                  key.rust_expr in
+              let base_expr = nk_expr base in
               let layered_exprs = layered
-                |> std.array.map (fun lk => if lk == null then "None" else "Some(%{key.rust_expr lk})")
+                |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nk_expr lk})")
                 |> std.string.join "," in
               "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
       },
@@ -412,20 +420,47 @@ let nested_key_type_for
           = fun { hold, tap } =>
               let hold_key_type = key.key_type hold in
               let tap_key_type = key.key_type tap in
-              let nested_key_type_ =
-                tap_key_type in
-              let nested_type_path = nested_key_type_.as_rust_type_path in
+              let nested_key_type = nested_key_type_for [hold_key_type, tap_key_type] in
+              let nested_type_path = nested_key_type.as_nested_key_type in
               {
                 key_type = "crate::key::tap_hold::Key",
-                nested_depth = (nested_key_type_for [hold_key_type, tap_key_type]).nested_depth,
+                nested_depth = nested_key_type.nested_depth,
                 as_rust_type_path = "%{key_type}<%{nested_type_path}>"
               },
 
         rust_expr
           = fun { hold, tap, } =>
-              let hold_expr = key.rust_expr hold in
-              let tap_expr = key.rust_expr tap in
+              let tap_kt = key.key_type tap in
+              let hold_kt = key.key_type hold in
+              let nested_kt = nested_key_type_for [tap_kt, hold_kt] in
+              let nk_expr =
+                if nested_kt.key_type == "crate::key::composite::Key" then
+                  composite.wrap_rust_expr
+                else
+                  key.rust_expr in
+              let hold_expr = nk_expr hold in
+              let tap_expr = nk_expr tap in
               "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
+      },
+
+  composite
+    = {
+        wrap_rust_expr
+          = match {
+              k if keyboard.is_serialized_json k =>
+                let k_expr = keyboard.rust_expr k in
+                "crate::key::composite::Key::keyboard(%{k_expr})",
+              k if layer_modifier.is_serialized_json k =>
+                let k_expr = layer_modifier.rust_expr k in
+                "crate::key::composite::Key::layer_modifier(%{k_expr})",
+              k if layered.is_serialized_json k =>
+                let k_expr = layered.key_expr k in
+                "crate::key::composite::Key::layered(%{k_expr})",
+              k if tap_hold.is_serialized_json k =>
+                let k_expr = tap_hold.rust_expr k in
+                "crate::key::composite::Key::tap_hold(%{k_expr})",
+              _ => 'Error { message = "unknown variant for key::composite::Key" },
+            },
       },
 
   key
