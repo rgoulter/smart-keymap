@@ -242,24 +242,37 @@ let validators = import "validators.ncl" in
               "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
       },
 
-  key_type_of_key
-    | doc "The type declaration for the key."
-    = match {
-        key if keyboard.is_serialized_json key => keyboard.key_type,
-        key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
-        key if layered.is_serialized_json key => layered.key_type key,
-        key if tap_hold.is_serialized_json key => tap_hold.key_type,
-        _ => 'unknown_key_type
-      },
+  key
+    = {
+        serialized_json_validator
+          = validators.any_of
+              [
+                keyboard.serialized_json_validator,
+                layer_modifier.serialized_json_validator,
+                layered.serialized_json_validator,
+                tap_hold.serialized_json_validator,
+              ],
 
-  rust_expr_of_key
-    | doc "The Rust expression for the key."
-    = match {
-        key if keyboard.is_serialized_json key => keyboard.rust_expr key,
-        key if layer_modifier.is_serialized_json key => layer_modifier.rust_expr key,
-        key if layered.is_serialized_json key => layered.rust_expr key,
-        key if tap_hold.is_serialized_json key => tap_hold.rust_expr key,
-        _ => 'unknown_key_type
+        is_serialized_json
+          = fun k => 'Ok == serialized_json_validator k,
+
+        key_type
+          = match {
+              key if keyboard.is_serialized_json key => keyboard.key_type,
+              key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
+              key if layered.is_serialized_json key => layered.key_type key,
+              key if tap_hold.is_serialized_json key => tap_hold.key_type,
+              _ => 'unknown_key_type
+            },
+
+        rust_expr
+          = match {
+              key if keyboard.is_serialized_json key => keyboard.rust_expr key,
+              key if layer_modifier.is_serialized_json key => layer_modifier.rust_expr key,
+              key if layered.is_serialized_json key => layered.rust_expr key,
+              key if tap_hold.is_serialized_json key => tap_hold.rust_expr key,
+              _ => 'unknown_key_type
+            },
       },
 
   keymap_rs
@@ -280,11 +293,11 @@ let validators = import "validators.ncl" in
           0 in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let key_types = serialized_json_keymap
-        |> std.array.map key_type_of_key
+        |> std.array.map key.key_type
         |> std.array.map (fun key_type => key_type.as_rust_type_path)
         |> std.string.join "," in
       let key_exprs = serialized_json_keymap
-        |> std.array.map (fun key => "%{rust_expr_of_key key},")
+        |> std.array.map (fun k => "%{key.rust_expr k},")
         |> std.string.join "" in
       m%"
 /// Types and initial data used for constructing [KEYMAP].
