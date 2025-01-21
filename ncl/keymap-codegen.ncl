@@ -71,6 +71,44 @@ let nested_key_type_for
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
 
+  checks.nested_key_type_for = {
+    nk_depth_for_kbd_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      {
+        actual = (nested_key_type_for [kbd_kt, kbd_kt]).nested_depth,
+        expected = 0,
+      },
+
+    nk_type_for_kbd_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      {
+        actual = (nested_key_type_for [kbd_kt, kbd_kt]).key_type,
+        expected = "crate::key::keyboard::Key",
+      },
+
+    nk_depth_for_lmod_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      let lmod = { Hold = 0 } in
+      let lmod_kt = key.key_type lmod in
+      {
+        actual = (nested_key_type_for [kbd_kt, lmod_kt]).nested_depth,
+        expected = 1,
+      },
+
+    nk_type_for_lmod_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      let lmod = { Hold = 0 } in
+      let lmod_kt = key.key_type lmod in
+      {
+        actual = (nested_key_type_for [kbd_kt, lmod_kt]).key_type,
+        expected = "crate::key::composite::Key",
+      },
+  },
+
   checks.keyboard_is
     = {
         # Use a serialized value to check the "is" predicate.
