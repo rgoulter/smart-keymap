@@ -11,31 +11,6 @@ let validators = import "validators.ncl" in
     | doc "The layers of the keymap that gets rendered to JSON"
     = [keys],
 
-  checks.nestable = {
-    check_nestable_is_key_keyboard =
-      nestable.is_key { key_code = 0x04 },
-
-    check_nestable_to_json_serialized_keyboard = {
-      actual = { key_code = 0x04 } |> nestable.to_json_serialized,
-      expected = { key_code = 0x04 },
-    },
-  },
-
-  nestable
-    | doc "for key::composite::NestableKey implementors."
-    = {
-        key_validator
-          = keyboard.key_validator,
-
-        is_key
-          = keyboard.is_key,
-
-        to_json_serialized
-          = match {
-            k if keyboard.is_key k => keyboard.to_json_serialized k,
-          },
-      },
-
   checks.keyboard
     = let K = import "keys.ncl" in
       {
@@ -138,10 +113,10 @@ let validators = import "validators.ncl" in
           },
         },
 
-        check_layered_base_keyboard_base_is_nestable_key =
-          let key = K.A & { layered = [null, K.C] } in
-          let { layered, ..base_key } = key in
-          nestable.is_key base_key,
+        check_layered_base_keyboard_base_is_key =
+          let k = K.A & { layered = [null, K.C] } in
+          let { layered, ..base_key } = k in
+          key.is_key base_key,
 
         check_layered_base_keyboard_is_key =
           let key = K.A & { layered = [null, K.C] } in
@@ -168,15 +143,15 @@ let validators = import "validators.ncl" in
                 let valid_layered =
                   layered |>
                     validators.array.validator (
-                      validators.any_of [validators.is_null, nestable.key_validator]
+                      validators.any_of [validators.is_null, key.key_validator]
                     ) in
-                let valid_base_key = nestable.key_validator base_key in
+                let valid_base_key = key.key_validator base_key in
                 [valid_layered, valid_base_key] |> match {
                   ['Ok, 'Ok] => 'Ok,
                   [err, _] => err,
                   [_, err] => err,
                 },
-              _ => 'Error { message = "expected { layered = Array NestableKey, ..base_key }" },
+              _ => 'Error { message = "expected { layered = Array Key, ..base_key }" },
             },
 
         is_key
@@ -185,10 +160,10 @@ let validators = import "validators.ncl" in
         to_json_serialized
           = fun { layered = layered_keys, ..base_key } =>
               {
-                base = nestable.to_json_serialized base_key,
+                base = key.to_json_serialized base_key,
                 layered =
                   std.array.map
-                    (fun k => if k != null then nestable.to_json_serialized k else null)
+                    (fun k => if k != null then key.to_json_serialized k else null)
                     layered_keys,
               },
       },
@@ -201,10 +176,10 @@ let validators = import "validators.ncl" in
           expected = { key_code = 0x04, hold = { modifiers = { left_ctrl = true } } },
         },
 
-        check_tap_hold_tap_keyboard_is_nestable_key =
-          let key = K.A & K.hold K.LeftCtrl  in
-          let { hold, ..tap_key } = key in
-          nestable.is_key tap_key,
+        check_tap_hold_tap_keyboard_is_key =
+          let k = K.A & K.hold K.LeftCtrl  in
+          let { hold, ..tap_key } = k in
+          key.is_key tap_key,
 
         check_tap_keyboard_hold_keyboard_is_key =
           let key = K.A & K.hold K.LeftCtrl  in
@@ -228,14 +203,14 @@ let validators = import "validators.ncl" in
           = fun k => k |>
               match {
                 { hold = hold_key, ..tap_key } =>
-                  let valid_hold_key = nestable.key_validator hold_key in
-                  let valid_tap_key = nestable.key_validator tap_key in
+                  let valid_hold_key = key.key_validator hold_key in
+                  let valid_tap_key = key.key_validator tap_key in
                   [valid_hold_key, valid_tap_key] |> match {
                     ['Ok, 'Ok] => 'Ok,
                     [err, _] => err,
                     [_, err] => err,
                   },
-                _ => 'Error { message = "expected { hold = NestableKey, ..tap_key }" },
+                _ => 'Error { message = "expected { hold = Key, ..tap_key }" },
               },
 
         is_key
@@ -244,8 +219,8 @@ let validators = import "validators.ncl" in
         to_json_serialized
           = fun { hold = hold_key, ..tap_key } =>
               {
-                hold = nestable.to_json_serialized hold_key,
-                tap = nestable.to_json_serialized tap_key,
+                hold = key.to_json_serialized hold_key,
+                tap = key.to_json_serialized tap_key,
               },
       },
 
