@@ -58,7 +58,10 @@ let validators = import "validators.ncl" in
           = fun k => 'Ok == serialized_json_validator k,
 
         key_type
-          = { as_rust_type_path = "crate::key::keyboard::Key" },
+          = {
+              key_type = "crate::key::keyboard::Key",
+              as_rust_type_path = key_type,
+            },
 
         rust_expr
           = fun key =>
@@ -117,7 +120,10 @@ let validators = import "validators.ncl" in
           = fun k => 'Ok == serialized_json_validator k,
 
         key_type
-          = { as_rust_type_path = "crate::key::layered::ModifierKey" },
+          = {
+              key_type = "crate::key::layered::ModifierKey",
+              as_rust_type_path = key_type,
+            },
 
         rust_expr
           = fun { Hold = layer_index } =>
@@ -175,12 +181,16 @@ let validators = import "validators.ncl" in
           = fun { base, layered } =>
               let num_layers = layered |> std.array.length |> std.to_string in
               let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
-              let nested_type_path =
+              let nested_key_type_ =
                 let base_key_type = key.key_type base in
                 let layered_key_types = std.array.map (fun nk => key.key_type nk) layered in
-                base_key_type.as_rust_type_path in
-              let type_path = "crate::key::layered::LayeredKey<%{nested_type_path}, %{layer_impl}>" in
-              { as_rust_type_path = type_path },
+                base_key_type in
+              let nested_type_path = nested_key_type_.as_rust_type_path in
+              {
+                key_type = "crate::key::layered::LayeredKey",
+                nested_key_type = nested_key_type_,
+                as_rust_type_path = "%{key_type}<%{nested_type_path}, %{layer_impl}>",
+              },
 
         rust_expr
           = fun { base, layered } =>
@@ -220,11 +230,16 @@ let validators = import "validators.ncl" in
 
         key_type
           = fun { hold, tap } =>
-              let nested_type_path =
+              let nested_key_type_ =
                 let hold_key_type = key.key_type hold in
                 let tap_key_type = key.key_type tap in
-                tap_key_type.as_rust_type_path in
-              { as_rust_type_path = "crate::key::tap_hold::Key<%{nested_type_path}>" },
+                tap_key_type in
+              let nested_type_path = nested_key_type_.as_rust_type_path in
+              {
+                key_type = "crate::key::tap_hold::Key",
+                nested_key_type = nested_key_type_,
+                as_rust_type_path = "%{key_type}<%{nested_type_path}>"
+              },
 
         rust_expr
           = fun { hold, tap, } =>
