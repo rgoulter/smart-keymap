@@ -45,7 +45,7 @@ let validators = import "validators.ncl" in
         },
 
         check_serialized_key_code = {
-          actual = K.A |> to_json_serialized_key,
+          actual = K.A |> key.to_json_serialized,
           expected = { key_code = 0x04 },
         },
       },
@@ -101,7 +101,7 @@ let validators = import "validators.ncl" in
         },
 
         check_serialized_hold = {
-          actual = K.layer_mod.hold 0 |> to_json_serialized_key,
+          actual = K.layer_mod.hold 0 |> key.to_json_serialized,
           expected = { Hold = 0 },
         },
       },
@@ -148,7 +148,7 @@ let validators = import "validators.ncl" in
           layered.is_key key,
 
         check_serialized_layered_keyboard = {
-          actual = K.A & { layered = [null, K.C] } |> to_json_serialized_key,
+          actual = K.A & { layered = [null, K.C] } |> key.to_json_serialized,
           expected = {
             base = { key_code = 0x04 },
             layered = [
@@ -216,7 +216,7 @@ let validators = import "validators.ncl" in
         },
 
         check_serialized_tap_keyboard_hold_keyboard = {
-          actual = K.A & K.hold K.LeftCtrl |> to_json_serialized_key,
+          actual = K.A & K.hold K.LeftCtrl |> key.to_json_serialized,
           expected = { tap = { key_code = 0x04 }, hold = { modifiers = { left_ctrl = true } } },
         },
       },
@@ -249,20 +249,22 @@ let validators = import "validators.ncl" in
               },
       },
 
-  to_json_serialized_key
-    | doc "Constructs a JSON-representable key value from the given value from keymap.ncl."
-    = match {
-        # Make key::layered::LayeredKey
-        k if layered.is_key k => layered.to_json_serialized k,
-        # Make key::tap_hold::Key from keys with a "hold" modifier.
-        k if tap_hold.is_key k => tap_hold.to_json_serialized k,
-        # Otherwise, keys with just a base key_code are key::keyboard keys.
-        k if keyboard.is_key k => keyboard.to_json_serialized k,
-        # Make key::layered::ModifierKey
-        k if layer_modifier.is_key k => layer_modifier.to_json_serialized k,
-        # Null values (None) stay null
-        null => null,
-        _ => std.fail_with "unsupported item in keymap.ncl",
+  key
+    = {
+        to_json_serialized
+          = match {
+              # Make key::layered::LayeredKey
+              k if layered.is_key k => layered.to_json_serialized k,
+              # Make key::tap_hold::Key from keys with a "hold" modifier.
+              k if tap_hold.is_key k => tap_hold.to_json_serialized k,
+              # Otherwise, keys with just a base key_code are key::keyboard keys.
+              k if keyboard.is_key k => keyboard.to_json_serialized k,
+              # Make key::layered::ModifierKey
+              k if layer_modifier.is_key k => layer_modifier.to_json_serialized k,
+              # Null values (None) stay null
+              null => null,
+              _ => std.fail_with "unsupported item in keymap.ncl",
+            },
       },
 
   to_composite_json_serialized_key
@@ -270,16 +272,16 @@ let validators = import "validators.ncl" in
     = match {
         # Make key::layered::LayeredKey
         k if layered.is_key k =>
-          { Layered = to_json_serialized_key k },
+          { Layered = key.to_json_serialized k },
         # Make key::tap_hold::Key from keys with a "hold" modifier.
         k if tap_hold.is_key k =>
-          { TapHold = to_json_serialized_key k },
+          { TapHold = key.to_json_serialized k },
         # Otherwise, keys with just a base key_code are key::keyboard keys.
         k if keyboard.is_key k =>
-          { Keyboard = to_json_serialized_key k },
+          { Keyboard = key.to_json_serialized k },
         # Make key::layered::ModifierKey
         k if layer_modifier.is_key k =>
-          { LayerModifier = to_json_serialized_key k },
+          { LayerModifier = key.to_json_serialized k },
         # Null values (None) stay null
         null => null,
         _ => std.fail_with "unsupported item in keymap.ncl",
@@ -309,7 +311,7 @@ let validators = import "validators.ncl" in
   serialized_json_keymap
     | default
     | doc "The keymap.json output value."
-    = layered_keys |> std.array.map to_json_serialized_key,
+    = layered_keys |> std.array.map key.to_json_serialized,
 
   serialized_json_composite_keys
     | doc "The keymap.json output value."
