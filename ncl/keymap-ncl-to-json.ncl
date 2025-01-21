@@ -251,6 +251,18 @@ let validators = import "validators.ncl" in
 
   key
     = {
+        key_validator
+          = fun k => k |>
+              validators.any_of [
+                keyboard.key_validator,
+                layer_modifier.key_validator,
+                layered.key_validator,
+                tap_hold.key_validator,
+              ],
+
+        is_key
+          = fun k => 'Ok == key_validator k,
+
         to_json_serialized
           = match {
               # Make key::layered::LayeredKey
