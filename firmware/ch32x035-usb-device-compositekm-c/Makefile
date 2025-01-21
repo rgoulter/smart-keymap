@@ -22,7 +22,7 @@ generated/matrix.c:
 	  ncl/matrix_scan.ncl \
 	  > generated/matrix.c
 
-.PHONY: generate-ch32x-48
+.PHONY: generated-ch32x-48
 generated-ch32x-48:
 	nickel export \
 	  --format=raw \
