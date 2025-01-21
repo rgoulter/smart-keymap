@@ -74,7 +74,7 @@ let validators = import "validators.ncl" in
           = fun k => 'Ok == serialized_json_validator k,
 
         key_type
-          = "crate::key::keyboard::Key",
+          = { as_rust_type_path = "crate::key::keyboard::Key" },
 
         rust_expr
           = fun key =>
@@ -133,7 +133,7 @@ let validators = import "validators.ncl" in
           = fun k => 'Ok == serialized_json_validator k,
 
         key_type
-          = "crate::key::layered::ModifierKey",
+          = { as_rust_type_path = "crate::key::layered::ModifierKey" },
 
         rust_expr
           = fun { Hold = layer_index } =>
@@ -191,7 +191,9 @@ let validators = import "validators.ncl" in
           = fun { layered, .. } =>
               let num_layers = layered |> std.array.length |> std.to_string in
               let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
-              "crate::key::layered::LayeredKey<%{nestable.key_type}, %{layer_impl}>",
+              let nested_type_path = nestable.key_type.as_rust_type_path in
+              let type_path = "crate::key::layered::LayeredKey<%{nested_type_path}, %{layer_impl}>" in
+              { as_rust_type_path = type_path },
 
         rust_expr
           = fun { base, layered } =>
@@ -230,7 +232,8 @@ let validators = import "validators.ncl" in
           = fun k => 'Ok == serialized_json_validator k,
 
         key_type
-          = "crate::key::tap_hold::Key<%{nestable.key_type}>",
+          = let nested_type_path = nestable.key_type.as_rust_type_path in
+            { as_rust_type_path = "crate::key::tap_hold::Key<%{nested_type_path}>" },
 
         rust_expr
           = fun { hold, tap, } =>
@@ -278,6 +281,7 @@ let validators = import "validators.ncl" in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let key_types = serialized_json_keymap
         |> std.array.map key_type_of_key
+        |> std.array.map (fun key_type => key_type.as_rust_type_path)
         |> std.string.join "," in
       let key_exprs = serialized_json_keymap
         |> std.array.map (fun key => "%{rust_expr_of_key key},")
