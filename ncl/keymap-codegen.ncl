@@ -298,7 +298,6 @@ let nested_key_type_for
               {
                 key_type = "crate::key::layered::LayeredKey",
                 nested_depth = (nested_key_type_for ([base_key_type] @ layered_key_types)).nested_depth,
-                nested_key_type = nested_key_type_,
                 as_rust_type_path = "%{key_type}<%{nested_type_path}, %{layer_impl}>",
               },
 
@@ -373,7 +372,6 @@ let nested_key_type_for
               {
                 key_type = "crate::key::tap_hold::Key",
                 nested_depth = (nested_key_type_for [hold_key_type, tap_key_type]).nested_depth,
-                nested_key_type = nested_key_type_,
                 as_rust_type_path = "%{key_type}<%{nested_type_path}>"
               },
 
