@@ -1,4 +1,72 @@
 let validators = import "validators.ncl" in
+# "Nested depth":
+#   number of composite::Key<NK> it takes to represent the key in keymap.rs.
+# e.g.:
+#
+# | Key                                            | ND |
+# +------------------------------------------------+----+
+# | keyboard::Key                                  |  0 |
+# | tap_hold::Key<keyboard::Key>                   |  0 |
+# | composite::Key<keyboard::Key>                  |  1 |
+# | tap_hold::Key<composite::Key<keyboard::Key>>   |  1 |
+# | composite::Key<composite::Key<keyboard::Key>>  |  2 |
+#
+# Discussion:
+# - Kinds of keys:
+#   - 'base keys': keys which do not contain nested keys.
+#      e.g. keyboard::Key.
+#   - 'modifier keys': keys which contain nested keys,
+#      'modifying' the functionality of the key.
+#      e.g. tap_hold::Key<NK>, layered::LayeredKey<NK>.
+#   - 'aggregate key': key type which can be formed from other key types,
+#      allowing the construction of "Array of aggregate keys".
+#      e.g. composite::Key<NK>.
+# - The 'modifier keys' in Rust require the same type for NK.
+#   - e.g. CANNOT have tap_hold key with keyboard::Key tap and layered::LayerModifier hold;
+#   - e.g.    CAN have tap_hold key with composite::Key<keyboard::Key>,
+#                  where tap = composite::Key::keyboard(...),
+#                   and hold = composite::Key::layer_modifier(...).
+# - The nested keys of the 'modifier keys' can be more freely formed in Nickel.
+# - If all the nested keys in a modifier key (e.g. both tap, hold of tap_hold::Key)
+#    can be represented by the same key type
+#    (e.g. both by keyboard::Key, or both by composite::Key<keyboard::Key>),
+#   then no further nesting is needed.
+# - Differing types can be formed into an 'aggregate' type;
+#   - e.g. a keyboard::Key and a layered::LayerModifier key can
+#     both be represented by composite::Key<NK> for any NK.
+#     (Base keys contain no nested keys)
+#   - if all modifier keys have the same depth of nesting,
+#      (e.g. tap_hold::Key<NK> and layered::LayeredKey<NK> have same NK),
+#     then these can be represented by composite::Key<NK>.
+#     - e.g. a tap_hold::Key<NK> can be represented by composite::Key<NK>.
+#   - a modifier key can increase the amount of nesting it has
+#     by wrapping its nested keys with composite::Key<>.
+#     - e.g. a tap_hold::Key<NK> can wrap its NK with composite::Key<>
+#       in order to be represented by composite::Key<composite::Key<NK>>.
+#   - a modifier key with shallower depth of nesting can
+#      increase the amount of nesting it has until it has the same depth
+#      of nesting as another modifier key.
+#      (Assuming the same base nested key).
+let nested_key_type_for
+  = fun key_types =>
+      let kt =
+        std.array.reduce_left
+          (fun x y =>
+            let kt_max_nested_depth =
+              if x.nested_depth >= y.nested_depth then
+                x
+              else
+                y in
+            if x.key_type == y.key_type then
+              kt_max_nested_depth
+            else
+              {
+                key_type = "crate::key::composite::Key",
+                nested_depth = 1 + kt_max_nested_depth.nested_depth,
+              })
+          key_types in
+      kt
+  in
 {
   serialized_json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
@@ -60,6 +128,7 @@ let validators = import "validators.ncl" in
         key_type
           = {
               key_type = "crate::key::keyboard::Key",
+              nested_depth = 0,
               as_rust_type_path = key_type,
             },
 
@@ -122,6 +191,7 @@ let validators = import "validators.ncl" in
         key_type
           = {
               key_type = "crate::key::layered::ModifierKey",
+              nested_depth = 0,
               as_rust_type_path = key_type,
             },
 
@@ -181,13 +251,15 @@ let validators = import "validators.ncl" in
           = fun { base, layered } =>
               let num_layers = layered |> std.array.length |> std.to_string in
               let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
+              let base_key_type = key.key_type base in
+              let non_null_layered = std.array.filter ((!=) null) layered in
+              let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
               let nested_key_type_ =
-                let base_key_type = key.key_type base in
-                let layered_key_types = std.array.map (fun nk => key.key_type nk) layered in
                 base_key_type in
               let nested_type_path = nested_key_type_.as_rust_type_path in
               {
                 key_type = "crate::key::layered::LayeredKey",
+                nested_depth = (nested_key_type_for ([base_key_type] @ layered_key_types)).nested_depth,
                 nested_key_type = nested_key_type_,
                 as_rust_type_path = "%{key_type}<%{nested_type_path}, %{layer_impl}>",
               },
@@ -201,14 +273,39 @@ let validators = import "validators.ncl" in
               "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
       },
 
-  checks.tap_hold_is = {
+  checks.check_tap_hold = {
     # Use a serialized value to check the "is" predicate.
     check_serialized_tap_keyboard_hold_keyboard_is
       = let serialized_value = {
           hold = { key_code = 0xE0 },
           tap = { key_code = 0x04 },
         } in
-        tap_hold.is_serialized_json serialized_value
+        tap_hold.is_serialized_json serialized_value,
+
+    check_nested_depth = {
+      check_th_keyboard = {
+        actual =
+          let th_key = {
+            hold = { key_code = 0xE0 },
+            tap = { key_code = 0x04 },
+          } in
+          (tap_hold.key_type th_key).nested_depth,
+        expected = 0,
+      },
+
+      check_th_composite_keyboard = {
+        actual =
+          # Technically, this is not "well-formed"
+          #  serialized-json, since it couldn't
+          #  be deserialized into a Rust type.
+          let th_key = {
+            hold = { Hold = 0 },
+            tap = { key_code = 0x04 },
+          } in
+          (tap_hold.key_type th_key).nested_depth,
+        expected = 1,
+      },
+    },
   },
 
   tap_hold
@@ -230,13 +327,14 @@ let validators = import "validators.ncl" in
 
         key_type
           = fun { hold, tap } =>
+              let hold_key_type = key.key_type hold in
+              let tap_key_type = key.key_type tap in
               let nested_key_type_ =
-                let hold_key_type = key.key_type hold in
-                let tap_key_type = key.key_type tap in
                 tap_key_type in
               let nested_type_path = nested_key_type_.as_rust_type_path in
               {
                 key_type = "crate::key::tap_hold::Key",
+                nested_depth = (nested_key_type_for [hold_key_type, tap_key_type]).nested_depth,
                 nested_key_type = nested_key_type_,
                 as_rust_type_path = "%{key_type}<%{nested_type_path}>"
               },
