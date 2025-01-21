@@ -105,6 +105,14 @@ let nested_key_type_for
         expected = "crate::key::keyboard::Key",
       },
 
+    nk_as_nested_key_type_for_kbd_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      {
+        actual = (nested_key_type_for [kbd_kt, kbd_kt]).as_nested_key_type,
+        expected = "crate::key::keyboard::Key",
+      },
+
     nk_depth_for_lmod_kbd =
       let kbd = { key_code = 0x04 } in
       let kbd_kt = key.key_type kbd in
@@ -123,6 +131,27 @@ let nested_key_type_for
       {
         actual = (nested_key_type_for [kbd_kt, lmod_kt]).key_type,
         expected = "crate::key::composite::Key",
+      },
+
+    nk_as_nested_key_type_for_lmod_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      let lmod = { Hold = 0 } in
+      let lmod_kt = key.key_type lmod in
+      {
+        actual = (nested_key_type_for [lmod_kt, kbd_kt]).as_nested_key_type,
+        expected = "crate::key::composite::Key<crate::key::composite::CompositeImpl<LayersImpl, crate::key::keyboard::Key>>",
+      },
+
+    nk_depth_for_th_lmod_kbd_and_kbd =
+      let kbd = { key_code = 0x04 } in
+      let kbd_kt = key.key_type kbd in
+      let lmod = { Hold = 0 } in
+      let th = { tap = kbd, hold = lmod } in
+      let th_kt = key.key_type th in
+      {
+        actual = (nested_key_type_for [kbd_kt, th_kt]).nested_depth,
+        expected = 2,
       },
   },
 
