@@ -91,46 +91,34 @@ pub type DefaultNestableKey = keyboard::Key;
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum Key<T: CompositeTypes = CompositeImpl> {
     /// A keyboard key.
-    Keyboard {
-        /// The keyboard key.
-        key: keyboard::Key,
-    },
+    Keyboard(keyboard::Key),
     /// A tap-hold key.
-    TapHold {
-        /// The tap-hold key.
-        key: tap_hold::Key<T::NK>,
-    },
+    TapHold(tap_hold::Key<T::NK>),
     /// A layer modifier key.
-    LayerModifier {
-        /// The layer modifier key.
-        key: layered::ModifierKey,
-    },
+    LayerModifier(layered::ModifierKey),
     /// A layered key.
-    Layered {
-        /// The layered key.
-        key: layered::LayeredKey<T::NK, T::L>,
-    },
+    Layered(layered::LayeredKey<T::NK, T::L>),
 }
 
 impl<T: CompositeTypes> Key<T> {
     /// Constructs a [Key::Keyboard] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
-        Self::Keyboard { key }
+        Self::Keyboard(key)
     }
 
     /// Constructs a [Key::TapHold] from the given [tap_hold::Key].
     pub const fn tap_hold(key: tap_hold::Key<T::NK>) -> Self {
-        Self::TapHold { key }
+        Self::TapHold(key)
     }
 
     /// Constructs a [Key::LayerModifier] from the given [layered::ModifierKey].
     pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
-        Self::LayerModifier { key }
+        Self::LayerModifier(key)
     }
 
     /// Constructs a [Key::Layered] from the given [layered::LayeredKey].
     pub const fn layered(key: layered::LayeredKey<T::NK, T::L>) -> Self {
-        Self::Layered { key }
+        Self::Layered(key)
     }
 }
 
@@ -149,11 +137,11 @@ impl<T: CompositeTypes> key::Key for Key<T> {
         key::PressedKeyEvents<Self::Event>,
     ) {
         match self {
-            Key::Keyboard { key, .. } => {
+            Key::Keyboard(key) => {
                 let (pressed_key, events) = key.new_pressed_key((), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
-            Key::TapHold { key, .. } => {
+            Key::TapHold(key) => {
                 let modifier_key_context = key::ModifierKeyContext::from_context(
                     context,
                     |c| c.into(),
@@ -167,11 +155,11 @@ impl<T: CompositeTypes> key::Key for Key<T> {
                     }),
                 )
             }
-            Key::LayerModifier { key, .. } => {
+            Key::LayerModifier(key) => {
                 let (pressed_key, events) = key::Key::new_pressed_key(key, (), keymap_index);
                 (pressed_key.into(), events.into_events())
             }
-            Key::Layered { key, .. } => {
+            Key::Layered(key) => {
                 let modifier_key_context = key::ModifierKeyContext::from_context(
                     context,
                     |c| c.into(),
@@ -322,7 +310,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
-            (Key::TapHold { key, .. }, PressedKeyState::TapHold(pks)) => {
+            (Key::TapHold(key), PressedKeyState::TapHold(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|event| {
                     key::ModifierKeyEvent::try_from(event, |e| e.try_into(), T::NK::try_event_from)
                 }) {
@@ -337,7 +325,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
                     key::PressedKeyEvents::no_events()
                 }
             }
-            (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pks)) => {
+            (Key::LayerModifier(key), PressedKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
                     let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
                     events.into_events()
@@ -345,7 +333,7 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
                     key::PressedKeyEvents::no_events()
                 }
             }
-            (Key::Layered { key, .. }, PressedKeyState::Layered(pks)) => {
+            (Key::Layered(key), PressedKeyState::Layered(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(T::NK::try_event_from) {
                     let modifier_key_context = key::ModifierKeyContext::from_context(
                         context,
@@ -364,12 +352,10 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
 
     fn key_output(&self, key: &Key<T>) -> Option<key::KeyOutput> {
         match (key, self) {
-            (Key::LayerModifier { key, .. }, PressedKeyState::LayerModifier(pk)) => {
-                pk.key_output(key)
-            }
-            (Key::Layered { key, .. }, PressedKeyState::Layered(pk)) => pk.key_output(key),
-            (Key::Keyboard { key, .. }, PressedKeyState::Keyboard(pk)) => pk.key_output(key),
-            (Key::TapHold { key, .. }, PressedKeyState::TapHold(pk)) => pk.key_output(key),
+            (Key::LayerModifier(key), PressedKeyState::LayerModifier(pk)) => pk.key_output(key),
+            (Key::Layered(key), PressedKeyState::Layered(pk)) => pk.key_output(key),
+            (Key::Keyboard(key), PressedKeyState::Keyboard(pk)) => pk.key_output(key),
+            (Key::TapHold(key), PressedKeyState::TapHold(pk)) => pk.key_output(key),
             _ => None,
         }
     }

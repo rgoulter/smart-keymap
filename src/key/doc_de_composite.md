@@ -16,9 +16,9 @@ type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
 let json = r#"
-  { "Keyboard": { "key": { "key_code": 4 } } }
+  { "Keyboard": { "key_code": 4 } }
 "#;
-let expected_key: Key = composite::Key::Keyboard { key: keyboard::Key::new(0x04) };
+let expected_key: Key = composite::Key::Keyboard(keyboard::Key::new(0x04));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -41,14 +41,12 @@ type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
 let json = r#"
-  { "TapHold": { "key": { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } } } }
+  { "TapHold": { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } } }
 "#;
-let expected_key: Key = composite::Key::TapHold {
-  key: tap_hold::Key {
+let expected_key: Key = composite::Key::TapHold(tap_hold::Key {
     tap: keyboard::Key::new(4),
     hold: keyboard::Key::new(224),
-  },
-};
+  });
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -71,9 +69,9 @@ type Ctx = composite::Context<T>;
 type Key = composite::Key<T>;
 
 let json = r#"
-  { "LayerModifier": { "key": { "Hold": 2 } } }
+  { "LayerModifier": { "Hold": 2 } }
 "#;
-let expected_key: Key = composite::Key::LayerModifier { key: layered::ModifierKey::Hold(2) };
+let expected_key: Key = composite::Key::LayerModifier(layered::ModifierKey::Hold(2));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -98,19 +96,15 @@ type Key = composite::Key<T>;
 let json = r#"
   {
     "Layered": {
-      "key": {
-        "base": { "key_code": 4 },
-        "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
-      }
+      "base": { "key_code": 4 },
+      "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
     }
   }
 "#;
-let expected_key: Key = composite::Key::Layered {
-  key: layered::LayeredKey {
+let expected_key: Key = composite::Key::Layered(layered::LayeredKey {
     base: keyboard::Key::new(0x04),
     layered: [Some(keyboard::Key::new(0x05)), None, Some(keyboard::Key::new(0x07))],
-  }
-};
+  });
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
