@@ -65,7 +65,24 @@ let nested_key_type_for
                 nested_depth = 1 + kt_max_nested_depth.nested_depth,
               })
           key_types in
-      kt
+      let rec nested_key_type_for_depth = fun n nk =>
+        if n == 0 then
+          nk
+        else
+          nested_key_type_for_depth
+            (n - 1)
+            "crate::key::composite::Key<crate::key::composite::CompositeImpl<LayersImpl, %{nk}>" in
+      kt & {
+        as_nested_key_type =
+          let key_type_generics = "%{nested_key_type_for_depth (kt.nested_depth - 1) "crate::key::keyboard::Key"}" in
+          if kt.nested_depth > 0 then
+            if kt.key_type == "crate::key::composite::Key" then
+              "%{kt.key_type}<crate::key::composite::CompositeImpl<LayersImpl, %{key_type_generics}>>"
+            else
+              "%{kt.key_type}<%{key_type_generics}>"
+          else
+            kt.key_type,
+      }
   in
 {
   serialized_json_keymap
