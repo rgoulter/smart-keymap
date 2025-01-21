@@ -23,19 +23,25 @@ pub trait NestableKey<L: layered::LayerImpl>: key::Key + Sized {
 
 macro_rules! impl_nestable_key {
     ($key_type:path) => {
-        impl<L: layered::LayerImpl> NestableKey<L> for $key_type {
-            fn pluck_context(context: Context<L>) -> <Self as key::Key>::Context {
+        impl<L: crate::key::layered::LayerImpl> crate::key::composite::NestableKey<L> for $key_type
+        where
+            <L as crate::key::layered::LayerImpl>::Layers<crate::key::keyboard::Key>:
+                serde::de::DeserializeOwned,
+        {
+            fn pluck_context(context: Context<L>) -> <Self as crate::key::Key>::Context {
                 context.into()
             }
 
-            fn into_event(event: <Self as crate::key::Key>::Event) -> Event {
+            fn into_event(event: <Self as crate::key::Key>::Event) -> crate::key::composite::Event {
                 event.into()
             }
 
             fn try_event_from(
-                event: Event,
+                event: crate::key::composite::Event,
             ) -> Result<<Self as crate::key::Key>::Event, crate::key::EventError> {
-                event.try_into()
+                event
+                    .try_into()
+                    .map_err(|_| crate::key::EventError::UnmappableEvent)
             }
         }
     };
@@ -44,25 +50,7 @@ macro_rules! impl_nestable_key {
 impl_nestable_key!(keyboard::Key);
 impl_nestable_key!(tap_hold::Key<keyboard::Key>);
 impl_nestable_key!(layered::ModifierKey);
-
-impl<L: layered::LayerImpl> NestableKey<L> for Key<CompositeImpl<L, keyboard::Key>>
-where
-    <L as layered::LayerImpl>::Layers<keyboard::Key>: serde::de::DeserializeOwned,
-{
-    fn pluck_context(context: Context<L>) -> <Self as key::Key>::Context {
-        context
-    }
-
-    fn into_event(event: <Self as crate::key::Key>::Event) -> Event {
-        event.into()
-    }
-
-    fn try_event_from(
-        event: Event,
-    ) -> Result<<Self as crate::key::Key>::Event, crate::key::EventError> {
-        Ok(event)
-    }
-}
+impl_nestable_key!(Key<CompositeImpl<L, keyboard::Key>>);
 
 /// Related types used by [Key], [Context] and [Event].
 pub trait CompositeTypes: Copy + Debug + PartialEq
