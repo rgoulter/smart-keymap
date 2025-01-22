@@ -768,4 +768,44 @@ mod tests {
         let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
         assert_eq!(actual_report, expected_report);
     }
+
+    #[test]
+    fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output() {
+        use key::{composite, keyboard, layered, tap_hold};
+        use tuples::Keys2;
+
+        // Assemble
+        const NUM_LAYERS: usize = 1;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
+        type Ctx = composite::Context<L>;
+        type Ev = composite::Event;
+
+        type K0 = tap_hold::Key<keyboard::Key>;
+        type K1 = keyboard::Key;
+
+        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
+            },
+            keyboard::Key::new(0x05),
+        ));
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
+        let mut keymap = Keymap::new(keys, context);
+
+        // Act
+        // Roll the keys: press 0, press 1, release 0,
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0x05, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
 }
