@@ -30,7 +30,7 @@ pub struct Config {
 /// Default tap hold config.
 pub const CONFIG: Config = Config {
     timeout: 200,
-    interrupt_response: InterruptResponse::HoldOnKeyPress,
+    interrupt_response: InterruptResponse::Ignore,
 };
 
 /// A key with tap-hold functionality.
