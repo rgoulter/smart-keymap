@@ -702,4 +702,52 @@ mod tests {
         let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
         assert_eq!(actual_report, expected_report);
     }
+
+    #[test]
+    fn test_keymap_with_tap_keyboard_hold_layermod_uses_base_when_pressed_after_layer_mod_released()
+    {
+        use key::{composite, keyboard, layered, tap_hold};
+        use tuples::Keys2;
+
+        // Assemble
+        const NUM_LAYERS: usize = 1;
+        type NK = composite::Key<composite::CompositeImpl<L, keyboard::Key>>;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
+        type Ctx = composite::Context<L>;
+        type Ev = composite::Event;
+
+        type K0 = tap_hold::Key<NK>;
+        type K1 = layered::LayeredKey<keyboard::Key, L>;
+
+        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
+            tap_hold::Key {
+                tap: NK::keyboard(keyboard::Key::new(0x04)),
+                hold: NK::layer_modifier(layered::ModifierKey::Hold(0)),
+            },
+            layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
+        ));
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
+        let mut keymap = Keymap::new(keys, context);
+
+        // 1. Press the tap-hold key
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        // 2. Resolve tap-hold to 'hold', by tapping another key.
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+        // 3. Release the tap-hold key (release layered::LayerModifier::Hold)
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+
+        // Act
+        // Press the layered key; it should be the base key.
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        let actual_report = keymap.boot_keyboard_report();
+
+        // Assert
+        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+        assert_eq!(actual_report, expected_report);
+    }
 }
