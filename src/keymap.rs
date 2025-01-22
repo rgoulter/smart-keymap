@@ -232,10 +232,25 @@ impl<
                 self.event_scheduler
                     .cancel_events_for_keymap_index(keymap_index);
             }
-            input::Event::VirtualKeyPress { key_code } => {
-                // Add to pressed keys.
+
+            input::Event::VirtualKeyPress {
+                key_code,
+                pressed_keymap_index,
+            } => {
+                // Insert into pressed_keys before the pressed key with the
+                //  given keymap index.
                 let pressed_key = input::PressedInput::Virtual { key_code };
-                self.pressed_inputs.push(pressed_key).unwrap();
+                let pos = self
+                    .pressed_inputs
+                    .iter()
+                    .position(|k| match k {
+                        input::PressedInput::Key { keymap_index, .. } => {
+                            *keymap_index == pressed_keymap_index
+                        }
+                        _ => false,
+                    })
+                    .unwrap_or(self.pressed_inputs.len());
+                self.pressed_inputs.insert(pos, pressed_key).unwrap();
             }
             input::Event::VirtualKeyRelease { key_code } => {
                 // Remove from pressed keys.
@@ -285,15 +300,25 @@ impl<
 
     /// Returns the the pressed key codes.
     pub fn pressed_keys(&self) -> KeymapOutput {
-        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key { keymap_index, .. } => {
-                let key = &self.key_definitions[*keymap_index as usize];
-                key.key_output()
-            }
-            input::PressedInput::Virtual { key_code } => {
-                Some(key::KeyOutput::from_key_code(*key_code))
-            }
-        });
+        let pressed_key_codes = self
+            .pressed_inputs
+            .iter()
+            .take_while(|pi| match pi {
+                input::PressedInput::Key { keymap_index, .. } => {
+                    let key = &self.key_definitions[*keymap_index as usize];
+                    key.key_output().is_resolved()
+                }
+                _ => true,
+            })
+            .filter_map(|pi| match pi {
+                input::PressedInput::Key { keymap_index, .. } => {
+                    let key = &self.key_definitions[*keymap_index as usize];
+                    key.key_output().to_option()
+                }
+                input::PressedInput::Virtual { key_code } => {
+                    Some(key::KeyOutput::from_key_code(*key_code))
+                }
+            });
 
         KeymapOutput::new(pressed_key_codes.collect())
     }

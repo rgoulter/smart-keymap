@@ -384,6 +384,45 @@ impl KeyOutput {
     }
 }
 
+/// Whether the key output is pending or resolved.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyOutputState {
+    /// The key state is pending.
+    Pending,
+    /// The key has output.
+    Resolved(Option<KeyOutput>),
+}
+
+impl KeyOutputState {
+    /// Constructs a [KeyOutputState] with a resolved key output.
+    pub fn resolved(key_output: KeyOutput) -> Self {
+        KeyOutputState::Resolved(Some(key_output))
+    }
+
+    /// Constructs a [KeyOutputState] indicating the key is resolved with no output.
+    pub fn no_output() -> Self {
+        KeyOutputState::Resolved(None)
+    }
+
+    /// Constructs a [KeyOutputState] indicating the key state is pending.
+    pub fn pending() -> Self {
+        KeyOutputState::Pending
+    }
+
+    /// Predicate for whether the key output is resolved.
+    pub fn is_resolved(&self) -> bool {
+        matches!(self, KeyOutputState::Resolved(_))
+    }
+
+    /// Returns the key output as an Option.
+    pub fn to_option(&self) -> Option<KeyOutput> {
+        match self {
+            KeyOutputState::Resolved(key_output) => *key_output,
+            _ => None,
+        }
+    }
+}
+
 /// [PressedKeyState] for a stateful pressed key value.
 pub trait PressedKey {
     /// The type of `Context` the pressed key handles.
@@ -399,7 +438,7 @@ pub trait PressedKey {
     ) -> PressedKeyEvents<Self::Event>;
 
     /// Output for the pressed key.
-    fn key_output(&self) -> Option<KeyOutput>;
+    fn key_output(&self) -> KeyOutputState;
 }
 
 /// Implements functionality for the pressed key.
@@ -420,7 +459,7 @@ pub trait PressedKeyState<K: Key>: Debug {
     ) -> PressedKeyEvents<Self::Event>;
 
     /// Output for the pressed key state.
-    fn key_output(&self, key: &K) -> Option<KeyOutput>;
+    fn key_output(&self, key: &K) -> KeyOutputState;
 }
 
 /// Errors for [TryFrom] implementations.

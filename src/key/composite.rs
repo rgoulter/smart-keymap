@@ -350,13 +350,13 @@ impl<T: CompositeTypes> key::PressedKeyState<Key<T>> for PressedKeyState<T> {
         }
     }
 
-    fn key_output(&self, key: &Key<T>) -> Option<key::KeyOutput> {
+    fn key_output(&self, key: &Key<T>) -> key::KeyOutputState {
         match (key, self) {
             (Key::LayerModifier(key), PressedKeyState::LayerModifier(pk)) => pk.key_output(key),
             (Key::Layered(key), PressedKeyState::Layered(pk)) => pk.key_output(key),
             (Key::Keyboard(key), PressedKeyState::Keyboard(pk)) => pk.key_output(key),
             (Key::TapHold(key), PressedKeyState::TapHold(pk)) => pk.key_output(key),
-            _ => None,
+            _ => key::KeyOutputState::no_output(),
         }
     }
 }
@@ -614,7 +614,7 @@ mod tests {
 
         // Assert
         let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
-        assert_eq!(actual_keycode, expected_keycode);
+        assert_eq!(actual_keycode.to_option(), expected_keycode);
     }
 
     #[test]
@@ -649,6 +649,6 @@ mod tests {
 
         // Assert
         let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
-        assert_eq!(actual_keycode, expected_keycode);
+        assert_eq!(actual_keycode.to_option(), expected_keycode);
     }
 }
