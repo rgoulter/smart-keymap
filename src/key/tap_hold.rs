@@ -11,6 +11,9 @@ use super::PressedKey as _;
 
 /// How the tap hold key should respond to interruptions (input events from other keys).
 pub enum InterruptResponse {
+    /// The tap-hold key ignores other key presses/taps.
+    /// (Only resolves to hold on timeout).
+    Ignore,
     /// The tap-hold key resolves as "hold" when interrupted by a key press.
     HoldOnKeyPress,
 }
@@ -156,6 +159,26 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                                 // TapHold: any interruption resolves pending TapHold as Hold.
                                 Some(TapHoldState::Hold)
                             }
+                            key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                                if keymap_index == ki {
+                                    // TapHold: not interrupted; resolved as tap.
+                                    Some(TapHoldState::Tap)
+                                } else {
+                                    None
+                                }
+                            }
+                            key::Event::Key {
+                                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                                ..
+                            } => {
+                                // Key held long enough to resolve as hold.
+                                Some(TapHoldState::Hold)
+                            }
+                            _ => None,
+                        }
+                    }
+                    InterruptResponse::Ignore => {
+                        match event {
                             key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                                 if keymap_index == ki {
                                     // TapHold: not interrupted; resolved as tap.
