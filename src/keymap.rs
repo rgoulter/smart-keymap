@@ -692,8 +692,18 @@ mod tests {
 
         // Act
         // - Press the tap-hold key.
+        // - Resolve the tap-hold as hold (Time the tap-hold key out)
         // - Press the layered key.
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap
+            .event_scheduler
+            .schedule_event(key::ScheduledEvent::immediate(key::Event::Key {
+                keymap_index: 0,
+                key_event: key::ModifierKeyEvent::<tap_hold::Event, composite::Event>::Modifier(
+                    tap_hold::Event::TapHoldTimeout,
+                )
+                .into(),
+            }));
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
         let actual_report = keymap.boot_keyboard_report();
 
@@ -735,9 +745,17 @@ mod tests {
 
         // 1. Press the tap-hold key
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        // 2. Resolve tap-hold to 'hold', by tapping another key.
-        keymap.handle_input(input::Event::Press { keymap_index: 1 });
-        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+        // 2. Resolve the tap-hold as hold (Time the tap-hold key out)
+        keymap
+            .event_scheduler
+            .schedule_event(key::ScheduledEvent::immediate(key::Event::Key {
+                keymap_index: 0,
+                key_event: key::ModifierKeyEvent::<tap_hold::Event, composite::Event>::Modifier(
+                    tap_hold::Event::TapHoldTimeout,
+                )
+                .into(),
+            }));
+        keymap.tick();
         // 3. Release the tap-hold key (release layered::LayerModifier::Hold)
         keymap.handle_input(input::Event::Release { keymap_index: 0 });
 
