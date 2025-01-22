@@ -208,8 +208,8 @@ impl<L: layered::LayerImpl> From<Context<L>> for layered::Context<L> {
 
 impl<L: layered::LayerImpl, MC, IC> From<Context<L>> for key::ModifierKeyContext<MC, IC>
 where
-    MC: From<Context<L>>,
-    IC: From<Context<L>>,
+    MC: Copy + From<Context<L>>,
+    IC: Copy + From<Context<L>>,
 {
     fn from(ctx: Context<L>) -> Self {
         key::ModifierKeyContext {
