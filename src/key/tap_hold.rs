@@ -227,9 +227,12 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     //  so, we send virtual key tap (press, scheduled release) with the
                     //  pressed key's output.
                     (TapHoldState::Tap, Some(pk)) => {
-                        if let Some(key_output) = pk.key_output() {
+                        if let Some(key_output) = pk.key_output().to_option() {
                             let key_code = key_output.key_code();
-                            let press_ev = input::Event::VirtualKeyPress { key_code };
+                            let press_ev = input::Event::VirtualKeyPress {
+                                key_code,
+                                pressed_keymap_index: keymap_index,
+                            };
                             let release_ev = input::Event::VirtualKeyRelease { key_code };
                             let mut events: key::PressedKeyEvents<Self::Event> =
                                 key::PressedKeyEvents::event(press_ev.into());
@@ -246,7 +249,10 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         }
     }
 
-    fn key_output(&self, _key: &Key<K>) -> Option<key::KeyOutput> {
-        self.pressed_key.as_ref().and_then(|pk| pk.key_output())
+    fn key_output(&self, _key: &Key<K>) -> key::KeyOutputState {
+        match &self.pressed_key {
+            Some(pk) => pk.key_output(),
+            None => key::KeyOutputState::pending(),
+        }
     }
 }

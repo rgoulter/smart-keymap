@@ -320,8 +320,8 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
         }
     }
 
-    fn key_output(&self, _key: &ModifierKey) -> Option<key::KeyOutput> {
-        None
+    fn key_output(&self, _key: &ModifierKey) -> key::KeyOutputState {
+        key::KeyOutputState::no_output()
     }
 }
 
@@ -366,7 +366,7 @@ impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
             .handle_event(context.inner_context, event)
     }
 
-    fn key_output(&self, _key: &LayeredKey<K, L>) -> Option<key::KeyOutput> {
+    fn key_output(&self, _key: &LayeredKey<K, L>) -> key::KeyOutputState {
         use crate::key::PressedKey as _;
 
         self.passthrough_pk.key_output()
@@ -515,7 +515,10 @@ mod tests {
         let (expected_pressed_key, _event) = expected_key.new_pressed_key((), keymap_index);
         let expected_key_output = expected_pressed_key.key_output();
         assert_eq!(actual_key_output, expected_key_output);
-        assert_eq!(actual_key_output, Some(KeyOutput::from_key_code(0x04)));
+        assert_eq!(
+            actual_key_output.to_option(),
+            Some(KeyOutput::from_key_code(0x04))
+        );
     }
 
     // Terminology:

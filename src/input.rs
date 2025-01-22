@@ -1,5 +1,7 @@
 use serde::Deserialize;
 
+use crate::key;
+
 /// Input events for [crate::keymap::Keymap].
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
 pub enum Event {
@@ -17,6 +19,8 @@ pub enum Event {
     VirtualKeyPress {
         /// The virtual key code.
         key_code: u8,
+        /// Inserts the virtual key before the pressed key with this keymap index.
+        pressed_keymap_index: u16,
     },
     /// A virtual key release for a given `key_code`.
     VirtualKeyRelease {
@@ -51,7 +55,7 @@ impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> cr
             .handle_event_for(context, self.keymap_index, &self.key, event)
     }
 
-    fn key_output(&self) -> Option<crate::key::KeyOutput> {
+    fn key_output(&self) -> key::KeyOutputState {
         self.pressed_key_state.key_output(&self.key)
     }
 }
