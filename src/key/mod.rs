@@ -99,7 +99,7 @@ pub trait Key: Copy + Debug + PartialEq {
     ///  may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
     ///  layers are active in [layered::Context]).
-    type Context;
+    type Context: Copy;
     /// The event used by the [Key]'s associated [Context].
     type ContextEvent;
     /// The associated `Event` is to be handled by the associated [Context],
@@ -145,14 +145,15 @@ impl Context for () {
 /// Context struct for use by "modifier" keys.
 /// (Keys which modify the behaviour of some key,
 ///  e.g. [key::layered::LayeredKey]).
-pub struct ModifierKeyContext<Ctx, NCtx> {
+#[derive(Debug, Clone, Copy)]
+pub struct ModifierKeyContext<Ctx: Copy, NCtx: Copy> {
     /// The [Context] for the modifier key.
     pub context: Ctx,
     /// The [Context] for the modified key.
     pub inner_context: NCtx,
 }
 
-impl<MC, IC> ModifierKeyContext<MC, IC> {
+impl<MC: Copy, IC: Copy> ModifierKeyContext<MC, IC> {
     /// Constructs a ModifierKeyContext from the given context, using the provided functions for context/inner_context.
     pub fn from_context<FC: Copy>(
         fc: FC,
