@@ -6,9 +6,9 @@ all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
-test: include/smart_keymap.h tests/ncl/keymap-4key-simple/keymap.rs
+test: include/smart_keymap.h
 	$(CARGO) test
-	env SMART_KEYMAP_CUSTOM_KEYMAP="$(shell pwd)/tests/ncl/keymap-4key-simple/keymap.rs" \
+	env SMART_KEYMAP_CUSTOM_KEYMAP="$(shell pwd)/tests/ncl/keymap-4key-simple/keymap.ncl" \
 	  $(CARGO) rustc --crate-type "staticlib"
 	cd tests/ceedling && ceedling
 
