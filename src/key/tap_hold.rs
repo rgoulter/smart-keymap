@@ -109,15 +109,17 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         key: &Key<K>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
+        let mut pke = key::PressedKeyEvents::no_events();
+
         match event {
             key::Event::Input(input::Event::Press { .. }) => {
                 // TapHold: any interruption resolves pending TapHold as Hold.
                 let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.resolve(TapHoldState::Hold(hold_pk));
-                hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev))
+                pke.extend(hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
+                pke
             }
             key::Event::Input(input::Event::Release { keymap_index: ki }) => {
-                let mut pke = key::PressedKeyEvents::no_events();
                 if keymap_index == ki {
                     // TapHold: resolved as tap.
                     let (tap_pk, tap_pke) = key.tap.new_pressed_key(inner_context, keymap_index);
@@ -125,7 +127,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     pke.extend(tap_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
                 }
 
-                match &self {
+                match self {
                     TapHoldState::Tap(pk) => {
                         if let Some(key_output) = pk.key_output() {
                             let key_code = key_output.key_code();
@@ -149,9 +151,10 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 // Key held long enough to resolve as hold.
                 let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.resolve(TapHoldState::Hold(hold_pk));
-                hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev))
+                pke.extend(hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
+                pke
             }
-            _ => key::PressedKeyEvents::no_events(),
+            _ => pke,
         }
     }
 
