@@ -522,6 +522,14 @@ impl<T: Copy, U: Copy> ModifierKeyEvent<T, U> {
         }
     }
 
+    /// Results in Ok if this is the inner event.
+    pub fn try_into_inner(self) -> Result<U, EventError> {
+        match self {
+            ModifierKeyEvent::Inner(u) => Ok(u),
+            _ => Err(EventError::UnmappableEvent),
+        }
+    }
+
     /// Tries to construct either variant.
     pub fn try_from<V: Copy>(
         v: V,
