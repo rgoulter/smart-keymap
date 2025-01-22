@@ -9,6 +9,27 @@ use crate::key;
 
 use super::PressedKey as _;
 
+/// How the tap hold key should respond to interruptions (input events from other keys).
+pub enum InterruptResponse {
+    /// The tap-hold key resolves as "hold" when interrupted by a key press.
+    HoldOnKeyPress,
+}
+
+/// Configuration settings for tap hold keys.
+pub struct Config {
+    /// The timeout (in number of ticks) for a tap-hold key to resolve as hold.
+    pub timeout: u16,
+
+    /// How the tap-hold key should respond to interruptions.
+    pub interrupt_response: InterruptResponse,
+}
+
+/// Default tap hold config.
+pub const CONFIG: Config = Config {
+    timeout: 200,
+    interrupt_response: InterruptResponse::HoldOnKeyPress,
+};
+
 /// A key with tap-hold functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key<K: key::Key> {
@@ -47,7 +68,7 @@ impl<K: key::Key> key::Key for Key<K> {
                 pressed_key_state: PressedKeyState::new(),
             },
             key::PressedKeyEvents::scheduled_event(
-                200,
+                CONFIG.timeout,
                 key::Event::key_event(keymap_index, key::ModifierKeyEvent::Modifier(timeout_ev)),
             ),
         )
@@ -128,27 +149,31 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         // Resolve tap-hold state per the event.
         let resolution = match self.state {
             TapHoldState::Pending => {
-                match event {
-                    key::Event::Input(input::Event::Press { .. }) => {
-                        // TapHold: any interruption resolves pending TapHold as Hold.
-                        Some(TapHoldState::Hold)
-                    }
-                    key::Event::Input(input::Event::Release { keymap_index: ki }) => {
-                        if keymap_index == ki {
-                            // TapHold: not interrupted; resolved as tap.
-                            Some(TapHoldState::Tap)
-                        } else {
-                            None
+                match CONFIG.interrupt_response {
+                    InterruptResponse::HoldOnKeyPress => {
+                        match event {
+                            key::Event::Input(input::Event::Press { .. }) => {
+                                // TapHold: any interruption resolves pending TapHold as Hold.
+                                Some(TapHoldState::Hold)
+                            }
+                            key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                                if keymap_index == ki {
+                                    // TapHold: not interrupted; resolved as tap.
+                                    Some(TapHoldState::Tap)
+                                } else {
+                                    None
+                                }
+                            }
+                            key::Event::Key {
+                                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                                ..
+                            } => {
+                                // Key held long enough to resolve as hold.
+                                Some(TapHoldState::Hold)
+                            }
+                            _ => None,
                         }
                     }
-                    key::Event::Key {
-                        key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
-                        ..
-                    } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
-                    }
-                    _ => None,
                 }
             }
             _ => None,
