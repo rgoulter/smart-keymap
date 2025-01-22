@@ -61,6 +61,7 @@ fn main() {
     if let Ok(custom_keymap_path) = env::var("SMART_KEYMAP_CUSTOM_KEYMAP") {
         let out_dir = env::var("OUT_DIR").unwrap();
         let dest_path = Path::new(&out_dir).join("keymap.rs");
+        println!("cargo:rerun-if-changed={}", dest_path.to_str().unwrap());
 
         if custom_keymap_path.ends_with(".rs") {
             println!("cargo:rustc-cfg=custom_keymap");
