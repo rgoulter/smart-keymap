@@ -125,25 +125,59 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
             }
         }
 
-        match event {
-            key::Event::Input(input::Event::Press { .. }) => {
-                // TapHold: any interruption resolves pending TapHold as Hold.
-                let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
+        // Resolve tap-hold state per the event.
+        let resolution = match self.state {
+            TapHoldState::Pending => {
+                match event {
+                    key::Event::Input(input::Event::Press { .. }) => {
+                        // TapHold: any interruption resolves pending TapHold as Hold.
+                        Some(TapHoldState::Hold)
+                    }
+                    key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                        if keymap_index == ki {
+                            // TapHold: not interrupted; resolved as tap.
+                            Some(TapHoldState::Tap)
+                        } else {
+                            None
+                        }
+                    }
+                    key::Event::Key {
+                        key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                        ..
+                    } => {
+                        // Key held long enough to resolve as hold.
+                        Some(TapHoldState::Hold)
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
+        };
+
+        match resolution {
+            Some(TapHoldState::Hold) => {
                 self.resolve(TapHoldState::Hold);
+
+                let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
                 self.pressed_key = Some(hold_pk);
                 pke.extend(hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
-                pke
             }
-            key::Event::Input(input::Event::Release { keymap_index: ki }) => {
-                if keymap_index == ki {
-                    // TapHold: resolved as tap.
-                    let (tap_pk, tap_pke) = key.tap.new_pressed_key(inner_context, keymap_index);
-                    self.resolve(TapHoldState::Tap);
-                    self.pressed_key = Some(tap_pk);
-                    pke.extend(tap_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
-                }
+            Some(TapHoldState::Tap) => {
+                self.resolve(TapHoldState::Tap);
 
+                let (tap_pk, tap_pke) = key.tap.new_pressed_key(inner_context, keymap_index);
+                self.pressed_key = Some(tap_pk);
+                pke.extend(tap_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
+            }
+            _ => {}
+        }
+
+        match event {
+            key::Event::Input(input::Event::Release { keymap_index: ki }) if keymap_index == ki => {
                 match (self.state, &self.pressed_key) {
+                    // Tap Hold key released, and the tap hold key is "tap";
+                    //  so, we send virtual key tap (press, scheduled release) with the
+                    //  pressed key's output.
                     (TapHoldState::Tap, Some(pk)) => {
                         if let Some(key_output) = pk.key_output() {
                             let key_code = key_output.key_code();
@@ -159,17 +193,6 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     }
                     _ => pke,
                 }
-            }
-            key::Event::Key {
-                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
-                ..
-            } => {
-                // Key held long enough to resolve as hold.
-                let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
-                self.resolve(TapHoldState::Hold);
-                self.pressed_key = Some(hold_pk);
-                pke.extend(hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
-                pke
             }
             _ => pke,
         }
