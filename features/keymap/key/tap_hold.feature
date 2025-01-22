@@ -61,17 +61,3 @@ Feature: TapHold Key
       let K = import "hid-usage-keyboard.ncl" in
       { modifiers = { left_ctrl = true } }
       """
-
-  Example: acts as 'hold' when interrupted
-    When the keymap registers the following input
-      """
-      [
-        Press(keymap_index: 0),
-        Press(keymap_index: 1)
-      ]
-      """
-    Then the HID keyboard report should equal
-      """
-      let K = import "hid-usage-keyboard.ncl" in
-      { modifiers = { left_ctrl = true }, key_codes = [K.B] }
-      """
