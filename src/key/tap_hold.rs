@@ -73,8 +73,10 @@ pub enum Event {
 }
 
 /// The state of a pressed tap-hold key.
-#[allow(type_alias_bounds)]
-pub type PressedKeyState<K: key::Key> = TapHoldState<input::PressedKey<K, K::PressedKeyState>>;
+#[derive(Debug, Clone, Copy)]
+pub struct PressedKeyState<K: key::Key> {
+    state: TapHoldState<input::PressedKey<K, K::PressedKeyState>>,
+}
 
 /// Convenience type for a pressed tap-hold key.
 pub type PressedKey<K> = input::PressedKey<Key<K>, PressedKeyState<K>>;
@@ -82,12 +84,14 @@ pub type PressedKey<K> = input::PressedKey<Key<K>, PressedKeyState<K>>;
 impl<K: key::Key> PressedKeyState<K> {
     /// Constructs the initial pressed key state
     fn new() -> PressedKeyState<K> {
-        TapHoldState::Pending
+        PressedKeyState {
+            state: TapHoldState::Pending,
+        }
     }
     /// Resolves the state of the key, unless it has already been resolved.
-    fn resolve(&mut self, state: PressedKeyState<K>) {
-        if let TapHoldState::Pending = self {
-            *self = state;
+    fn resolve(&mut self, state: TapHoldState<input::PressedKey<K, K::PressedKeyState>>) {
+        if let TapHoldState::Pending = self.state {
+            self.state = state;
         }
     }
 }
@@ -110,7 +114,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
 
         // Add events from inner pk handle_event
         if let Ok(inner_ev) = event.try_into_key_event(|mke| mke.try_into_inner()) {
-            if let Some(pk) = match self {
+            if let Some(pk) = match &mut self.state {
                 TapHoldState::Hold(pk) => Some(pk),
                 TapHoldState::Tap(pk) => Some(pk),
                 _ => None,
@@ -139,7 +143,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     pke.extend(tap_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
                 }
 
-                match self {
+                match &self.state {
                     TapHoldState::Tap(pk) => {
                         if let Some(key_output) = pk.key_output() {
                             let key_code = key_output.key_code();
@@ -171,7 +175,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
     }
 
     fn key_output(&self, _key: &Key<K>) -> Option<key::KeyOutput> {
-        match self {
+        match &self.state {
             TapHoldState::Tap(pk) => pk.key_output(),
             TapHoldState::Hold(pk) => pk.key_output(),
             _ => None,
