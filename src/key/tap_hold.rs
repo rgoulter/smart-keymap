@@ -39,7 +39,7 @@ impl<K: key::Key> key::Key for Key<K> {
         input::PressedKey<Self, Self::PressedKeyState>,
         key::PressedKeyEvents<Self::Event>,
     ) {
-        let timeout_ev = Event::TapHoldTimeout { keymap_index };
+        let timeout_ev = Event::TapHoldTimeout;
         (
             input::PressedKey {
                 keymap_index,
@@ -69,10 +69,7 @@ pub enum TapHoldState<T> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
     /// Event indicating the key has been held long enough to resolve as hold.
-    TapHoldTimeout {
-        /// The keymap index of the key the timeout is for.
-        keymap_index: u16,
-    },
+    TapHoldTimeout,
 }
 
 /// The state of a pressed tap-hold key.
@@ -160,7 +157,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 }
             }
             key::Event::Key {
-                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout { .. }),
+                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
                 ..
             } => {
                 // Key held long enough to resolve as hold.
