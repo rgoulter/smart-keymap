@@ -111,6 +111,21 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
     ) -> key::PressedKeyEvents<Self::Event> {
         let mut pke = key::PressedKeyEvents::no_events();
 
+        // Add events from inner pk handle_event
+        if let Ok(inner_ev) = event.try_into_key_event(|mke| mke.try_into_inner()) {
+            if let Some(pk) = match self {
+                TapHoldState::Hold(pk) => Some(pk),
+                TapHoldState::Tap(pk) => Some(pk),
+                _ => None,
+            } {
+                let pk_ev = pk
+                    .pressed_key_state
+                    .handle_event_for(inner_context, keymap_index, &pk.key, inner_ev)
+                    .map_events(|ev| key::ModifierKeyEvent::Inner(ev));
+                pke.extend(pk_ev);
+            }
+        }
+
         match event {
             key::Event::Input(input::Event::Press { .. }) => {
                 // TapHold: any interruption resolves pending TapHold as Hold.
