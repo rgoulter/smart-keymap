@@ -101,7 +101,7 @@ pub mod init {
 }
 
 #[cfg(custom_keymap)]
-include!(env!("SMART_KEYMAP_CUSTOM_KEYMAP"));
+include!(concat!(env!("OUT_DIR"), "/keymap.rs"));
 
 static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType, init::LayersImpl> =
     keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
