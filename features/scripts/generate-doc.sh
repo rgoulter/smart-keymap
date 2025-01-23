@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -ex
+set -e
 
 SCRIPTS_DIR="$(dirname "$0")"
 REPOSITORY_DIR="${SCRIPTS_DIR}/../.."

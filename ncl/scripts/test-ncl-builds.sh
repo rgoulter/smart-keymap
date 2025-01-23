@@ -5,7 +5,7 @@
 # Runs cargo build with the keymap.rs generated from the keymap.json
 #  for the given ncl snapshot test.
 
-set -ex
+set -e
 
 SCRIPTS_DIR="$(dirname "$0")"
 REPOSITORY_DIR="${SCRIPTS_DIR}/../.."

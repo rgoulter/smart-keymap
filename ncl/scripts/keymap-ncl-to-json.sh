@@ -5,7 +5,7 @@
 # Generates a keymap.json file for the keymap.ncl
 #  in the given directory.
 
-set -ex
+set -e
 
 SCRIPTS_DIR="$(dirname "$0")"
 REPOSITORY_DIR="${SCRIPTS_DIR}/../.."

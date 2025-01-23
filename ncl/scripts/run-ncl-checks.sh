@@ -4,7 +4,7 @@
 #  checking the generated output matches expected snapshots,
 #  and that the generated keymap builds.
 
-set -ex
+set -e
 
 SCRIPTS_DIR="$(dirname "$0")"
 REPOSITORY_DIR="${SCRIPTS_DIR}/../.."
