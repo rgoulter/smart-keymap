@@ -71,7 +71,7 @@ let nested_key_type_for
         else
           nested_key_type_for_depth
             (n - 1)
-            "crate::key::composite::Key<crate::key::composite::CompositeImpl<LayersImpl, %{nk}>" in
+            "crate::key::composite::Key<crate::key::composite::CompositeImpl<LayersImpl, %{nk}>>" in
       kt & {
         as_nested_key_type =
           let key_type_generics = "%{nested_key_type_for_depth (kt.nested_depth - 1) "crate::key::keyboard::Key"}" in
