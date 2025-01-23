@@ -27,13 +27,13 @@ Otherwise, other than `rust`/`cargo`, note that it's useful to have
 
 ## Smart Keymap Dependencies
 
-Assuming that some `keymap.ncl` has been used
- to generate a `keymap.rs` already,
+Using a `keymap.ncl` (or the `keymap.rs` generated from its definition),
 the keyboard firmware can be built with a command such as:
 
 ```
-env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/../../tests/ncl/keymap-42key-dvorak-simple-with-tap_hold/keymap.rs" \
+env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/../../tests/ncl/keymap-42key-dvorak-simple-with-tap_hold/keymap.ncl" \
   cargo build \
+    --release \
     --target=thumbv6m-none-eabi \
     --package=rp2040-rtic-pico42-rust-rp2040 \
     --bin=pico42-rgoulter
