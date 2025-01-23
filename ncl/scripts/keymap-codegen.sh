@@ -5,7 +5,7 @@
 # Generates a formatted Rust keymap.rs file for the keymap.json
 #  in the given directory.
 
-set -ex
+set -e
 
 SCRIPTS_DIR="$(dirname "$0")"
 REPOSITORY_DIR="${SCRIPTS_DIR}/../.."

@@ -6,7 +6,7 @@
 #  against the expected.rs in the directory for
 #  the given ncl snapshot test.
 
-set -ex
+set -e
 
 SCRIPTS_DIR="$(dirname "$0")"
 REPOSITORY_DIR="${SCRIPTS_DIR}/../.."
