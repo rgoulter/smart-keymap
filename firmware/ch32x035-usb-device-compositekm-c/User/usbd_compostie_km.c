@@ -27,6 +27,7 @@ volatile uint8_t  KB_Scan_Done = 0x00;                                          
 volatile uint16_t KB_Scan_Result = (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11);                                      // Keyboard Keys Current Scan Result
 volatile uint16_t KB_Scan_Last_Result = (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11);                                 // Keyboard Keys Last Scan Result
 uint8_t  KB_Data_Pack[ 8 ] = { 0x00 };                                          // Keyboard IN Data Packet
+uint8_t  PREV_KB_Data_Pack[ 8 ] = { 0x00 };                                          // Keyboard IN Data Packet
 volatile uint8_t  KB_LED_Last_Status = 0x00;                                    // Keyboard LED Last Result
 volatile uint8_t  KB_LED_Cur_Status = 0x00;                                     // Keyboard LED Current Result
 
@@ -85,8 +86,6 @@ void TIM3_IRQHandler( void )
 
     if( TIM_GetITStatus( TIM3, TIM_IT_Update ) != RESET )
     {
-        /* Clear interrupt flag */
-        TIM_ClearITPendingBit( TIM3, TIM_IT_Update );
 
         /* Handle keyboard scan */
         KB_Scan( );
@@ -105,19 +104,12 @@ void TIM3_IRQHandler( void )
             GPIO_WriteBit(GPIOA, GPIO_Pin_5, led_state);
         }
 
-        keymap_tick(KB_Data_Pack);
-
-        /* Determine if enumeration is complete, perform data transfer if completed */
-        if(USBFS_DevEnumStatus)
-        {
-            if( USBFS_DevEnumStatus )
-            {
-                USBFS_Endp_DataUp( DEF_UEP1, KB_Data_Pack, sizeof( KB_Data_Pack ), DEF_UEP_CPY_LOAD );
-
-                /* Handle keyboard lighting */
-                KB_LED_Handle( );
-            }
+        if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0) {
+            keymap_tick(KB_Data_Pack);
         }
+
+        /* Clear interrupt flag */
+        TIM_ClearITPendingBit( TIM3, TIM_IT_Update );
     }
 }
 
