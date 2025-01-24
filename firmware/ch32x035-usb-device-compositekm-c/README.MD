@@ -15,52 +15,33 @@ The firmware has been modified to use `libsmart_keymap`.
 
 ## Building
 
-The firmware should be linked using a `libsmart_keymap.a`
- built with a suitable keymap
- for the `riscv32imac-unknown-none-elf` target.
+The task-runner [just](https://just.systems/man/en/) is used
+ for convenient invocation of build tasks.
 
-e.g. from the repository's root directory, run:
+The `smart-keymap`'s justfile provides an `install` recipe
+ for conveniently building & installing the `libsmart_keymap.a`.
 
-```
-just build-keymap-rv-48key-checkkeys
-```
+This directory's `justfile` provides a `flash` recipe for conveniently
+ building & flashing the HID keyboard firmware.
 
+From the `smart-keymap` root directory,
+the firmware can be flashed with the keymap `tests/ncl/{test_keymap}/keymap.ncl`
+by running e.g.:
 
-The `include/smart_keymap.h` and
-`target/riscv32imac-unknown-none-elf/release/libsmart_keymap.a`
-files should be copied into the `libsmartkeymap/` directory.
-
-Matrix key scanning is generated from files under `ncl/`.
-
-To generate the `generated/matrix.c` for the CH32X-048, run:
-
-```
-make generated-ch32x-48
+``` sh
+just \
+  test_keymap=keymap-48key-checkkeys \
+  dest_dir="firmware/ch32x035-usb-device-compositekm-c/libsmartkeymap/" \
+  install && \
+just firmware/ch32x035-usb-device-compositekm-c/flash
 ```
 
-Or to generate the `generated/matrix.c` for the WeAct CH32X core board:
+### Flashing the CH32X
 
-```
-make
-```
+If the CH32X does not have code protection enabled, `wchisp` can be used to flash
+the MCU by shorting DOWNLOAD and plugging in the USB connector.
 
-An appropriate toolchain should be on `PATH`. e.g. using the package from the
-Nix flake from <https://github.com/rgoulter/ch32>:
-
-```
-nix shell github:rgoulter/ch32#mrs-riscv-embedded-gcc12
-```
-
-Then the firmware can be built with:
-
-```
-cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
-make
-```
-
-The WeAct core board, for some reason, has code protect enabled, and so requires `wlink` and a
+The WeAct core board, for some reason, has code protection enabled. This requires `wlink` and a
 and a WCH link compatible with the CH32X035, such as WCH-LinkE.
 (SEE: https://github.com/ch32-rs/wchisp/issues/68#issuecomment-2558167356).
 
-If the CH32X hasn't had code protection enabled, `wchisp` can be used to flash
-the MCU by shorting DOWNLOAD and plugging in the USB connector.
