@@ -1,16 +1,14 @@
 CARGO = cargo
 CBINDGEN = cbindgen
 
+include tests/ceedling/ceedling.mk
+
 .PHONY: all
 all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
 test: include/smart_keymap.h
-	$(CARGO) test
-	env SMART_KEYMAP_CUSTOM_KEYMAP="$(shell pwd)/tests/ncl/keymap-4key-simple/keymap.ncl" \
-	  $(CARGO) rustc --crate-type "staticlib"
-	cd tests/ceedling && ceedling
 
 .PHONY: clean
 clean:
