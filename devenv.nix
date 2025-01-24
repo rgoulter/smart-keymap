@@ -24,6 +24,7 @@
 
   packages = [
     pkgs.cmake-language-server
+    pkgs.cargo-nextest
     pkgs.just
     pkgs.nickel
     pkgs.rust-cbindgen
