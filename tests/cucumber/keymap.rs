@@ -123,8 +123,14 @@ impl LoadedKeymap {
     }
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         match self {
-            LoadedKeymap::Keymap1(keymap) => keymap.boot_keyboard_report(),
-            LoadedKeymap::Keymap2(keymap) => keymap.boot_keyboard_report(),
+            LoadedKeymap::Keymap1(keymap) => {
+                smart_keymap::keymap::KeymapOutput::new(keymap.pressed_keys())
+                    .as_hid_boot_keyboard_report()
+            }
+            LoadedKeymap::Keymap2(keymap) => {
+                smart_keymap::keymap::KeymapOutput::new(keymap.pressed_keys())
+                    .as_hid_boot_keyboard_report()
+            }
             _ => panic!("No keymap loaded"),
         }
     }
