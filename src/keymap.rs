@@ -339,8 +339,8 @@ impl<
         self.handle_all_pending_events();
     }
 
-    /// Returns the the pressed key codes.
-    pub fn pressed_keys(&self) -> KeymapOutput {
+    /// Returns the the pressed key outputs.
+    pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, 16> {
         let pressed_key_codes = self
             .pressed_inputs
             .iter()
@@ -361,12 +361,12 @@ impl<
                 }
             });
 
-        KeymapOutput::new(pressed_key_codes.collect())
+        pressed_key_codes.collect()
     }
 
     /// Returns the current HID keyboard report.
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
-        self.pressed_keys().as_hid_boot_keyboard_report()
+        KeymapOutput::new(self.pressed_keys()).as_hid_boot_keyboard_report()
     }
 }
 
