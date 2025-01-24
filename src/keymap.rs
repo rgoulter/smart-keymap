@@ -365,6 +365,7 @@ impl<
     }
 
     /// Returns the current HID keyboard report.
+    #[doc(hidden)]
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         KeymapOutput::new(self.pressed_keys()).as_hid_boot_keyboard_report()
     }
