@@ -154,7 +154,7 @@ pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
     unsafe {
         KEYMAP.tick();
 
-        let report = keymap::KeymapOutput::new(KEYMAP.pressed_keys()).as_hid_boot_keyboard_report();
+        let report = KEYMAP.report_output().as_hid_boot_keyboard_report();
         core::ptr::copy_nonoverlapping(report.as_ptr(), buf, report.len());
     }
 }
