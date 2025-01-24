@@ -25,5 +25,4 @@ build-keymap-target $SMART_KEYMAP_CUSTOM_KEYMAP target:
         --target riscv32imac-unknown-none-elf \
         --release \
         --no-default-features \
-        --features "staticlib" \
-        --features "usbd-human-interface-device"
+        --features "staticlib"

@@ -7,7 +7,6 @@ edition = "2021"
 default = ["std", "staticlib"]
 std = []
 staticlib = []
-usbd-human-interface-device = ["dep:usbd-human-interface-device"]
 
 [lib]
 name = "smart_keymap"
@@ -29,7 +28,6 @@ libc = "0.2"
 paste = "1.0"
 seq-macro = "0.3"
 serde = { version = "1.0", features = ["derive"], default-features = false }
-usbd-human-interface-device = { version = "0.5.0", optional = true }
 
 [dev-dependencies]
 cucumber = "0.21"
