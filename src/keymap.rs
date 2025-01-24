@@ -409,6 +409,26 @@ mod tests {
     }
 
     #[test]
+    fn test_hid_keyboard_reporter_reports_single_keypress() {
+        // Assemble
+        let mut input: heapless::Vec<key::KeyOutput, 16> = heapless::Vec::new();
+        input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
+
+        let mut reporter = HIDKeyboardReporter::new();
+
+        // Act
+        reporter.update(input);
+        let actual_outputs = reporter.reportable_key_outputs();
+
+        // Assert
+        let expected_outputs: heapless::Vec<key::KeyOutput, 16> = [0x04]
+            .iter()
+            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .collect();
+        assert_eq!(actual_outputs, expected_outputs);
+    }
+
+    #[test]
     fn test_keymap_with_keyboard_key_with_composite_context() {
         use key::composite::{Context, Event};
         use key::keyboard;
