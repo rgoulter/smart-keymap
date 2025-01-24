@@ -1,6 +1,10 @@
 CARGO = cargo
 CBINDGEN = cbindgen
 
+ifndef VERBOSE
+MAKEFLAGS += --no-print-directory
+endif
+
 include ncl/ncl.mk
 include tests/ceedling/ceedling.mk
 
