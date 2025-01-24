@@ -833,4 +833,84 @@ mod tests {
         let expected_report: [u8; 8] = [0, 0, 0x04, 0x05, 0, 0, 0, 0];
         assert_eq!(actual_report, expected_report);
     }
+
+    #[test]
+    fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output_desc_keycodes() {
+        use key::{composite, keyboard, layered, tap_hold};
+        use tuples::Keys2;
+
+        // Assemble
+        const K_G: u8 = 0x0A;
+        const K_O: u8 = 0x12;
+        const K_N6: u8 = 0x23;
+        const NUM_LAYERS: usize = 1;
+        type L = layered::ArrayImpl<NUM_LAYERS>;
+        type Ctx = composite::Context<L>;
+        type Ev = composite::Event;
+
+        type K0 = tap_hold::Key<keyboard::Key>;
+        type K1 = keyboard::Key;
+
+        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
+            tap_hold::Key {
+                tap: keyboard::Key::new(K_O),
+                hold: keyboard::Key::new(0xE0),
+            },
+            keyboard::Key::new(K_G),
+        ));
+        let context: Ctx = Ctx {
+            layer_context: layered::Context {
+                active_layers: [false; NUM_LAYERS],
+            },
+        };
+        let mut keymap = Keymap::new(keys, context);
+
+        // Roll the keys: press 0, press 1, release 0,
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        {
+            keymap.tick();
+            let actual_report = keymap.boot_keyboard_report();
+            let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
+            assert_eq!(actual_report, expected_report);
+        }
+        {
+            keymap.tick();
+            let actual_report = keymap.boot_keyboard_report();
+            let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
+            assert_eq!(actual_report, expected_report);
+        }
+
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+        // Tick until the "tap" virtual key from tap-hold
+        //  has been released
+        for _ in 0..200 {
+            keymap.tick();
+            let _ = keymap.pressed_keys();
+        }
+
+        // Act
+        // Roll a second time
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+
+        // Assert
+        // Only one pressed key reported in each new report,
+        //  even for multiple rolls.
+        {
+            keymap.tick();
+            let actual_report = keymap.boot_keyboard_report();
+            let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
+            assert_eq!(actual_report, expected_report);
+        }
+        {
+            keymap.tick();
+            let actual_report = keymap.boot_keyboard_report();
+            let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
+            assert_eq!(actual_report, expected_report);
+        }
+    }
 }
