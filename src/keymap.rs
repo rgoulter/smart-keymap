@@ -239,6 +239,7 @@ pub struct Keymap<
     context: composite::Context<L>,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
     event_scheduler: EventScheduler<composite::Event>,
+    hid_reporter: HIDKeyboardReporter,
 }
 
 impl<
@@ -259,6 +260,7 @@ impl<
             context,
             pressed_inputs: heapless::Vec::new(),
             event_scheduler: EventScheduler::new(),
+            hid_reporter: HIDKeyboardReporter::new(),
         }
     }
 
@@ -267,6 +269,7 @@ impl<
         self.pressed_inputs.clear();
         self.event_scheduler.init();
         self.key_definitions.reset();
+        self.hid_reporter.init();
     }
 
     /// Handles input events.
@@ -398,6 +401,14 @@ impl<
             });
 
         pressed_key_codes.collect()
+    }
+
+    /// Updates the keymap indicating a report is sent; returns the reportable keymap output.
+    pub fn report_output(&mut self) -> KeymapOutput {
+        self.hid_reporter.update(self.pressed_keys());
+        let output = KeymapOutput::new(self.hid_reporter.reportable_key_outputs());
+        self.hid_reporter.report_sent();
+        output
     }
 
     /// Returns the current HID keyboard report.
