@@ -1,3 +1,9 @@
+test_keymap := "keymap-4key-simple"
+
+dest_dir := "firmware/ch32x035-usb-device-compositekm-c/libsmartkeymap/"
+
+target := "riscv32imac-unknown-none-elf"
+
 default: test
 
 bindgen:
@@ -9,20 +15,18 @@ clean:
 test:
     make test
 
-build-keymap-rv-48key-checkkeys: && (build-keymap-rv `pwd`/"tests/ncl/keymap-48key-checkkeys/keymap.rs")
-    make tests/ncl/keymap-48key-checkkeys/keymap.rs
-
-build-test-keymap-rv-ncl_60key_dvorak: && (build-keymap-rv `pwd`/"tests/ncl/keymap-60key-dvorak-simple/keymap.rs")
-    make tests/ncl/keymap-60key-dvorak-simple/keymap.rs
-
-build-test-keymap-rv-checkkeys_60key: (build-keymap-rv `pwd`/"tests/keymaps/checkkeys_60key_keymap.rs")
-
-build-keymap-rv $SMART_KEYMAP_CUSTOM_KEYMAP: (build-keymap-target SMART_KEYMAP_CUSTOM_KEYMAP "riscv32imac-unknown-none-elf")
-
-build-keymap-target $SMART_KEYMAP_CUSTOM_KEYMAP target:
-    cargo rustc \
+build-keymap:
+    env \
+      SMART_KEYMAP_CUSTOM_KEYMAP={{env("SMART_KEYMAP_CUSTOM_KEYMAP", "tests/ncl/" + test_keymap + "/keymap.ncl")}} \
+        cargo rustc \
         --crate-type "staticlib" \
-        --target riscv32imac-unknown-none-elf \
         --release \
+        --target "{{target}}" \
         --no-default-features \
         --features "staticlib"
+
+_install:
+    cp include/smart_keymap.h {{dest_dir}}
+    cp target/{{target}}/release/libsmart_keymap.a {{dest_dir}}
+
+install: bindgen build-keymap _install
