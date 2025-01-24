@@ -36,8 +36,7 @@ jobs:
           bundle install
           cargo install --force cbindgen
 
-      - name: Run Tests
+      - name: Run Ceedling Tests
         run: |
           export PATH=$(gem environment user_gemhome)/bin:$PATH
-          make
-          make test
+          make test-ceedling
