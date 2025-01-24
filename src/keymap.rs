@@ -1038,7 +1038,6 @@ mod tests {
         // Assemble
         const K_G: u8 = 0x0A;
         const K_O: u8 = 0x12;
-        const K_N6: u8 = 0x23;
         const NUM_LAYERS: usize = 1;
         type L = layered::ArrayImpl<NUM_LAYERS>;
         type Ctx = composite::Context<L>;
