@@ -541,9 +541,14 @@ mod tests {
         // Act
         reporter.update(input);
         reporter.report_sent(); // now may report 2 keys
-        reporter.update(input_after_key_released); // now only 1 pressed
+        assert_eq!(2, reporter.num_reportable_keys);
+        reporter.update(input_after_key_released); // 1 key released; so, only may report 1 key
+        assert_eq!(1, reporter.num_reportable_keys);
         reporter.report_sent();
+        assert_eq!(1, reporter.num_reportable_keys);
         reporter.update(input_after_more_keys_pressed); // 1+2 new pressed in KM; only 2 should reported
+        reporter.report_sent();
+        assert_eq!(2, reporter.num_reportable_keys);
         let actual_outputs = reporter.reportable_key_outputs();
 
         // Assert
@@ -551,7 +556,10 @@ mod tests {
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
-        assert_eq!(actual_outputs, expected_outputs);
+        assert_eq!(
+            KeymapOutput::new(actual_outputs).as_hid_boot_keyboard_report(),
+            KeymapOutput::new(expected_outputs).as_hid_boot_keyboard_report()
+        );
     }
 
     #[test]
@@ -1059,13 +1067,13 @@ mod tests {
         keymap.handle_input(input::Event::Release { keymap_index: 0 });
         {
             keymap.tick();
-            let actual_report = keymap.boot_keyboard_report();
+            let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
             let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
             assert_eq!(actual_report, expected_report);
         }
         {
             keymap.tick();
-            let actual_report = keymap.boot_keyboard_report();
+            let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
             let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
             assert_eq!(actual_report, expected_report);
         }
@@ -1079,6 +1087,8 @@ mod tests {
             let _ = keymap.pressed_keys();
         }
 
+        let _ = keymap.report_output();
+
         // Act
         // Roll a second time
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -1090,13 +1100,13 @@ mod tests {
         //  even for multiple rolls.
         {
             keymap.tick();
-            let actual_report = keymap.boot_keyboard_report();
+            let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
             let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
             assert_eq!(actual_report, expected_report);
         }
         {
             keymap.tick();
-            let actual_report = keymap.boot_keyboard_report();
+            let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
             let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
             assert_eq!(actual_report, expected_report);
         }
