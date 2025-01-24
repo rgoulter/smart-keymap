@@ -173,17 +173,53 @@ impl HIDKeyboardReporter {
 
     /// Updates the state of the HIDKeyboardReporter with the given pressed key outputs.
     pub fn update(&mut self, pressed_key_outputs: heapless::Vec<key::KeyOutput, 16>) {
+        // e.g.
+        //  WAS: A B C
+        //  NOW: A   C D
+        //   -> released B, pressed D
+        let mut prev_iter = self.pressed_key_outputs.iter();
+        let mut new_iter = pressed_key_outputs.iter();
+
+        while let Some(new_key_output) = new_iter.next() {
+            while let Some(prev_key_output) = prev_iter.next() {
+                if prev_key_output == new_key_output {
+                    // Same key output in both
+                    break;
+                } else {
+                    // The key in the previous report doesn't match key in new report;
+                    //  hence, it has been released.
+                    if self.num_reportable_keys > 1 {
+                        self.num_reportable_keys -= 1;
+                    }
+                }
+            }
+        }
+
+        while let Some(_) = prev_iter.next() {
+            // The key in the previous report, but not in new report.
+            //  hence, it has been released.
+            if self.num_reportable_keys > 1 {
+                self.num_reportable_keys -= 1;
+            }
+        }
+
         self.pressed_key_outputs = pressed_key_outputs;
     }
 
     /// Indicate an HID report was sent. Allows reporting one more key in the next report.
     pub fn report_sent(&mut self) {
-        self.num_reportable_keys += 1;
+        if self.pressed_key_outputs.len() > self.num_reportable_keys.into() {
+            self.num_reportable_keys += 1;
+        }
     }
 
     /// Gets the filtered pressed key outputs, suitable for sending for HID reports.
     pub fn reportable_key_outputs(&self) -> heapless::Vec<key::KeyOutput, 16> {
-        self.pressed_key_outputs.clone()
+        self.pressed_key_outputs
+            .clone()
+            .into_iter()
+            .take(self.num_reportable_keys as usize)
+            .collect()
     }
 }
 
