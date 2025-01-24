@@ -1,3 +1,5 @@
+BOARD=ncl/weact-ch32x-core-board.ncl
+
 .PHONY: all
 all: generated/matrix.c libsmartkeymap
 
@@ -14,22 +16,18 @@ test:
 	  ncl/test-expected-ch32x-48.ncl \
 	  ncl/test-actual-ch32x-48.ncl
 
+.PHONY: generated/matrix.c
 generated/matrix.c:
 	nickel export \
 	  --format=raw \
 	  --field=output \
-	  ncl/weact-ch32x-core-board.ncl \
+	  $(BOARD) \
 	  ncl/matrix_scan.ncl \
 	  > generated/matrix.c
 
 .PHONY: generated-ch32x-48
-generated-ch32x-48:
-	nickel export \
-	  --format=raw \
-	  --field=output \
-	  ncl/ch32x-48.ncl \
-	  ncl/matrix_scan.ncl \
-	  > generated/matrix.c
+generated-ch32x-48: BOARD=ncl/ch32x-48.ncl
+generated-ch32x-48: generated/matrix.c
 
 .PHONY: libsmartkeymap
 libsmartkeymap: libsmartkeymap/smart_keymap.h libsmartkeymap/libsmart_keymap.a;
