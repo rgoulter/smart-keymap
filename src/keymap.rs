@@ -89,7 +89,7 @@ impl<E: Debug> EventScheduler<E> {
     }
 }
 
-/// Output from the keymap, used to build HID reports.
+/// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
 #[derive(Debug)]
 pub struct KeymapOutput {
     pressed_key_codes: heapless::Vec<key::KeyOutput, 16>,
