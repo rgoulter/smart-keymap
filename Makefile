@@ -9,7 +9,11 @@ all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
-test: include/smart_keymap.h test-ncl
+test: test-rust test-ncl test-ceedling
+
+.PHONY: test-rust
+test-rust:
+	$(CARGO) test
 
 .PHONY: clean
 clean: clean-generated-keymaps
