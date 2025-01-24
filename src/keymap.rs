@@ -146,6 +146,47 @@ impl KeymapOutput {
     }
 }
 
+/// Transforms output from the keymap so it's suitable for HID keyboard reports.
+///
+/// e.g. limits output to one new pressed key per sent report,
+///  so that the USB host doesn't confuse the sequence of pressed keys.
+#[derive(Debug)]
+pub struct HIDKeyboardReporter {
+    pressed_key_outputs: heapless::Vec<key::KeyOutput, 16>,
+    num_reportable_keys: u8,
+}
+
+impl HIDKeyboardReporter {
+    /// Constructs a new HIDKeyboardReporter.
+    pub const fn new() -> Self {
+        Self {
+            pressed_key_outputs: heapless::Vec::new(),
+            num_reportable_keys: 1,
+        }
+    }
+
+    /// Transforms the keymap output to a HID keyboard report.
+    pub fn init(&mut self) {
+        self.pressed_key_outputs.clear();
+        self.num_reportable_keys = 1;
+    }
+
+    /// Updates the state of the HIDKeyboardReporter with the given pressed key outputs.
+    pub fn update(&mut self, pressed_key_outputs: heapless::Vec<key::KeyOutput, 16>) {
+        self.pressed_key_outputs = pressed_key_outputs;
+    }
+
+    /// Indicate an HID report was sent. Allows reporting one more key in the next report.
+    pub fn report_sent(&mut self) {
+        self.num_reportable_keys += 1;
+    }
+
+    /// Gets the filtered pressed key outputs, suitable for sending for HID reports.
+    pub fn reportable_key_outputs(&self) -> heapless::Vec<key::KeyOutput, 16> {
+        self.pressed_key_outputs.clone()
+    }
+}
+
 /// State for a keymap that handles input, and outputs HID keyboard reports.
 #[derive(Debug)]
 pub struct Keymap<
