@@ -65,6 +65,9 @@ pub mod init {
     use crate::key::{composite, keyboard};
     use crate::tuples::Keys1;
 
+    /// Config used by tap-hold keys.
+    pub const TAP_HOLD_CONFIG: crate::key::tap_hold::Config = crate::key::tap_hold::DEFAULT_CONFIG;
+
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
 
