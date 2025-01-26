@@ -325,12 +325,14 @@ let validators = import "validators.ncl" in
                     key if tap_hold.is_serialized_json key =>
                       {
                         key_type = "crate::key::composite::TapHoldKey",
-                        as_rust_type_path = key_type,
+                        nested_key_type = "crate::key::composite::BaseKey",
+                        as_rust_type_path = "%{key_type}<%{nested_key_type}>",
                       },
                     key if composite.base_key.is_serialized_json key =>
                       {
                         key_type = "crate::key::composite::TapHoldKey",
-                        as_rust_type_path = key_type,
+                        nested_key_type = "crate::key::composite::BaseKey",
+                        as_rust_type_path = "%{key_type}<%{nested_key_type}>",
                       },
                     _ => 'unknown_key_type
                   },
@@ -364,12 +366,14 @@ let validators = import "validators.ncl" in
                     key if layered.is_serialized_json key =>
                       {
                         key_type = "crate::key::composite::LayeredKey",
-                        as_rust_type_path = key_type,
+                        nested_key_type = "crate::key::composite::TapHoldKey",
+                        as_rust_type_path = "%{key_type}<%{nested_key_type}>",
                       },
                     key if composite.tap_hold_key.is_serialized_json key =>
                       {
                         key_type = "crate::key::composite::LayeredKey",
-                        as_rust_type_path = key_type,
+                        nested_key_type = "crate::key::composite::TapHoldKey",
+                        as_rust_type_path = "%{key_type}<%{nested_key_type}>",
                       },
                     _ => 'unknown_key_type
                   },
