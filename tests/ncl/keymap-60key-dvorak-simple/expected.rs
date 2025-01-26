@@ -1,11 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    /// Alias for the NestedKey used for the [Context].
-    pub type NestedKey = crate::key::composite::DefaultNestableKey;
-
-    /// Types used in Composite keys.
-    pub type CompositeImpl = crate::key::composite::CompositeImpl<NestedKey>;
-
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = crate::key::composite::Context;
 

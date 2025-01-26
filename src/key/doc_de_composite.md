@@ -9,15 +9,13 @@ use key::{composite, keyboard, layered};
 
 use composite::DefaultNestableKey;
 
-type NK = composite::DefaultNestableKey;
-type T = composite::CompositeImpl<NK>;
 type Ctx = composite::Context;
-type Key = composite::Key<T>;
+type Key = composite::Key;
 
 let json = r#"
-  { "Keyboard": { "key_code": 4 } }
+  { "key_code": 4 }
 "#;
-let expected_key: Key = composite::Key::Keyboard(keyboard::Key::new(0x04));
+let expected_key: Key = composite::Key::keyboard(keyboard::Key::new(0x04));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -33,17 +31,15 @@ use key::{composite, keyboard, layered, tap_hold};
 
 use composite::DefaultNestableKey;
 
-type NK = composite::DefaultNestableKey;
-type T = composite::CompositeImpl<NK>;
 type Ctx = composite::Context;
-type Key = composite::Key<T>;
+type Key = composite::Key;
 
 let json = r#"
-  { "TapHold": { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } } }
+  { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } }
 "#;
-let expected_key: Key = composite::Key::TapHold(tap_hold::Key {
-    tap: keyboard::Key::new(4),
-    hold: keyboard::Key::new(224),
+let expected_key: Key = composite::Key::tap_hold(tap_hold::Key {
+    tap: keyboard::Key::new(4).into(),
+    hold: keyboard::Key::new(224).into(),
   });
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
@@ -60,15 +56,13 @@ use key::{composite, layered};
 
 use composite::DefaultNestableKey;
 
-type NK = composite::DefaultNestableKey;
-type T = composite::CompositeImpl<NK>;
 type Ctx = composite::Context;
-type Key = composite::Key<T>;
+type Key = composite::Key;
 
 let json = r#"
-  { "LayerModifier": { "Hold": 2 } }
+  { "Hold": 2 }
 "#;
-let expected_key: Key = composite::Key::LayerModifier(layered::ModifierKey::Hold(2));
+let expected_key: Key = composite::Key::layer_modifier(layered::ModifierKey::Hold(2));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -84,22 +78,18 @@ use key::{composite, keyboard, layered};
 
 use composite::DefaultNestableKey;
 
-type NK = composite::DefaultNestableKey;
-type T = composite::CompositeImpl<NK>;
 type Ctx = composite::Context;
-type Key = composite::Key<T>;
+type Key = composite::Key;
 
 let json = r#"
   {
-    "Layered": {
-      "base": { "key_code": 4 },
-      "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
-    }
+    "base": { "key_code": 4 },
+    "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
   }
 "#;
-let expected_key: Key = composite::Key::Layered(layered::LayeredKey::new(
-    keyboard::Key::new(0x04),
-    [Some(keyboard::Key::new(0x05)), None, Some(keyboard::Key::new(0x07))],
+let expected_key: Key = composite::Key::layered(layered::LayeredKey::new(
+    keyboard::Key::new(0x04).into(),
+    [Some(keyboard::Key::new(0x05).into()), None, Some(keyboard::Key::new(0x07).into())],
   ));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);

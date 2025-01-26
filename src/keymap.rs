@@ -706,16 +706,14 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::DefaultNestableKey;
-        type T = composite::CompositeImpl<NK>;
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key<T>;
+        type K = composite::Key;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04),
-                [Some(keyboard::Key::new(0x05))],
+                keyboard::Key::new(0x04).into(),
+                [Some(keyboard::Key::new(0x05).into())],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -736,16 +734,14 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::DefaultNestableKey;
-        type T = composite::CompositeImpl<NK>;
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key<T>;
+        type K = composite::Key;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04),
-                [Some(keyboard::Key::new(0x05))],
+                keyboard::Key::new(0x04).into(),
+                [Some(keyboard::Key::new(0x05).into())],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -768,16 +764,14 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::DefaultNestableKey;
-        type T = composite::CompositeImpl<NK>;
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key<T>;
+        type K = composite::Key;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04),
-                [Some(keyboard::Key::new(0x05))],
+                keyboard::Key::new(0x04).into(),
+                [Some(keyboard::Key::new(0x05).into())],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -800,16 +794,14 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::DefaultNestableKey;
-        type T = composite::CompositeImpl<NK>;
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key<T>;
+        type K = composite::Key;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
             K::layer_modifier(layered::ModifierKey::Hold(0)),
             K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04),
-                [Some(keyboard::Key::new(0x05))],
+                keyboard::Key::new(0x04).into(),
+                [Some(keyboard::Key::new(0x05).into())],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -837,7 +829,7 @@ mod tests {
         // - In order to have { tap: Keyboard, hold: LayerMod },
         //    we need to use the aggregate composite::Key
         //    as the nested key type.
-        type NK = composite::Key<composite::CompositeImpl<keyboard::Key>>;
+        type NK = composite::Key;
         type Ctx = composite::Context;
         type Ev = composite::Event;
 
@@ -885,7 +877,7 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::Key<composite::CompositeImpl<keyboard::Key>>;
+        type NK = composite::Key;
         type Ctx = composite::Context;
         type Ev = composite::Event;
 

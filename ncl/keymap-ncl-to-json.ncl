@@ -258,17 +258,13 @@ let validators = import "validators.ncl" in
     | doc "Constructs a JSON-representable composite::Key value from the given value from keymap.ncl."
     = match {
         # Make key::layered::LayeredKey
-        k if layered.is_key k =>
-          { Layered = key.to_json_serialized k },
+        k if layered.is_key k => key.to_json_serialized k,
         # Make key::tap_hold::Key from keys with a "hold" modifier.
-        k if tap_hold.is_key k =>
-          { TapHold = key.to_json_serialized k },
+        k if tap_hold.is_key k => key.to_json_serialized k,
         # Otherwise, keys with just a base key_code are key::keyboard keys.
-        k if keyboard.is_key k =>
-          { Keyboard = key.to_json_serialized k },
+        k if keyboard.is_key k => key.to_json_serialized k,
         # Make key::layered::ModifierKey
-        k if layer_modifier.is_key k =>
-          { LayerModifier = key.to_json_serialized k },
+        k if layer_modifier.is_key k => key.to_json_serialized k,
         # Null values (None) stay null
         null => null,
         _ => std.fail_with "unsupported item in keymap.ncl",

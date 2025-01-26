@@ -91,9 +91,7 @@ fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
     String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-type NestedKey = key::composite::DefaultNestableKey;
-type CompositeImpl = key::composite::CompositeImpl<NestedKey>;
-type Key = key::composite::Key<CompositeImpl>;
+type Key = key::composite::Key;
 type Context = key::composite::Context;
 type Event = key::composite::Event;
 
