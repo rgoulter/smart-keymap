@@ -63,7 +63,7 @@ where
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(untagged))]
-pub enum LayeredKey<K: LayeredNestable = TapHoldKey> {
+pub enum LayeredKey<K: LayeredNestable> {
     /// A layered key.
     Layered(layered::LayeredKey<K>),
     /// Non-layered,
@@ -465,7 +465,7 @@ impl<PKS: Into<PressedBaseKeyState>> From<PKS> for PressedTapHoldKeyState {
 
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
-pub enum PressedLayeredKeyState<K: LayeredNestable = TapHoldKey> {
+pub enum PressedLayeredKeyState<K: LayeredNestable> {
     /// A layer modifier key's pressed state.
     Layered(layered::PressedLayeredKeyState<K>),
     /// Passthrough state.
