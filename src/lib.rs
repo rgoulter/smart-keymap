@@ -65,6 +65,9 @@ pub mod init {
     use crate::key::{composite, keyboard};
     use crate::tuples::Keys1;
 
+    /// Number of layers supported by the [crate::key::layered] implementation.
+    pub const LAYER_COUNT: usize = 8;
+
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = composite::Context;
 
