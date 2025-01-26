@@ -13,11 +13,6 @@ name = "smart_keymap"
 crate-type = ["lib"]
 
 [[test]]
-name = "cucumber-deserialization"
-path = "tests/cucumber/deserialization.rs"
-harness = false
-
-[[test]]
 name = "cucumber-keymap"
 path = "tests/cucumber/keymap.rs"
 harness = false
