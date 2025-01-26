@@ -43,15 +43,31 @@ pub enum TapHoldKey<K: TapHoldNestable = BaseKey> {
     Pass(K),
 }
 
+/// Trait for types which can be nested in [LayeredKey] variants.
+pub trait LayeredNestable: key::Key {}
+
+impl LayeredNestable for layered::ModifierKey {}
+impl LayeredNestable for keyboard::Key {}
+impl LayeredNestable for BaseKey {}
+impl<K: TapHoldNestable> LayeredNestable for TapHoldKey<K>
+where
+    <K as key::Key>::Context: From<Context>,
+    <K as key::Key>::Event: TryFrom<Event>,
+    Event: From<<K as key::Key>::Event>,
+    TapHoldKey<K>: From<K>,
+    PressedTapHoldKeyState<K>: From<<K as key::Key>::PressedKeyState>,
+{
+}
+
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(untagged))]
-pub enum LayeredKey {
+pub enum LayeredKey<K: LayeredNestable = TapHoldKey> {
     /// A layered key.
-    Layered(layered::LayeredKey<TapHoldKey>),
+    Layered(layered::LayeredKey<K>),
     /// Non-layered,
-    Pass(TapHoldKey),
+    Pass(K),
 }
 
 impl key::Key for BaseKey {
@@ -139,11 +155,18 @@ impl<K: Into<BaseKey>> From<K> for TapHoldKey {
     }
 }
 
-impl key::Key for LayeredKey {
+impl<K: LayeredNestable> key::Key for LayeredKey<K>
+where
+    <K as key::Key>::Context: From<Context>,
+    <K as key::Key>::Event: TryFrom<Event>,
+    Event: From<<K as key::Key>::Event>,
+    LayeredKey<K>: From<K>,
+    PressedLayeredKeyState<K>: From<<K as key::Key>::PressedKeyState>,
+{
     type Context = Context;
     type ContextEvent = Event;
     type Event = Event;
-    type PressedKeyState = PressedLayeredKeyState;
+    type PressedKeyState = PressedLayeredKeyState<K>;
 
     fn new_pressed_key(
         &self,
@@ -159,15 +182,15 @@ impl key::Key for LayeredKey {
                 (pressed_key.into_pressed_key(), events.into_events())
             }
             LayeredKey::Pass(key) => {
-                let (pressed_key, events) = key.new_pressed_key(context, keymap_index);
+                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
                 (pressed_key.into_pressed_key(), events.into_events())
             }
         }
     }
 }
 
-impl From<layered::LayeredKey<TapHoldKey>> for LayeredKey {
-    fn from(key: layered::LayeredKey<TapHoldKey>) -> Self {
+impl<K: LayeredNestable> From<layered::LayeredKey<K>> for LayeredKey<K> {
+    fn from(key: layered::LayeredKey<K>) -> Self {
         LayeredKey::Layered(key)
     }
 }
@@ -424,24 +447,31 @@ impl<PKS: Into<PressedBaseKeyState>> From<PKS> for PressedTapHoldKeyState {
 
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
-pub enum PressedLayeredKeyState {
+pub enum PressedLayeredKeyState<K: LayeredNestable = TapHoldKey> {
     /// A layer modifier key's pressed state.
-    Layered(layered::PressedLayeredKeyState<TapHoldKey>),
+    Layered(layered::PressedLayeredKeyState<K>),
     /// Passthrough state.
-    Pass(PressedTapHoldKeyState),
+    Pass(<K as key::Key>::PressedKeyState),
 }
 
 /// Convenience type alias for a [key::PressedKey] with a layered key.
-pub type PressedLayeredKey = input::PressedKey<LayeredKey, PressedLayeredKeyState>;
+pub type PressedLayeredKey<K> = input::PressedKey<LayeredKey<K>, PressedLayeredKeyState<K>>;
 
-impl key::PressedKeyState<LayeredKey> for PressedLayeredKeyState {
+impl<K: LayeredNestable> key::PressedKeyState<LayeredKey<K>> for PressedLayeredKeyState<K>
+where
+    <K as key::Key>::Context: From<Context>,
+    <K as key::Key>::Event: TryFrom<Event>,
+    Event: From<<K as key::Key>::Event>,
+    LayeredKey<K>: From<K>,
+    PressedLayeredKeyState<K>: From<<K as key::Key>::PressedKeyState>,
+{
     type Event = Event;
 
     fn handle_event_for(
         &mut self,
         context: Context,
         keymap_index: u16,
-        key: &LayeredKey,
+        key: &LayeredKey<K>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
@@ -456,14 +486,22 @@ impl key::PressedKeyState<LayeredKey> for PressedLayeredKeyState {
                 }
             }
             (LayeredKey::Pass(key), PressedLayeredKeyState::Pass(pks)) => {
-                let events = pks.handle_event_for(context, keymap_index, key, event);
-                events.into_events()
+                if let Ok(ev) = event.try_into_key_event(|event| {
+                    event
+                        .try_into()
+                        .map_err(|_| key::EventError::UnmappableEvent)
+                }) {
+                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
+                    events.into_events()
+                } else {
+                    key::PressedKeyEvents::no_events()
+                }
             }
             _ => key::PressedKeyEvents::no_events(),
         }
     }
 
-    fn key_output(&self, key: &LayeredKey) -> key::KeyOutputState {
+    fn key_output(&self, key: &LayeredKey<K>) -> key::KeyOutputState {
         match (key, self) {
             (LayeredKey::Layered(key), PressedLayeredKeyState::Layered(pks)) => pks.key_output(key),
             (LayeredKey::Pass(key), PressedLayeredKeyState::Pass(pks)) => pks.key_output(key),
@@ -472,8 +510,8 @@ impl key::PressedKeyState<LayeredKey> for PressedLayeredKeyState {
     }
 }
 
-impl From<layered::PressedLayeredKeyState<TapHoldKey>> for PressedLayeredKeyState {
-    fn from(pks: layered::PressedLayeredKeyState<TapHoldKey>) -> Self {
+impl<K: LayeredNestable> From<layered::PressedLayeredKeyState<K>> for PressedLayeredKeyState<K> {
+    fn from(pks: layered::PressedLayeredKeyState<K>) -> Self {
         PressedLayeredKeyState::Layered(pks)
     }
 }
