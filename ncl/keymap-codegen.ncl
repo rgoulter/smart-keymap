@@ -441,7 +441,21 @@ let validators = import "validators.ncl" in
 
   keymap_rs
     | doc "Text contents of the keymap.rs generated from the keymap.json"
-    = let { keys, .. } = serialized_json_keymap in
+    = let { config, keys } = serialized_json_keymap &
+        {
+          config = {
+            tap_hold = {
+              timeout | default = 200,
+              interrupt_response | default = "Ignore",
+            },
+          },
+        } in
+      let tap_hold_config_expr = m%"
+        crate::key::tap_hold::Config {
+            timeout: %{std.to_string config.tap_hold.timeout},
+            interrupt_response: crate::key::tap_hold::InterruptResponse::%{config.tap_hold.interrupt_response},
+        }
+      "% in
       let keymap_len = std.array.length keys in
       let num_layers =
         keys |>
@@ -468,10 +482,7 @@ let validators = import "validators.ncl" in
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
     /// Config used by tap-hold keys.
-    pub const TAP_HOLD_CONFIG: crate::key::tap_hold::Config = crate::key::tap_hold::Config {
-        timeout: 200,
-        interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
-    };
+    pub const TAP_HOLD_CONFIG: crate::key::tap_hold::Config = %{tap_hold_config_expr};
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
