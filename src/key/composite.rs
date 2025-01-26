@@ -36,7 +36,7 @@ impl TapHoldNestable for BaseKey {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(untagged))]
-pub enum TapHoldKey<K: TapHoldNestable = BaseKey> {
+pub enum TapHoldKey<K: TapHoldNestable> {
     /// A tap-hold key.
     TapHold(tap_hold::Key<K>),
     /// A non-tap-hold key.
@@ -390,7 +390,7 @@ impl From<layered::PressedModifierKeyState> for PressedBaseKeyState {
 
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
-pub enum PressedTapHoldKeyState<K: TapHoldNestable = BaseKey> {
+pub enum PressedTapHoldKeyState<K: TapHoldNestable> {
     /// A tap-hold key's pressed state.
     TapHold(tap_hold::PressedKeyState<K>),
     /// Passthrough state.
