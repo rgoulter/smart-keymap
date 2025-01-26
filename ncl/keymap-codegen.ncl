@@ -467,6 +467,12 @@ let validators = import "validators.ncl" in
       m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
+    /// Config used by tap-hold keys.
+    pub const TAP_HOLD_CONFIG: crate::key::tap_hold::Config = crate::key::tap_hold::Config {
+        timeout: 200,
+        interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
+    };
+
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
 

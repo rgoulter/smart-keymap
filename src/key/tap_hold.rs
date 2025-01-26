@@ -9,7 +9,10 @@ use crate::key;
 
 use super::PressedKey as _;
 
+use crate::init::TAP_HOLD_CONFIG;
+
 /// How the tap hold key should respond to interruptions (input events from other keys).
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum InterruptResponse {
     /// The tap-hold key ignores other key presses/taps.
     /// (Only resolves to hold on timeout).
@@ -19,6 +22,7 @@ pub enum InterruptResponse {
 }
 
 /// Configuration settings for tap hold keys.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The timeout (in number of ticks) for a tap-hold key to resolve as hold.
     pub timeout: u16,
@@ -28,7 +32,7 @@ pub struct Config {
 }
 
 /// Default tap hold config.
-pub const CONFIG: Config = Config {
+pub const DEFAULT_CONFIG: Config = Config {
     timeout: 200,
     interrupt_response: InterruptResponse::Ignore,
 };
@@ -71,12 +75,18 @@ impl<K: key::Key> key::Key for Key<K> {
                 pressed_key_state: PressedKeyState::new(),
             },
             key::PressedKeyEvents::scheduled_event(
-                CONFIG.timeout,
+                TAP_HOLD_CONFIG.timeout,
                 key::Event::key_event(keymap_index, key::ModifierKeyEvent::Modifier(timeout_ev)),
             ),
         )
     }
 }
+
+/// Context for [Key].
+pub struct Context {}
+
+/// Default context.
+pub const DEFAULT_CONTEXT: Context = Context {};
 
 /// The state of a tap-hold key.
 #[derive(Debug, Clone, Copy)]
@@ -152,7 +162,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         // Resolve tap-hold state per the event.
         let resolution = match self.state {
             TapHoldState::Pending => {
-                match CONFIG.interrupt_response {
+                match TAP_HOLD_CONFIG.interrupt_response {
                     InterruptResponse::HoldOnKeyPress => {
                         match event {
                             key::Event::Input(input::Event::Press { .. }) => {
