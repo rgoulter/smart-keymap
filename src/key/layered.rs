@@ -8,8 +8,7 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
-/// Number of layers supported by the [ArrayImpl] implementation.
-pub const LAYER_COUNT: usize = 8;
+pub use crate::init::LAYER_COUNT;
 
 /// The type used for layer index.
 pub type LayerIndex = usize;

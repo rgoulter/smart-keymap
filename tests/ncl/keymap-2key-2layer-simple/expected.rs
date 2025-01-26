@@ -1,5 +1,8 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
+    /// Number of layers supported by the [crate::key::layered] implementation.
+    pub const LAYER_COUNT: usize = 1;
+
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = crate::key::composite::Context;
 
