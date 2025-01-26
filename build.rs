@@ -15,7 +15,7 @@ pub enum NickelError {
 pub type NickelResult = Result<String, NickelError>;
 
 /// Evaluates the Nickel expr for a keymap, returning the json serialization.
-pub fn nickel_json_serialization_for_keymap_path(keymap_path: &Path) -> NickelResult {
+pub fn nickel_keymap_rs_for_keymap_path(keymap_path: &Path) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
@@ -55,6 +55,34 @@ pub fn nickel_json_serialization_for_keymap_path(keymap_path: &Path) -> NickelRe
     }
 }
 
+/// Tries running the given source through `rustfmt`.
+pub fn rustfmt(rust_src: String) -> String {
+    let spawn_rustfmt_result = Command::new("rustfmt")
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn();
+
+    match spawn_rustfmt_result {
+        Ok(mut rustfmt_child) => {
+            let child_stdin = rustfmt_child.stdin.as_mut().unwrap();
+            child_stdin.write_all(rust_src.as_bytes()).unwrap();
+
+            match rustfmt_child.wait_with_output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        String::from_utf8(output.stdout).unwrap_or(rust_src)
+                    } else {
+                        rust_src
+                    }
+                }
+                Err(_) => rust_src,
+            }
+        }
+        Err(_) => return rust_src,
+    }
+}
+
 fn main() {
     println!("cargo:rerun-if-env-changed=SMART_KEYMAP_CUSTOM_KEYMAP");
     println!("cargo::rustc-check-cfg=cfg(custom_keymap)");
@@ -73,10 +101,11 @@ fn main() {
 
             // Evaluate the custom keymap file with Nickel
             let keymap_path = Path::new(&custom_keymap_path);
-            match nickel_json_serialization_for_keymap_path(keymap_path) {
-                Ok(json_serialization) => {
+            match nickel_keymap_rs_for_keymap_path(keymap_path) {
+                Ok(keymap_rs) => {
                     let mut file = fs::File::create(&dest_path).unwrap();
-                    file.write_all(json_serialization.as_bytes()).unwrap();
+                    let formatted = rustfmt(keymap_rs);
+                    file.write_all(formatted.as_bytes()).unwrap();
                 }
                 Err(NickelError::NickelNotFound) => {
                     panic!("`nickel` not found in PATH");
