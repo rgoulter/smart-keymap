@@ -25,15 +25,22 @@ pub enum BaseKey {
     Keyboard(keyboard::Key),
 }
 
+/// Trait for types which can be nested in [TapHoldKey] variants.
+pub trait TapHoldNestable: key::Key {}
+
+impl TapHoldNestable for layered::ModifierKey {}
+impl TapHoldNestable for keyboard::Key {}
+impl TapHoldNestable for BaseKey {}
+
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(untagged))]
-pub enum TapHoldKey {
+pub enum TapHoldKey<K: TapHoldNestable = BaseKey> {
     /// A tap-hold key.
-    TapHold(tap_hold::Key<BaseKey>),
+    TapHold(tap_hold::Key<K>),
     /// A non-tap-hold key.
-    Pass(BaseKey),
+    Pass(K),
 }
 
 /// An aggregate of [key::Key] types.
@@ -86,11 +93,18 @@ impl From<layered::ModifierKey> for BaseKey {
     }
 }
 
-impl key::Key for TapHoldKey {
+impl<K: TapHoldNestable> key::Key for TapHoldKey<K>
+where
+    <K as key::Key>::Context: From<Context>,
+    <K as key::Key>::Event: TryFrom<Event>,
+    Event: From<<K as key::Key>::Event>,
+    TapHoldKey<K>: From<K>,
+    PressedTapHoldKeyState<K>: From<<K as key::Key>::PressedKeyState>,
+{
     type Context = Context;
     type ContextEvent = Event;
     type Event = Event;
-    type PressedKeyState = PressedTapHoldKeyState;
+    type PressedKeyState = PressedTapHoldKeyState<K>;
 
     fn new_pressed_key(
         &self,
@@ -106,15 +120,15 @@ impl key::Key for TapHoldKey {
                 (pressed_key.into_pressed_key(), events.into_events())
             }
             TapHoldKey::Pass(key) => {
-                let (pressed_key, events) = key.new_pressed_key(context, keymap_index);
+                let (pressed_key, events) = key.new_pressed_key(context.into(), keymap_index);
                 (pressed_key.into_pressed_key(), events.into_events())
             }
         }
     }
 }
 
-impl From<tap_hold::Key<BaseKey>> for TapHoldKey {
-    fn from(key: tap_hold::Key<BaseKey>) -> Self {
+impl<K: TapHoldNestable> From<tap_hold::Key<K>> for TapHoldKey<K> {
+    fn from(key: tap_hold::Key<K>) -> Self {
         TapHoldKey::TapHold(key)
     }
 }
@@ -335,24 +349,31 @@ impl From<layered::PressedModifierKeyState> for PressedBaseKeyState {
 
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
-pub enum PressedTapHoldKeyState {
+pub enum PressedTapHoldKeyState<K: TapHoldNestable = BaseKey> {
     /// A tap-hold key's pressed state.
-    TapHold(tap_hold::PressedKeyState<BaseKey>),
+    TapHold(tap_hold::PressedKeyState<K>),
     /// Passthrough state.
-    Pass(PressedBaseKeyState),
+    Pass(<K as key::Key>::PressedKeyState),
 }
 
 /// Convenience type alias for a [key::PressedKey] with a taphold key.
-pub type PressedTapHoldKey = input::PressedKey<TapHoldKey, PressedTapHoldKeyState>;
+pub type PressedTapHoldKey<K> = input::PressedKey<TapHoldKey, PressedTapHoldKeyState<K>>;
 
-impl key::PressedKeyState<TapHoldKey> for PressedTapHoldKeyState {
+impl<K: TapHoldNestable> key::PressedKeyState<TapHoldKey<K>> for PressedTapHoldKeyState<K>
+where
+    <K as key::Key>::Context: From<Context>,
+    <K as key::Key>::Event: TryFrom<Event>,
+    Event: From<<K as key::Key>::Event>,
+    TapHoldKey<K>: From<K>,
+    PressedTapHoldKeyState<K>: From<<K as key::Key>::PressedKeyState>,
+{
     type Event = Event;
 
     fn handle_event_for(
         &mut self,
         context: Context,
         keymap_index: u16,
-        key: &TapHoldKey,
+        key: &TapHoldKey<K>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         match (key, self) {
@@ -365,14 +386,22 @@ impl key::PressedKeyState<TapHoldKey> for PressedTapHoldKeyState {
                 }
             }
             (TapHoldKey::Pass(key), PressedTapHoldKeyState::Pass(pks)) => {
-                let events = pks.handle_event_for(context, keymap_index, key, event);
-                events.into_events()
+                if let Ok(ev) = event.try_into_key_event(|event| {
+                    event
+                        .try_into()
+                        .map_err(|_| key::EventError::UnmappableEvent)
+                }) {
+                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
+                    events.into_events()
+                } else {
+                    key::PressedKeyEvents::no_events()
+                }
             }
             _ => key::PressedKeyEvents::no_events(),
         }
     }
 
-    fn key_output(&self, key: &TapHoldKey) -> key::KeyOutputState {
+    fn key_output(&self, key: &TapHoldKey<K>) -> key::KeyOutputState {
         match (key, self) {
             (TapHoldKey::TapHold(key), PressedTapHoldKeyState::TapHold(pks)) => pks.key_output(key),
             (TapHoldKey::Pass(key), PressedTapHoldKeyState::Pass(pks)) => pks.key_output(key),
@@ -381,8 +410,8 @@ impl key::PressedKeyState<TapHoldKey> for PressedTapHoldKeyState {
     }
 }
 
-impl From<tap_hold::PressedKeyState<BaseKey>> for PressedTapHoldKeyState {
-    fn from(pks: tap_hold::PressedKeyState<BaseKey>) -> Self {
+impl<K: TapHoldNestable> From<tap_hold::PressedKeyState<K>> for PressedTapHoldKeyState<K> {
+    fn from(pks: tap_hold::PressedKeyState<K>) -> Self {
         PressedTapHoldKeyState::TapHold(pks)
     }
 }
