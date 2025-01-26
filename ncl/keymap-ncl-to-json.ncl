@@ -294,7 +294,9 @@ let validators = import "validators.ncl" in
   serialized_json_keymap
     | default
     | doc "The keymap.json output value."
-    = layered_keys |> std.array.map key.to_json_serialized,
+    = {
+        keys = layered_keys |> std.array.map key.to_json_serialized,
+      },
 
   serialized_json_composite_keys
     | doc "The keymap.json output value."

@@ -441,9 +441,10 @@ let validators = import "validators.ncl" in
 
   keymap_rs
     | doc "Text contents of the keymap.rs generated from the keymap.json"
-    = let keymap_len = std.array.length serialized_json_keymap in
+    = let { keys, .. } = serialized_json_keymap in
+      let keymap_len = std.array.length keys in
       let num_layers =
-        serialized_json_keymap |>
+        keys |>
         std.array.fold_left
           (fun max_num_layers key =>
             let num_layers = key |> match {
@@ -456,11 +457,11 @@ let validators = import "validators.ncl" in
               max_num_layers)
           0 in
       let keys_id = "Keys%{std.to_string keymap_len}" in
-      let key_types = serialized_json_keymap
+      let key_types = keys
         |> std.array.map key.key_type
         |> std.array.map (fun key_type => key_type.as_rust_type_path)
         |> std.string.join "," in
-      let key_exprs = serialized_json_keymap
+      let key_exprs = keys
         |> std.array.map (fun k => "%{key.rust_expr k},")
         |> std.string.join "" in
       m%"
