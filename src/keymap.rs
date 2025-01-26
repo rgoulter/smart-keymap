@@ -230,13 +230,12 @@ pub struct Keymap<
             usize,
             Output = dyn key::dynamic::Key<
                 key::composite::Event,
-                Context = key::composite::Context<L>,
+                Context = key::composite::Context,
             >,
         > + crate::tuples::KeysReset,
-    L: key::layered::LayerImpl = key::layered::ArrayImpl<0>,
 > {
     key_definitions: I,
-    context: composite::Context<L>,
+    context: composite::Context,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
@@ -247,14 +246,13 @@ impl<
                 usize,
                 Output = dyn key::dynamic::Key<
                     key::composite::Event,
-                    Context = key::composite::Context<L>,
+                    Context = key::composite::Context,
                 >,
             > + crate::tuples::KeysReset,
-        L: key::layered::LayerImpl,
-    > Keymap<I, L>
+    > Keymap<I>
 {
     /// Constructs a new keymap with the given key definitions and context.
-    pub const fn new(key_definitions: I, context: composite::Context<L>) -> Self {
+    pub const fn new(key_definitions: I, context: composite::Context) -> Self {
         Self {
             key_definitions,
             context,
@@ -569,15 +567,9 @@ mod tests {
         use tuples::Keys1;
 
         // Assemble
-        const NUM_LAYERS: usize = 0;
-        type L = crate::key::layered::ArrayImpl<NUM_LAYERS>;
-        type Ctx = Context<L>;
+        type Ctx = Context;
         let keys: Keys1<keyboard::Key, Context, Event> = Keys1::new((keyboard::Key::new(0x04),));
-        let context: Ctx = Ctx {
-            layer_context: crate::key::layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -601,11 +593,7 @@ mod tests {
                 tap: keyboard::Key::new(0x04),
                 hold: keyboard::Key::new(0xE0),
             },));
-        let context: Context = Context {
-            layer_context: crate::key::layered::Context {
-                active_layers: [false; 0],
-            },
-        };
+        let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -635,11 +623,7 @@ mod tests {
                 tap: keyboard::Key::new(0x04),
                 hold: keyboard::Key::new(0xE0),
             },));
-        let context: Context = Context {
-            layer_context: crate::key::layered::Context {
-                active_layers: [false; 0],
-            },
-        };
+        let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -675,11 +659,7 @@ mod tests {
         // Assemble
         let keys: Keys1<composite::Key, Context, Event> =
             Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
-        let context: Context = Context {
-            layer_context: crate::key::layered::Context {
-                active_layers: [false; 0],
-            },
-        };
+        let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -697,22 +677,16 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type Ctx = composite::Context<L>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
         type MK = layered::ModifierKey;
-        type LK = layered::LayeredKey<NK, L>;
+        type LK = layered::LayeredKey<NK>;
         let keys: Keys2<MK, LK, Ctx, Ev> = tuples::Keys2::new((
             layered::ModifierKey::Hold(0),
             layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
 
         let mut keymap = Keymap::new(keys, context);
 
@@ -732,11 +706,9 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<L, NK>;
-        type Ctx = composite::Context<L>;
+        type T = composite::CompositeImpl<NK>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
@@ -746,11 +718,7 @@ mod tests {
                 [Some(keyboard::Key::new(0x05))],
             )),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -768,11 +736,9 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<L, NK>;
-        type Ctx = composite::Context<L>;
+        type T = composite::CompositeImpl<NK>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
@@ -782,11 +748,7 @@ mod tests {
                 [Some(keyboard::Key::new(0x05))],
             )),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
 
         let mut keymap = Keymap::new(keys, context);
 
@@ -806,11 +768,9 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<L, NK>;
-        type Ctx = composite::Context<L>;
+        type T = composite::CompositeImpl<NK>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
@@ -820,11 +780,7 @@ mod tests {
                 [Some(keyboard::Key::new(0x05))],
             )),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -844,11 +800,9 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
         type NK = composite::DefaultNestableKey;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type T = composite::CompositeImpl<L, NK>;
-        type Ctx = composite::Context<L>;
+        type T = composite::CompositeImpl<NK>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
         type K = composite::Key<T>;
         let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
@@ -858,11 +812,7 @@ mod tests {
                 [Some(keyboard::Key::new(0x05))],
             )),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -887,14 +837,12 @@ mod tests {
         // - In order to have { tap: Keyboard, hold: LayerMod },
         //    we need to use the aggregate composite::Key
         //    as the nested key type.
-        const NUM_LAYERS: usize = 1;
-        type NK = composite::Key<composite::CompositeImpl<L, keyboard::Key>>;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type Ctx = composite::Context<L>;
+        type NK = composite::Key<composite::CompositeImpl<keyboard::Key>>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
 
         type K0 = tap_hold::Key<NK>;
-        type K1 = layered::LayeredKey<keyboard::Key, L>;
+        type K1 = layered::LayeredKey<keyboard::Key>;
 
         let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
             tap_hold::Key {
@@ -903,11 +851,7 @@ mod tests {
             },
             layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
 
         let mut keymap = Keymap::new(keys, context);
 
@@ -941,14 +885,12 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
-        type NK = composite::Key<composite::CompositeImpl<L, keyboard::Key>>;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type Ctx = composite::Context<L>;
+        type NK = composite::Key<composite::CompositeImpl<keyboard::Key>>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
 
         type K0 = tap_hold::Key<NK>;
-        type K1 = layered::LayeredKey<keyboard::Key, L>;
+        type K1 = layered::LayeredKey<keyboard::Key>;
 
         let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
             tap_hold::Key {
@@ -957,11 +899,7 @@ mod tests {
             },
             layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // 1. Press the tap-hold key
@@ -992,13 +930,11 @@ mod tests {
 
     #[test]
     fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output() {
-        use key::{composite, keyboard, layered, tap_hold};
+        use key::{composite, keyboard, tap_hold};
         use tuples::Keys2;
 
         // Assemble
-        const NUM_LAYERS: usize = 1;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type Ctx = composite::Context<L>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
 
         type K0 = tap_hold::Key<keyboard::Key>;
@@ -1011,11 +947,7 @@ mod tests {
             },
             keyboard::Key::new(0x05),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Act
@@ -1032,15 +964,13 @@ mod tests {
 
     #[test]
     fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output_desc_keycodes() {
-        use key::{composite, keyboard, layered, tap_hold};
+        use key::{composite, keyboard, tap_hold};
         use tuples::Keys2;
 
         // Assemble
         const K_G: u8 = 0x0A;
         const K_O: u8 = 0x12;
-        const NUM_LAYERS: usize = 1;
-        type L = layered::ArrayImpl<NUM_LAYERS>;
-        type Ctx = composite::Context<L>;
+        type Ctx = composite::Context;
         type Ev = composite::Event;
 
         type K0 = tap_hold::Key<keyboard::Key>;
@@ -1053,11 +983,7 @@ mod tests {
             },
             keyboard::Key::new(K_G),
         ));
-        let context: Ctx = Ctx {
-            layer_context: layered::Context {
-                active_layers: [false; NUM_LAYERS],
-            },
-        };
+        let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
         // Roll the keys: press 0, press 1, release 0,

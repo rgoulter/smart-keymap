@@ -62,22 +62,17 @@ use key::{composite, keyboard, tap_hold};
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate::key::{composite, keyboard, layered};
+    use crate::key::{composite, keyboard};
     use crate::tuples::Keys1;
-
-    const NUM_LAYERS: usize = 0;
-
-    /// Alias for layers impl.
-    pub type LayersImpl = layered::ArrayImpl<NUM_LAYERS>;
 
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = composite::DefaultNestableKey;
 
     /// Types used in Composite keys.
-    pub type CompositeImpl = composite::CompositeImpl<LayersImpl, NestedKey>;
+    pub type CompositeImpl = composite::CompositeImpl<NestedKey>;
 
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
-    pub type Context = composite::Context<LayersImpl>;
+    pub type Context = composite::Context;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
     pub type Event = composite::Event;
@@ -86,11 +81,7 @@ pub mod init {
     pub type Key = composite::Key<CompositeImpl>;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = composite::Context {
-        layer_context: layered::Context {
-            active_layers: [false; NUM_LAYERS],
-        },
-    };
+    pub const CONTEXT: Context = composite::DEFAULT_CONTEXT;
 
     /// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
     pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
@@ -103,7 +94,7 @@ pub mod init {
 #[cfg(custom_keymap)]
 include!(concat!(env!("OUT_DIR"), "/keymap.rs"));
 
-static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType, init::LayersImpl> =
+static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType> =
     keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
 
 /// Initialize the global keymap instance.

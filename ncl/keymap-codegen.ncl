@@ -71,13 +71,13 @@ let nested_key_type_for
         else
           nested_key_type_for_depth
             (n - 1)
-            "crate::key::composite::Key<crate::key::composite::CompositeImpl<LayersImpl, %{nk}>>" in
+            "crate::key::composite::Key<crate::key::composite::CompositeImpl<%{nk}>>" in
       kt & {
         as_nested_key_type =
           let key_type_generics = "%{nested_key_type_for_depth (kt.nested_depth - 1) "crate::key::keyboard::Key"}" in
           if kt.nested_depth > 0 then
             if kt.key_type == "crate::key::composite::Key" then
-              "%{kt.key_type}<crate::key::composite::CompositeImpl<LayersImpl, %{key_type_generics}>>"
+              "%{kt.key_type}<crate::key::composite::CompositeImpl<%{key_type_generics}>>"
             else
               "%{kt.key_type}<%{key_type_generics}>"
           else
@@ -140,7 +140,7 @@ let nested_key_type_for
       let lmod_kt = key.key_type lmod in
       {
         actual = (nested_key_type_for [lmod_kt, kbd_kt]).as_nested_key_type,
-        expected = "crate::key::composite::Key<crate::key::composite::CompositeImpl<LayersImpl, crate::key::keyboard::Key>>",
+        expected = "crate::key::composite::Key<crate::key::composite::CompositeImpl<crate::key::keyboard::Key>>",
       },
 
     nk_depth_for_th_lmod_kbd_and_kbd =
@@ -333,8 +333,6 @@ let nested_key_type_for
         # ```
         key_type
           = fun { base, layered } =>
-              let num_layers = layered |> std.array.length |> std.to_string in
-              let layer_impl = "crate::key::layered::ArrayImpl<%{num_layers}>" in
               let base_key_type = key.key_type base in
               let non_null_layered = std.array.filter ((!=) null) layered in
               let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
@@ -343,7 +341,7 @@ let nested_key_type_for
               {
                 key_type = "crate::key::layered::LayeredKey",
                 nested_depth = nested_key_type.nested_depth,
-                as_rust_type_path = "%{key_type}<%{nested_type_path}, %{layer_impl}>",
+                as_rust_type_path = "%{key_type}<%{nested_type_path}>",
               },
 
         rust_expr
@@ -523,19 +521,14 @@ let nested_key_type_for
       m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    const NUM_LAYERS: usize = %{std.to_string num_layers};
-
-    /// Alias for layers impl.
-    pub type LayersImpl = crate::key::layered::ArrayImpl<NUM_LAYERS>;
-
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = crate::key::composite::DefaultNestableKey;
 
     /// Types used in Composite keys.
-    pub type CompositeImpl = crate::key::composite::CompositeImpl<LayersImpl, NestedKey>;
+    pub type CompositeImpl = crate::key::composite::CompositeImpl<NestedKey>;
 
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
-    pub type Context = crate::key::composite::Context<LayersImpl>;
+    pub type Context = crate::key::composite::Context;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
     pub type Event = crate::key::composite::Event;
@@ -543,7 +536,7 @@ pub mod init {
     /// Initial [Context] value.
     pub const CONTEXT: Context = crate::key::composite::Context {
         layer_context: crate::key::layered::Context {
-            active_layers: [false; NUM_LAYERS],
+            active_layers: [false; crate::key::layered::LAYER_COUNT],
         },
     };
 

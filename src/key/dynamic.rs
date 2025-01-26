@@ -33,9 +33,7 @@ where
 }
 
 /// Convenience type alias for [Key] which uses [crate::key::composite::Event] and [crate::key::composite::Context].
-#[allow(type_alias_bounds)]
-pub type CompositeKey<T: key::composite::CompositeTypes = key::composite::CompositeImpl> =
-    dyn Key<key::composite::Event, Context = key::composite::Context<T>>;
+pub type CompositeKey = dyn Key<key::composite::Event, Context = key::composite::Context>;
 
 /// Generic implementation of [Key] for a [key::Key] and some `Ctx`/`Ev`.
 #[derive(Debug)]
@@ -127,18 +125,14 @@ where
 mod tests {
     use super::*;
 
-    use key::{composite, keyboard, layered};
+    use key::{composite, keyboard};
 
     #[test]
     fn test_composite_dynamic_keyboard_key_has_no_key_code_when_released() {
         // Assemble
         let dyn_key: &mut dyn Key<composite::Event, Context = composite::Context> =
             &mut DynamicKey::new(keyboard::Key::new(0x04));
-        let context: composite::Context = composite::Context {
-            layer_context: layered::Context {
-                active_layers: [false; 0],
-            },
-        };
+        let context: composite::Context = composite::DEFAULT_CONTEXT;
 
         // Act
         let keymap_index: u16 = 5; // arbitrary
