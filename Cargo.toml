@@ -5,7 +5,7 @@ edition = "2021"
 
 [features]
 default = ["std", "staticlib"]
-std = []
+std = ["serde/std"]
 staticlib = []
 
 [lib]
