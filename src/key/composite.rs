@@ -225,7 +225,7 @@ impl<K: Into<TapHoldKey>> From<K> for LayeredKey<TapHoldKey> {
 ///   Base    := LayerModifier | Keyboard
 ///   TapHold := TapHold<Base> | Base
 ///   Layered := Layered<TapHold> | TapHold
-pub type Key = LayeredKey;
+pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
 
 impl BaseKey {
     /// Constructs a [Key::Keyboard] from the given [keyboard::Key].
