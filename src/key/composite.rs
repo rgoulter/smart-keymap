@@ -149,7 +149,7 @@ impl<K: TapHoldNestable> From<tap_hold::Key<K>> for TapHoldKey<K> {
     }
 }
 
-impl<K: Into<BaseKey>> From<K> for TapHoldKey {
+impl<K: Into<BaseKey>> From<K> for TapHoldKey<BaseKey> {
     fn from(key: K) -> Self {
         TapHoldKey::Pass(key.into())
     }
@@ -213,7 +213,7 @@ impl<K: Into<BaseKey>> From<K> for LayeredKey<BaseKey> {
     }
 }
 
-impl<K: Into<TapHoldKey>> From<K> for LayeredKey<TapHoldKey> {
+impl<K: Into<TapHoldKey<BaseKey>>> From<K> for LayeredKey<TapHoldKey<BaseKey>> {
     fn from(key: K) -> Self {
         LayeredKey::Pass(key.into())
     }
@@ -239,7 +239,7 @@ impl BaseKey {
     }
 }
 
-impl TapHoldKey {
+impl TapHoldKey<BaseKey> {
     /// Constructs a [Key::Keyboard] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
         Self::Pass(BaseKey::keyboard(key))
@@ -273,7 +273,7 @@ impl Key {
     }
 
     /// Constructs a [Key::Layered] from the given [layered::LayeredKey].
-    pub const fn layered(key: layered::LayeredKey<TapHoldKey>) -> Self {
+    pub const fn layered(key: layered::LayeredKey<TapHoldKey<BaseKey>>) -> Self {
         Self::Layered(key)
     }
 }
@@ -398,7 +398,7 @@ pub enum PressedTapHoldKeyState<K: TapHoldNestable = BaseKey> {
 }
 
 /// Convenience type alias for a [key::PressedKey] with a taphold key.
-pub type PressedTapHoldKey<K> = input::PressedKey<TapHoldKey, PressedTapHoldKeyState<K>>;
+pub type PressedTapHoldKey<K> = input::PressedKey<TapHoldKey<K>, PressedTapHoldKeyState<K>>;
 
 impl<K: TapHoldNestable> key::PressedKeyState<TapHoldKey<K>> for PressedTapHoldKeyState<K>
 where
@@ -457,7 +457,7 @@ impl<K: TapHoldNestable> From<tap_hold::PressedKeyState<K>> for PressedTapHoldKe
     }
 }
 
-impl<PKS: Into<PressedBaseKeyState>> From<PKS> for PressedTapHoldKeyState {
+impl<PKS: Into<PressedBaseKeyState>> From<PKS> for PressedTapHoldKeyState<BaseKey> {
     fn from(pks: PKS) -> Self {
         PressedTapHoldKeyState::Pass(pks.into())
     }
@@ -552,7 +552,9 @@ impl<PKS: Into<PressedBaseKeyState>> From<PKS> for PressedLayeredKeyState<BaseKe
     }
 }
 
-impl<PKS: Into<PressedTapHoldKeyState>> From<PKS> for PressedLayeredKeyState<TapHoldKey> {
+impl<PKS: Into<PressedTapHoldKeyState<BaseKey>>> From<PKS>
+    for PressedLayeredKeyState<TapHoldKey<BaseKey>>
+{
     fn from(pks: PKS) -> Self {
         PressedLayeredKeyState::Pass(pks.into())
     }
