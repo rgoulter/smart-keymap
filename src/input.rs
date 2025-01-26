@@ -40,6 +40,21 @@ pub struct PressedKey<K, S> {
     pub pressed_key_state: S,
 }
 
+impl<K, S> PressedKey<K, S> {
+    /// Transforms the PressedKey to a new type.
+    pub fn into_pressed_key<IK: key::Key>(self) -> PressedKey<IK, <IK as key::Key>::PressedKeyState>
+    where
+        K: Into<IK>,
+        S: Into<<IK as key::Key>::PressedKeyState>,
+    {
+        PressedKey {
+            keymap_index: self.keymap_index,
+            key: self.key.into(),
+            pressed_key_state: self.pressed_key_state.into(),
+        }
+    }
+}
+
 impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> crate::key::PressedKey
     for PressedKey<K, S>
 {
