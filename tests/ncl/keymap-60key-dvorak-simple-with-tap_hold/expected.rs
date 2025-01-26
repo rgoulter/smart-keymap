@@ -1,11 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    /// Alias for the NestedKey used for the [Context].
-    pub type NestedKey = crate::key::composite::DefaultNestableKey;
-
-    /// Types used in Composite keys.
-    pub type CompositeImpl = crate::key::composite::CompositeImpl<NestedKey>;
-
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = crate::key::composite::Context;
 
@@ -48,16 +42,16 @@ pub mod init {
         crate::key::keyboard::Key,
         crate::key::keyboard::Key,
         crate::key::keyboard::Key,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
         crate::key::keyboard::Key,
         crate::key::keyboard::Key,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
-        crate::key::tap_hold::Key<crate::key::keyboard::Key>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
+        crate::key::tap_hold::Key<crate::key::composite::BaseKey>,
         crate::key::keyboard::Key,
         crate::key::keyboard::Key,
         crate::key::keyboard::Key,
@@ -115,62 +109,62 @@ pub mod init {
         crate::key::keyboard::Key::new(42),
         crate::key::keyboard::Key::new(41),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(4),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_ALT
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(18),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(18)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_GUI
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(8),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(8)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_CTRL
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(24),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(24)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::LEFT_SHIFT
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::keyboard::Key::new(12),
         crate::key::keyboard::Key::new(7),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(11),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(11)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_SHIFT
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(23),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(23)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_CTRL
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(17),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(17)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_GUI
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::tap_hold::Key::new(
-            crate::key::keyboard::Key::new(22),
-            crate::key::keyboard::Key::from_modifiers(
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(22)),
+            crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::from_modifiers(
                 crate::key::KeyboardModifiers::RIGHT_ALT
                     .union(&crate::key::KeyboardModifiers::new()),
-            ),
+            )),
         ),
         crate::key::keyboard::Key::new(40),
         crate::key::keyboard::Key::from_modifiers(
