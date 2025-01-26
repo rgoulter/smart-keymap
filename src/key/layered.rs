@@ -2,12 +2,14 @@
 
 use core::fmt::Debug;
 use core::marker::Copy;
-use core::marker::PhantomData;
 
 use serde::Deserialize;
 
 use crate::input;
 use crate::key;
+
+/// Number of layers supported by the [ArrayImpl] implementation.
+pub const LAYER_COUNT: usize = 8;
 
 /// The type used for layer index.
 pub type LayerIndex = usize;
@@ -117,39 +119,46 @@ impl<const L: usize> LayerState for [bool; L] {
 
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
-pub struct Context<L: LayerImpl> {
+pub struct Context {
     /// The active layers.
-    pub active_layers: L::LayerState,
+    pub active_layers: [bool; LAYER_COUNT],
 }
 
-impl<L: LayerImpl> Context<L> {
+/// The default [Context] with no active layers.
+pub const DEFAULT_CONTEXT: Context = Context {
+    active_layers: [false; LAYER_COUNT],
+};
+
+impl Context {
     /// Create a new [Context].
-    pub const fn new(active_layers: L::LayerState) -> Self {
-        Self { active_layers }
-    }
-}
-
-impl<const L: usize> Default for Context<ArrayImpl<L>> {
-    fn default() -> Self {
+    pub const fn new() -> Self {
         Self {
-            active_layers: [false; L],
+            active_layers: [false; LAYER_COUNT],
         }
     }
 }
 
-impl<L: LayerImpl> Context<L> {
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            active_layers: [false; LAYER_COUNT],
+        }
+    }
+}
+
+impl Context {
     /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
         self.active_layers.activate(layer);
     }
 
     /// Get the active layers.
-    pub fn layer_state(&self) -> &L::LayerState {
+    pub fn layer_state(&self) -> &[bool; LAYER_COUNT] {
         &self.active_layers
     }
 }
 
-impl<L: LayerImpl> key::Context for Context<L> {
+impl key::Context for Context {
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: Self::Event) {
@@ -210,15 +219,35 @@ impl<K: key::Key, const L: usize> Layers<K> for [Option<K>; L] {
     }
 }
 
+/// Constructs an array of keys for the given array.
+pub const fn layered_keys<K: Copy, const L: usize>(
+    keys: [Option<K>; L],
+) -> [Option<K>; LAYER_COUNT] {
+    let mut layered: [Option<K>; LAYER_COUNT] = [None; LAYER_COUNT];
+
+    if L > LAYER_COUNT {
+        panic!("Too many layers for layered_keys");
+    }
+
+    let mut i = 0;
+
+    while i < L {
+        layered[i] = keys[i];
+        i += 1;
+    }
+
+    layered
+}
+
 /// A key whose behavior depends on which layer is active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub struct LayeredKey<K: key::Key, L: LayerImpl> {
+pub struct LayeredKey<K: key::Key> {
     /// The base key, used when no layers are active.
     pub base: K,
     /// The layered keys, used when the corresponding layer is active.
     #[serde(deserialize_with = "deserialize_layered")]
     #[serde(bound(deserialize = "K: Deserialize<'de>"))]
-    pub layered: L::Layers<K>,
+    pub layered: [Option<K>; LAYER_COUNT],
 }
 
 /// Deserialize a [Layers].
@@ -233,18 +262,19 @@ where
     L::from_iterable(keys_vec).map_err(serde::de::Error::custom)
 }
 
-impl<const L: LayerIndex, K: key::Key> LayeredKey<K, ArrayImpl<L>> {
+impl<K: key::Key> LayeredKey<K> {
     /// Constructs a new [LayeredKey].
-    pub const fn new(base: K, layered: [Option<K>; L]) -> Self {
+    pub const fn new<const L: usize>(base: K, layered: [Option<K>; L]) -> Self {
+        let layered = layered_keys(layered);
         Self { base, layered }
     }
 }
 
-impl<L: LayerImpl, K: key::Key> key::Key for LayeredKey<K, L> {
-    type Context = key::ModifierKeyContext<Context<L>, K::Context>;
+impl<K: key::Key> key::Key for LayeredKey<K> {
+    type Context = key::ModifierKeyContext<Context, K::Context>;
     type ContextEvent = LayerEvent;
     type Event = K::Event;
-    type PressedKeyState = PressedLayeredKeyState<K, L>;
+    type PressedKeyState = PressedLayeredKeyState<K>;
 
     fn new_pressed_key(
         &self,
@@ -328,36 +358,28 @@ impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
 /// [LayeredKey's] 'pressed key' associated type.
 /// Passes through to the pressed key.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedLayeredKeyState<K: key::Key, L: LayerImpl> {
+pub struct PressedLayeredKeyState<K: key::Key> {
     passthrough_pk: input::PressedKey<K, K::PressedKeyState>,
-
-    _phantom: PhantomData<L>,
 }
 
-impl<K: key::Key, L: LayerImpl> PressedLayeredKeyState<K, L> {
+impl<K: key::Key> PressedLayeredKeyState<K> {
     /// Constructs [PressedLayeredKeyState].
     pub fn new(passthrough_pk: input::PressedKey<K, K::PressedKeyState>) -> Self {
-        Self {
-            passthrough_pk,
-            _phantom: PhantomData,
-        }
+        Self { passthrough_pk }
     }
 }
 
 /// Type alias for [crate::input::PressedKey] of [LayeredKey].
-pub type PressedLayeredKey<K, L> =
-    input::PressedKey<LayeredKey<K, L>, PressedLayeredKeyState<K, L>>;
+pub type PressedLayeredKey<K> = input::PressedKey<LayeredKey<K>, PressedLayeredKeyState<K>>;
 
-impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
-    for PressedLayeredKeyState<K, L>
-{
+impl<K: key::Key> key::PressedKeyState<LayeredKey<K>> for PressedLayeredKeyState<K> {
     type Event = K::Event;
 
     fn handle_event_for(
         &mut self,
-        context: <LayeredKey<K, L> as key::Key>::Context,
+        context: <LayeredKey<K> as key::Key>::Context,
         _keymap_index: u16,
-        _key: &LayeredKey<K, L>,
+        _key: &LayeredKey<K>,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
         use crate::key::PressedKey as _;
@@ -366,7 +388,7 @@ impl<K: key::Key, L: LayerImpl> key::PressedKeyState<LayeredKey<K, L>>
             .handle_event(context.inner_context, event)
     }
 
-    fn key_output(&self, _key: &LayeredKey<K, L>) -> key::KeyOutputState {
+    fn key_output(&self, _key: &LayeredKey<K>) -> key::KeyOutputState {
         use crate::key::PressedKey as _;
 
         self.passthrough_pk.key_output()
@@ -447,32 +469,30 @@ mod tests {
 
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
-        type L = ArrayImpl<3>;
-        let mut context: Context<L> = Context::default();
+        let mut context: Context = Context::default();
 
         context.handle_event(LayerEvent::LayerActivated(1));
 
-        let actual_active_layers = &context.active_layers;
+        let actual_active_layers = &context.active_layers[0..3];
         assert_eq!(&[false, true, false], actual_active_layers);
     }
 
     #[test]
     fn test_pressing_layered_key_acts_as_base_key_when_no_layers_active() {
         // Assemble
-        type L = ArrayImpl<3>;
-        let context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+        let context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
             context: Context::default(),
             inner_context: (),
         };
         let expected_key = keyboard::Key::new(0x04);
-        let layered_key = LayeredKey {
-            base: expected_key,
-            layered: [
+        let layered_key = LayeredKey::new(
+            expected_key,
+            [
                 Some(keyboard::Key::new(0x05)),
                 Some(keyboard::Key::new(0x06)),
                 Some(keyboard::Key::new(0x07)),
             ],
-        };
+        );
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
@@ -490,20 +510,19 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_when_no_layers_active_has_key_code() {
         // Assemble
-        type L = ArrayImpl<3>;
-        let context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+        let context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
             context: Context::default(),
             inner_context: (),
         };
         let expected_key = keyboard::Key::new(0x04);
-        let layered_key = LayeredKey {
-            base: expected_key,
-            layered: [
+        let layered_key = LayeredKey::new(
+            expected_key,
+            [
                 Some(keyboard::Key::new(0x05)),
                 Some(keyboard::Key::new(0x06)),
                 Some(keyboard::Key::new(0x07)),
             ],
-        };
+        );
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
@@ -528,16 +547,12 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_falls_through_undefined_active_layers() {
         // Assemble: layered key (with no layered definitions)
-        type L = ArrayImpl<3>;
-        let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+        let mut context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
             context: Context::default(),
             inner_context: (),
         };
         let expected_key = keyboard::Key::new(0x04);
-        let layered_key = LayeredKey {
-            base: expected_key,
-            layered: [None, None, None],
-        };
+        let layered_key = LayeredKey::new(expected_key, [None, None, None]);
 
         // Act: activate all layers, press layered key
         context.context.handle_event(LayerEvent::LayerActivated(0));
@@ -558,20 +573,19 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
-        type L = ArrayImpl<3>;
-        let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+        let mut context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
             context: Context::default(),
             inner_context: (),
         };
         let expected_key = keyboard::Key::new(0x09);
-        let layered_key = LayeredKey {
-            base: keyboard::Key::new(0x04),
-            layered: [
+        let layered_key = LayeredKey::new(
+            keyboard::Key::new(0x04),
+            [
                 Some(keyboard::Key::new(0x05)),
                 Some(keyboard::Key::new(0x06)),
                 Some(expected_key),
             ],
-        };
+        );
 
         // Act: activate all layers, press layered key
         context.context.handle_event(LayerEvent::LayerActivated(0));
@@ -592,16 +606,15 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_with_some_transparency_acts_as_highest_defined_active_layer() {
         // Assemble: layered key (with no layered definitions)
-        type L = ArrayImpl<3>;
-        let mut context: key::ModifierKeyContext<Context<L>, ()> = key::ModifierKeyContext {
+        let mut context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
             context: Context::default(),
             inner_context: (),
         };
         let expected_key = keyboard::Key::new(0x09);
-        let layered_key = LayeredKey {
-            base: keyboard::Key::new(0x04),
-            layered: [Some(expected_key), Some(keyboard::Key::new(0x06)), None],
-        };
+        let layered_key = LayeredKey::new(
+            keyboard::Key::new(0x04),
+            [Some(expected_key), Some(keyboard::Key::new(0x06)), None],
+        );
 
         // Act: activate all layers, press layered key
         context.context.handle_event(LayerEvent::LayerActivated(0));
@@ -679,37 +692,28 @@ mod tests {
 
     #[test]
     fn test_deserialize_ron_layered_key_keyboard_0layer() {
-        type L = ArrayImpl<0>;
-        let actual_key: LayeredKey<key::keyboard::Key, L> =
+        let actual_key: LayeredKey<key::keyboard::Key> =
             ron::from_str("(base: (key_code: 0x04), layered: [])").unwrap();
-        let expected_key: LayeredKey<key::keyboard::Key, L> = LayeredKey {
-            base: key::keyboard::Key::new(0x04),
-            layered: [],
-        };
+        let expected_key: LayeredKey<key::keyboard::Key> =
+            LayeredKey::new(key::keyboard::Key::new(0x04), []);
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
     fn test_deserialize_json_layered_key_keyboard_0layer() {
-        type L = ArrayImpl<0>;
-        let actual_key: LayeredKey<key::keyboard::Key, L> =
+        let actual_key: LayeredKey<key::keyboard::Key> =
             serde_json::from_str(r#"{"base": {"key_code": 4}, "layered": []}"#).unwrap();
-        let expected_key: LayeredKey<key::keyboard::Key, L> = LayeredKey {
-            base: key::keyboard::Key::new(0x04),
-            layered: [],
-        };
+        let expected_key: LayeredKey<key::keyboard::Key> =
+            LayeredKey::new(key::keyboard::Key::new(0x04), []);
         assert_eq!(actual_key, expected_key);
     }
 
     #[test]
     fn test_deserialize_ron_layered_key_keyboard_1layer_none() {
-        type L = ArrayImpl<1>;
-        let actual_key: LayeredKey<key::keyboard::Key, L> =
+        let actual_key: LayeredKey<key::keyboard::Key> =
             ron::from_str("LayeredKey(base: Key(key_code: 0x04), layered: [None])").unwrap();
-        let expected_key: LayeredKey<key::keyboard::Key, L> = LayeredKey {
-            base: key::keyboard::Key::new(0x04),
-            layered: [None],
-        };
+        let expected_key: LayeredKey<key::keyboard::Key> =
+            LayeredKey::new(key::keyboard::Key::new(0x04), [None]);
         assert_eq!(actual_key, expected_key);
     }
 

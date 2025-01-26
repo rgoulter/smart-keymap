@@ -1,18 +1,13 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    const NUM_LAYERS: usize = 1;
-
-    /// Alias for layers impl.
-    pub type LayersImpl = crate::key::layered::ArrayImpl<NUM_LAYERS>;
-
     /// Alias for the NestedKey used for the [Context].
     pub type NestedKey = crate::key::composite::DefaultNestableKey;
 
     /// Types used in Composite keys.
-    pub type CompositeImpl = crate::key::composite::CompositeImpl<LayersImpl, NestedKey>;
+    pub type CompositeImpl = crate::key::composite::CompositeImpl<NestedKey>;
 
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
-    pub type Context = crate::key::composite::Context<LayersImpl>;
+    pub type Context = crate::key::composite::Context;
 
     /// Alias for Event type; i.e. [crate::key::context::Event].
     pub type Event = crate::key::composite::Event;
@@ -20,7 +15,7 @@ pub mod init {
     /// Initial [Context] value.
     pub const CONTEXT: Context = crate::key::composite::Context {
         layer_context: crate::key::layered::Context {
-            active_layers: [false; NUM_LAYERS],
+            active_layers: [false; crate::key::layered::LAYER_COUNT],
         },
     };
 
@@ -30,13 +25,10 @@ pub mod init {
     pub type KeyDefinitionsType = Keys2<
         crate::key::tap_hold::Key<
             crate::key::composite::Key<
-                crate::key::composite::CompositeImpl<LayersImpl, crate::key::keyboard::Key>,
+                crate::key::composite::CompositeImpl<crate::key::keyboard::Key>,
             >,
         >,
-        crate::key::layered::LayeredKey<
-            crate::key::keyboard::Key,
-            crate::key::layered::ArrayImpl<1>,
-        >,
+        crate::key::layered::LayeredKey<crate::key::keyboard::Key>,
         Context,
         Event,
     >;

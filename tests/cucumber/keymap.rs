@@ -91,19 +91,17 @@ fn nickel_to_json_for_hid_report(keymap_ncl: &str) -> io::Result<String> {
     String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
-const NUM_LAYERS: usize = 16;
 type NestedKey = key::composite::DefaultNestableKey;
-type LayersImpl = key::layered::ArrayImpl<NUM_LAYERS>;
-type CompositeImpl = key::composite::CompositeImpl<LayersImpl, NestedKey>;
+type CompositeImpl = key::composite::CompositeImpl<NestedKey>;
 type Key = key::composite::Key<CompositeImpl>;
-type Context = key::composite::Context<LayersImpl>;
+type Context = key::composite::Context;
 type Event = key::composite::Event;
 
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap1(Keymap<tuples::Keys1<Key, Context, Event>, LayersImpl>),
-    Keymap2(Keymap<tuples::Keys2<Key, Key, Context, Event>, LayersImpl>),
+    Keymap1(Keymap<tuples::Keys1<Key, Context, Event>>),
+    Keymap2(Keymap<tuples::Keys2<Key, Key, Context, Event>>),
 }
 
 impl LoadedKeymap {
@@ -141,19 +139,11 @@ impl From<Vec<Key>> for LoadedKeymap {
         match keys.len() {
             1 => LoadedKeymap::Keymap1(Keymap::new(
                 tuples::Keys1::new((keys[0],)),
-                key::composite::Context {
-                    layer_context: key::layered::Context {
-                        active_layers: [false; NUM_LAYERS],
-                    },
-                },
+                key::composite::DEFAULT_CONTEXT,
             )),
             2 => LoadedKeymap::Keymap2(Keymap::new(
                 tuples::Keys2::new((keys[0], keys[1])),
-                key::composite::Context {
-                    layer_context: key::layered::Context {
-                        active_layers: [false; NUM_LAYERS],
-                    },
-                },
+                key::composite::DEFAULT_CONTEXT,
             )),
             _ => panic!("Cucumber impl doesn't support Keys{}", keys.len()),
         }
