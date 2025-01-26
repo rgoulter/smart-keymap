@@ -195,7 +195,25 @@ impl<K: LayeredNestable> From<layered::LayeredKey<K>> for LayeredKey<K> {
     }
 }
 
-impl<K: Into<TapHoldKey>> From<K> for LayeredKey {
+impl From<layered::ModifierKey> for LayeredKey<layered::ModifierKey> {
+    fn from(key: layered::ModifierKey) -> Self {
+        LayeredKey::Pass(key.into())
+    }
+}
+
+impl From<keyboard::Key> for LayeredKey<keyboard::Key> {
+    fn from(key: keyboard::Key) -> Self {
+        LayeredKey::Pass(key.into())
+    }
+}
+
+impl<K: Into<BaseKey>> From<K> for LayeredKey<BaseKey> {
+    fn from(key: K) -> Self {
+        LayeredKey::Pass(key.into())
+    }
+}
+
+impl<K: Into<TapHoldKey>> From<K> for LayeredKey<TapHoldKey> {
     fn from(key: K) -> Self {
         LayeredKey::Pass(key.into())
     }
@@ -516,7 +534,25 @@ impl<K: LayeredNestable> From<layered::PressedLayeredKeyState<K>> for PressedLay
     }
 }
 
-impl<PKS: Into<PressedTapHoldKeyState>> From<PKS> for PressedLayeredKeyState {
+impl From<layered::PressedModifierKeyState> for PressedLayeredKeyState<layered::ModifierKey> {
+    fn from(pks: layered::PressedModifierKeyState) -> Self {
+        PressedLayeredKeyState::Pass(pks.into())
+    }
+}
+
+impl From<keyboard::PressedKeyState> for PressedLayeredKeyState<keyboard::Key> {
+    fn from(pks: keyboard::PressedKeyState) -> Self {
+        PressedLayeredKeyState::Pass(pks.into())
+    }
+}
+
+impl<PKS: Into<PressedBaseKeyState>> From<PKS> for PressedLayeredKeyState<BaseKey> {
+    fn from(pks: PKS) -> Self {
+        PressedLayeredKeyState::Pass(pks.into())
+    }
+}
+
+impl<PKS: Into<PressedTapHoldKeyState>> From<PKS> for PressedLayeredKeyState<TapHoldKey> {
     fn from(pks: PKS) -> Self {
         PressedLayeredKeyState::Pass(pks.into())
     }
