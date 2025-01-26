@@ -2,6 +2,8 @@ let validators = import "validators.ncl" in
 {
   KeymapKey = Dyn,
 
+  config = {},
+
   keys
     | optional,
 
@@ -294,8 +296,10 @@ let validators = import "validators.ncl" in
   serialized_json_keymap
     | default
     | doc "The keymap.json output value."
-    = {
+    = let config_ = config in
+      {
         keys = layered_keys |> std.array.map key.to_json_serialized,
+        config = config_,
       },
 
   serialized_json_composite_keys
