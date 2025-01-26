@@ -181,12 +181,11 @@ let validators = import "validators.ncl" in
               let base_key_type = key.key_type base in
               let non_null_layered = std.array.filter ((!=) null) layered in
               let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
-              # let nested_key_type =
-              #   if std.array.all (fun kt => kt == base_key_type) layered_key_types then
-              #     base_key_type
-              #   else
-              #     composite.tap_hold_key.key_type base in
-              let nested_key_type = composite.tap_hold_key.key_type base in
+              let nested_key_type =
+                if std.array.all (fun kt => kt == base_key_type) layered_key_types then
+                  base_key_type
+                else
+                  composite.tap_hold_key.key_type base in
               {
                 key_type = "crate::key::layered::LayeredKey",
                 as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
@@ -197,12 +196,11 @@ let validators = import "validators.ncl" in
               let base_key_type = key.key_type base in
               let non_null_layered = std.array.filter ((!=) null) layered in
               let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
-              # let nk_expr =
-              #   if std.array.all (fun kt => kt == base_key_type) layered_key_types then
-              #     key.rust_expr
-              #   else
-              #     composite.tap_hold_key.rust_expr in
-              let nk_expr = composite.tap_hold_key.rust_expr in
+              let nk_expr =
+                if std.array.all (fun kt => kt == base_key_type) layered_key_types then
+                  key.rust_expr
+                else
+                  composite.tap_hold_key.rust_expr in
               let base_expr = nk_expr base in
               let layered_exprs = layered
                 |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nk_expr lk})")
