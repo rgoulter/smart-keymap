@@ -1,3 +1,5 @@
-[
-  { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } }
-]
+{
+    "keys": [
+        { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } }
+    ]
+}
