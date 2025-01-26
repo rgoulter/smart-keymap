@@ -65,12 +65,6 @@ pub mod init {
     use crate::key::{composite, keyboard};
     use crate::tuples::Keys1;
 
-    /// Alias for the NestedKey used for the [Context].
-    pub type NestedKey = composite::DefaultNestableKey;
-
-    /// Types used in Composite keys.
-    pub type CompositeImpl = composite::CompositeImpl<NestedKey>;
-
     /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
     pub type Context = composite::Context;
 
@@ -78,7 +72,7 @@ pub mod init {
     pub type Event = composite::Event;
 
     /// Alias for keys.
-    pub type Key = composite::Key<CompositeImpl>;
+    pub type Key = keyboard::Key;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = composite::DEFAULT_CONTEXT;
@@ -87,8 +81,7 @@ pub mod init {
     pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
 
     /// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_DEFINITIONS: KeyDefinitionsType =
-        Keys1::new((Key::keyboard(keyboard::Key::new(0x04)),));
+    pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((keyboard::Key::new(0x04),));
 }
 
 #[cfg(custom_keymap)]
