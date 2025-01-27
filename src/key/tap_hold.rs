@@ -136,12 +136,13 @@ impl<K: key::Key> PressedKeyState<K> {
     ///  given the tap hold config, the current state, and the key event.
     fn hold_resolution(
         &self,
+        interrupt_response: InterruptResponse,
         keymap_index: u16,
         event: key::Event<key::ModifierKeyEvent<Event, <K as key::Key>::Event>>,
     ) -> Option<TapHoldState> {
         match self.state {
             TapHoldState::Pending => {
-                match TAP_HOLD_CONFIG.interrupt_response {
+                match interrupt_response {
                     InterruptResponse::HoldOnKeyPress => {
                         match event {
                             key::Event::Input(input::Event::Press { .. }) => {
@@ -221,7 +222,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         }
 
         // Resolve tap-hold state per the event.
-        match self.hold_resolution(keymap_index, event) {
+        match self.hold_resolution(TAP_HOLD_CONFIG.interrupt_response, keymap_index, event) {
             Some(TapHoldState::Hold) => {
                 self.resolve(TapHoldState::Hold);
 
