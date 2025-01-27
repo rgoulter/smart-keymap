@@ -124,43 +124,22 @@ impl<K: key::Key> PressedKeyState<K> {
             pressed_key: None,
         }
     }
+
     /// Resolves the state of the key, unless it has already been resolved.
     fn resolve(&mut self, state: TapHoldState) {
         if let TapHoldState::Pending = self.state {
             self.state = state;
         }
     }
-}
 
-impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
-    type Event = key::ModifierKeyEvent<Event, K::Event>;
-
-    /// Returns at most 2 events
-    fn handle_event_for(
-        &mut self,
-        key::ModifierKeyContext {
-            context: _,
-            inner_context,
-        }: <Key<K> as key::Key>::Context,
+    /// Compute whether the tap-hold key should resolve as tap or hold,
+    ///  given the tap hold config, the current state, and the key event.
+    fn hold_resolution(
+        &self,
         keymap_index: u16,
-        key: &Key<K>,
-        event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
-        let mut pke = key::PressedKeyEvents::no_events();
-
-        // Add events from inner pk handle_event
-        if let Ok(inner_ev) = event.try_into_key_event(|mke| mke.try_into_inner()) {
-            if let Some(pk) = &mut self.pressed_key {
-                let pk_ev = pk
-                    .pressed_key_state
-                    .handle_event_for(inner_context, keymap_index, &pk.key, inner_ev)
-                    .map_events(|ev| key::ModifierKeyEvent::Inner(ev));
-                pke.extend(pk_ev);
-            }
-        }
-
-        // Resolve tap-hold state per the event.
-        let resolution = match self.state {
+        event: key::Event<key::ModifierKeyEvent<Event, <K as key::Key>::Event>>,
+    ) -> Option<TapHoldState> {
+        match self.state {
             TapHoldState::Pending => {
                 match TAP_HOLD_CONFIG.interrupt_response {
                     InterruptResponse::HoldOnKeyPress => {
@@ -210,9 +189,39 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 }
             }
             _ => None,
-        };
+        }
+    }
+}
 
-        match resolution {
+impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
+    type Event = key::ModifierKeyEvent<Event, K::Event>;
+
+    /// Returns at most 2 events
+    fn handle_event_for(
+        &mut self,
+        key::ModifierKeyContext {
+            context: _,
+            inner_context,
+        }: <Key<K> as key::Key>::Context,
+        keymap_index: u16,
+        key: &Key<K>,
+        event: key::Event<Self::Event>,
+    ) -> key::PressedKeyEvents<Self::Event> {
+        let mut pke = key::PressedKeyEvents::no_events();
+
+        // Add events from inner pk handle_event
+        if let Ok(inner_ev) = event.try_into_key_event(|mke| mke.try_into_inner()) {
+            if let Some(pk) = &mut self.pressed_key {
+                let pk_ev = pk
+                    .pressed_key_state
+                    .handle_event_for(inner_context, keymap_index, &pk.key, inner_ev)
+                    .map_events(|ev| key::ModifierKeyEvent::Inner(ev));
+                pke.extend(pk_ev);
+            }
+        }
+
+        // Resolve tap-hold state per the event.
+        match self.hold_resolution(keymap_index, event) {
             Some(TapHoldState::Hold) => {
                 self.resolve(TapHoldState::Hold);
 
