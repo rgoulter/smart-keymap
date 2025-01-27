@@ -11,7 +11,6 @@ use usbd_human_interface_device::page;
 use usbd_human_interface_device::UsbHidError;
 
 use crate::common;
-use crate::layouts::common::CustomAction;
 
 /// For input from the smart_keymap crate.
 pub mod smart_keymap;
@@ -162,64 +161,6 @@ pub struct KeyboardBackend<T, K, C, L: LayoutEngine<T, K>> {
     marker: PhantomData<T>,
 }
 
-impl<L: LayoutEngine<CustomAction, page::Keyboard>>
-    KeyboardBackend<CustomAction, page::Keyboard, page::Consumer, L>
-{
-    pub fn new(layout: L) -> Self {
-        Self {
-            layout,
-            previous_consumer_codes: heapless::Vec::new(),
-            keyboard_codes: heapless::Vec::new(),
-            consumer_codes: heapless::Vec::new(),
-            marker: PhantomData,
-        }
-    }
-
-    /// Register a key event.
-    pub fn event(&mut self, event: keyberon::layout::Event) {
-        self.layout.event(event);
-    }
-
-    /// A time event.
-    ///
-    /// This method must be called regularly, typically every millisecond.
-    pub fn tick(&mut self) {
-        let keycodes = self.layout.keycodes().into_iter().collect();
-        let mut consumer_codes: heapless::Vec<page::Consumer, 4> = heapless::Vec::new();
-
-        let custom_event = self.layout.tick();
-        #[allow(clippy::single_match)]
-        match custom_event {
-            #[allow(clippy::single_match)]
-            keyberon::layout::CustomEvent::Press(custom_action) => match custom_action {
-                crate::layouts::common::CustomAction::ConsumerA(consumer_code) => {
-                    consumer_codes.push(*consumer_code).unwrap();
-                }
-            },
-            _ => {}
-        }
-
-        self.keyboard_codes = keycodes;
-        self.consumer_codes = consumer_codes;
-    }
-
-    pub fn write_reports<KE, CE, R>(&mut self, hid_reporter: &mut R)
-    where
-        KE: core::fmt::Debug,
-        CE: core::fmt::Debug,
-        R: HIDReporter<page::Keyboard, page::Consumer, KE, CE>,
-    {
-        let _ = hid_reporter.write_keyboard_report(self.keyboard_codes.clone());
-
-        if self.consumer_codes != self.previous_consumer_codes
-            && hid_reporter
-                .write_consumer_report(self.consumer_codes.clone())
-                .is_ok()
-        {
-            self.previous_consumer_codes = self.consumer_codes.clone();
-        }
-    }
-}
 
 pub fn row5_is_low<P>((a, b, c, d, e): &(P, P, P, P, P)) -> [bool; 5]
 where
