@@ -13,6 +13,11 @@ let validators = import "validators.ncl" in
     | doc "The layers of the keymap that gets rendered to JSON"
     = [keys],
 
+  custom_keys
+    | default
+    | doc "Key extension which gets applied when using whitespace-delimited string keymap layers"
+    = fun K => {},
+
   checks.keyboard
     = let K = import "keys.ncl" in
       {
