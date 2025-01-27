@@ -277,6 +277,62 @@ let validators = import "validators.ncl" in
         _ => std.fail_with "unsupported item in keymap.ncl",
       },
 
+  checks.check_words_from_whitespace_delimited_string
+    = {
+      check_words_from_whitespace_delimited_string = {
+        actual = words_from_whitespace_delimited_string "   a b  c ",
+        expected = ["a", "b", "c"],
+      },
+    },
+
+  words_from_whitespace_delimited_string
+    | doc "Return array of fields from whitespace-delimited string."
+    = fun s =>
+        s |> std.string.replace_regex "\\s+" " "
+          |> std.string.split " "
+          |> std.array.filter ((!=) ""),
+
+  checks.check_map_fields_with_record
+    = {
+      check_map_fields_with_record = {
+        actual = map_fields_with_record { a = 1, b = 2, c = 3 } ["a", "c"],
+        expected = [1, 3],
+      },
+    },
+
+  map_fields_with_record
+    | doc "Maps each field in an array to the value of the given record."
+    = fun record fields =>
+        fields |> std.array.map (std.function.flip std.record.get record),
+
+  checks.check_layer_as_array_of_keys
+    = {
+      check_layer_as_array_of_keys = {
+        actual = layer_as_array_of_keys " A ",
+        expected = [{ key_code = 0x04 }],
+      },
+
+      check_layer_as_array_of_keys_tttt = {
+        actual = layer_as_array_of_keys " TTTT ",
+        expected = [null],
+      },
+    },
+
+  # Return array-of-keys representation of layer.
+  #
+  # A KeymapLayer may be either:
+  #   - Array Key
+  #   - String
+  layer_as_array_of_keys
+    = fun l =>
+        if std.is_string l then
+          let { extend_keys, .. } = import "key-extensions.ncl" in
+          let K = extend_keys (import "keys.ncl") custom_keys in
+          l |> words_from_whitespace_delimited_string
+            |> map_fields_with_record K
+        else
+          l,
+
   layered_keys
     | doc "Constructs array of key::layered::LayeredKey values from layers."
     = if std.array.length layers == 0 then
