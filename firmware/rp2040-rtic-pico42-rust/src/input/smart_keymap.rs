@@ -8,7 +8,6 @@ use crate::input::HIDReporter;
 pub struct KeyboardBackend {
     keymap: smart_keymap::keymap::Keymap<
         smart_keymap::init::KeyDefinitionsType,
-        smart_keymap::init::LayersImpl
     >,
     pressed_key_codes: heapless::Vec<page::Keyboard, 16>,
 }
@@ -17,7 +16,6 @@ impl KeyboardBackend {
     pub fn new(
         keymap: smart_keymap::keymap::Keymap<
             smart_keymap::init::KeyDefinitionsType,
-            smart_keymap::init::LayersImpl
         >
     ) -> Self {
         Self {
