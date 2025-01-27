@@ -187,11 +187,7 @@ pub mod init {
             crate::key::keyboard::Key::new(0),
             [
                 Some(crate::key::keyboard::Key::new(0)),
-                Some(crate::key::keyboard::Key::new_with_modifiers(
-                    0,
-                    crate::key::KeyboardModifiers::LEFT_SHIFT
-                        .union(&crate::key::KeyboardModifiers::new()),
-                )),
+                Some(crate::key::keyboard::Key::new(0)),
                 Some(crate::key::keyboard::Key::new(0)),
                 None,
                 Some(crate::key::keyboard::Key::new(0)),
@@ -202,11 +198,7 @@ pub mod init {
             crate::key::keyboard::Key::new(0),
             [
                 Some(crate::key::keyboard::Key::new(0)),
-                Some(crate::key::keyboard::Key::new_with_modifiers(
-                    0,
-                    crate::key::KeyboardModifiers::LEFT_SHIFT
-                        .union(&crate::key::KeyboardModifiers::new()),
-                )),
+                Some(crate::key::keyboard::Key::new(0)),
                 Some(crate::key::keyboard::Key::new(0)),
                 None,
                 Some(crate::key::keyboard::Key::new(0)),
@@ -427,11 +419,7 @@ pub mod init {
             crate::key::keyboard::Key::new(0),
             [
                 Some(crate::key::keyboard::Key::new(0)),
-                Some(crate::key::keyboard::Key::new_with_modifiers(
-                    0,
-                    crate::key::KeyboardModifiers::LEFT_SHIFT
-                        .union(&crate::key::KeyboardModifiers::new()),
-                )),
+                Some(crate::key::keyboard::Key::new(0)),
                 Some(crate::key::keyboard::Key::new(0)),
                 None,
                 Some(crate::key::keyboard::Key::new(0)),
@@ -442,11 +430,7 @@ pub mod init {
             crate::key::keyboard::Key::new(0),
             [
                 Some(crate::key::keyboard::Key::new(0)),
-                Some(crate::key::keyboard::Key::new_with_modifiers(
-                    0,
-                    crate::key::KeyboardModifiers::LEFT_SHIFT
-                        .union(&crate::key::KeyboardModifiers::new()),
-                )),
+                Some(crate::key::keyboard::Key::new(0)),
                 Some(crate::key::keyboard::Key::new(0)),
                 None,
                 Some(crate::key::keyboard::Key::new(0)),
@@ -643,11 +627,7 @@ pub mod init {
             crate::key::keyboard::Key::new(0),
             [
                 Some(crate::key::keyboard::Key::new(0)),
-                Some(crate::key::keyboard::Key::new_with_modifiers(
-                    0,
-                    crate::key::KeyboardModifiers::LEFT_SHIFT
-                        .union(&crate::key::KeyboardModifiers::new()),
-                )),
+                Some(crate::key::keyboard::Key::new(0)),
                 Some(crate::key::keyboard::Key::new(0)),
                 None,
                 Some(crate::key::keyboard::Key::new(0)),
@@ -658,11 +638,7 @@ pub mod init {
             crate::key::keyboard::Key::new(0),
             [
                 Some(crate::key::keyboard::Key::new(0)),
-                Some(crate::key::keyboard::Key::new_with_modifiers(
-                    0,
-                    crate::key::KeyboardModifiers::LEFT_SHIFT
-                        .union(&crate::key::KeyboardModifiers::new()),
-                )),
+                Some(crate::key::keyboard::Key::new(0)),
                 Some(crate::key::keyboard::Key::new(0)),
                 None,
                 Some(crate::key::keyboard::Key::new(0)),
