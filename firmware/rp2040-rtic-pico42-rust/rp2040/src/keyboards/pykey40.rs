@@ -53,9 +53,8 @@ pub fn rows(
 }
 
 // N: num chords
-pub type Keyboard<const N: usize> = rp2040_rtic_pico42_rust::input::Keyboard<
+pub type Keyboard = rp2040_rtic_pico42_rust::input::Keyboard<
     COLS,
     ROWS,
-    N,
     Matrix<Input, Output, COLS, ROWS, hal::Timer>,
 >;

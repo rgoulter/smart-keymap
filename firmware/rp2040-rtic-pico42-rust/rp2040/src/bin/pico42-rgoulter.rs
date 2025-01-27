@@ -30,7 +30,6 @@ mod app {
 
     use rp2040_rtic_pico42_rust::input::smart_keymap::KeyboardBackend;
     use rp2040_rtic_pico42_rust::input::PressedKeys12x4;
-    use rp2040_rtic_pico42_rust::layouts::split_3x5_3::rgoulter::matrix4x12::{CHORDS, NUM_CHORDS};
     use rp2040_rtic_pico42_rust::matrix::Matrix as DelayedMatrix;
     use rp2040_rtic_pico42_rust_rp2040::keyboards::pykey40;
 
@@ -43,7 +42,7 @@ mod app {
     #[local]
     struct Local {
         alarm: timer::Alarm0,
-        keyboard: pykey40::Keyboard<NUM_CHORDS>,
+        keyboard: pykey40::Keyboard,
         backend: KeyboardBackend,
     }
 
@@ -115,7 +114,6 @@ mod app {
         let keyboard = pykey40::Keyboard {
             matrix,
             debouncer: Debouncer::new(PressedKeys12x4::default(), PressedKeys12x4::default(), 25),
-            chording: Chording::new(&CHORDS),
         };
 
         let backend = {
