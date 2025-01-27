@@ -114,6 +114,7 @@ let key_extensions = {
           LPRN = K.LeftParen,
           RPRN = K.RightParen,
 
+          PERC = K.Percent,
           CIRC = K.Circumflex, # ^
 
           LBRK = K.LeftBracket,  # [
