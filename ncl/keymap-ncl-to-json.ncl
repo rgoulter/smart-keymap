@@ -2,6 +2,8 @@ let validators = import "validators.ncl" in
 {
   KeymapKey = Dyn,
 
+  KeymapLayer = std.contract.any_of [Array KeymapKey, String],
+
   config = {},
 
   keys
@@ -9,7 +11,7 @@ let validators = import "validators.ncl" in
 
   layers
     | default
-    | Array (Array KeymapKey)
+    | Array KeymapLayer
     | doc "The layers of the keymap that gets rendered to JSON"
     = [keys],
 
