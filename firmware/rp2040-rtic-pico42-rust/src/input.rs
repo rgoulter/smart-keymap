@@ -61,55 +61,6 @@ impl<
     }
 }
 
-/// Simplified interface of the keyberon's Layout.
-///
-/// I: Iteratable for keycodes.
-/// T: Custom action type
-/// K: Keycode type
-pub trait LayoutEngine<T, K> {
-    type KeycodeIterator<'a>: IntoIterator<Item = K>;
-
-    /// Register a key event.
-    fn event(&mut self, event: keyberon::layout::Event);
-
-    /// Iterates on the key codes of the current state.
-    fn keycodes<'a>(&self) -> Self::KeycodeIterator<'a>;
-
-    /// A time event.
-    ///
-    /// This method must be called regularly, typically every millisecond.
-    ///
-    /// Returns the corresponding `CustomEvent`, allowing to manage
-    /// custom actions thanks to the `Action::Custom` variant.
-    fn tick(&mut self) -> keyberon::layout::CustomEvent<T>;
-}
-
-// C: number of columns
-// R: number of rows
-// L: number of layers
-// T: custom action type
-// K: keycode type
-impl<const C: usize, const R: usize, const L: usize, T: 'static, K: 'static + Copy>
-    LayoutEngine<T, K> for keyberon::layout::Layout<C, R, L, T, K>
-{
-    type KeycodeIterator<'a> = heapless::Vec<K, 8>;
-
-    fn event(&mut self, event: keyberon::layout::Event) {
-        self.event(event);
-    }
-
-    fn keycodes<'a>(&self) -> Self::KeycodeIterator<'a> {
-        // keyberon's keycodes() has signature which returns `impl Iterator<Item = K>`;
-        // Currently, can't use `impl Trait` in associated types,
-        // so collect the keycodes into a Vec.
-        self.keycodes().collect()
-    }
-
-    fn tick(&mut self) -> keyberon::layout::CustomEvent<T> {
-        self.tick()
-    }
-}
-
 pub trait HIDReporter<K, C, KE, CE> {
     fn write_keyboard_report(&mut self, report: impl IntoIterator<Item = K>) -> Result<(), KE>;
 
