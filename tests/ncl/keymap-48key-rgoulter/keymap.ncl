@@ -102,5 +102,4 @@ let S = K.LeftShift in
       XXXX, XXXX, XXXX, XXXX, XXXX, XXXX,     XXXX, XXXX, XXXX, XXXX, XXXX, XXXX,
     ],
   ],
-
 }
