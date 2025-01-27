@@ -35,8 +35,7 @@ env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/../../tests/ncl/keymap-42key-dvorak-simpl
   cargo build \
     --release \
     --target=thumbv6m-none-eabi \
-    --package=rp2040-rtic-pico42-rust-rp2040 \
-    --bin=pico42-rgoulter
+    --package=rp2040-rtic-pico42-rust-rp2040
 ```
 
 The firmware can be deployed to an RP2040 board (in bootloader mode)
