@@ -1,7 +1,8 @@
 let validators = import "validators.ncl" in
 {
   serialized_json_keymap
-    | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json.",
+    | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json."
+    | { keys | Array key.SerializedJson, .. },
 
   checks.keyboard_is
     = {
@@ -20,6 +21,8 @@ let validators = import "validators.ncl" in
   keyboard
     | doc "for key::keyboard::Key."
     = {
+        SerializedJson = std.contract.from_validator serialized_json_validator,
+
         # c.f. doc_de_keyboard.md.
         serialized_json_validator
           = validators.record.validator {
@@ -106,6 +109,8 @@ let validators = import "validators.ncl" in
   layer_modifier
     | doc "for key::layered::ModifierKey."
     = {
+        SerializedJson = std.contract.from_validator serialized_json_validator,
+
         # c.f. doc_de_layered.md.
         # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
         serialized_json_validator
@@ -147,6 +152,8 @@ let validators = import "validators.ncl" in
   layered
     | doc "for key::layered::LayeredKey."
     = {
+        SerializedJson = std.contract.from_validator serialized_json_validator,
+
         # c.f. doc_de_layered.md.
         # e.g.:
         # ```
@@ -221,6 +228,8 @@ let validators = import "validators.ncl" in
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
+        SerializedJson = std.contract.from_validator serialized_json_validator,
+
         # c.f. doc_de_tap_hold.md.
         # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
         serialized_json_validator
@@ -269,6 +278,8 @@ let validators = import "validators.ncl" in
     = {
         base_key
           = {
+              SerializedJson = std.contract.from_validator serialized_json_validator,
+
               serialized_json_validator
                 = validators.any_of
                     [
@@ -308,6 +319,8 @@ let validators = import "validators.ncl" in
 
         tap_hold_key
           = {
+              SerializedJson = std.contract.from_validator serialized_json_validator,
+
               serialized_json_validator
                 = validators.any_of
                     [
@@ -349,6 +362,8 @@ let validators = import "validators.ncl" in
 
         layered_key
           = {
+              SerializedJson = std.contract.from_validator serialized_json_validator,
+
               serialized_json_validator
                 = validators.any_of
                     [
@@ -408,6 +423,8 @@ let validators = import "validators.ncl" in
 
   key
     = {
+        SerializedJson = std.contract.from_validator serialized_json_validator,
+
         serialized_json_validator
           = validators.any_of
               [
