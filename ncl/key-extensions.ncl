@@ -153,6 +153,8 @@
           SCRL = K.ScrollLock,
           PAUS = K.Pause,
 
+          SLCK = K.ScrollLock,
+
           INS  = K.Insert,
           HOME = K.Home,
           PGUP = K.PageUp,
