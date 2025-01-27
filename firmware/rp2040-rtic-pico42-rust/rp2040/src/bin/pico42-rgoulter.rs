@@ -119,7 +119,6 @@ mod app {
         };
 
         let backend = {
-            use smart_keymap::key::composite::Context;
             use smart_keymap::keymap::Keymap;
             use smart_keymap::init;
             let keymap = Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
