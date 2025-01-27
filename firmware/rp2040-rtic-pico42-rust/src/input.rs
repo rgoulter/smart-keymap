@@ -1,5 +1,4 @@
 use core::convert::Infallible;
-use core::marker::PhantomData;
 use embedded_hal::digital::v2::InputPin;
 use keyberon::debounce::Debouncer;
 use keyberon::layout::Event;
@@ -147,20 +146,6 @@ where
             .map(|_| ())
     }
 }
-
-/// The keyboard "backend", manages the keyboard from the events received
-/// (presses/releases of coordinates on a keyboard layout).
-/// through to listing HID scancodes to report using HIDs.
-///
-/// L: The layout engine
-pub struct KeyboardBackend<T, K, C, L: LayoutEngine<T, K>> {
-    layout: L,
-    previous_consumer_codes: heapless::Vec<C, 4>,
-    keyboard_codes: heapless::Vec<K, 8>,
-    consumer_codes: heapless::Vec<C, 4>,
-    marker: PhantomData<T>,
-}
-
 
 pub fn row5_is_low<P>((a, b, c, d, e): &(P, P, P, P, P)) -> [bool; 5]
 where
