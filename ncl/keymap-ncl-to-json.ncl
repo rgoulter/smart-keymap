@@ -341,6 +341,7 @@ let validators = import "validators.ncl" in
       if std.array.length layers <= 1 then
         std.array.at 0 layers
       else
+        let layers = layers |> std.array.map layer_as_array_of_keys in
         let base_keys = std.array.first layers in
         let layered_keys = std.array.drop_first layers in
         std.array.generate
