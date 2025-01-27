@@ -1,6 +1,14 @@
 let validators = import "validators.ncl" in
 {
-  KeymapKey = Dyn,
+  KeymapKey
+    = std.contract.any_of
+        [
+          keyboard.Key,
+          layer_modifier.Key,
+          layered.Key,
+          tap_hold.Key,
+          std.contract.from_validator validators.is_null,
+        ],
 
   KeymapLayer = std.contract.any_of [Array KeymapKey, String],
 
@@ -37,6 +45,8 @@ let validators = import "validators.ncl" in
   keyboard
     | doc "for key::keyboard::Key."
     = {
+        Key = std.contract.from_validator key_validator,
+
         key_validator
           = validators.record.validator {
               fields_validator = validators.all_of [
@@ -93,6 +103,8 @@ let validators = import "validators.ncl" in
   layer_modifier
     | doc "for key::layered::ModifierKey."
     = {
+        Key = std.contract.from_validator key_validator,
+
         key_validator
           = fun k => k |>
               match {
@@ -146,6 +158,8 @@ let validators = import "validators.ncl" in
   layered
     | doc "for key::layered::LayeredKey."
     = {
+        Key = std.contract.from_validator key_validator,
+
         key_validator
           = fun k => k |> match {
               { layered, ..base_key } =>
@@ -208,6 +222,8 @@ let validators = import "validators.ncl" in
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
+        Key = std.contract.from_validator key_validator,
+
         key_validator
           = fun k => k |>
               match {
@@ -235,6 +251,8 @@ let validators = import "validators.ncl" in
 
   key
     = {
+        Key = std.contract.from_validator key_validator,
+
         key_validator
           = fun k => k |>
               validators.any_of [
