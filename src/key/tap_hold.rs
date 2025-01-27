@@ -19,6 +19,9 @@ pub enum InterruptResponse {
     Ignore,
     /// The tap-hold key resolves as "hold" when interrupted by a key press.
     HoldOnKeyPress,
+    /// The tap-hold key resolves as "hold" when interrupted by a key tap.
+    /// (Another key was pressed and released).
+    HoldOnKeyTap,
 }
 
 /// Configuration settings for tap hold keys.
@@ -156,6 +159,29 @@ impl<K: key::Key> PressedKeyState<K> {
                                 if keymap_index == ki {
                                     // TapHold: not interrupted; resolved as tap.
                                     Some(TapHoldState::Tap)
+                                } else {
+                                    None
+                                }
+                            }
+                            key::Event::Key {
+                                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                                ..
+                            } => {
+                                // Key held long enough to resolve as hold.
+                                Some(TapHoldState::Hold)
+                            }
+                            _ => None,
+                        }
+                    }
+                    InterruptResponse::HoldOnKeyTap => {
+                        match event {
+                            key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                                if keymap_index == ki {
+                                    // TapHold: not interrupted; resolved as tap.
+                                    Some(TapHoldState::Tap)
+                                } else if Some(ki) == self.other_pressed_keymap_index {
+                                    // TapHold: interrupted by key tap (press + release); resolved as hold.
+                                    Some(TapHoldState::Hold)
                                 } else {
                                     None
                                 }
