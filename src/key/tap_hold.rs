@@ -111,6 +111,8 @@ pub enum Event {
 pub struct PressedKeyState<K: key::Key> {
     state: TapHoldState,
     pressed_key: Option<input::PressedKey<K, K::PressedKeyState>>,
+    // For tracking 'tap' interruptions
+    other_pressed_keymap_index: Option<u16>,
 }
 
 /// Convenience type for a pressed tap-hold key.
@@ -122,6 +124,7 @@ impl<K: key::Key> PressedKeyState<K> {
         PressedKeyState {
             state: TapHoldState::Pending,
             pressed_key: None,
+            other_pressed_keymap_index: None,
         }
     }
 
@@ -219,6 +222,18 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                     .map_events(|ev| key::ModifierKeyEvent::Inner(ev));
                 pke.extend(pk_ev);
             }
+        }
+
+        // Check for interrupting taps
+        // (track other key press, if this PKS has not resolved)
+        match self.state {
+            TapHoldState::Pending => match event {
+                key::Event::Input(input::Event::Press { keymap_index: ki }) => {
+                    self.other_pressed_keymap_index = Some(ki);
+                }
+                _ => {}
+            },
+            _ => {}
         }
 
         // Resolve tap-hold state per the event.
