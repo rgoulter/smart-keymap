@@ -14,8 +14,7 @@ let NAV_R = 3 in
 let MOU_R = 4 in
 let MED_R = 5 in
 
-let LT = fun layer_index key => key & K.hold { layer_modifier = { hold = layer_index } } in
-# let LT = fun layer_index key => key in
+let LT = fun layer_index key => key & K.hold (K.layer_mod.hold layer_index) in
 
 let SPC_NAVR = LT NAV_R K.Space in
 let TAB_MOUR = LT MOU_R K.Tab in
