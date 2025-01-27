@@ -1,7 +1,6 @@
 use core::convert::Infallible;
 use core::marker::PhantomData;
 use embedded_hal::digital::v2::InputPin;
-use keyberon::chording::Chording;
 use keyberon::debounce::Debouncer;
 use keyberon::layout::Event;
 use usb_device::bus::UsbBus;
@@ -37,37 +36,31 @@ pub trait MatrixScanner<const COLS: usize, const ROWS: usize, E = Infallible> {
 pub struct Keyboard<
     const COLS: usize,
     const ROWS: usize,
-    const NUM_CHORDS: usize,
     M: MatrixScanner<COLS, ROWS>,
 > {
     pub matrix: M,
     pub debouncer: Debouncer<PressedKeys<COLS, ROWS>>,
-    pub chording: Chording<NUM_CHORDS>,
 }
 
 impl<
         const COLS: usize,
         const ROWS: usize,
-        const NUM_CHORDS: usize,
         M: MatrixScanner<COLS, ROWS>,
-    > Keyboard<COLS, ROWS, NUM_CHORDS, M>
+    > Keyboard<COLS, ROWS, M>
 {
     pub fn new(
         matrix: M,
         debouncer: Debouncer<PressedKeys<COLS, ROWS>>,
-        chording: Chording<NUM_CHORDS>,
     ) -> Self {
         Self {
             matrix,
             debouncer,
-            chording,
         }
     }
 
     pub fn events(&mut self) -> heapless::Vec<Event, 8> {
         let key_presses = self.matrix.get().unwrap();
-        let debounced_events = self.debouncer.events(key_presses).collect();
-        self.chording.tick(debounced_events)
+        self.debouncer.events(key_presses).collect()
     }
 }
 
