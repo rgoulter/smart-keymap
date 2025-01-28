@@ -1,6 +1,7 @@
 #![no_std]
 #![no_main]
 
+#[cfg(not(custom_board))]
 mod board {
     use rp2040_hal as hal;
 
@@ -46,6 +47,9 @@ mod board {
 
     pub(crate) use rows_and_cols;
 }
+
+#[cfg(custom_board)]
+include!(concat!(env!("OUT_DIR"), "/board.rs"));
 
 #[rtic::app(
     device = rp_pico::hal::pac,
