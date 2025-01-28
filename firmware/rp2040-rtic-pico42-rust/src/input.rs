@@ -22,6 +22,8 @@ pub type PressedKeys<const COLS: usize, const ROWS: usize> = [[bool; COLS]; ROWS
 // R for 'matrix get result type',
 // E for 'error of matrix get result type'.
 pub trait MatrixScanner<const COLS: usize, const ROWS: usize, E = Infallible> {
+    /// Check whether SW_1_1 is pressed.
+    fn is_boot_key_pressed(&mut self) -> bool;
     fn get(&mut self) -> Result<[[bool; COLS]; ROWS], E>;
 }
 

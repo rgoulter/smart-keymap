@@ -1,5 +1,7 @@
 //! Hardware pin switch matrix handling.
 
+use core::fmt::Debug;
+
 use embedded_hal::blocking::delay::DelayUs;
 use embedded_hal::digital::v2::{InputPin, OutputPin};
 
@@ -70,13 +72,25 @@ where
     }
 }
 
-impl<C, R, const CS: usize, const RS: usize, D, E> crate::input::MatrixScanner<CS, RS, E>
+impl<C, R, const CS: usize, const RS: usize, D, E: Debug> crate::input::MatrixScanner<CS, RS, E>
     for Matrix<C, R, CS, RS, D>
 where
     C: InputPin<Error = E>,
     R: OutputPin<Error = E>,
     D: DelayUs<u32>,
 {
+    fn is_boot_key_pressed(&mut self) -> bool {
+        self.rows[0].set_low().unwrap();
+        self.delay.delay_us(self.select_delay_us);
+
+        let is_pressed = self.cols[0].is_low().unwrap();
+
+        self.rows[0].set_high().unwrap();
+        self.delay.delay_us(self.unselect_delay_us);
+
+        is_pressed
+    }
+
     /// Scans the matrix and checks which keys are pressed.
     ///
     /// Every row pin in order is pulled low, and then each column

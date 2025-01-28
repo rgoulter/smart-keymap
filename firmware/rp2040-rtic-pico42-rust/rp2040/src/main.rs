@@ -57,6 +57,7 @@ mod app {
 
     use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
     use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
+    use usbd_smart_keyboard::input::MatrixScanner;
     use usbd_smart_keyboard::matrix::Matrix as DelayedMatrix;
 
     use super::board;
@@ -125,7 +126,13 @@ mod app {
             &mut ctx.device.RESETS,
         );
         board::rows_and_cols!(gpio_pins, cols, rows);
-        let matrix = DelayedMatrix::new(cols, rows, timer, 5, 5).unwrap();
+        let mut matrix = DelayedMatrix::new(cols, rows, timer, 5, 5).unwrap();
+
+        // Check if bootloader pressed
+        if matrix.is_boot_key_pressed() {
+            rp2040_hal::rom_data::reset_to_usb_boot(0, 0);
+        }
+
         let keyboard = Keyboard {
             matrix,
             debouncer: Debouncer::new(PressedKeys::default(), PressedKeys::default(), 25),
