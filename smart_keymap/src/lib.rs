@@ -22,8 +22,8 @@
 //!  the environment variable `SMART_KEYMAP_CUSTOM_KEYMAP` to the path
 //!  of a custom keymap file.
 //!
-//! The most user friendly way to do this is to use `ncl/keymap-codegen.ncl`
-//!  to produce a `keymap.rs` file from a `keymap.json` file.
+//! `SMART_KEYMAP_CUSTOM_KEYMAP` can be set either to a `.ncl` file,
+//!  or to a `.rs` file (generated using the scripts under `ncl/`).
 //!
 //! ## Keyboard Firmware Implementation
 //!
