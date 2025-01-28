@@ -7,5 +7,5 @@ pub use usb_device::bus::UsbBusAllocator;
 
 pub use usbd_human_interface_device::usb_class::UsbHidClassBuilder;
 
-pub use crate::common::{usb_poll, MANUFACTURER, VID};
+pub use crate::common::{usb_poll, VID};
 pub use crate::input;

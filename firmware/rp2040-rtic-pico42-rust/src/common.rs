@@ -10,7 +10,6 @@ use usbd_human_interface_device::device::DeviceHList;
 use usbd_human_interface_device::usb_class::UsbHidClass;
 
 pub const VID: u16 = 0xcafe;
-pub const MANUFACTURER: &str = "Richard Goulter's Keyboard Labs";
 
 pub type UsbClass<B> =
     UsbHidClass<'static, B, HList!(ConsumerControl<'static, B>, NKROBootKeyboard<'static, B>,)>;
