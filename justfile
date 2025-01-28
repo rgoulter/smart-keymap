@@ -4,6 +4,8 @@ dest_dir := "firmware/ch32x035-usb-device-compositekm-c/libsmartkeymap/"
 
 target := "riscv32imac-unknown-none-elf"
 
+mod rp2040-rtic-smart-keyboard
+
 default: test
 
 bindgen:
