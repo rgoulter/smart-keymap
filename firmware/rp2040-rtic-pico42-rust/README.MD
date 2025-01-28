@@ -42,3 +42,17 @@ The firmware can be deployed to an RP2040 board (in bootloader mode)
  by using `cargo run` instead of `cargo build`.
  
 The `pico42` example can be built / run by adding `--example pico42`.
+
+A custom `board.ncl` file can be built by setting the `SMART_KEYBOARD_CUSTOM_BOARD`
+variable to its path, and building the `rp2040-rtic-smart-keyboard` package's binary. e.g.:
+
+```
+env \
+  SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/../../tests/ncl/keymap-42key-dvorak-simple-with-tap_hold/keymap.ncl" \
+  SMART_KEYBOARD_CUSTOM_BOARD="$(pwd)/rp2040/examples/board-pico42.ncl" \
+    cargo build \
+      --release \
+      --target=thumbv6m-none-eabi \
+      --package=rp2040-rtic-smart-keyboard
+```
+
