@@ -6,7 +6,7 @@ mod board {
 
     use hal::gpio::bank0;
 
-    use rp2040_rtic_pico42_rust::matrix::Matrix;
+    use usbd_smart_keyboard::matrix::Matrix;
 
     use rp2040_rtic_pico42_rust_rp2040::input::{Input, Output, UnconfiguredPin};
 
@@ -21,13 +21,13 @@ mod board {
     pub const MANUFACTURER: &str = "smart-keyboard";
     pub const PRODUCT: &str = "RP2040 Keyboard";
 
-    pub type Keyboard = rp2040_rtic_pico42_rust::input::Keyboard<
+    pub type Keyboard = usbd_smart_keyboard::input::Keyboard<
         COLS,
         ROWS,
         Matrix<Input, Output, COLS, ROWS, hal::Timer>,
     >;
 
-    pub type PressedKeys = rp2040_rtic_pico42_rust::input::PressedKeys<COLS, ROWS>;
+    pub type PressedKeys = usbd_smart_keyboard::input::PressedKeys<COLS, ROWS>;
 
     pub fn cols(gp0: UnconfiguredPin<bank0::Gpio0>) -> [Input; COLS] {
         [gp0.into_pull_up_input().into_dyn_pin()]
@@ -65,8 +65,8 @@ mod app {
 
     use rp2040_rtic_pico42_rust_rp2040::app_prelude::*;
 
-    use rp2040_rtic_pico42_rust::input::smart_keymap::KeyboardBackend;
-    use rp2040_rtic_pico42_rust::matrix::Matrix as DelayedMatrix;
+    use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
+    use usbd_smart_keyboard::matrix::Matrix as DelayedMatrix;
 
     use super::board;
 
