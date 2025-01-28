@@ -7,8 +7,6 @@ use smart_keymap::key;
 
 use key::{composite, keyboard, layered};
 
-use composite::DefaultNestableKey;
-
 type Ctx = composite::Context;
 type Key = composite::Key;
 
@@ -28,8 +26,6 @@ assert_eq!(actual_key, expected_key);
 use smart_keymap::key;
 
 use key::{composite, keyboard, layered, tap_hold};
-
-use composite::DefaultNestableKey;
 
 type Ctx = composite::Context;
 type Key = composite::Key;
@@ -54,8 +50,6 @@ use smart_keymap::key;
 
 use key::{composite, layered};
 
-use composite::DefaultNestableKey;
-
 type Ctx = composite::Context;
 type Key = composite::Key;
 
@@ -75,8 +69,6 @@ assert_eq!(actual_key, expected_key);
 use smart_keymap::key;
 
 use key::{composite, keyboard, layered};
-
-use composite::DefaultNestableKey;
 
 type Ctx = composite::Context;
 type Key = composite::Key;

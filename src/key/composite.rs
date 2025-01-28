@@ -11,9 +11,6 @@ use serde::Deserialize;
 use crate::{input, key};
 use key::{keyboard, layered, tap_hold};
 
-/// Default [NestableKey] for [Key] and its associated types.
-pub type DefaultNestableKey = keyboard::Key;
-
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
@@ -222,57 +219,62 @@ impl<K: Into<TapHoldKey<BaseKey>>> From<K> for LayeredKey<TapHoldKey<BaseKey>> {
 /// Type alias for composite key types.
 ///
 /// Composite key is defined as a tree of key nodes:
+///
+///   ```text
 ///   Base    := LayerModifier | Keyboard
+///
 ///   TapHold := TapHold<Base> | Base
+///
 ///   Layered := Layered<TapHold> | TapHold
+///   ```
 pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
 
 impl BaseKey {
-    /// Constructs a [Key::Keyboard] from the given [keyboard::Key].
+    /// Constructs a [BaseKey::Keyboard] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
         Self::Keyboard(key)
     }
 
-    /// Constructs a [Key::LayerModifier] from the given [layered::ModifierKey].
+    /// Constructs a [BaseKey::LayerModifier] from the given [layered::ModifierKey].
     pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
         Self::LayerModifier(key)
     }
 }
 
 impl TapHoldKey<BaseKey> {
-    /// Constructs a [Key::Keyboard] from the given [keyboard::Key].
+    /// Constructs a [TapHoldKey] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
         Self::Pass(BaseKey::keyboard(key))
     }
 
-    /// Constructs a [Key::TapHold] from the given [tap_hold::Key].
+    /// Constructs a [TapHoldKey] from the given [tap_hold::Key].
     pub const fn tap_hold(key: tap_hold::Key<BaseKey>) -> Self {
         Self::TapHold(key)
     }
 
-    /// Constructs a [Key::LayerModifier] from the given [layered::ModifierKey].
+    /// Constructs a [TapHoldKey] from the given [layered::ModifierKey].
     pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
         Self::Pass(BaseKey::layer_modifier(key))
     }
 }
 
 impl Key {
-    /// Constructs a [Key::Keyboard] from the given [keyboard::Key].
+    /// Constructs a [Key] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
         Self::Pass(TapHoldKey::keyboard(key))
     }
 
-    /// Constructs a [Key::TapHold] from the given [tap_hold::Key].
+    /// Constructs a [Key] from the given [tap_hold::Key].
     pub const fn tap_hold(key: tap_hold::Key<BaseKey>) -> Self {
         Self::Pass(TapHoldKey::tap_hold(key))
     }
 
-    /// Constructs a [Key::LayerModifier] from the given [layered::ModifierKey].
+    /// Constructs a [Key] from the given [layered::ModifierKey].
     pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
         Self::Pass(TapHoldKey::layer_modifier(key))
     }
 
-    /// Constructs a [Key::Layered] from the given [layered::LayeredKey].
+    /// Constructs a [Key] from the given [layered::LayeredKey].
     pub const fn layered(key: layered::LayeredKey<TapHoldKey<BaseKey>>) -> Self {
         Self::Layered(key)
     }

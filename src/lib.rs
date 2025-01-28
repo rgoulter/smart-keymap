@@ -58,7 +58,7 @@ pub mod tuples;
 #[allow(unused)]
 use key::{composite, keyboard, tap_hold};
 
-/// Types and initial data used for constructing [KEYMAP].
+/// Types and initial data used for constructing a [keymap::Keymap].
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
@@ -71,10 +71,10 @@ pub mod init {
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
 
-    /// Alias for Context type; i.e. [crate::key::context::Context] with generics.
+    /// Alias for Context type; i.e. [composite::Context].
     pub type Context = composite::Context;
 
-    /// Alias for Event type; i.e. [crate::key::context::Event].
+    /// Alias for Event type; i.e. [composite::Event].
     pub type Event = composite::Event;
 
     /// Alias for keys.
@@ -83,10 +83,10 @@ pub mod init {
     /// Initial [Context] value.
     pub const CONTEXT: Context = composite::DEFAULT_CONTEXT;
 
-    /// Alias for a [tuples] KeysN type. Without a custom keymap, just a single [key::composite::Key].
+    /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
     pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
 
-    /// A [tuples] KeysN value with keys. Without a custom keymap, just the letter 'A'.
+    /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((keyboard::Key::new(0x04),));
 }
 

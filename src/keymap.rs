@@ -677,7 +677,7 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::DefaultNestableKey;
+        type NK = keyboard::Key;
         type Ctx = composite::Context;
         type Ev = composite::Event;
         type MK = layered::ModifierKey;

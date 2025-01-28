@@ -144,7 +144,7 @@ impl Context for () {
 
 /// Context struct for use by "modifier" keys.
 /// (Keys which modify the behaviour of some key,
-///  e.g. [key::layered::LayeredKey]).
+///  e.g. [layered::LayeredKey]).
 #[derive(Debug, Clone, Copy)]
 pub struct ModifierKeyContext<Ctx: Copy, NCtx: Copy> {
     /// The [Context] for the modifier key.
