@@ -1,11 +1,11 @@
 use keyberon::layout::Event;
 
-// Messages for the RTIC task which manages the Keyberon layout.
+/// Messages for the RTIC task which manages the Keyberon layout.
 #[derive(Debug)]
 pub enum LayoutMessage {
-    // Update the layout with this event.
+    /// Update the layout with this event.
     Event(Event),
-    // Tick the layout (and write report to the USB class).
+    /// Tick the layout (and write report to the USB class).
     Tick,
 }
 
@@ -33,6 +33,7 @@ pub fn ser(e: Event) -> [u8; 4] {
     }
 }
 
+/// Deserialise an array of bytes into maybe a Keyberon Event.
 pub fn receive_byte(buf: &mut [u8; 4], b: u8) -> Option<Event> {
     buf.rotate_left(1);
     buf[3] = b;

@@ -6,17 +6,14 @@ use crate::input::HIDReporter;
 /// (presses/releases of coordinates on a keyboard layout).
 /// through to listing HID scancodes to report using HIDs.
 pub struct KeyboardBackend {
-    keymap: smart_keymap::keymap::Keymap<
-        smart_keymap::init::KeyDefinitionsType,
-    >,
+    keymap: smart_keymap::keymap::Keymap<smart_keymap::init::KeyDefinitionsType>,
     pressed_key_codes: heapless::Vec<page::Keyboard, 16>,
 }
 
 impl KeyboardBackend {
+    /// Constructs a new keyboard backend.
     pub fn new(
-        keymap: smart_keymap::keymap::Keymap<
-            smart_keymap::init::KeyDefinitionsType,
-        >
+        keymap: smart_keymap::keymap::Keymap<smart_keymap::init::KeyDefinitionsType>,
     ) -> Self {
         Self {
             keymap,
@@ -40,6 +37,7 @@ impl KeyboardBackend {
         self.pressed_key_codes = pressed_keycodes.iter().map(|&key| key.into()).collect();
     }
 
+    /// Writes the HID keyboard and consumer reports from the smart keymap.
     pub fn write_reports<R, KE, CE>(&mut self, hid_reporter: &mut R)
     where
         KE: core::fmt::Debug, // USBHID Keyboard Error
@@ -52,7 +50,10 @@ impl KeyboardBackend {
 
 /// Constructs a [smart_keymap::input::Event] from a [keyberon::layout::Event],
 ///  using a map from row, column to (maybe) keymap index.
-pub fn keymap_index_of<const COLS: usize, const ROWS: usize>(indices: &[[Option<u16>; COLS]; ROWS], ev: keyberon::layout::Event) -> Option<smart_keymap::input::Event> {
+pub fn keymap_index_of<const COLS: usize, const ROWS: usize>(
+    indices: &[[Option<u16>; COLS]; ROWS],
+    ev: keyberon::layout::Event,
+) -> Option<smart_keymap::input::Event> {
     match ev {
         keyberon::layout::Event::Press(r, c) => indices[r as usize][c as usize]
             .map(|keymap_index| smart_keymap::input::Event::Press { keymap_index }),
