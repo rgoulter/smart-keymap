@@ -25,4 +25,4 @@ clean: clean-generated-keymaps
 	$(CARGO) clean
 
 include/smart_keymap.h: src/lib.rs
-	$(CBINDGEN) -c cbindgen.toml -o include/smart_keymap.h
+	$(CBINDGEN) -c cbindgen.toml -o include/smart_keymap.h ./smart_keymap

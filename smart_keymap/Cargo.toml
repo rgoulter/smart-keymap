@@ -1,0 +1,17 @@
+[package]
+name = "smart_keymap"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[features]
+# For building/testing staticlib on
+#  targets with std (e.g. x86_64-linux),
+#  the staticlib should be built with std.
+default = ["std"]
+std = ["smart-keymap/std"]
+
+[dependencies]
+smart-keymap = { path = "..", default-features = false }

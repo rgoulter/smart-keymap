@@ -30,8 +30,7 @@ SMART_KEYMAP_CUSTOM_KEYMAP=$(realpath "${KEYMAP_DIR}/keymap.rs")
 export SMART_KEYMAP_CUSTOM_KEYMAP
 
 cargo rustc \
-    --crate-type "staticlib" \
     --target riscv32imac-unknown-none-elf \
     --release \
-    --features "staticlib" \
+    --package smart_keymap \
     --no-default-features

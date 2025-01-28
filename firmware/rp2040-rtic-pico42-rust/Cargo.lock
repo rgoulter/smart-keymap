@@ -765,7 +765,12 @@ dependencies = [
  "paste",
  "seq-macro",
  "serde",
+ "smart-keymap-nickel-helper",
 ]
+
+[[package]]
+name = "smart-keymap-nickel-helper"
+version = "0.1.0"
 
 [[package]]
 name = "spin"
