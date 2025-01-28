@@ -14,7 +14,7 @@ build cargo_target="":
 build-example example="pico42": (build "--example=" + example)
 
 deploy cargo_target="": (build cargo_target)
-  timeout 30 ./scripts/deploy.sh ../target/thumbv6m-none-eabi/release/rp2040-rtic-smart-keyboard
+  timeout 30 ./scripts/deploy.sh ../target/thumbv6m-none-eabi/release/rp2040-rtic-smart-keyboard || true
 
 deploy-example example="pico42": (build-example example)
-  timeout 30 ./scripts/deploy.sh ../target/thumbv6m-none-eabi/release/examples/{{example}}
+  timeout 30 ./scripts/deploy.sh ../target/thumbv6m-none-eabi/release/examples/{{example}} || true
