@@ -15,11 +15,6 @@ pub mod smart_keymap;
 
 pub type PressedKeys<const COLS: usize, const ROWS: usize> = [[bool; COLS]; ROWS];
 
-pub type PressedKeys1x1 = PressedKeys<1, 1>;
-pub type PressedKeys5x4 = PressedKeys<5, 4>;
-pub type PressedKeys12x4 = PressedKeys<12, 4>;
-pub type PressedKeys12x5 = PressedKeys<12, 5>;
-
 // R for 'matrix get result type',
 // E for 'error of matrix get result type'.
 pub trait MatrixScanner<const COLS: usize, const ROWS: usize, E = Infallible> {
