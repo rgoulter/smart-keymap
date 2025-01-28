@@ -1,19 +1,23 @@
-use usb_device::UsbError;
-
 use frunk::hlist::Selector;
 use frunk::HList;
+
 use usb_device::bus::UsbBus;
 use usb_device::device::UsbDevice;
+use usb_device::UsbError;
+
 use usbd_human_interface_device::device::consumer::ConsumerControl;
 use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
 use usbd_human_interface_device::device::DeviceHList;
 use usbd_human_interface_device::usb_class::UsbHidClass;
 
+/// A USB Vendor ID.
 pub const VID: u16 = 0xcafe;
 
+/// A [usb_device::class::UsbClass] impl. with HID Keyboard, HID consumer devices.
 pub type UsbClass<B> =
     UsbHidClass<'static, B, HList!(ConsumerControl<'static, B>, NKROBootKeyboard<'static, B>,)>;
 
+/// Polls the given [UsbDevice] with the [UsbHidClass] that has a [NKROBootKeyboard]. (e.g. [UsbClass]).
 pub fn usb_poll<B, D, Index>(
     usb_dev: &mut UsbDevice<'static, B>,
     keyboard: &mut UsbHidClass<'static, B, D>,
