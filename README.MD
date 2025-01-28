@@ -156,4 +156,4 @@ env \
 The example USB HID keyboard software from the EVT has been adapted
 to work with smart_keymap lib.
 
-See the readme at <firmware/ch32x035-usb-device-compositekm-c>.
+See [firmware/ch32x035-usb-device-compositekm-c](firmware/ch32x035-usb-device-compositekm-c/README.MD) for more details.
