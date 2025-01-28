@@ -40,3 +40,5 @@ env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/../../tests/ncl/keymap-42key-dvorak-simpl
 
 The firmware can be deployed to an RP2040 board (in bootloader mode)
  by using `cargo run` instead of `cargo build`.
+ 
+The `pico42` example can be built / run by adding `--example pico42`.
