@@ -1,0 +1,20 @@
+keymap_dir := `pwd` + "/../../../tests/ncl"
+
+keymap := "keymap-42key-dvorak-simple-with-tap_hold"
+
+build cargo_target="":
+    cd .. && \
+    env SMART_KEYMAP_CUSTOM_KEYMAP="{{keymap_dir}}/{{keymap}}/keymap.ncl" \
+      cargo build \
+        --release \
+        --target=thumbv6m-none-eabi \
+        --package=rp2040-rtic-smart-keyboard \
+        {{cargo_target}}
+
+build-example example="pico42": (build "--example=" + example)
+
+deploy cargo_target="": (build cargo_target)
+  timeout 30 ./scripts/deploy.sh ../target/thumbv6m-none-eabi/release/rp2040-rtic-smart-keyboard
+
+deploy-example example="pico42": (build-example example)
+  timeout 30 ./scripts/deploy.sh ../target/thumbv6m-none-eabi/release/examples/{{example}}
