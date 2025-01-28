@@ -8,7 +8,7 @@ mod board {
 
     use usbd_smart_keyboard::matrix::Matrix;
 
-    use rp2040_rtic_pico42_rust_rp2040::input::{Input, Output, UnconfiguredPin};
+    use rp2040_rtic_smart_keyboard::input::{Input, Output, UnconfiguredPin};
 
     pub const COLS: usize = 12;
 
@@ -22,7 +22,7 @@ mod board {
         [Some(30), Some(31), Some(32), Some(33), Some(34), Some(35), Some(36), Some(37), Some(38), Some(39), Some(40), Some(41)],
     ];
 
-    pub use rp2040_rtic_pico42_rust_rp2040::app_prelude::VID;
+    pub use rp2040_rtic_smart_keyboard::app_prelude::VID;
 
     pub const PID: u16 = 0x0005;
     pub const MANUFACTURER: &str = "smart-keyboard";
@@ -124,7 +124,7 @@ mod board {
 mod app {
     use panic_halt as _;
 
-    use rp2040_rtic_pico42_rust_rp2040::app_prelude::*;
+    use rp2040_rtic_smart_keyboard::app_prelude::*;
 
     use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
     use usbd_smart_keyboard::matrix::Matrix as DelayedMatrix;
