@@ -622,6 +622,7 @@ dependencies = [
  "rp2040-monotonic",
  "rtt-target 0.4.0",
  "smart-keymap",
+ "smart-keymap-nickel-helper",
  "usb-device",
  "usbd-human-interface-device",
  "usbd-serial",
