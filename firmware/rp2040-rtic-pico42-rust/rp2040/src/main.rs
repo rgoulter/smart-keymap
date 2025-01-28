@@ -37,16 +37,6 @@ mod board {
         [gp1.into_push_pull_output().into_dyn_pin()]
     }
 
-    /// Map from [row][col] to (maybe) a row-wise keymap index.
-    pub fn keymap_index_of(ev: keyberon::layout::Event) -> Option<smart_keymap::input::Event> {
-        match ev {
-            keyberon::layout::Event::Press(r, c) => KEYMAP_INDICES[r as usize][c as usize]
-                .map(|keymap_index| smart_keymap::input::Event::Press { keymap_index }),
-            keyberon::layout::Event::Release(r, c) => KEYMAP_INDICES[r as usize][c as usize]
-                .map(|keymap_index| smart_keymap::input::Event::Release { keymap_index }),
-        }
-    }
-
     macro_rules! rows_and_cols {
         ($gpio_pins:expr, $cols:ident, $rows:ident) => {
             let $cols = crate::board::cols($gpio_pins.gpio0);
@@ -65,14 +55,15 @@ mod app {
 
     use rp2040_rtic_smart_keyboard::app_prelude::*;
 
+    use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
     use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
     use usbd_smart_keyboard::matrix::Matrix as DelayedMatrix;
 
     use super::board;
 
-    use board::keymap_index_of;
     use board::Keyboard;
     use board::PressedKeys;
+    use board::KEYMAP_INDICES;
 
     #[shared]
     struct Shared {
@@ -113,8 +104,13 @@ mod app {
         )));
         let usb_bus = ctx.local.usb_bus.as_ref().unwrap();
 
-        let (usb_dev, usb_class) =
-            app_init::init_usb_device(usb_bus, board::VID, board::PID, board::MANUFACTURER, board::PRODUCT);
+        let (usb_dev, usb_class) = app_init::init_usb_device(
+            usb_bus,
+            board::VID,
+            board::PID,
+            board::MANUFACTURER,
+            board::PRODUCT,
+        );
 
         unsafe {
             pac::NVIC::unmask(pac::Interrupt::USBCTRL_IRQ);
@@ -172,7 +168,7 @@ mod app {
         alarm.schedule(1.millis()).unwrap();
 
         for event in keyboard.events() {
-            if let Some(event) = keymap_index_of(event) {
+            if let Some(event) = keymap_index_of(&KEYMAP_INDICES, event) {
                 backend.event(event);
             }
         }

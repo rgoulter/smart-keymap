@@ -49,3 +49,14 @@ impl KeyboardBackend {
         let _ = hid_reporter.write_keyboard_report(self.pressed_key_codes.clone());
     }
 }
+
+/// Constructs a [smart_keymap::input::Event] from a [keyberon::layout::Event],
+///  using a map from row, column to (maybe) keymap index.
+pub fn keymap_index_of<const COLS: usize, const ROWS: usize>(indices: &[[Option<u16>; COLS]; ROWS], ev: keyberon::layout::Event) -> Option<smart_keymap::input::Event> {
+    match ev {
+        keyberon::layout::Event::Press(r, c) => indices[r as usize][c as usize]
+            .map(|keymap_index| smart_keymap::input::Event::Press { keymap_index }),
+        keyberon::layout::Event::Release(r, c) => indices[r as usize][c as usize]
+            .map(|keymap_index| smart_keymap::input::Event::Release { keymap_index }),
+    }
+}
