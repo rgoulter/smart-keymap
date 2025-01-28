@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "smart-keymap-nickel-helper",
+    "smart-keymap-nickel-helper", "smart_keymap",
 ]
 
 [package]
@@ -10,9 +10,8 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["std", "staticlib"]
+default = ["std"]
 std = ["serde/std"]
-staticlib = []
 
 [lib]
 name = "smart_keymap"

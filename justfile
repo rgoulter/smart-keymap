@@ -7,7 +7,7 @@ target := "riscv32imac-unknown-none-elf"
 default: test
 
 bindgen:
-	cbindgen -c cbindgen.toml -o include/smart_keymap.h
+	cbindgen -c cbindgen.toml -o include/smart_keymap.h ./smart_keymap
 
 clean:
     make clean
@@ -18,12 +18,11 @@ test:
 build-keymap:
     env \
       SMART_KEYMAP_CUSTOM_KEYMAP={{env("SMART_KEYMAP_CUSTOM_KEYMAP", "tests/ncl/" + test_keymap + "/keymap.ncl")}} \
-        cargo rustc \
-        --crate-type "staticlib" \
+        cargo build \
         --release \
+        --package "smart_keymap" \
         --target "{{target}}" \
-        --no-default-features \
-        --features "staticlib"
+        --no-default-features
 
 _install:
     cp include/smart_keymap.h {{dest_dir}}
