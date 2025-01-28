@@ -36,3 +36,34 @@ jobs:
 
       - name: Run Cargo Doc
         run: cargo doc
+
+  cargo-build-target-thumbv6m-none-eabi:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install nickel
+        run: |
+          wget https://github.com/tweag/nickel/releases/download/1.9.1/nickel-x86_64-linux
+          chmod +x ./nickel-x86_64-linux
+          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+
+      - name: Rust Add Target
+        run: rustup target add thumbv6m-none-eabi
+
+      - name: Run Cargo Build
+        run: cargo build --target=thumbv6m-none-eabi --no-default-features
+
+      - name: Run Cargo Build (usbd-smart-keymap)
+        run: cargo build --target=thumbv6m-none-eabi --package=usbd-smart-keyboard
+
+      - name: Run Cargo Build (rp2040-rtic-smart-keyboard)
+        run: cargo build --target=thumbv6m-none-eabi --package=rp2040-rtic-smart-keyboard
