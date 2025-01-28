@@ -1,5 +1,5 @@
 [package]
-name = "rp2040-rtic-pico42-rust-rp2040"
+name = "rp2040-rtic-smart-keyboard"
 version = "0.1.0"
 authors = ["Richard Goulter <richard.goulter@gmail.com>"]
 edition = "2018"
