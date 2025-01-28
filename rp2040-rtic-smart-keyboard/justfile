@@ -1,4 +1,4 @@
-keymap_dir := `pwd` + "/../../../tests/ncl"
+keymap_dir := `pwd` + "/../tests/ncl"
 
 keymap := "keymap-42key-dvorak-simple-with-tap_hold"
 
