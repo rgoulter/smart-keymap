@@ -1,9 +1,9 @@
 use hal::usb::UsbBus;
 use rp2040_hal as hal;
 
-pub use rp2040_rtic_pico42_rust::common::*;
+pub use usbd_smart_keyboard::common::*;
 
-pub type UsbClass = rp2040_rtic_pico42_rust::common::UsbClass<UsbBus>;
+pub type UsbClass = usbd_smart_keyboard::common::UsbClass<UsbBus>;
 
 pub type UsbDevice = usb_device::device::UsbDevice<'static, UsbBus>;
 

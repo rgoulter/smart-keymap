@@ -1,4 +1,4 @@
-pub use rp2040_rtic_pico42_rust::app_prelude::*;
+pub use usbd_smart_keyboard::app_prelude::*;
 
 pub use core::convert::Infallible;
 
