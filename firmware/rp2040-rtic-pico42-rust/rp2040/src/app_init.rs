@@ -18,6 +18,7 @@ use usbd_human_interface_device::usb_class::UsbHidClassBuilder;
 
 use crate::common::{UsbClass, UsbDevice};
 
+/// Initializes the clocks.
 pub fn init_clocks(
     watchdog: pac::WATCHDOG,
     xosc: pac::XOSC,
@@ -41,6 +42,7 @@ pub fn init_clocks(
     (watchdog, clocks)
 }
 
+/// Initializes the timer.
 pub fn init_timer(
     pac_timer: pac::TIMER,
     resets: &mut pac::RESETS,
@@ -53,6 +55,7 @@ pub fn init_timer(
     (timer, alarm)
 }
 
+/// Initializes the usb device.
 pub fn init_usb_device(
     usb_bus: &'static UsbBusAllocator<UsbBus>,
     vid: u16,
