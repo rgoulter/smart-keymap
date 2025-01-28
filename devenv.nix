@@ -17,14 +17,16 @@
     rust = {
       channel = "stable";
       enable = true;
-      targets = ["riscv32imac-unknown-none-elf"];
+      targets = ["riscv32imac-unknown-none-elf" "thumbv6m-none-eabi"];
     };
     shell.enable = true;
   };
 
   packages = [
     pkgs.cmake-language-server
+    pkgs.cargo-binutils
     pkgs.cargo-nextest
+    pkgs.elf2uf2-rs
     pkgs.just
     pkgs.nickel
     pkgs.rust-cbindgen
