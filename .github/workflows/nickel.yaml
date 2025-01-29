@@ -7,12 +7,14 @@ on:
     paths:
       - 'ncl/**'
       - 'src/**'
+      - 'tests/ncl/**'
   pull_request:
     branches:
       - '*'
     paths:
       - 'ncl/**'
       - 'src/**'
+      - 'tests/ncl/**'
 
 jobs:
   cargo-build:
