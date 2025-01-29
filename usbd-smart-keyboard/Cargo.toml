@@ -8,9 +8,8 @@ edition = "2018"
 cortex-m = "0.7"
 cortex-m-rt = { version = "0.7", features = ["device"] }
 cortex-m-rtic = "1.0"
-# recent revisions of keyberon use embedded hal 1.0
-keyberon = { git = "https://github.com/TeXitoi/keyberon", rev = "a423de29a9cf0e9e4d3bdddc6958657662c46e01" }
-embedded-hal = "0.2"
+keyberon = { git = "https://github.com/TeXitoi/keyberon", branch = "master" }
+embedded-hal = "1.0"
 fugit = "0.3.7"
 frunk = { version = "0.4", default-features = false }
 generic-array = "0.14"
@@ -19,8 +18,8 @@ nb = "1.1"
 panic-halt = "0.2.0"
 panic-rtt-target = { version = "0.1.2", features = ["cortex-m"] }
 rtt-target = "0.4"
-usb-device = { version = "0.2.0", features = ["control-buffer-256"] }
-usbd-human-interface-device = "0.4"
+usb-device = { version = "0.3", features = ["control-buffer-256"] }
+usbd-human-interface-device = "0.5"
 usbd-serial = "0.1"
 
 # smart-keymap = { git = "https://github.com/rgoulter/smart-keymap.git" }

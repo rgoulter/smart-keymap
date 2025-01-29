@@ -12,7 +12,8 @@ use rp_pico::XOSC_CRYSTAL_FREQ;
 use fugit::ExtU32;
 
 use usb_device::bus::UsbBusAllocator;
-use usb_device::device::{UsbDeviceBuilder, UsbVidPid};
+use usb_device::descriptor::lang_id::LangID;
+use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
 
 use usbd_human_interface_device::usb_class::UsbHidClassBuilder;
 
@@ -71,9 +72,11 @@ pub fn init_usb_device(
         .build(usb_bus);
 
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
-        .manufacturer(mfr)
-        .product(product)
-        .serial_number(env!("CARGO_PKG_VERSION"))
+        .strings(&[StringDescriptors::new(LangID::EN_US)
+            .manufacturer(mfr)
+            .product(product)
+            .serial_number(env!("CARGO_PKG_VERSION"))])
+        .unwrap()
         .build();
 
     (usb_dev, usb_class)

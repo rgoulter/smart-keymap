@@ -2,8 +2,8 @@
 
 use core::fmt::Debug;
 
-use embedded_hal::blocking::delay::DelayUs;
-use embedded_hal::digital::v2::{InputPin, OutputPin};
+use embedded_hal::delay::DelayNs;
+use embedded_hal::digital::{InputPin, OutputPin};
 
 /// Describes the hardware-level matrix of switches.
 ///
@@ -20,7 +20,7 @@ pub struct Matrix<C, R, const CS: usize, const RS: usize, D>
 where
     C: InputPin,
     R: OutputPin,
-    D: DelayUs<u32>,
+    D: DelayNs,
 {
     cols: [C; CS],
     rows: [R; RS],
@@ -33,7 +33,7 @@ impl<C, R, const CS: usize, const RS: usize, D> Matrix<C, R, CS, RS, D>
 where
     C: InputPin,
     R: OutputPin,
-    D: DelayUs<u32>,
+    D: DelayNs,
 {
     /// Creates a new Matrix.
     ///
@@ -77,7 +77,7 @@ impl<C, R, const CS: usize, const RS: usize, D, E: Debug> crate::input::MatrixSc
 where
     C: InputPin<Error = E>,
     R: OutputPin<Error = E>,
-    D: DelayUs<u32>,
+    D: DelayNs,
 {
     fn is_boot_key_pressed(&mut self) -> bool {
         self.rows[0].set_low().unwrap();
@@ -106,7 +106,7 @@ where
             // Delay after setting the pin low.
             // Using a timer for this is probably overkill.
             self.delay.delay_us(self.select_delay_us);
-            for (ci, col) in self.cols.iter().enumerate() {
+            for (ci, col) in self.cols.iter_mut().enumerate() {
                 if col.is_low()? {
                     keys[ri][ci] = true;
                 }
