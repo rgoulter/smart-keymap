@@ -90,8 +90,7 @@ function strip_indent(str, indent) {
 # All other output in .feature files is Markdown prose.
 {
     if (in_docstring) {
-        # Indent the markdown code an extra two spaces.
-        print "  " strip_indent($0, docstring_indent)
+        print strip_indent($0, docstring_indent)
     } else {
         print trim($0)
     }
