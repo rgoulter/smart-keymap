@@ -90,7 +90,14 @@ impl<K: key::Key> key::Key for Key<K> {
 pub struct Context {}
 
 /// Default context.
-pub const DEFAULT_CONTEXT: Context = Context {};
+pub const DEFAULT_CONTEXT: Context = Context::from_config(DEFAULT_CONFIG);
+
+impl Context {
+    /// Constructs a context from the given config
+    pub const fn from_config(_config: Config) -> Context {
+        Context {}
+    }
+}
 
 /// The state of a tap-hold key.
 #[derive(Debug, Clone, Copy)]
