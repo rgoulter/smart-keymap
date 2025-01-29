@@ -13,6 +13,9 @@ KEYMAP_FEATURE_MD=""
 keymap_key_features=(
     "keyboard"
     "tap_hold"
+    "tap_hold-config-timeout"
+    "tap_hold-config-interrupt-ignore"
+    "tap_hold-config-interrupt-presses"
     "layered"
 )
 
