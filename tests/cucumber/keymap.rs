@@ -3,9 +3,11 @@ use std::fmt::Debug;
 use cucumber::gherkin::Step;
 use cucumber::{given, then, when, World};
 
+use serde::Deserialize;
+
 use smart_keymap::input;
 use smart_keymap::key;
-use smart_keymap::keymap::Keymap;
+use smart_keymap::keymap;
 
 mod common;
 
@@ -24,7 +26,7 @@ type DynamicKey = key::dynamic::DynamicKey<Key, Context, Event>;
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap(Keymap<Vec<DynamicKey>>),
+    Keymap(keymap::Keymap<Vec<DynamicKey>>),
 }
 
 impl LoadedKeymap {
@@ -54,7 +56,10 @@ impl LoadedKeymap {
 impl From<Vec<Key>> for LoadedKeymap {
     fn from(keys: Vec<Key>) -> Self {
         let dynkeys_vec: Vec<DynamicKey> = keys.iter().map(|k| DynamicKey::new(*k)).collect();
-        LoadedKeymap::Keymap(Keymap::new(dynkeys_vec, key::composite::DEFAULT_CONTEXT))
+        LoadedKeymap::Keymap(keymap::Keymap::new(
+            dynkeys_vec,
+            key::composite::DEFAULT_CONTEXT,
+        ))
     }
 }
 
@@ -73,6 +78,12 @@ impl Default for KeymapWorld {
     }
 }
 
+#[derive(Deserialize)]
+struct Keymap {
+    config: key::composite::Config,
+    keys: Vec<Key>,
+}
+
 #[given("a keymap.ncl:")]
 fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
     let keymap_ncl = step.docstring().unwrap();
@@ -81,10 +92,16 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
         keymap_ncl,
     ) {
         Ok(json) => {
-            let keys_vec_result: serde_json::Result<Vec<Key>> = serde_json::from_str(&json);
-            match keys_vec_result {
-                Ok(keys_vec) => {
-                    world.keymap = keys_vec.into();
+            let keymap_result: serde_json::Result<Keymap> = serde_json::from_str(&json);
+            match keymap_result {
+                Ok(keymap) => {
+                    let dyn_keys = keymap
+                        .keys
+                        .into_iter()
+                        .map(|k| DynamicKey::new(k))
+                        .collect();
+                    let context = key::composite::Context::from_config(keymap.config);
+                    world.keymap = LoadedKeymap::Keymap(keymap::Keymap::new(dyn_keys, context));
                 }
                 Err(e) => {
                     panic!(
