@@ -30,7 +30,11 @@ jobs:
       - name: Run Cargo Doc
         run: |
           mkdir -p _site
-          cargo doc --no-deps
+          cargo doc \
+            --no-deps \
+            --package=rp2040-rtic-smart-keyboard \
+            --package=smart-keymap \
+            --package=usbd-smart-keyboard
           cp -r target/doc _site/doc
       - name: features.html
         run: |
