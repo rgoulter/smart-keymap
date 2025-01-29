@@ -225,15 +225,7 @@ impl HIDKeyboardReporter {
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
 #[derive(Debug)]
-pub struct Keymap<
-    I: IndexMut<
-            usize,
-            Output = dyn key::dynamic::Key<
-                key::composite::Event,
-                Context = key::composite::Context,
-            >,
-        > + crate::tuples::KeysReset,
-> {
+pub struct Keymap<I> {
     key_definitions: I,
     context: composite::Context,
     pressed_inputs: heapless::Vec<input::PressedInput, 16>,
@@ -242,13 +234,8 @@ pub struct Keymap<
 }
 
 impl<
-        I: IndexMut<
-                usize,
-                Output = dyn key::dynamic::Key<
-                    key::composite::Event,
-                    Context = key::composite::Context,
-                >,
-            > + crate::tuples::KeysReset,
+        K: key::dynamic::Key<key::composite::Event, Context = key::composite::Context> + ?Sized,
+        I: IndexMut<usize, Output = K> + crate::tuples::KeysReset,
     > Keymap<I>
 {
     /// Constructs a new keymap with the given key definitions and context.
