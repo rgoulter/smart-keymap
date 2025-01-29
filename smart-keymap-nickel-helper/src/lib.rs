@@ -32,7 +32,7 @@ pub fn nickel_keymap_rs_for_keymap_path(
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => return Err(NickelError::NickelNotFound),
+            io::ErrorKind::NotFound => Err(NickelError::NickelNotFound),
             _ => panic!("Failed to spawn nickel: {:?}", e),
         });
 
@@ -72,7 +72,7 @@ pub fn nickel_board_rs_for_board_path(ncl_import_path: String, board_path: &Path
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => return Err(NickelError::NickelNotFound),
+            io::ErrorKind::NotFound => Err(NickelError::NickelNotFound),
             _ => panic!("Failed to spawn nickel: {:?}", e),
         });
 
@@ -120,7 +120,7 @@ pub fn rustfmt(rust_src: String) -> String {
                 Err(_) => rust_src,
             }
         }
-        Err(_) => return rust_src,
+        Err(_) => rust_src,
     }
 }
 
@@ -141,7 +141,7 @@ pub fn nickel_json_serialization_for_keymap(
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|e| match e.kind() {
-            io::ErrorKind::NotFound => return Err(NickelError::NickelNotFound),
+            io::ErrorKind::NotFound => Err(NickelError::NickelNotFound),
             _ => panic!("Failed to spawn nickel: {:?}", e),
         });
 
