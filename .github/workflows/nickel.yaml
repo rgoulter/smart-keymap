@@ -4,9 +4,15 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'ncl/**'
+      - 'src/**'
   pull_request:
     branches:
       - '*'
+    paths:
+      - 'ncl/**'
+      - 'src/**'
 
 jobs:
   cargo-build:
