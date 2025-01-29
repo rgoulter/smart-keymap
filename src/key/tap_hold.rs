@@ -86,6 +86,7 @@ impl<K: key::Key> key::Key for Key<K> {
 }
 
 /// Context for [Key].
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context {}
 
 /// Default context.
