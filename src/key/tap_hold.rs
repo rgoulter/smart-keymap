@@ -9,7 +9,9 @@ use crate::key;
 
 use super::PressedKey as _;
 
-use crate::init::TAP_HOLD_CONFIG;
+use crate::init::CONFIG;
+
+const TAP_HOLD_CONFIG: Config = CONFIG.tap_hold;
 
 /// How the tap hold key should respond to interruptions (input events from other keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
