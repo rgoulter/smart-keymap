@@ -6,7 +6,6 @@ use cucumber::{given, then, when, World};
 use smart_keymap::input;
 use smart_keymap::key;
 use smart_keymap::keymap::Keymap;
-use smart_keymap::tuples;
 
 mod common;
 
@@ -20,35 +19,30 @@ type Key = key::composite::Key;
 type Context = key::composite::Context;
 type Event = key::composite::Event;
 
+type DynamicKey = key::dynamic::DynamicKey<Key, Context, Event>;
+
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap1(Keymap<tuples::Keys1<Key, Context, Event>>),
-    Keymap2(Keymap<tuples::Keys2<Key, Key, Context, Event>>),
+    Keymap(Keymap<Vec<DynamicKey>>),
 }
 
 impl LoadedKeymap {
     pub fn handle_input(&mut self, ev: input::Event) {
         match self {
-            LoadedKeymap::Keymap1(keymap) => keymap.handle_input(ev),
-            LoadedKeymap::Keymap2(keymap) => keymap.handle_input(ev),
+            LoadedKeymap::Keymap(keymap) => keymap.handle_input(ev),
             _ => panic!("No keymap loaded"),
         }
     }
     pub fn tick(&mut self) {
         match self {
-            LoadedKeymap::Keymap1(keymap) => keymap.tick(),
-            LoadedKeymap::Keymap2(keymap) => keymap.tick(),
+            LoadedKeymap::Keymap(keymap) => keymap.tick(),
             _ => panic!("No keymap loaded"),
         }
     }
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         match self {
-            LoadedKeymap::Keymap1(keymap) => {
-                smart_keymap::keymap::KeymapOutput::new(keymap.pressed_keys())
-                    .as_hid_boot_keyboard_report()
-            }
-            LoadedKeymap::Keymap2(keymap) => {
+            LoadedKeymap::Keymap(keymap) => {
                 smart_keymap::keymap::KeymapOutput::new(keymap.pressed_keys())
                     .as_hid_boot_keyboard_report()
             }
@@ -59,17 +53,8 @@ impl LoadedKeymap {
 
 impl From<Vec<Key>> for LoadedKeymap {
     fn from(keys: Vec<Key>) -> Self {
-        match keys.len() {
-            1 => LoadedKeymap::Keymap1(Keymap::new(
-                tuples::Keys1::new((keys[0],)),
-                key::composite::DEFAULT_CONTEXT,
-            )),
-            2 => LoadedKeymap::Keymap2(Keymap::new(
-                tuples::Keys2::new((keys[0], keys[1])),
-                key::composite::DEFAULT_CONTEXT,
-            )),
-            _ => panic!("Cucumber impl doesn't support Keys{}", keys.len()),
-        }
+        let dynkeys_vec: Vec<DynamicKey> = keys.iter().map(|k| DynamicKey::new(*k)).collect();
+        LoadedKeymap::Keymap(Keymap::new(dynkeys_vec, key::composite::DEFAULT_CONTEXT))
     }
 }
 
