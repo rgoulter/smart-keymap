@@ -9,27 +9,57 @@ A 'smart keyboard' is a keyboard with additional bells and whistles, such as
  
 This project provides a library which handles the keymap behaviour part of this.
 
-- Nickel allows for concise expression of keymaps. ([simple example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-basic/keymap.ncl), [a more sophisticated example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-rgoulter/keymap.ncl)). Nickel is like "JSON + functions"; its [emphasis on correctness](https://nickel-lang.org/user-manual/correctness/) and [modular configurations](https://nickel-lang.org/user-manual/modular-configurations/) make it a powerful configuration language.
+- Nickel allows for concise expression of keymaps, as [semicolon's
+  fak](https://github.com/semickolon/fak) showed. (e.g. [simple
+  example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-basic/keymap.ncl),
+  [a more sophisticated
+  example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-rgoulter/keymap.ncl)).
+  Nickel is a configuration language along the lines of "JSON + functions"; its
+  [emphasis on correctness](https://nickel-lang.org/user-manual/correctness/)
+  and [modular
+  configurations](https://nickel-lang.org/user-manual/modular-configurations/)
+  make it a powerful configuration language.
 
-- This project supports the cheap and powerful [CH32X035](https://www.wch-ic.com/products/CH32X035.html), a 32-bit RISC-V MCU. -- In the same way that [semicolon's fak](https://github.com/semickolon/fak) enabled low-budget keyboard designs with the  [CH552](https://www.wch-ic.com/products/CH552.html), this project enables keyboard designs using CH32X035.
+- This project supports the cheap and powerful
+  [CH32X035](https://www.wch-ic.com/products/CH32X035.html), a 32-bit RISC-V
+  MCU. -- In the same way that [semicolon's
+  fak](https://github.com/semickolon/fak) enabled low-budget keyboard designs
+  with the  [CH552](https://www.wch-ic.com/products/CH552.html), this project
+  enables keyboard designs using CH32X035.
 
-- The smart keymap library can be built as a static native library, which makes it easy to integrate into USB HID keyboard examples written in C.
+- The smart keymap library can be built as a static native library, which makes
+  it easy to integrate into USB HID keyboard examples written in C.
 
-- As Rust crate, the project also supports using Rust to write keyboard firmware, similar to what [keyberon](https://github.com/TeXitoi/keyberon) supports.
+- As Rust crate, the project also supports using Rust to write keyboard
+  firmware, similar to what [keyberon](https://github.com/TeXitoi/keyberon)
+  supports.
 
-This project draws large inspiration from [semicolon's fak](https://github.com/semickolon/fak)
- and [kirei](https://github.com/semickolon/kirei) projects.
+- This project also draws inspiration from ideas explored in [semickolon's
+  kirei](https://github.com/semickolon/kirei), which emphasised "keys as the
+  main abstraction of keymap behaviour".
+  
+## Usage
+
+The main idea is write a keymap in Nickel (`keymap.ncl`),
+ and build keyboard firmware which uses `smart-keymap` with this custom keymap.
+
+See [the RP2040 firmware example below](#building-with-custom-keymap-and-board)
 
 ## Documentation and Examples
 
 Documentation for features which have been implemented can be found at:
 <https://rgoulter.com/smart-keymap/features.html>
 
-Some sample ncl keymaps can be found under [tests/ncl/](https://github.com/rgoulter/smart-keymap/tree/master/tests/ncl).
+Some sample ncl keymaps can be found under [tests/ncl/](https://github.com/rgoulter/smart-keymap/tree/master/tests/ncl). In particular:
 
-Publish Documentation for the Rust library can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
+- [48-key basic keymap](tests/ncl/keymap-48key-basic/keymap.ncl),
+- [48-key rgoulter keymap](tests/ncl/keymap-48key-rgoulter/keymap.ncl)).
+
+Published documentation for the Rust crate can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
 
 ## Keyboard Firmware
+
+Some keyboard firmware which uses `smart-keymap`:
 
 ### RP2040 RTIC Keyboard firmware
 
