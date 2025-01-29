@@ -10,10 +10,10 @@ A 'smart keyboard' is a keyboard with additional bells and whistles, such as
 This project provides a library which handles the keymap behaviour part of this.
 
 - Nickel allows for concise expression of keymaps, as [semicolon's
-  fak](https://github.com/semickolon/fak) showed. (e.g. [simple
-  example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-basic/keymap.ncl),
-  [a more sophisticated
-  example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-36key-rgoulter/keymap.ncl)).
+  fak](https://github.com/semickolon/fak) showed. (e.g. [simple example
+  keymap](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-basic/keymap.ncl),
+  [a more sophisticated example
+  keymap](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-36key-rgoulter/keymap.ncl)).
   Nickel is a configuration language along the lines of "JSON + functions"; its
   [emphasis on correctness](https://nickel-lang.org/user-manual/correctness/)
   and [modular
@@ -66,7 +66,7 @@ Some keyboard firmware which uses `smart-keymap`:
 
 The firmware under `rp2040-rtic-smart-keyboard` has been adapted from the [rgoulter/keyboard-labs firmware/keyberon](https://github.com/rgoulter/keyboard-labs/tree/master/firmware/keyberon) code.
 
-In particular, the firmware under `rp2040-rtic-smart-keyboard` has an example for the
+In particular, the firmware under `rp2040-rtic-smart-keyboard` has [an example](pico42-rtic-keyboard-firmware/examples/pico42.rs) for the
 [Pico42](https://github.com/rgoulter/keyboard-labs/releases/tag/pico42-rev2023.2).
 
 #### Building
@@ -85,7 +85,7 @@ Using a `keymap.ncl` (or the `keymap.rs` generated from its definition),
 the keyboard firmware can be built with a command such as:
 
 ```
-env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/../../tests/ncl/keymap-42key-dvorak-simple-with-tap_hold/keymap.ncl" \
+env SMART_KEYMAP_CUSTOM_KEYMAP="$(pwd)/tests/ncl/keymap-42key-dvorak-simple-with-tap_hold/keymap.ncl" \
   cargo build \
     --release \
     --target=thumbv6m-none-eabi \
