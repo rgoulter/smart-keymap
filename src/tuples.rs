@@ -11,6 +11,20 @@ pub trait KeysReset {
     fn reset(&mut self);
 }
 
+#[cfg(feature = "std")]
+impl<K: key::Key, Ctx: key::Context<Event = Ev> + Debug + 'static, Ev: Copy + Debug> KeysReset
+    for Vec<dynamic::DynamicKey<K, Ctx, Ev>>
+where
+    K::Event: TryFrom<Ev>,
+    Ev: From<K::Event>,
+    K::Context: From<Ctx>,
+{
+    fn reset(&mut self) {
+        self.iter_mut()
+            .for_each(|k| <dynamic::DynamicKey<K, Ctx, Ev> as dynamic::Key<Ev>>::reset(k));
+    }
+}
+
 /// A tuple struct for 1 key.
 #[derive(Debug)]
 pub struct Keys1<
