@@ -89,15 +89,17 @@ impl<K: key::Key> key::Key for Key<K> {
 
 /// Context for [Key].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Context {}
+pub struct Context {
+    config: Config,
+}
 
 /// Default context.
 pub const DEFAULT_CONTEXT: Context = Context::from_config(DEFAULT_CONFIG);
 
 impl Context {
     /// Constructs a context from the given config
-    pub const fn from_config(_config: Config) -> Context {
-        Context {}
+    pub const fn from_config(config: Config) -> Context {
+        Context { config }
     }
 }
 
