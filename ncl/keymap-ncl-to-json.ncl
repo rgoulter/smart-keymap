@@ -281,22 +281,6 @@ let validators = import "validators.ncl" in
             },
       },
 
-  to_composite_json_serialized_key
-    | doc "Constructs a JSON-representable composite::Key value from the given value from keymap.ncl."
-    = match {
-        # Make key::layered::LayeredKey
-        k if layered.is_key k => key.to_json_serialized k,
-        # Make key::tap_hold::Key from keys with a "hold" modifier.
-        k if tap_hold.is_key k => key.to_json_serialized k,
-        # Otherwise, keys with just a base key_code are key::keyboard keys.
-        k if keyboard.is_key k => key.to_json_serialized k,
-        # Make key::layered::ModifierKey
-        k if layer_modifier.is_key k => key.to_json_serialized k,
-        # Null values (None) stay null
-        null => null,
-        _ => std.fail_with "unsupported item in keymap.ncl",
-      },
-
   checks.check_words_from_whitespace_delimited_string
     = {
       check_words_from_whitespace_delimited_string = {
@@ -383,8 +367,4 @@ let validators = import "validators.ncl" in
         keys = layered_keys |> std.array.map key.to_json_serialized,
         config = config_,
       },
-
-  serialized_json_composite_keys
-    | doc "The keymap.json output value."
-    = layered_keys |> std.array.map to_composite_json_serialized_key,
 }
