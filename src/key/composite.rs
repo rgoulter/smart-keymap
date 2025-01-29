@@ -285,17 +285,23 @@ impl Key {
 pub struct Context {
     /// The layered key context.
     pub layer_context: layered::Context,
+    /// The tap hold key context.
+    pub tap_hold_context: tap_hold::Context,
 }
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
     layer_context: layered::DEFAULT_CONTEXT,
+    tap_hold_context: tap_hold::DEFAULT_CONTEXT,
 };
 
 impl Context {
     /// Constructs a new [Context].
-    pub const fn new(layer_context: layered::Context) -> Self {
-        Self { layer_context }
+    pub const fn new(layer_context: layered::Context, tap_hold_context: tap_hold::Context) -> Self {
+        Self {
+            layer_context,
+            tap_hold_context,
+        }
     }
 }
 
@@ -316,6 +322,12 @@ impl From<Context> for () {
 impl From<Context> for layered::Context {
     fn from(ctx: Context) -> Self {
         ctx.layer_context
+    }
+}
+
+impl From<Context> for tap_hold::Context {
+    fn from(ctx: Context) -> Self {
+        ctx.tap_hold_context
     }
 }
 
