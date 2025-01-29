@@ -280,6 +280,19 @@ impl Key {
     }
 }
 
+/// Config used for constructing initial context
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "std", derive(Deserialize))]
+pub struct Config {
+    /// The tap hold configuration.
+    pub tap_hold: tap_hold::Config,
+}
+
+/// The default config.
+pub const DEFAULT_CONFIG: Config = Config {
+    tap_hold: tap_hold::DEFAULT_CONFIG,
+};
+
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
@@ -301,6 +314,14 @@ impl Context {
         Self {
             layer_context,
             tap_hold_context,
+        }
+    }
+
+    /// Constructs a [Context] from the given [Config].
+    pub const fn from_config(config: Config) -> Self {
+        Self {
+            layer_context: layered::DEFAULT_CONTEXT,
+            tap_hold_context: tap_hold::Context::from_config(config.tap_hold),
         }
     }
 }
