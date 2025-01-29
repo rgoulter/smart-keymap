@@ -331,6 +331,8 @@ let validators = import "validators.ncl" in
     else
       l,
 
+  layers_of_keys = layers |> std.array.map layer_as_array_of_keys,
+
   layered_keys
     | doc "Constructs array of key::layered::LayeredKey values from layers."
     =
@@ -339,9 +341,8 @@ let validators = import "validators.ncl" in
       else if std.array.length layers <= 1 then
         std.array.at 0 layers
       else
-        let layers = layers |> std.array.map layer_as_array_of_keys in
-        let base_keys = std.array.first layers in
-        let layered_keys = std.array.drop_first layers in
+        let base_keys = std.array.first layers_of_keys in
+        let layered_keys = std.array.drop_first layers_of_keys in
         std.array.generate
           (fun idx =>
             let base_key = std.array.at idx base_keys in
