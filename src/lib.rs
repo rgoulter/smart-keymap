@@ -65,8 +65,8 @@ pub mod init {
     use crate::key::{composite, keyboard};
     use crate::tuples::Keys1;
 
-    /// Config used by tap-hold keys.
-    pub const TAP_HOLD_CONFIG: crate::key::tap_hold::Config = crate::key::tap_hold::DEFAULT_CONFIG;
+    /// Config used to construct initial context.
+    pub const CONFIG: crate::key::composite::Config = crate::key::composite::DEFAULT_CONFIG;
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
@@ -81,7 +81,7 @@ pub mod init {
     pub type Key = keyboard::Key;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = composite::DEFAULT_CONTEXT;
+    pub const CONTEXT: Context = composite::Context::from_config(CONFIG);
 
     /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
     pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
