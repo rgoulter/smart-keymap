@@ -66,7 +66,7 @@ Some keyboard firmware which uses `smart-keymap`:
 
 The firmware under `rp2040-rtic-smart-keyboard` has been adapted from the [rgoulter/keyboard-labs firmware/keyberon](https://github.com/rgoulter/keyboard-labs/tree/master/firmware/keyberon) code.
 
-In particular, the firmware under `rp2040-rtic-smart-keyboard` has [an example](pico42-rtic-keyboard-firmware/examples/pico42.rs) for the
+In particular, the firmware under `rp2040-rtic-smart-keyboard` has [an example](rp2040-rtic-keyboard-firmware/examples/pico42.rs) for the
 [Pico42](https://github.com/rgoulter/keyboard-labs/releases/tag/pico42-rev2023.2).
 
 #### Building
