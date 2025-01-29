@@ -326,6 +326,13 @@ impl Context {
     }
 }
 
+impl Default for Context {
+    /// Returns the default context.
+    fn default() -> Self {
+        DEFAULT_CONTEXT
+    }
+}
+
 impl key::Context for Context {
     type Event = Event;
     fn handle_event(&mut self, event: Self::Event) {
