@@ -13,7 +13,7 @@ This project provides a library which handles the keymap behaviour part of this.
   fak](https://github.com/semickolon/fak) showed. (e.g. [simple
   example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-basic/keymap.ncl),
   [a more sophisticated
-  example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-48key-rgoulter/keymap.ncl)).
+  example](https://github.com/rgoulter/smart-keymap/blob/master/tests/ncl/keymap-36key-rgoulter/keymap.ncl)).
   Nickel is a configuration language along the lines of "JSON + functions"; its
   [emphasis on correctness](https://nickel-lang.org/user-manual/correctness/)
   and [modular
@@ -53,7 +53,8 @@ Documentation for features which have been implemented can be found at:
 Some sample ncl keymaps can be found under [tests/ncl/](https://github.com/rgoulter/smart-keymap/tree/master/tests/ncl). In particular:
 
 - [48-key basic keymap](tests/ncl/keymap-48key-basic/keymap.ncl),
-- [48-key rgoulter keymap](tests/ncl/keymap-48key-rgoulter/keymap.ncl).
+- [36-key rgoulter keymap](tests/ncl/keymap-36key-rgoulter/keymap.ncl).
+  - used as a [48-key keymap](tests/ncl/keymap-48key-rgoulter/keymap.ncl).
 
 Published documentation for the Rust crate can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
 
