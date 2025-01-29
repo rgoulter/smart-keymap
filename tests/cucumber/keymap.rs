@@ -9,10 +9,6 @@ use smart_keymap::input;
 use smart_keymap::key;
 use smart_keymap::keymap;
 
-mod common;
-
-use common::Deserializer;
-
 use smart_keymap_nickel_helper::{
     nickel_json_serialization_for_keymap, nickel_to_json_for_hid_report, NickelError,
 };
@@ -52,27 +48,14 @@ impl LoadedKeymap {
         }
     }
 }
-
-impl From<Vec<Key>> for LoadedKeymap {
-    fn from(keys: Vec<Key>) -> Self {
-        let dynkeys_vec: Vec<DynamicKey> = keys.iter().map(|k| DynamicKey::new(*k)).collect();
-        LoadedKeymap::Keymap(keymap::Keymap::new(
-            dynkeys_vec,
-            key::composite::DEFAULT_CONTEXT,
-        ))
-    }
-}
-
 #[derive(Debug, World)]
 pub struct KeymapWorld {
-    input_deserializer: Deserializer,
     keymap: LoadedKeymap,
 }
 
 impl Default for KeymapWorld {
     fn default() -> Self {
         KeymapWorld {
-            input_deserializer: Deserializer::RON,
             keymap: LoadedKeymap::NoKeymap,
         }
     }
@@ -120,16 +103,6 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
             ),
         },
     }
-}
-
-#[given(expr = "a keymap, expressed as a {deserializer} string")]
-fn setup_keymap(world: &mut KeymapWorld, step: &Step, deserializer: Deserializer) {
-    let keys_vec: Vec<Key> = deserializer
-        .from_str(step.docstring().as_ref().unwrap())
-        .unwrap();
-
-    world.input_deserializer = deserializer;
-    world.keymap = keys_vec.into();
 }
 
 #[when("the keymap registers the following input")]
