@@ -9,10 +9,6 @@ use crate::key;
 
 use super::PressedKey as _;
 
-use crate::init::CONFIG;
-
-const TAP_HOLD_CONFIG: Config = CONFIG.tap_hold;
-
 /// How the tap hold key should respond to interruptions (input events from other keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum InterruptResponse {
@@ -66,7 +62,7 @@ impl<K: key::Key> key::Key for Key<K> {
 
     fn new_pressed_key(
         &self,
-        _context: Self::Context,
+        key::ModifierKeyContext { context, .. }: Self::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, Self::PressedKeyState>,
@@ -80,7 +76,7 @@ impl<K: key::Key> key::Key for Key<K> {
                 pressed_key_state: PressedKeyState::new(),
             },
             key::PressedKeyEvents::scheduled_event(
-                TAP_HOLD_CONFIG.timeout,
+                context.config.timeout,
                 key::Event::key_event(keymap_index, key::ModifierKeyEvent::Modifier(timeout_ev)),
             ),
         )
@@ -242,7 +238,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
     fn handle_event_for(
         &mut self,
         key::ModifierKeyContext {
-            context: _,
+            context,
             inner_context,
         }: <Key<K> as key::Key>::Context,
         keymap_index: u16,
@@ -275,7 +271,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         }
 
         // Resolve tap-hold state per the event.
-        match self.hold_resolution(TAP_HOLD_CONFIG.interrupt_response, keymap_index, event) {
+        match self.hold_resolution(context.config.interrupt_response, keymap_index, event) {
             Some(TapHoldState::Hold) => {
                 self.resolve(TapHoldState::Hold);
 
