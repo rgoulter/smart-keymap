@@ -32,7 +32,7 @@ impl KeyboardBackend {
     pub fn tick(&mut self) {
         self.keymap.tick();
 
-        let keymap_output = smart_keymap::keymap::KeymapOutput::new(self.keymap.pressed_keys());
+        let keymap_output = self.keymap.report_output();
         let pressed_keycodes = keymap_output.pressed_key_codes();
         self.pressed_key_codes = pressed_keycodes.iter().map(|&key| key.into()).collect();
     }
