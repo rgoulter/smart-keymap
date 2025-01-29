@@ -26,10 +26,20 @@ pub enum InterruptResponse {
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The timeout (in number of ticks) for a tap-hold key to resolve as hold.
+    #[serde(default = "default_timeout")]
     pub timeout: u16,
 
     /// How the tap-hold key should respond to interruptions.
+    #[serde(default = "default_interrupt_response")]
     pub interrupt_response: InterruptResponse,
+}
+
+fn default_timeout() -> u16 {
+    DEFAULT_CONFIG.timeout
+}
+
+fn default_interrupt_response() -> InterruptResponse {
+    DEFAULT_CONFIG.interrupt_response
 }
 
 /// Default tap hold config.
