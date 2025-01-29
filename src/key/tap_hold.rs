@@ -57,7 +57,7 @@ impl<K: key::Key> Key<K> {
 }
 
 impl<K: key::Key> key::Key for Key<K> {
-    type Context = key::ModifierKeyContext<(), K::Context>;
+    type Context = key::ModifierKeyContext<Context, K::Context>;
     type ContextEvent = ();
     type Event = key::ModifierKeyEvent<Event, K::Event>;
     type PressedKeyState = PressedKeyState<K>;
