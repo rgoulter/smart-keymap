@@ -1,9 +1,11 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
     /// Config used by tap-hold keys.
-    pub const TAP_HOLD_CONFIG: crate::key::tap_hold::Config = crate::key::tap_hold::Config {
-        timeout: 200,
-        interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
+    pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
+        tap_hold: crate::key::tap_hold::Config {
+            timeout: 200,
+            interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
+        },
     };
 
     /// Number of layers supported by the [crate::key::layered] implementation.
@@ -20,6 +22,7 @@ pub mod init {
         layer_context: crate::key::layered::Context {
             active_layers: [false; crate::key::layered::LAYER_COUNT],
         },
+        tap_hold_context: crate::key::tap_hold::Context::from_config(CONFIG.tap_hold),
     };
 
     crate::tuples::define_keys!(60);
