@@ -1,6 +1,6 @@
 keymap_dir := `pwd` + "/../tests/ncl"
 
-keymap := "keymap-42key-dvorak-simple-with-tap_hold"
+keymap := "keymap-42key-rgoulter"
 
 build cargo_target="":
     cd .. && \
