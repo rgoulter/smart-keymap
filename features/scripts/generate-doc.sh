@@ -47,6 +47,8 @@ done
 pandoc \
   --standalone \
   --table-of-contents \
+  --embed-resources \
+  --css="${FEATURES_DIR}/pandoc.css" \
   --toc-depth=4 \
   --metadata=title="Smart Keymap Features" \
   ${KEYMAP_FEATURE_MD} \
