@@ -38,6 +38,13 @@ pub const DEFAULT_CONFIG: Config = Config {
     interrupt_response: InterruptResponse::Ignore,
 };
 
+impl Default for Config {
+    /// Returns the default context.
+    fn default() -> Self {
+        DEFAULT_CONFIG
+    }
+}
+
 /// A key with tap-hold functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key<K: key::Key> {
