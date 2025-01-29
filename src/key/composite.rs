@@ -285,6 +285,7 @@ impl Key {
 #[cfg_attr(feature = "std", derive(Deserialize))]
 pub struct Config {
     /// The tap hold configuration.
+    #[cfg_attr(feature = "std", serde(default))]
     pub tap_hold: tap_hold::Config,
 }
 
