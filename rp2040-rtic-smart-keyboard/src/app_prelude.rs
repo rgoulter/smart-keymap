@@ -4,7 +4,7 @@ pub use core::convert::Infallible;
 
 pub use keyberon::debounce::Debouncer;
 
-pub use embedded_hal::digital::v2::InputPin;
+pub use embedded_hal::digital::InputPin;
 pub use fugit::ExtU32;
 pub use hal::{
     clocks, gpio, gpio::DynPinId, gpio::FunctionSio, gpio::PullDown, gpio::SioInput, pac, sio::Sio,
