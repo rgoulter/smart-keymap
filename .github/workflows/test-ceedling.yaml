@@ -4,9 +4,17 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'src/**'
+      - 'smart_keymap/**'
+      - 'tests/ceedling/**'
   pull_request:
     branches:
       - '*'
+    paths:
+      - 'src/**'
+      - 'smart_keymap/**'
+      - 'tests/ceedling/**'
 
 jobs:
   unity-test:
