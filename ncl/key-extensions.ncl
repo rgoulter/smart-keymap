@@ -5,16 +5,17 @@
         |> std.record.map_values
              (fun kc =>
                 kc |> match {
-                  _ if 0xE0 <= kc && kc <= 0xE7 => {
+                  # 0xE0 .. 0xE7
+                  _ if 224 <= kc && kc <= 231 => {
                     modifiers = kc |> match {
-                      0xE0 => { left_ctrl = true },
-                      0xE1 => { left_shift = true },
-                      0xE2 => { left_alt = true },
-                      0xE3 => { left_gui = true },
-                      0xE4 => { right_ctrl = true },
-                      0xE5 => { right_shift = true },
-                      0xE6 => { right_alt = true },
-                      0xE7 => { right_gui = true },
+                      224 => { left_ctrl = true },
+                      225 => { left_shift = true },
+                      226 => { left_alt = true },
+                      227 => { left_gui = true },
+                      228 => { right_ctrl = true },
+                      229 => { right_shift = true },
+                      230 => { right_alt = true },
+                      231 => { right_gui = true },
                     },
                   },
 

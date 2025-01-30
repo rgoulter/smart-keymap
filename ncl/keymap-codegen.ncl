@@ -8,10 +8,10 @@ let validators = import "validators.ncl" in
     = {
         # Use a serialized value to check the "is" predicate.
         check_serialized_is =
-          let serialized_value = { key_code = 0x04 } in
+          let serialized_value = { key_code = 4 } in
           keyboard.is_serialized_json serialized_value,
         check_serialized_with_modifier_is =
-          let serialized_value = { key_code = 0x04, modifiers = { left_ctrl = true} } in
+          let serialized_value = { key_code = 4, modifiers = { left_ctrl = true} } in
           keyboard.is_serialized_json serialized_value,
         check_serialized_modifiers_is =
           let serialized_value = { modifiers = { left_ctrl = true} } in
@@ -140,10 +140,10 @@ let validators = import "validators.ncl" in
         # Use a serialized value to check the "is" predicate.
         check_serialized_base_keyboard_layered_keyboard_is
           = let serialized_value = {
-              base = { key_code = 0x04 },
+              base = { key_code = 4 },
               layered = [
                 null,
-                { key_code = 0x06 },
+                { key_code = 6 },
               ]
             } in
             layered.is_serialized_json serialized_value
@@ -219,8 +219,8 @@ let validators = import "validators.ncl" in
     # Use a serialized value to check the "is" predicate.
     check_serialized_tap_keyboard_hold_keyboard_is
       = let serialized_value = {
-          hold = { key_code = 0xE0 },
-          tap = { key_code = 0x04 },
+          hold = { key_code = 224 },
+          tap = { key_code = 4 },
         } in
         tap_hold.is_serialized_json serialized_value,
   },

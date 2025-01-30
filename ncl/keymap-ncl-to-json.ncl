@@ -33,12 +33,12 @@ let validators = import "validators.ncl" in
       {
         keymap_example_key_code = {
           actual = K.A,
-          expected = { key_code = 0x04 },
+          expected = { key_code = 4 },
         },
 
         check_serialized_key_code = {
           actual = K.A |> key.to_json_serialized,
-          expected = { key_code = 0x04 },
+          expected = { key_code = 4 },
         },
       },
 
@@ -126,10 +126,10 @@ let validators = import "validators.ncl" in
         keymap_example_layered_keyboard = {
           actual = K.A & { layered = [null, K.C] },
           expected = {
-            key_code = 0x04,
+            key_code = 4,
             layered = [
               null,
-              { key_code = 0x06 },
+              { key_code = 6 },
             ],
           },
         },
@@ -146,10 +146,10 @@ let validators = import "validators.ncl" in
         check_serialized_layered_keyboard = {
           actual = K.A & { layered = [null, K.C] } |> key.to_json_serialized,
           expected = {
-            base = { key_code = 0x04 },
+            base = { key_code = 4 },
             layered = [
               null,
-              { key_code = 0x06 },
+              { key_code = 6 },
             ],
           },
         },
@@ -196,7 +196,7 @@ let validators = import "validators.ncl" in
       {
         keymap_example_tap_keyboard_hold_keyboard = {
           actual = K.A & K.hold K.LeftCtrl,
-          expected = { key_code = 0x04, hold = { modifiers = { left_ctrl = true } } },
+          expected = { key_code = 4, hold = { modifiers = { left_ctrl = true } } },
         },
 
         check_tap_hold_tap_keyboard_is_key =
@@ -210,12 +210,12 @@ let validators = import "validators.ncl" in
 
         check_tap_keyboard_hold_keyboard_to_json_serialized_keyboard = {
           actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_serialized,
-          expected = { tap = { key_code = 0x04 }, hold = { modifiers = { left_ctrl = true } } },
+          expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
         },
 
         check_serialized_tap_keyboard_hold_keyboard = {
           actual = K.A & K.hold K.LeftCtrl |> key.to_json_serialized,
-          expected = { tap = { key_code = 0x04 }, hold = { modifiers = { left_ctrl = true } } },
+          expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
         },
       },
 
@@ -313,7 +313,7 @@ let validators = import "validators.ncl" in
     = {
       check_layer_as_array_of_keys = {
         actual = layer_as_array_of_keys " A ",
-        expected = [{ key_code = 0x04 }],
+        expected = [{ key_code = 4 }],
       },
 
       check_layer_as_array_of_keys_tttt = {
