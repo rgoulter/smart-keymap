@@ -208,6 +208,35 @@ let validators = import "validators.ncl" in
             expected = "crate::key::layered::LayeredKey::new(crate::key::keyboard::Key::new(4), [None,Some(crate::key::keyboard::Key::new(6))])",
           },
         },
+
+      # A layered::LayeredKey of mix of tap_hold::Key<'keyboard::Key'> and keyboard::Key
+      #  codegens to layered::LayeredKey<composite::TapHoldKey<composite::BaseKey>>
+      check_layered_composite_taphold_keyboard =
+        let k = {
+          base = {
+            hold = { key_code = 224 },
+            tap = { key_code = 4 },
+          },
+          layered = [
+            null,
+            { key_code = 6 },
+          ]
+        }
+        in
+        let cv = layered.codegen_values k in
+        {
+          check_key_type = {
+            actual = cv.key_type,
+            expected = {
+              as_rust_type_path = "crate::key::layered::LayeredKey<crate::key::composite::TapHoldKey<crate::key::composite::BaseKey>>",
+              key_type = "crate::key::layered::LayeredKey"
+            },
+          },
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "crate::key::layered::LayeredKey::new(crate::key::composite::TapHoldKey::tap_hold(crate::key::tap_hold::Key::new(crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)), crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(224)))), [None,Some(crate::key::composite::TapHoldKey::Pass(crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(6))))])",
+          },
+        },
     },
   },
 
