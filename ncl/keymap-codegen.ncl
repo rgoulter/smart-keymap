@@ -61,42 +61,51 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = {
-        key_type = "crate::key::keyboard::Key",
-        as_rust_type_path = key_type,
-      },
+      codegen_values = fun k =>
+        let kt = {
+          key_type = "crate::key::keyboard::Key",
+          as_rust_type_path = key_type,
+        }
+        in
 
-      rust_expr = fun key =>
-        let rec modifiers_expr = fun m =>
-          m
+        let expr =
+          let rec modifiers_expr = fun m =>
+            m
+            |> match {
+              {} => "crate::key::KeyboardModifiers::new()",
+              { left_ctrl, ..modifiers } if left_ctrl =>
+                "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{modifiers_expr modifiers})",
+              { left_alt, ..modifiers } if left_alt =>
+                "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{modifiers_expr modifiers})",
+              { left_shift, ..modifiers } if left_shift =>
+                "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{modifiers_expr modifiers})",
+              { left_gui, ..modifiers } if left_gui =>
+                "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{modifiers_expr modifiers})",
+              { right_ctrl, ..modifiers } if right_ctrl =>
+                "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{modifiers_expr modifiers})",
+              { right_alt, ..modifiers } if right_alt =>
+                "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{modifiers_expr modifiers})",
+              { right_shift, ..modifiers } if right_shift =>
+                "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{modifiers_expr modifiers})",
+              { right_gui, ..modifiers } if right_gui =>
+                "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{modifiers_expr modifiers})",
+            }
+          in
+          k
           |> match {
-            {} => "crate::key::KeyboardModifiers::new()",
-            { left_ctrl, ..modifiers } if left_ctrl =>
-              "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{modifiers_expr modifiers})",
-            { left_alt, ..modifiers } if left_alt =>
-              "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{modifiers_expr modifiers})",
-            { left_shift, ..modifiers } if left_shift =>
-              "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{modifiers_expr modifiers})",
-            { left_gui, ..modifiers } if left_gui =>
-              "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{modifiers_expr modifiers})",
-            { right_ctrl, ..modifiers } if right_ctrl =>
-              "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{modifiers_expr modifiers})",
-            { right_alt, ..modifiers } if right_alt =>
-              "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{modifiers_expr modifiers})",
-            { right_shift, ..modifiers } if right_shift =>
-              "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{modifiers_expr modifiers})",
-            { right_gui, ..modifiers } if right_gui =>
-              "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{modifiers_expr modifiers})",
+            { key_code } =>
+              "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+            { modifiers } =>
+              "crate::key::keyboard::Key::from_modifiers(%{modifiers_expr modifiers})",
+            { key_code, modifiers } =>
+              "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{modifiers_expr modifiers})",
           }
         in
-        key
-        |> match {
-          { key_code } =>
-            "crate::key::keyboard::Key::new(%{std.to_string key_code})",
-          { modifiers } =>
-            "crate::key::keyboard::Key::from_modifiers(%{modifiers_expr modifiers})",
-          { key_code, modifiers } =>
-            "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{modifiers_expr modifiers})",
+
+        {
+          key_type = kt,
+          rust_expr = expr,
+          serialized_json = k,
         },
     },
 
@@ -124,13 +133,21 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = {
-        key_type = "crate::key::layered::ModifierKey",
-        as_rust_type_path = key_type,
-      },
+      codegen_values = fun k @ { Hold = layer_index } =>
+        let kt = {
+          key_type = "crate::key::layered::ModifierKey",
+          as_rust_type_path = key_type,
+        }
+        in
 
-      rust_expr = fun { Hold = layer_index } =>
-        "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
+        let expr = "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})"
+        in
+
+        {
+          key_type = kt,
+          rust_expr = expr,
+          serialized_json = k,
+        },
     },
 
   checks.layered_is = {
@@ -178,42 +195,55 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      # c.f. doc_de_layered.md.
-      # ```
-      #   type Key = layered::LayeredKey<keyboard::Key>;
-      # ```
-      key_type = fun { base, layered } =>
-        let base_key_type = key.key_type base in
+      codegen_values = fun k @ { base, layered } =>
+        let base_codegen_values = key.codegen_values base in
         let non_null_layered = std.array.filter ((!=) null) layered in
-        let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
-        let nested_key_type =
-          if std.array.all (fun kt => kt == base_key_type) layered_key_types then
-            base_key_type
-          else
-            composite.tap_hold_key.key_type base
+        let nn_layered_codegen_values =
+          std.array.map key.codegen_values non_null_layered
         in
-        {
-          key_type = "crate::key::layered::LayeredKey",
-          as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-        },
 
-      rust_expr = fun { base, layered } =>
-        let base_key_type = key.key_type base in
-        let non_null_layered = std.array.filter ((!=) null) layered in
-        let layered_key_types = std.array.map (fun nk => key.key_type nk) non_null_layered in
-        let nk_expr =
-          if std.array.all (fun kt => kt == base_key_type) layered_key_types then
-            key.rust_expr
-          else
-            composite.tap_hold_key.rust_expr
+        # c.f. doc_de_layered.md.
+        # ```
+        #   type Key = layered::LayeredKey<keyboard::Key>;
+        # ```
+        let kt =
+          let base_key_type = base_codegen_values.key_type in
+          let layered_key_types = std.array.map (fun { key_type, .. } => key_type) nn_layered_codegen_values in
+          let nested_key_type =
+            if std.array.all (fun kt => kt == base_key_type) layered_key_types then
+              base_key_type
+            else
+              (composite.tap_hold_key.codegen_values base).key_type
+          in
+          {
+            key_type = "crate::key::layered::LayeredKey",
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
+          }
         in
-        let base_expr = nk_expr base in
-        let layered_exprs =
-          layered
-          |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nk_expr lk})")
-          |> std.string.join ","
+
+        let expr =
+          let base_key_type = base_codegen_values.key_type in
+          let layered_key_types = std.array.map (fun { key_type, .. } => key_type) nn_layered_codegen_values in
+          let nk_expr =
+            if std.array.all (fun kt => kt == base_key_type) layered_key_types then
+              fun k => (key.codegen_values k).rust_expr
+            else
+              fun k => (composite.tap_hold_key.codegen_values k).rust_expr
+          in
+          let base_expr = nk_expr base in
+          let layered_exprs =
+            layered
+            |> std.array.map (fun lk => if lk == null then "None" else "Some(%{nk_expr lk})")
+            |> std.string.join ","
+          in
+          "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])"
         in
-        "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+
+        {
+          key_type = kt,
+          rust_expr = expr,
+          serialized_json = k,
+        },
     },
 
   checks.check_tap_hold = {
@@ -245,32 +275,44 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = fun { hold, tap } =>
-        let hold_key_type = key.key_type hold in
-        let tap_key_type = key.key_type tap in
-        # let nested_key_type =
-        #   if tap_key_type == hold_key_type then
-        #     tap_key_type
-        #   else
-        #     composite.base_key.key_type tap in
-        let nested_key_type = composite.base_key.key_type tap in
-        {
-          key_type = "crate::key::tap_hold::Key",
-          as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
-        },
+      codegen_values = fun k @ { hold, tap } =>
+        let hold_codegen_values = key.codegen_values hold in
+        let tap_codegen_values = key.codegen_values tap in
 
-      rust_expr = fun { hold, tap, } =>
-        let tap_kt = key.key_type tap in
-        let hold_kt = key.key_type hold in
-        # let nk_expr =
-        #   if tap_kt == hold_kt then
-        #     key.rust_expr
-        #   else
-        #     composite.base_key.rust_expr in
-        let nk_expr = composite.base_key.rust_expr in
-        let hold_expr = nk_expr hold in
-        let tap_expr = nk_expr tap in
-        "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
+        let kt =
+          let hold_key_type = hold_codegen_values.key_type in
+          let tap_key_type = tap_codegen_values.key_type in
+          # let nested_key_type =
+          #   if tap_key_type == hold_key_type then
+          #     tap_key_type
+          #   else
+          #     composite.base_key.key_type tap in
+          let nested_key_type = (composite.base_key.codegen_values tap).key_type in
+          {
+            key_type = "crate::key::tap_hold::Key",
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+          }
+        in
+
+        let expr =
+          let tap_kt = tap_codegen_values.key_type in
+          let hold_kt = hold_codegen_values.key_type in
+          # let nk_expr =
+          #   if tap_kt == hold_kt then
+          #     key.rust_expr
+          #   else
+          #     composite.base_key.rust_expr in
+          let nk_expr = fun k => (composite.base_key.codegen_values k).rust_expr in
+          let hold_expr = nk_expr hold in
+          let tap_expr = nk_expr tap in
+          "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})"
+        in
+
+        {
+          key_type = kt,
+          rust_expr = expr,
+          serialized_json = k,
+        },
     },
 
   composite = {
@@ -285,27 +327,27 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = match {
-        key if layer_modifier.is_serialized_json key =>
+      codegen_values = match {
+        k if layer_modifier.is_serialized_json k =>
+          let { rust_expr = k_expr, .. } = layer_modifier.codegen_values k in
           {
-            key_type = "crate::key::composite::BaseKey",
-            as_rust_type_path = key_type,
+            key_type = {
+              key_type = "crate::key::composite::BaseKey",
+              as_rust_type_path = key_type,
+            },
+            rust_expr = "crate::key::composite::BaseKey::layer_modifier(%{k_expr})",
+            serialized_json = k,
           },
-        key if keyboard.is_serialized_json key =>
+        k if keyboard.is_serialized_json k =>
+          let { rust_expr = k_expr, .. } = keyboard.codegen_values k in
           {
-            key_type = "crate::key::composite::BaseKey",
-            as_rust_type_path = key_type,
+            key_type = {
+              key_type = "crate::key::composite::BaseKey",
+              as_rust_type_path = key_type,
+            },
+            rust_expr = "crate::key::composite::BaseKey::keyboard(%{k_expr})",
+            serialized_json = k,
           },
-        _ => 'unknown_key_type
-      },
-
-      rust_expr = match {
-        key if layer_modifier.is_serialized_json key =>
-          let expr = layer_modifier.rust_expr key in
-          "crate::key::composite::BaseKey::layer_modifier(%{expr})",
-        key if keyboard.is_serialized_json key =>
-          let expr = keyboard.rust_expr key in
-          "crate::key::composite::BaseKey::keyboard(%{expr})",
         _ => 'unknown_key_type
       },
     },
@@ -321,29 +363,29 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = match {
-        key if tap_hold.is_serialized_json key =>
+      codegen_values = match {
+        k if tap_hold.is_serialized_json k =>
+          let { key_type = k_key_type, rust_expr = k_expr, .. } = tap_hold.codegen_values k in
           {
-            key_type = "crate::key::composite::TapHoldKey",
-            nested_key_type = "crate::key::composite::BaseKey",
-            as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            key_type = {
+              key_type = "crate::key::composite::TapHoldKey",
+              nested_key_type = "crate::key::composite::BaseKey",
+              as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            },
+            rust_expr = "crate::key::composite::TapHoldKey::tap_hold(%{k_expr})",
+            serialized_json = k,
           },
-        key if composite.base_key.is_serialized_json key =>
+        k if composite.base_key.is_serialized_json k =>
+          let { key_type = k_key_type, rust_expr = k_expr, .. } = composite.base_key.codegen_values k in
           {
-            key_type = "crate::key::composite::TapHoldKey",
-            nested_key_type = "crate::key::composite::BaseKey",
-            as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            key_type = {
+              key_type = "crate::key::composite::TapHoldKey",
+              nested_key_type = "crate::key::composite::BaseKey",
+              as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            },
+            rust_expr = "crate::key::composite::TapHoldKey::Pass(%{k_expr})",
+            serialized_json = k,
           },
-        _ => 'unknown_key_type
-      },
-
-      rust_expr = match {
-        key if tap_hold.is_serialized_json key =>
-          let expr = tap_hold.rust_expr key in
-          "crate::key::composite::TapHoldKey::tap_hold(%{expr})",
-        key if composite.base_key.is_serialized_json key =>
-          let expr = composite.base_key.rust_expr key in
-          "crate::key::composite::TapHoldKey::Pass(%{expr})",
         _ => 'unknown_key_type
       },
     },
@@ -359,33 +401,31 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      key_type = match {
-        key if layered.is_serialized_json key =>
+      codegen_values = match {
+        k if layered.is_serialized_json k =>
+          let { key_type = k_key_type, rust_expr = k_expr, .. } = layered.codegen_values k in
           {
-            key_type = "crate::key::composite::LayeredKey",
-            nested_key_type = "crate::key::composite::TapHoldKey",
-            as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            key_type = {
+              key_type = "crate::key::composite::LayeredKey",
+              nested_key_type = "crate::key::composite::TapHoldKey",
+              as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            },
+            rust_expr = "crate::key::composite::LayeredKey::layered(%{k_expr})",
+            serialized_json = k,
           },
-        key if composite.tap_hold_key.is_serialized_json key =>
+        k if composite.tap_hold_key.is_serialized_json k =>
+          let { key_type = k_key_type, rust_expr = k_expr, .. } = composite.tap_hold_key.codegen_values k in
           {
-            key_type = "crate::key::composite::LayeredKey",
-            nested_key_type = "crate::key::composite::TapHoldKey",
-            as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            key_type = {
+              key_type = "crate::key::composite::LayeredKey",
+              nested_key_type = "crate::key::composite::TapHoldKey",
+              as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+            },
+            rust_expr = "crate::key::composite::LayeredKey::Pass(%{k_expr})",
+            serialized_json = k,
           },
         _ => 'unknown_key_type
       },
-
-      rust_expr = match {
-        key if layered.is_serialized_json key =>
-          let expr = layered.rust_expr key in
-          "crate::key::composite::LayeredKey::layered(%{expr})",
-        key if composite.tap_hold_key.is_serialized_json key =>
-          let expr = composite.tap_hold_key.rust_expr key in
-          "crate::key::composite::LayeredKey::Pass(%{expr})",
-        _ => 'unknown_key_type
-      },
-    },
-
     },
   },
 
@@ -402,19 +442,11 @@ let validators = import "validators.ncl" in
 
     is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-    key_type = match {
-      key if keyboard.is_serialized_json key => keyboard.key_type,
-      key if layer_modifier.is_serialized_json key => layer_modifier.key_type,
-      key if layered.is_serialized_json key => layered.key_type key,
-      key if tap_hold.is_serialized_json key => tap_hold.key_type key,
-      _ => 'unknown_key_type
-    },
-
-    rust_expr = match {
-      key if keyboard.is_serialized_json key => keyboard.rust_expr key,
-      key if layer_modifier.is_serialized_json key => layer_modifier.rust_expr key,
-      key if layered.is_serialized_json key => layered.rust_expr key,
-      key if tap_hold.is_serialized_json key => tap_hold.rust_expr key,
+    codegen_values = match {
+      k if keyboard.is_serialized_json k => keyboard.codegen_values k,
+      k if layer_modifier.is_serialized_json k => layer_modifier.codegen_values k,
+      k if layered.is_serialized_json k => layered.codegen_values k,
+      k if tap_hold.is_serialized_json k => tap_hold.codegen_values k,
       _ => 'unknown_key_type
     },
   },
@@ -460,15 +492,19 @@ let validators = import "validators.ncl" in
           0
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
-      let key_types =
+      let codegen_values =
         keys
-        |> std.array.map key.key_type
-        |> std.array.map (fun key_type => key_type.as_rust_type_path)
+        |> std.array.map key.codegen_values
+      in
+      let key_types =
+        codegen_values
+        |> std.array.map (fun { key_type, .. } => key_type)
+        |> std.array.map (fun { as_rust_type_path, .. } => as_rust_type_path)
         |> std.string.join ","
       in
       let key_exprs =
-        keys
-        |> std.array.map (fun k => "%{key.rust_expr k},")
+        codegen_values
+        |> std.array.map (fun k => "%{k.rust_expr},")
         |> std.string.join ""
       in
       m%"
