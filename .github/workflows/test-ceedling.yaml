@@ -44,7 +44,9 @@ jobs:
           export GEM_HOME=$(gem environment user_gemhome)
           gem install bundler --user-install
           bundle install
-          cargo install --force cbindgen
+          wget https://github.com/mozilla/cbindgen/releases/download/0.28.0/cbindgen
+          chmod +x ./cbindgen
+          sudo cp ./cbindgen /usr/bin/cbindgen
 
       - name: Run Ceedling Tests
         run: |
