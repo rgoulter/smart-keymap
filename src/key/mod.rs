@@ -46,7 +46,7 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
 
     /// Adds events from the other [PressedKeyEvents] to the [PressedKeyEvents].
     pub fn extend(&mut self, other: PressedKeyEvents<E>) {
-        self.0.extend(other.0);
+        other.0.into_iter().for_each(|ev| self.0.push(ev).unwrap());
     }
 
     /// Maps over the PressedKeyEvents.
