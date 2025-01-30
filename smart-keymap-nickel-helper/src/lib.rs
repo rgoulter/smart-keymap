@@ -242,7 +242,7 @@ pub fn nickel_json_serialization_for_inputs(
 /// Evaluates the Nickel expr for an HID, returning the json serialization.
 pub fn nickel_to_json_for_hid_report(
     ncl_import_path: String,
-    keymap_ncl: &str,
+    hid_report_ncl: &str,
 ) -> io::Result<String> {
     let mut nickel_command = Command::new("nickel")
         .args([
@@ -256,7 +256,19 @@ pub fn nickel_to_json_for_hid_report(
         .spawn()?;
 
     let child_stdin = nickel_command.stdin.as_mut().unwrap();
-    child_stdin.write_all(format!(r#"(import "hid-report.ncl") & ({})"#, keymap_ncl).as_bytes())?;
+    child_stdin.write_all(
+        format!(
+            r#"
+                (import "hid-report.ncl")
+                & (
+                    let K = import "hid-usage-keyboard.ncl" in
+                    {}
+                )
+            "#,
+            hid_report_ncl
+        )
+        .as_bytes(),
+    )?;
 
     let output = nickel_command.wait_with_output()?;
 

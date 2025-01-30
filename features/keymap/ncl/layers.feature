@@ -49,7 +49,6 @@ Feature: Layers
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.A] }
       """
 
@@ -64,6 +63,5 @@ Feature: Layers
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.B] }
       """

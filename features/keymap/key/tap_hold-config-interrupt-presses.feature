@@ -40,7 +40,6 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { modifiers = { left_ctrl = true }, key_codes = [K.B] }
       """
 
@@ -60,6 +59,5 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { modifiers = { left_ctrl = true } }
       """
