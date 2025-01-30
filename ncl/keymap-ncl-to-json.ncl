@@ -1,16 +1,15 @@
 let validators = import "validators.ncl" in
 {
-  KeymapKey
-    = std.contract.any_of
-        [
-          keyboard.Key,
-          layer_modifier.Key,
-          layered.Key,
-          tap_hold.Key,
-          std.contract.from_validator validators.is_null,
-        ],
+  KeymapKey =
+    std.contract.any_of [
+      keyboard.Key,
+      layer_modifier.Key,
+      layered.Key,
+      tap_hold.Key,
+      std.contract.from_validator validators.is_null,
+    ],
 
-  KeymapLayer = std.contract.any_of [Array KeymapKey, String],
+  KeymapLayer = std.contract.any_of [ Array KeymapKey, String ],
 
   config = {},
 
@@ -28,35 +27,38 @@ let validators = import "validators.ncl" in
     | doc "Key extension which gets applied when using whitespace-delimited string keymap layers"
     = fun K => {},
 
-  checks.keyboard
-    = let K = import "keys.ncl" in
-      {
-        keymap_example_key_code = {
-          actual = K.A,
-          expected = { key_code = 4 },
-        },
-
-        check_serialized_key_code = {
-          actual = K.A |> key.to_json_serialized,
-          expected = { key_code = 4 },
-        },
+  checks.keyboard =
+    let K = import "keys.ncl" in
+    {
+      keymap_example_key_code = {
+        actual = K.A,
+        expected = { key_code = 4 },
       },
+
+      check_serialized_key_code = {
+        actual = K.A |> key.to_json_serialized,
+        expected = { key_code = 4 },
+      },
+    },
 
   keyboard
     | doc "for key::keyboard::Key."
     = {
-        Key = std.contract.from_validator key_validator,
+      Key = std.contract.from_validator key_validator,
 
-        key_validator
-          = validators.record.validator {
-              fields_validator = validators.all_of [
-                validators.record.has_any_field_of ["key_code", "modifiers"],
-                validators.record.has_only_fields ["key_code", "modifiers"],
-              ],
-              field_validators = {
-                key_code = validators.is_number,
-                modifiers = validators.record.validator {
-                  fields_validator = validators.record.has_only_fields [
+      key_validator =
+        validators.record.validator {
+          fields_validator =
+            validators.all_of [
+              validators.record.has_any_field_of ["key_code", "modifiers"],
+              validators.record.has_only_fields ["key_code", "modifiers"],
+            ],
+          field_validators = {
+            key_code = validators.is_number,
+            modifiers =
+              validators.record.validator {
+                fields_validator =
+                  validators.record.has_only_fields [
                     "left_ctrl",
                     "left_shift",
                     "left_alt",
@@ -66,283 +68,275 @@ let validators = import "validators.ncl" in
                     "right_alt",
                     "right_gui",
                   ],
-                  field_validators = {
-                    left_ctrl = validators.is_bool,
-                    left_shift = validators.is_bool,
-                    left_alt = validators.is_bool,
-                    left_gui = validators.is_bool,
-                    right_ctrl = validators.is_bool,
-                    right_shift = validators.is_bool,
-                    right_alt = validators.is_bool,
-                    right_gui = validators.is_bool,
-                  },
+                field_validators = {
+                  left_ctrl = validators.is_bool,
+                  left_shift = validators.is_bool,
+                  left_alt = validators.is_bool,
+                  left_gui = validators.is_bool,
+                  right_ctrl = validators.is_bool,
+                  right_shift = validators.is_bool,
+                  right_alt = validators.is_bool,
+                  right_gui = validators.is_bool,
                 },
               },
-            },
-
-        is_key
-          = fun k => 'Ok == key_validator k,
-
-        to_json_serialized
-          = fun key => key,
-      },
-
-  checks.layer_modifier
-    = let K = import "keys.ncl" in {
-        keymap_example_hold = {
-          actual = K.layer_mod.hold 0,
-          expected = { layer_modifier.hold = 0 },
+          },
         },
 
-        check_serialized_hold = {
-          actual = K.layer_mod.hold 0 |> key.to_json_serialized,
-          expected = { Hold = 0 },
-        },
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_serialized = fun key => key,
+    },
+
+  checks.layer_modifier =
+    let K = import "keys.ncl" in
+    {
+      keymap_example_hold = {
+        actual = K.layer_mod.hold 0,
+        expected = { layer_modifier.hold = 0 },
       },
+
+      check_serialized_hold = {
+        actual = K.layer_mod.hold 0 |> key.to_json_serialized,
+        expected = { Hold = 0 },
+      },
+    },
 
   layer_modifier
     | doc "for key::layered::ModifierKey."
     = {
-        Key = std.contract.from_validator key_validator,
+      Key = std.contract.from_validator key_validator,
 
-        key_validator
-          = fun k => k |>
-              match {
-                { layer_modifier = { hold } } => validators.is_number hold,
-                _ => 'Error { message = "expected { layer_modifier = { hold } }" },
-              },
-
-        is_key
-          = fun k => 'Ok == key_validator k,
-
-        to_json_serialized
-          = fun { layer_modifier = { hold = hold_layer } } =>
-              { Hold = hold_layer },
-      },
-
-  checks.layered
-    = let K = import "keys.ncl" in
-      {
-        keymap_example_layered_keyboard = {
-          actual = K.A & { layered = [null, K.C] },
-          expected = {
-            key_code = 4,
-            layered = [
-              null,
-              { key_code = 6 },
-            ],
-          },
+      key_validator = fun k =>
+        k
+        |> match {
+          { layer_modifier = { hold } } => validators.is_number hold,
+          _ => 'Error { message = "expected { layer_modifier = { hold } }" },
         },
 
-        check_layered_base_keyboard_base_is_key =
-          let k = K.A & { layered = [null, K.C] } in
-          let { layered, ..base_key } = k in
-          key.is_key base_key,
+      is_key = fun k => 'Ok == key_validator k,
 
-        check_layered_base_keyboard_is_key =
-          let key = K.A & { layered = [null, K.C] } in
-          layered.is_key key,
+      to_json_serialized = fun { layer_modifier = { hold = hold_layer } } =>
+        { Hold = hold_layer },
+    },
 
-        check_serialized_layered_keyboard = {
-          actual = K.A & { layered = [null, K.C] } |> key.to_json_serialized,
-          expected = {
-            base = { key_code = 4 },
-            layered = [
-              null,
-              { key_code = 6 },
-            ],
-          },
+  checks.layered =
+    let K = import "keys.ncl" in
+    {
+      keymap_example_layered_keyboard = {
+        actual = K.A & { layered = [ null, K.C] },
+        expected = {
+          key_code = 4,
+          layered = [
+            null,
+            { key_code = 6 },
+          ],
         },
       },
+
+      check_layered_base_keyboard_base_is_key =
+        let k = K.A & { layered = [ null, K.C] } in
+        let { layered, ..base_key } = k in
+        key.is_key base_key,
+
+      check_layered_base_keyboard_is_key =
+        let key = K.A & { layered = [ null, K.C] } in
+        layered.is_key key,
+
+      check_serialized_layered_keyboard = {
+        actual = K.A & { layered = [ null, K.C] } |> key.to_json_serialized,
+        expected = {
+          base = { key_code = 4 },
+          layered = [
+            null,
+            { key_code = 6 },
+          ],
+        },
+      },
+    },
 
   layered
     | doc "for key::layered::LayeredKey."
     = {
-        Key = std.contract.from_validator key_validator,
+      Key = std.contract.from_validator key_validator,
 
-        key_validator
-          = fun k => k |> match {
-              { layered, ..base_key } =>
-                let valid_layered =
-                  layered |>
-                    validators.array.validator (
-                      validators.any_of [validators.is_null, key.key_validator]
-                    ) in
-                let valid_base_key = key.key_validator base_key in
-                [valid_layered, valid_base_key] |> match {
-                  ['Ok, 'Ok] => 'Ok,
-                  [err, _] => err,
-                  [_, err] => err,
-                },
-              _ => 'Error { message = "expected { layered = Array Key, ..base_key }" },
+      key_validator = fun k =>
+        k
+        |> match {
+          { layered, ..base_key } =>
+            let valid_layered =
+              layered
+              |> validators.array.validator (
+                validators.any_of [validators.is_null, key.key_validator]
+              )
+            in
+            let valid_base_key = key.key_validator base_key in
+            [valid_layered, valid_base_key]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
             },
+          _ => 'Error { message = "expected { layered = Array Key, ..base_key }" },
+        },
 
-        is_key
-          = fun k => 'Ok == key_validator k,
+      is_key = fun k => 'Ok == key_validator k,
 
-        to_json_serialized
-          = fun { layered = layered_keys, ..base_key } =>
-              {
-                base = key.to_json_serialized base_key,
-                layered =
-                  std.array.map
-                    (fun k => if k != null then key.to_json_serialized k else null)
-                    layered_keys,
-              },
+      to_json_serialized = fun { layered = layered_keys, ..base_key } =>
+        {
+          base = key.to_json_serialized base_key,
+          layered =
+            std.array.map
+              (fun k => if k != null then key.to_json_serialized k else null)
+              layered_keys,
+        },
+    },
+
+  checks.tap_hold =
+    let K = import "keys.ncl" in
+    {
+      keymap_example_tap_keyboard_hold_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl,
+        expected = { key_code = 4, hold = { modifiers = { left_ctrl = true } } },
       },
 
-  checks.tap_hold
-    = let K = import "keys.ncl" in
-      {
-        keymap_example_tap_keyboard_hold_keyboard = {
-          actual = K.A & K.hold K.LeftCtrl,
-          expected = { key_code = 4, hold = { modifiers = { left_ctrl = true } } },
-        },
+      check_tap_hold_tap_keyboard_is_key =
+        let k = K.A & K.hold K.LeftCtrl in
+        let { hold, ..tap_key } = k in
+        key.is_key tap_key,
 
-        check_tap_hold_tap_keyboard_is_key =
-          let k = K.A & K.hold K.LeftCtrl  in
-          let { hold, ..tap_key } = k in
-          key.is_key tap_key,
+      check_tap_keyboard_hold_keyboard_is_key =
+        let key = K.A & K.hold K.LeftCtrl in
+        tap_hold.is_key key,
 
-        check_tap_keyboard_hold_keyboard_is_key =
-          let key = K.A & K.hold K.LeftCtrl  in
-          tap_hold.is_key key,
-
-        check_tap_keyboard_hold_keyboard_to_json_serialized_keyboard = {
-          actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_serialized,
-          expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
-        },
-
-        check_serialized_tap_keyboard_hold_keyboard = {
-          actual = K.A & K.hold K.LeftCtrl |> key.to_json_serialized,
-          expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
-        },
+      check_tap_keyboard_hold_keyboard_to_json_serialized_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_serialized,
+        expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
       },
+
+      check_serialized_tap_keyboard_hold_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl |> key.to_json_serialized,
+        expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
+      },
+    },
 
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
-        Key = std.contract.from_validator key_validator,
+      Key = std.contract.from_validator key_validator,
 
-        key_validator
-          = fun k => k |>
-              match {
-                { hold = hold_key, ..tap_key } =>
-                  let valid_hold_key = key.key_validator hold_key in
-                  let valid_tap_key = key.key_validator tap_key in
-                  [valid_hold_key, valid_tap_key] |> match {
-                    ['Ok, 'Ok] => 'Ok,
-                    [err, _] => err,
-                    [_, err] => err,
-                  },
-                _ => 'Error { message = "expected { hold = Key, ..tap_key }" },
-              },
-
-        is_key
-          = fun k => 'Ok == key_validator k,
-
-        to_json_serialized
-          = fun { hold = hold_key, ..tap_key } =>
-              {
-                hold = key.to_json_serialized hold_key,
-                tap = key.to_json_serialized tap_key,
-              },
-      },
-
-  key
-    = {
-        Key = std.contract.from_validator key_validator,
-
-        key_validator
-          = fun k => k |>
-              validators.any_of [
-                keyboard.key_validator,
-                layer_modifier.key_validator,
-                layered.key_validator,
-                tap_hold.key_validator,
-              ],
-
-        is_key
-          = fun k => 'Ok == key_validator k,
-
-        to_json_serialized
-          = match {
-              # Make key::layered::LayeredKey
-              k if layered.is_key k => layered.to_json_serialized k,
-              # Make key::tap_hold::Key from keys with a "hold" modifier.
-              k if tap_hold.is_key k => tap_hold.to_json_serialized k,
-              # Otherwise, keys with just a base key_code are key::keyboard keys.
-              k if keyboard.is_key k => keyboard.to_json_serialized k,
-              # Make key::layered::ModifierKey
-              k if layer_modifier.is_key k => layer_modifier.to_json_serialized k,
-              # Null values (None) stay null
-              null => null,
-              _ => std.fail_with "unsupported item in keymap.ncl",
+      key_validator = fun k =>
+        k
+        |> match {
+          { hold = hold_key, ..tap_key } =>
+            let valid_hold_key = key.key_validator hold_key in
+            let valid_tap_key = key.key_validator tap_key in
+            [valid_hold_key, valid_tap_key]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
             },
-      },
+          _ => 'Error { message = "expected { hold = Key, ..tap_key }" },
+        },
 
-  checks.check_words_from_whitespace_delimited_string
-    = {
-      check_words_from_whitespace_delimited_string = {
-        actual = words_from_whitespace_delimited_string "   a b  c ",
-        expected = ["a", "b", "c"],
-      },
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_serialized = fun { hold = hold_key, ..tap_key } =>
+        {
+          hold = key.to_json_serialized hold_key,
+          tap = key.to_json_serialized tap_key,
+        },
     },
+
+  key = {
+    Key = std.contract.from_validator key_validator,
+
+    key_validator = fun k =>
+      k
+      |> validators.any_of [
+        keyboard.key_validator,
+        layer_modifier.key_validator,
+        layered.key_validator,
+        tap_hold.key_validator,
+      ],
+
+    is_key = fun k => 'Ok == key_validator k,
+
+    to_json_serialized = match {
+      # Make key::layered::LayeredKey
+      k if layered.is_key k => layered.to_json_serialized k,
+      # Make key::tap_hold::Key from keys with a "hold" modifier.
+      k if tap_hold.is_key k => tap_hold.to_json_serialized k,
+      # Otherwise, keys with just a base key_code are key::keyboard keys.
+      k if keyboard.is_key k => keyboard.to_json_serialized k,
+      # Make key::layered::ModifierKey
+      k if layer_modifier.is_key k => layer_modifier.to_json_serialized k,
+      # Null values (None) stay null
+      null => null,
+      _ => std.fail_with "unsupported item in keymap.ncl",
+    },
+  },
+
+  checks.check_words_from_whitespace_delimited_string = {
+    check_words_from_whitespace_delimited_string = {
+      actual = words_from_whitespace_delimited_string "   a b  c ",
+      expected = ["a", "b", "c"],
+    },
+  },
 
   words_from_whitespace_delimited_string
     | doc "Return array of fields from whitespace-delimited string."
     = fun s =>
-        s |> std.string.replace_regex "\\s+" " "
-          |> std.string.split " "
-          |> std.array.filter ((!=) ""),
+      s
+      |> std.string.replace_regex "\\s+" " "
+      |> std.string.split " "
+      |> std.array.filter ((!=) ""),
 
-  checks.check_map_fields_with_record
-    = {
-      check_map_fields_with_record = {
-        actual = map_fields_with_record { a = 1, b = 2, c = 3 } ["a", "c"],
-        expected = [1, 3],
-      },
+  checks.check_map_fields_with_record = {
+    check_map_fields_with_record = {
+      actual = map_fields_with_record { a = 1, b = 2, c = 3 } ["a", "c"],
+      expected = [1, 3],
     },
+  },
 
   map_fields_with_record
     | doc "Maps each field in an array to the value of the given record."
     = fun record fields =>
-        fields |> std.array.map (std.function.flip std.record.get record),
+      fields |> std.array.map (std.function.flip std.record.get record),
 
-  checks.check_layer_as_array_of_keys
-    = {
-      check_layer_as_array_of_keys = {
-        actual = layer_as_array_of_keys " A ",
-        expected = [{ key_code = 4 }],
-      },
-
-      check_layer_as_array_of_keys_tttt = {
-        actual = layer_as_array_of_keys " TTTT ",
-        expected = [null],
-      },
+  checks.check_layer_as_array_of_keys = {
+    check_layer_as_array_of_keys = {
+      actual = layer_as_array_of_keys " A ",
+      expected = [{ key_code = 4 }],
     },
+
+    check_layer_as_array_of_keys_tttt = {
+      actual = layer_as_array_of_keys " TTTT ",
+      expected = [ null ],
+    },
+  },
 
   # Return array-of-keys representation of layer.
   #
   # A KeymapLayer may be either:
   #   - Array Key
   #   - String
-  layer_as_array_of_keys
-    = fun l =>
-        if std.is_string l then
-          let { extend_keys, .. } = import "key-extensions.ncl" in
-          let K = extend_keys (import "keys.ncl") custom_keys in
-          l |> words_from_whitespace_delimited_string
-            |> map_fields_with_record K
-        else
-          l,
+  layer_as_array_of_keys = fun l =>
+    if std.is_string l then
+      let { extend_keys, .. } = import "key-extensions.ncl" in
+      let K = extend_keys (import "keys.ncl") custom_keys in
+      l
+      |> words_from_whitespace_delimited_string
+      |> map_fields_with_record K
+    else
+      l,
 
   layered_keys
     | doc "Constructs array of key::layered::LayeredKey values from layers."
-    = if std.array.length layers == 0 then
+    =
+      if std.array.length layers == 0 then
         std.fail_with "keys or layers must be provided"
-      else
-      if std.array.length layers <= 1 then
+      else if std.array.length layers <= 1 then
         std.array.at 0 layers
       else
         let layers = layers |> std.array.map layer_as_array_of_keys in
@@ -356,13 +350,15 @@ let validators = import "validators.ncl" in
             if no_layered then
               base_key
             else
-              base_key & { layered = layered_ })
+              base_key & { layered = layered_ }
+          )
           (std.array.length base_keys),
 
   serialized_json_keymap
     | default
     | doc "The keymap.json output value."
-    = let config_ = config in
+    =
+      let config_ = config in
       {
         keys = layered_keys |> std.array.map key.to_json_serialized,
         config = config_,
