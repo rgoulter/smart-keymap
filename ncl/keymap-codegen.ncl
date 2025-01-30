@@ -496,7 +496,7 @@ let validators = import "validators.ncl" in
             rust_expr = "crate::key::composite::BaseKey::keyboard(%{k_expr})",
             serialized_json = k,
           },
-        _ => 'unknown_key_type
+        cv => std.fail_with "bad codegen_values for base_key: %{cv |> std.serialize 'Json}",
       },
     },
 
@@ -534,7 +534,7 @@ let validators = import "validators.ncl" in
             rust_expr = "crate::key::composite::TapHoldKey::Pass(%{k_expr})",
             serialized_json = k,
           },
-        _ => 'unknown_key_type
+        cv => std.fail_with "bad codegen_values for tap_hold_key: %{cv |> std.serialize 'Json}",
       },
     },
 
@@ -572,7 +572,7 @@ let validators = import "validators.ncl" in
             rust_expr = "crate::key::composite::LayeredKey::Pass(%{k_expr})",
             serialized_json = k,
           },
-        _ => 'unknown_key_type
+        cv => std.fail_with "bad codegen_values for layered_key: %{cv |> std.serialize 'Json}",
       },
     },
   },
@@ -595,7 +595,7 @@ let validators = import "validators.ncl" in
       k if layer_modifier.is_serialized_json k => layer_modifier.codegen_values k,
       k if layered.is_serialized_json k => layered.codegen_values k,
       k if tap_hold.is_serialized_json k => tap_hold.codegen_values k,
-      _ => 'unknown_key_type
+      k => std.fail_with "bad serialized_json for key: %{k |> std.serialize 'Json}",
     },
   },
 
