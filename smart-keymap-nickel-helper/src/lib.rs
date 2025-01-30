@@ -174,6 +174,71 @@ pub fn nickel_json_serialization_for_keymap(
     }
 }
 
+/// Evaluates the Nickel expr for inputs, with a given keymap ncl, returning the json serialization.
+pub fn nickel_json_serialization_for_inputs(
+    ncl_import_path: String,
+    keymap_ncl: &str,
+    inputs_ncl: &str,
+) -> NickelResult {
+    let spawn_nickel_result = Command::new("nickel")
+        .args([
+            "export",
+            "--format=json",
+            format!("--import-path={}", ncl_import_path).as_ref(),
+            "--field=inputs_as_serialized_json_input_events",
+        ])
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => Err(NickelError::NickelNotFound),
+            _ => panic!("Failed to spawn nickel: {:?}", e),
+        });
+
+    match spawn_nickel_result {
+        Ok(mut nickel_command) => {
+            let child_stdin = nickel_command.stdin.as_mut().unwrap();
+            child_stdin
+                .write_all(
+                    format!(
+                        r#"
+                           (import "keymap-ncl-to-json.ncl")
+                           & (import "inputs-to-json.ncl")
+                           & ({})
+                           & ({{
+                                 inputs =
+                                    let K = import "keys.ncl" in
+                                    let {{ press, release, .. }} = import "inputs.ncl" in
+                                    {},
+                              }})
+                        "#,
+                        keymap_ncl, inputs_ncl,
+                    )
+                    .as_bytes(),
+                )
+                .unwrap_or_else(|e| panic!("Failed to write to stdin: {:?}", e));
+
+            match nickel_command.wait_with_output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        String::from_utf8(output.stdout)
+                            .map_err(|e| panic!("Failed to decode UTF-8: {:?}", e))
+                    } else {
+                        let nickel_error_message = String::from_utf8(output.stderr)
+                            .unwrap_or_else(|e| panic!("Failed to decode UTF-8: {:?}", e));
+                        Err(NickelError::EvalError(nickel_error_message))
+                    }
+                }
+                Err(io_e) => {
+                    panic!("Unhandled IO error: {:?}", io_e)
+                }
+            }
+        }
+        Err(e) => Err(e?),
+    }
+}
+
 /// Evaluates the Nickel expr for an HID, returning the json serialization.
 pub fn nickel_to_json_for_hid_report(
     ncl_import_path: String,
