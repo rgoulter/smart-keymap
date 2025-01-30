@@ -386,20 +386,6 @@ let validators = import "validators.ncl" in
       },
     },
 
-    wrap_rust_expr = match {
-      k if keyboard.is_serialized_json k =>
-        let k_expr = keyboard.rust_expr k in
-        "crate::key::composite::Key::keyboard(%{k_expr})",
-      k if layer_modifier.is_serialized_json k =>
-        let k_expr = layer_modifier.rust_expr k in
-        "crate::key::composite::Key::layer_modifier(%{k_expr})",
-      k if layered.is_serialized_json k =>
-        let k_expr = layered.key_expr k in
-        "crate::key::composite::Key::layered(%{k_expr})",
-      k if tap_hold.is_serialized_json k =>
-        let k_expr = tap_hold.rust_expr k in
-        "crate::key::composite::Key::tap_hold(%{k_expr})",
-      _ => 'Error { message = "unknown variant for key::composite::Key" },
     },
   },
 
