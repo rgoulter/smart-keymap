@@ -37,8 +37,8 @@ Feature: TapHold Key
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0),
-        Release(keymap_index: 0)
+        press (K.A & K.hold K.LeftCtrl),
+        release (K.A & K.hold K.LeftCtrl),
       ]
       """
     Then the HID keyboard report should equal
@@ -52,7 +52,7 @@ Feature: TapHold Key
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0)
+        press (K.A & K.hold K.LeftCtrl),
       ]
       """
     And the keymap ticks 500 times

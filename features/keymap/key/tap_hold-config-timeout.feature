@@ -16,7 +16,7 @@ Feature: TapHold Key (configure resolve-as-hold timeout)
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0)
+        press (K.A & K.hold K.LeftCtrl),
       ]
       """
     And the keymap ticks 60 times
@@ -44,7 +44,7 @@ Feature: TapHold Key (configure resolve-as-hold timeout)
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0)
+        press (K.A & K.hold K.LeftCtrl),
       ]
       """
     And the keymap ticks 10000 times
