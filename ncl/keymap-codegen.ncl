@@ -274,6 +274,30 @@ let validators = import "validators.ncl" in
       }
       in
       tap_hold.is_serialized_json serialized_value,
+
+    check_taphold_codegen_values = {
+      # Current impl: tap_hold::Key<keyboard::Key> is still th::Key<composite::Base>
+      check_taphold_keyboard =
+        let k = {
+          hold = { key_code = 224 },
+          tap = { key_code = 4 },
+        }
+        in
+        let cv = tap_hold.codegen_values k in
+        {
+          check_key_type = {
+            actual = cv.key_type,
+            expected = {
+              as_rust_type_path = "crate::key::tap_hold::Key<crate::key::composite::BaseKey>",
+              key_type = "crate::key::tap_hold::Key",
+            }
+          },
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "crate::key::tap_hold::Key::new(crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)), crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(224)))",
+          },
+        },
+    },
   },
 
   tap_hold
