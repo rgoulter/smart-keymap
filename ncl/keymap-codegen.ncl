@@ -169,7 +169,7 @@ let validators = import "validators.ncl" in
         },
     },
 
-  checks.layered_is = {
+  checks.check_layered = {
     # Use a serialized value to check the "is" predicate.
     check_serialized_base_keyboard_layered_keyboard_is =
       let serialized_value = {
@@ -180,7 +180,35 @@ let validators = import "validators.ncl" in
         ]
       }
       in
-      layered.is_serialized_json serialized_value
+      layered.is_serialized_json serialized_value,
+
+    check_layered_codegen_values = {
+      # A layered::LayeredKey of keyboard::Key
+      #  codegens to layered::LayeredKey<keyboard::Key>
+      check_layered_keyboard =
+        let k = {
+          base = { key_code = 4 },
+          layered = [
+            null,
+            { key_code = 6 },
+          ]
+        }
+        in
+        let cv = layered.codegen_values k in
+        {
+          check_key_type = {
+            actual = cv.key_type,
+            expected = {
+              as_rust_type_path = "crate::key::layered::LayeredKey<crate::key::keyboard::Key>",
+              key_type = "crate::key::layered::LayeredKey",
+            },
+          },
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "crate::key::layered::LayeredKey::new(crate::key::keyboard::Key::new(4), [None,Some(crate::key::keyboard::Key::new(6))])",
+          },
+        },
+    },
   },
 
   layered
