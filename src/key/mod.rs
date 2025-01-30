@@ -14,9 +14,14 @@ pub mod tap_hold;
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
 
+/// The maximum number of key events that are emitted [Key] or [PressedKeyState].
+pub const MAX_KEY_EVENTS: usize = 2;
+
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
-pub struct PressedKeyEvents<E, const M: usize = 2>(heapless::Vec<ScheduledEvent<E>, M>);
+pub struct PressedKeyEvents<E, const M: usize = { MAX_KEY_EVENTS }>(
+    heapless::Vec<ScheduledEvent<E>, M>,
+);
 
 impl<E: Copy + Debug> PressedKeyEvents<E> {
     /// Constructs a [PressedKeyEvents] with no events scheduled.

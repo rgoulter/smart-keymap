@@ -10,7 +10,7 @@ pub struct Keys1<
     Ctx,
     Ev,
     PK,
-    const M: usize = 2,
+    const M: usize = { crate::key::MAX_KEY_EVENTS },
 >(K0);
 
 impl<
@@ -76,7 +76,7 @@ macro_rules! define_keys {
                 Ctx,
                 Ev,
                 PK,
-                const M: usize = 2,
+                const M: usize = { crate::key::MAX_KEY_EVENTS },
                 >(
                     #(
                         K~I,
