@@ -244,6 +244,12 @@ impl DistinctReports {
     }
 }
 
+#[derive(Debug)]
+struct PendingState {
+    keymap_index: u16,
+    queued_events: heapless::Vec<key::Event<composite::Event>, 16>,
+}
+
 /// State for a keymap that handles input, and outputs HID keyboard reports.
 #[derive(Debug)]
 pub struct Keymap<I> {
