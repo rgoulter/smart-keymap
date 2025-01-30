@@ -15,3 +15,21 @@ test-ncl-checks:
 
 %/keymap.rs: %/keymap.json
 	ncl/scripts/keymap-codegen.sh $(shell dirname $@)
+
+# Some NCL code uses hexadecimal representation (0x00)
+#  which is not supported by `nickel format`.
+#
+# uses hex-formatted numbers:
+#   ncl/hid-usage-keyboard.ncl
+.PHONY: ncl-format
+ncl-format:
+	nickel format \
+	   ncl/layouts/split_3x5+3.ncl \
+	   ncl/checks.ncl \
+	   ncl/hid-report.ncl \
+	   ncl/import-keymap-json.ncl \
+       ncl/key-extensions.ncl  \
+       ncl/keymap-ncl-to-json.ncl \
+	   ncl/keymap-codegen.ncl \
+	   ncl/keys.ncl \
+	   ncl/validators.ncl
