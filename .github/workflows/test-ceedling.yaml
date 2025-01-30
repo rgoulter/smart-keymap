@@ -5,6 +5,7 @@ on:
     branches:
       - master
     paths:
+      - 'ncl/**/*.ncl'
       - 'src/**'
       - 'smart_keymap/**'
       - 'tests/ceedling/**'
@@ -12,6 +13,7 @@ on:
     branches:
       - '*'
     paths:
+      - 'ncl/**/*.ncl'
       - 'src/**'
       - 'smart_keymap/**'
       - 'tests/ceedling/**'
