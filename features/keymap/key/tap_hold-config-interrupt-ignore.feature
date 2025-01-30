@@ -42,7 +42,6 @@ Feature: TapHold Key (configure interrupt response: ignore)
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.A, K.B] }
       """
 
@@ -63,6 +62,5 @@ Feature: TapHold Key (configure interrupt response: ignore)
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.A] }
       """

@@ -43,7 +43,6 @@ Feature: TapHold Key
       """
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { key_codes = [K.A] }
       """
 
@@ -58,6 +57,5 @@ Feature: TapHold Key
     And the keymap ticks 500 times
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { modifiers = { left_ctrl = true } }
       """

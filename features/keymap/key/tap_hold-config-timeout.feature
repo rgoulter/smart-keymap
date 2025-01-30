@@ -22,7 +22,6 @@ Feature: TapHold Key (configure resolve-as-hold timeout)
     And the keymap ticks 60 times
     Then the HID keyboard report should equal
       """
-      let K = import "hid-usage-keyboard.ncl" in
       { modifiers = { left_ctrl = true } }
       """
 
