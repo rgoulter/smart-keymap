@@ -9,7 +9,7 @@ Feature: HID Keyboard Key
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0)
+        press K.A,
       ]
       """
     Then the HID keyboard report should equal
@@ -31,7 +31,7 @@ Feature: HID Keyboard Key
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0)
+        press (K.A & K.LeftCtrl),
       ]
       """
     Then the HID keyboard report should equal

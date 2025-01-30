@@ -10,7 +10,8 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 
 use smart_keymap_nickel_helper::{
-    nickel_json_serialization_for_keymap, nickel_to_json_for_hid_report, NickelError,
+    nickel_json_serialization_for_inputs, nickel_json_serialization_for_keymap,
+    nickel_to_json_for_hid_report, NickelError,
 };
 
 type Key = key::composite::Key;
@@ -50,12 +51,14 @@ impl LoadedKeymap {
 }
 #[derive(Debug, World)]
 pub struct KeymapWorld {
+    keymap_ncl: String,
     keymap: LoadedKeymap,
 }
 
 impl Default for KeymapWorld {
     fn default() -> Self {
         KeymapWorld {
+            keymap_ncl: String::new(),
             keymap: LoadedKeymap::NoKeymap,
         }
     }
@@ -84,6 +87,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
                         .map(|k| DynamicKey::new(k))
                         .collect();
                     let context = key::composite::Context::from_config(keymap.config);
+                    world.keymap_ncl = keymap_ncl.into();
                     world.keymap = LoadedKeymap::Keymap(keymap::Keymap::new(dyn_keys, context));
                 }
                 Err(e) => {
@@ -107,10 +111,36 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
 
 #[when("the keymap registers the following input")]
 fn perform_input(world: &mut KeymapWorld, step: &Step) {
-    let inputs: Vec<input::Event> = ron::from_str(step.docstring().as_ref().unwrap()).unwrap();
-
-    for input in inputs {
-        world.keymap.handle_input(input);
+    let inputs_ncl = step.docstring().unwrap();
+    match nickel_json_serialization_for_inputs(
+        format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
+        world.keymap_ncl.as_str(),
+        inputs_ncl,
+    ) {
+        Ok(json) => {
+            let inputs_result: serde_json::Result<Vec<input::Event>> = serde_json::from_str(&json);
+            match inputs_result {
+                Ok(inputs) => {
+                    for input in inputs {
+                        world.keymap.handle_input(input);
+                    }
+                }
+                Err(e) => {
+                    panic!(
+                        "\n\nerror deserailizing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
+                        e,
+                        json,
+                    )
+                }
+            }
+        }
+        Err(e) => match e {
+            NickelError::NickelNotFound => panic!("`nickel` not found on PATH. Please install it."),
+            NickelError::EvalError(nickel_error_message) => panic!(
+                "\n\nerror evaluating step's doc string nickel:\n\n{}",
+                nickel_error_message
+            ),
+        },
     }
 }
 

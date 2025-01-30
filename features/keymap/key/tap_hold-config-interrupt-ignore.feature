@@ -35,9 +35,9 @@ Feature: TapHold Key (configure interrupt response: ignore)
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0),
-        Press(keymap_index: 1),
-        Release(keymap_index: 0),
+        press (K.A & K.hold K.LeftCtrl),
+        press (K.B),
+        release (K.A & K.hold K.LeftCtrl),
       ]
       """
     Then the HID keyboard report should equal
@@ -55,10 +55,10 @@ Feature: TapHold Key (configure interrupt response: ignore)
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0),
-        Press(keymap_index: 1),
-        Release(keymap_index: 1),
-        Release(keymap_index: 0),
+        press (K.A & K.hold K.LeftCtrl),
+        press (K.B),
+        release (K.B),
+        release (K.A & K.hold K.LeftCtrl),
       ]
       """
     Then the HID keyboard report should equal

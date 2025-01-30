@@ -27,7 +27,7 @@ Feature: Layered Keys
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 1),
+        press (K.A & { layered = [ K.B ] }),
       ]
       """
     Then the HID keyboard report should equal
@@ -41,8 +41,8 @@ Feature: Layered Keys
     When the keymap registers the following input
       """
       [
-        Press(keymap_index: 0),
-        Press(keymap_index: 1),
+        press (K.layer_mod.hold 0),
+        press (K.A & { layered = [ K.B ] }),
       ]
       """
     Then the HID keyboard report should equal
