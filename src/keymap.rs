@@ -258,6 +258,7 @@ pub struct Keymap<I> {
     pressed_inputs: heapless::Vec<input::PressedInput<composite::PressedKey>, 16>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
+    pending_key_state: Option<PendingState>,
 }
 
 impl<
@@ -277,6 +278,7 @@ impl<
             pressed_inputs: heapless::Vec::new(),
             event_scheduler: EventScheduler::new(),
             hid_reporter: HIDKeyboardReporter::new(),
+            pending_key_state: None,
         }
     }
 
@@ -285,6 +287,7 @@ impl<
         self.pressed_inputs.clear();
         self.event_scheduler.init();
         self.hid_reporter.init();
+        self.pending_key_state = None;
     }
 
     /// Handles input events.
