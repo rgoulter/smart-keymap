@@ -292,82 +292,85 @@ impl<
 
     /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
-        // Update each of the pressed keys with the event.
-        self.pressed_inputs.iter_mut().for_each(|pi| {
-            if let input::PressedInput::Key { pressed_key, .. } = pi {
-                pressed_key
-                    .handle_event(self.context, ev.into())
-                    .into_iter()
-                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+        if let Some(_pending_state) = &self.pending_key_state {
+        } else {
+            // Update each of the pressed keys with the event.
+            self.pressed_inputs.iter_mut().for_each(|pi| {
+                if let input::PressedInput::Key { pressed_key, .. } = pi {
+                    pressed_key
+                        .handle_event(self.context, ev.into())
+                        .into_iter()
+                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                }
+            });
+
+            self.handle_all_pending_events();
+
+            match ev {
+                input::Event::Press { keymap_index } => {
+                    let key = &mut self.key_definitions[keymap_index as usize];
+
+                    let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
+
+                    pke.into_iter()
+                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+
+                    self.pressed_inputs
+                        .push(input::PressedInput::new_pressed_key(pk))
+                        .unwrap();
+                }
+                input::Event::Release { keymap_index } => {
+                    self.pressed_inputs
+                        .iter()
+                        .position(|pi| match pi {
+                            input::PressedInput::Key {
+                                pressed_key:
+                                    input::PressedKey {
+                                        keymap_index: ki, ..
+                                    },
+                                ..
+                            } => keymap_index == *ki,
+                            _ => false,
+                        })
+                        .map(|i| self.pressed_inputs.remove(i));
+
+                    self.event_scheduler
+                        .cancel_events_for_keymap_index(keymap_index);
+                }
+
+                input::Event::VirtualKeyPress {
+                    key_code,
+                    pressed_keymap_index,
+                } => {
+                    // Insert into pressed_keys before the pressed key with the
+                    //  given keymap index.
+                    let pressed_key = input::PressedInput::Virtual { key_code };
+                    let pos = self
+                        .pressed_inputs
+                        .iter()
+                        .position(|k| match k {
+                            input::PressedInput::Key { pressed_key, .. } => {
+                                pressed_key.keymap_index == pressed_keymap_index
+                            }
+                            _ => false,
+                        })
+                        .unwrap_or(self.pressed_inputs.len());
+                    self.pressed_inputs.insert(pos, pressed_key).unwrap();
+                }
+                input::Event::VirtualKeyRelease { key_code } => {
+                    // Remove from pressed keys.
+                    self.pressed_inputs
+                        .iter()
+                        .position(|k| match k {
+                            input::PressedInput::Virtual { key_code: kc } => key_code == *kc,
+                            _ => false,
+                        })
+                        .map(|i| self.pressed_inputs.remove(i));
+                }
             }
-        });
 
-        self.handle_all_pending_events();
-
-        match ev {
-            input::Event::Press { keymap_index } => {
-                let key = &mut self.key_definitions[keymap_index as usize];
-
-                let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
-
-                pke.into_iter()
-                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-
-                self.pressed_inputs
-                    .push(input::PressedInput::new_pressed_key(pk))
-                    .unwrap();
-            }
-            input::Event::Release { keymap_index } => {
-                self.pressed_inputs
-                    .iter()
-                    .position(|pi| match pi {
-                        input::PressedInput::Key {
-                            pressed_key:
-                                input::PressedKey {
-                                    keymap_index: ki, ..
-                                },
-                            ..
-                        } => keymap_index == *ki,
-                        _ => false,
-                    })
-                    .map(|i| self.pressed_inputs.remove(i));
-
-                self.event_scheduler
-                    .cancel_events_for_keymap_index(keymap_index);
-            }
-
-            input::Event::VirtualKeyPress {
-                key_code,
-                pressed_keymap_index,
-            } => {
-                // Insert into pressed_keys before the pressed key with the
-                //  given keymap index.
-                let pressed_key = input::PressedInput::Virtual { key_code };
-                let pos = self
-                    .pressed_inputs
-                    .iter()
-                    .position(|k| match k {
-                        input::PressedInput::Key { pressed_key, .. } => {
-                            pressed_key.keymap_index == pressed_keymap_index
-                        }
-                        _ => false,
-                    })
-                    .unwrap_or(self.pressed_inputs.len());
-                self.pressed_inputs.insert(pos, pressed_key).unwrap();
-            }
-            input::Event::VirtualKeyRelease { key_code } => {
-                // Remove from pressed keys.
-                self.pressed_inputs
-                    .iter()
-                    .position(|k| match k {
-                        input::PressedInput::Virtual { key_code: kc } => key_code == *kc,
-                        _ => false,
-                    })
-                    .map(|i| self.pressed_inputs.remove(i));
-            }
+            self.handle_all_pending_events();
         }
-
-        self.handle_all_pending_events();
     }
 
     fn handle_all_pending_events(&mut self) {
