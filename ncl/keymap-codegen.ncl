@@ -415,6 +415,28 @@ let validators = import "validators.ncl" in
         },
     },
 
+  checks.check_composite = {
+    check_base_key_codegen_values = {
+      # A keyboard::Key lifted to composite::BaseKey
+      check_base_key_keyboard =
+        let k = { key_code = 4 } in
+        let cv = composite.base_key.codegen_values k in
+        {
+          check_key_type = {
+            actual = cv.key_type,
+            expected = {
+              as_rust_type_path = "crate::key::composite::BaseKey",
+              key_type = "crate::key::composite::BaseKey",
+            },
+          },
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4))",
+          },
+        },
+    },
+  },
+
   composite = {
     base_key = {
       SerializedJson = std.contract.from_validator serialized_json_validator,
