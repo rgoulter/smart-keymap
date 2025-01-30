@@ -4,7 +4,7 @@ let validators = import "validators.ncl" in
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json."
     | { keys | Array key.SerializedJson, .. },
 
-  checks.keyboard_is = {
+  checks.check_keyboard = {
     # Use a serialized value to check the "is" predicate.
     check_serialized_is =
       let serialized_value = { key_code = 4 } in
@@ -15,6 +15,25 @@ let validators = import "validators.ncl" in
     check_serialized_modifiers_is =
       let serialized_value = { modifiers = { left_ctrl = true } } in
       keyboard.is_serialized_json serialized_value,
+
+    check_keyboard_codegen_values = {
+      check_basic =
+        let k = { key_code = 4 } in
+        let cv = keyboard.codegen_values k in
+        {
+          check_key_type = {
+            actual = cv.key_type,
+            expected = {
+              as_rust_type_path = "crate::key::keyboard::Key",
+              key_type = "crate::key::keyboard::Key",
+            },
+          },
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "crate::key::keyboard::Key::new(4)",
+          },
+        },
+    },
   },
 
   keyboard
