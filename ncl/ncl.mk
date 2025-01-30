@@ -28,6 +28,7 @@ ncl-format:
 	   ncl/checks.ncl \
 	   ncl/hid-report.ncl \
 	   ncl/import-keymap-json.ncl \
+	   ncl/inputs-to-json.ncl \
 	   ncl/inputs.ncl \
        ncl/key-extensions.ncl  \
        ncl/keymap-ncl-to-json.ncl \
