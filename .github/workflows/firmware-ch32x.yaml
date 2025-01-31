@@ -1,0 +1,96 @@
+name: CH32X Firmware
+
+env:
+  CH32X_TARGET: riscv32imac-unknown-none-elf
+  FIRMWARE: firmware/ch32x035-usb-device-compositekm-c
+  SMART_KEYMAP_CUSTOM_KEYMAP: tests/ncl/keymap-48key-rgoulter/keymap.ncl
+  GCC_VERSION: 14.2.0-3
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'ncl/**/*.ncl'
+      - 'src/**'
+      - 'smart_keymap/**'
+      - 'firmware/ch32x035-usb-device-compositekm-c/**'
+  pull_request:
+    branches:
+      - '*'
+    paths:
+      - 'ncl/**/*.ncl'
+      - 'src/**'
+      - 'smart_keymap/**'
+      - 'firmware/ch32x035-usb-device-compositekm-c/**'
+
+jobs:
+  build-firmware-ch32x:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install nickel
+        run: |
+          wget https://github.com/tweag/nickel/releases/download/1.9.1/nickel-x86_64-linux
+          chmod +x ./nickel-x86_64-linux
+          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+
+      - name: Install cbindgen
+        run: |
+          wget https://github.com/mozilla/cbindgen/releases/download/0.28.0/cbindgen
+          chmod +x ./cbindgen
+          sudo cp ./cbindgen /usr/bin/cbindgen
+
+      - name: Install xpack toolchain
+        run: |
+          wget --quiet  https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v${GCC_VERSION}/xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz
+          sudo tar -xvf ./xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz --directory=/opt
+
+      - name: Rust Add Target
+        run: rustup target add "${CH32X_TARGET}"
+
+      - name: Build Keymap
+        run: |
+          cargo build \
+            --release \
+            --package "smart_keymap" \
+            --target "${CH32X_TARGET}" \
+            --no-default-features
+          make include/smart_keymap.h
+          cp include/smart_keymap.h ${FIRMWARE}/libsmartkeymap/
+          cp target/${CH32X_TARGET}/release/libsmart_keymap.a ${FIRMWARE}/libsmartkeymap/
+
+      - name: Build Firmware
+        run: |
+          cd ${FIRMWARE}
+          make BOARD=ncl/ch32x-48.ncl
+          mkdir build
+          cd build
+          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
+          make | tee make.log
+          {
+            # Extract this part from the log:
+            #     Memory region         Used Size  Region Size  %age Used
+            #               FLASH:       57224 B        62 KB     90.13%
+            #                 RAM:         20 KB        20 KB    100.00%
+            #                 ^^           ^^ ^^        ^^ ^^     ^^
+            #                 $1           $2 $3        $4 $5     $6
+            echo "### Memory Usage Summary"
+            echo
+            echo "| Memory Region | Used Size | Region Size | Usage % |"
+            echo "|--------------|-----------|-------------|----------|"
+
+            grep -A2 "Memory region" make.log | \
+            tail -n2 | \
+            awk '{ printf "| %s | %s | %s | %s |\n", $1, $2" "$3, $4" "$5, $6 }'
+          } >> $GITHUB_STEP_SUMMARY
