@@ -393,7 +393,7 @@ impl KeyOutputState {
 }
 
 /// [PressedKeyState] for a stateful pressed key value.
-pub trait PressedKey {
+pub trait PressedKey: Debug {
     /// The type of `Context` the pressed key handles.
     type Context;
     /// The type of `Event` the pressed key handles.
