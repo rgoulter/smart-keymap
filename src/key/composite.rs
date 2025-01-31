@@ -69,26 +69,41 @@ pub enum LayeredKey<K: LayeredNestable> {
     Pass(K),
 }
 
-impl key::Key for BaseKey {
+impl key::Key for keyboard::Key {
     type Context = Context;
-    type ContextEvent = Event;
     type Event = Event;
-    type PressedKeyState = PressedBaseKeyState;
+    type PressedKey = PressedBaseKey;
 
     fn new_pressed_key(
         &self,
         _context: Self::Context,
         keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, Self::PressedKeyState>,
-        key::PressedKeyEvents<Self::Event>,
-    ) {
+    ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
+        let pks = self.new_pressed_key();
+        let pk = PressedBaseKey {
+            key: (*self).into(),
+            keymap_index,
+            pressed_key_state: pks.into(),
+        };
+        let pke = key::PressedKeyEvents::no_events();
+        (pk, pke)
+    }
+}
+
+impl key::Key for BaseKey {
+    type Context = Context;
+    type Event = Event;
+    type PressedKey = PressedBaseKey;
+
+    fn new_pressed_key(
+        &self,
+        context: Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
-            BaseKey::Keyboard(key) => {
-                let (pressed_key, events) = key.new_pressed_key((), keymap_index);
-                (pressed_key.into_pressed_key(), events.into_events())
-            }
+            BaseKey::Keyboard(key) => key::Key::new_pressed_key(key, context, keymap_index),
             BaseKey::LayerModifier(key) => {
+                // XXX
                 let (pressed_key, events) = key::Key::new_pressed_key(key, (), keymap_index);
                 (pressed_key.into_pressed_key(), events.into_events())
             }
@@ -366,16 +381,32 @@ pub enum PressedBaseKeyState {
 /// Convenience type alias for a [key::PressedKey] with a base key.
 pub type PressedBaseKey = input::PressedKey<BaseKey, PressedBaseKeyState>;
 
-impl key::PressedKeyState<BaseKey> for PressedBaseKeyState {
+impl key::PressedKey for input::PressedKey<BaseKey, PressedBaseKeyState> {
+    type Context = Context;
     type Event = Event;
 
+    fn handle_event(
+        &mut self,
+        context: Self::Context,
+        event: crate::key::Event<Self::Event>,
+    ) -> crate::key::PressedKeyEvents<Self::Event> {
+        self.pressed_key_state
+            .handle_event_for(context, self.keymap_index, &self.key, event)
+    }
+
+    fn key_output(&self) -> key::KeyOutputState {
+        self.pressed_key_state.key_output(&self.key)
+    }
+}
+
+impl PressedBaseKeyState {
     fn handle_event_for(
         &mut self,
         context: Context,
         keymap_index: u16,
         key: &BaseKey,
-        event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
+        event: key::Event<Event>,
+    ) -> key::PressedKeyEvents<Event> {
         match (key, self) {
             (BaseKey::LayerModifier(key), PressedBaseKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
@@ -599,12 +630,6 @@ impl From<layered::LayerEvent> for Event {
     }
 }
 
-impl From<keyboard::Event> for Event {
-    fn from(_ev: keyboard::Event) -> Self {
-        panic!("key::keyboard never emits events")
-    }
-}
-
 impl From<tap_hold::Event> for Event {
     fn from(ev: tap_hold::Event) -> Self {
         Event::TapHold(ev)
@@ -619,14 +644,6 @@ impl TryFrom<Event> for layered::LayerEvent {
             Event::LayerModification(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
         }
-    }
-}
-
-impl TryFrom<Event> for keyboard::Event {
-    type Error = key::EventError;
-
-    fn try_from(_ev: Event) -> Result<Self, Self::Error> {
-        Err(key::EventError::UnmappableEvent)
     }
 }
 

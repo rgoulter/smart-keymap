@@ -14,9 +14,6 @@ pub mod tap_hold;
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
 
-/// dyn-compatible `Key` trait, and generic implementation.
-pub mod dynamic;
-
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
 pub struct PressedKeyEvents<E, const M: usize = 2>(heapless::Vec<ScheduledEvent<E>, M>);
@@ -94,22 +91,22 @@ impl<E: Debug, const M: usize> IntoIterator for PressedKeyEvents<E, M> {
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait Key: Copy + Debug + PartialEq {
+pub trait Key: Debug {
     /// The associated [Context] is used to provide state that
     ///  may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
     ///  layers are active in [layered::Context]).
     type Context: Copy;
-    /// The event used by the [Key]'s associated [Context].
-    type ContextEvent;
+
     /// The associated `Event` is to be handled by the associated [Context],
-    ///  and any active [PressedKeyState]s.
+    ///  and any active [PressedKey]s.
     type Event: Copy + Debug + PartialEq;
+
     /// The associated [PressedKeyState] implements functionality
     ///  for the pressed key.
     /// (e.g. [tap_hold::PressedKeyState] implements behaviour resolving
     ///  the pressed tap hold key as either 'tap' or 'hold').
-    type PressedKeyState: PressedKeyState<Self, Event = Self::Event>;
+    type PressedKey: PressedKey<Context = Self::Context, Event = Self::Event>;
 
     /// [Key::new_pressed_key] produces a pressed key value, and may
     ///  yield some [ScheduledEvent]s.
@@ -119,10 +116,7 @@ pub trait Key: Copy + Debug + PartialEq {
         &self,
         context: Self::Context,
         keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, Self::PressedKeyState>,
-        PressedKeyEvents<Self::Event>,
-    );
+    ) -> (Self::PressedKey, PressedKeyEvents<Self::Event>);
 }
 
 /// Used to provide state that may affect behaviour when pressing the key.
@@ -420,14 +414,16 @@ pub trait PressedKey {
 ///
 /// e.g. [tap_hold::PressedKeyState] implements behaviour resolving
 ///  the pressed tap hold key as either 'tap' or 'hold'.
-pub trait PressedKeyState<K: Key>: Debug {
+pub trait PressedKeyState<K>: Debug {
+    /// The type of `Context` the pressed key state handles.
+    type Context;
     /// The type of `Event` the pressed key state handles.
     type Event;
 
     /// Used to update the [PressedKeyState]'s state, and possibly yield event(s).
     fn handle_event_for(
         &mut self,
-        context: K::Context,
+        context: Self::Context,
         keymap_index: u16,
         key: &K,
         event: Event<Self::Event>,
