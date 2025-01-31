@@ -71,30 +71,19 @@ impl<K: key::Key> Key<K> {
     }
 }
 
-impl<K: key::Key> key::Key for Key<K> {
-    type Context = key::ModifierKeyContext<Context, K::Context>;
-    type ContextEvent = ();
-    type Event = key::ModifierKeyEvent<Event, K::Event>;
-    type PressedKeyState = PressedKeyState<K>;
-
-    fn new_pressed_key(
+impl<K: key::Key> Key<K> {
+    /// Constructs a new pressed key state and a scheduled event for the tap-hold key.
+    pub fn new_pressed_key(
         &self,
-        key::ModifierKeyContext { context, .. }: Self::Context,
+        context: Context,
         keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, Self::PressedKeyState>,
-        key::PressedKeyEvents<Self::Event>,
-    ) {
+    ) -> (PressedKeyState<K>, key::ScheduledEvent<Event>) {
         let timeout_ev = Event::TapHoldTimeout;
         (
-            input::PressedKey {
-                keymap_index,
-                key: *self,
-                pressed_key_state: PressedKeyState::new(),
-            },
-            key::PressedKeyEvents::scheduled_event(
+            PressedKeyState::new(),
+            key::ScheduledEvent::after(
                 context.config.timeout,
-                key::Event::key_event(keymap_index, key::ModifierKeyEvent::Modifier(timeout_ev)),
+                key::Event::key_event(keymap_index, timeout_ev),
             ),
         )
     }
@@ -135,10 +124,10 @@ pub enum Event {
 }
 
 /// The state of a pressed tap-hold key.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 pub struct PressedKeyState<K: key::Key> {
     state: TapHoldState,
-    pressed_key: Option<input::PressedKey<K, K::PressedKeyState>>,
+    pressed_key: Option<K::PressedKey>,
     // For tracking 'tap' interruptions
     other_pressed_keymap_index: Option<u16>,
 }
@@ -169,7 +158,7 @@ impl<K: key::Key> PressedKeyState<K> {
         &self,
         interrupt_response: InterruptResponse,
         keymap_index: u16,
-        event: key::Event<key::ModifierKeyEvent<Event, <K as key::Key>::Event>>,
+        event: key::Event<Event>,
     ) -> Option<TapHoldState> {
         match self.state {
             TapHoldState::Pending => {
@@ -189,7 +178,7 @@ impl<K: key::Key> PressedKeyState<K> {
                                 }
                             }
                             key::Event::Key {
-                                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                                key_event: Event::TapHoldTimeout,
                                 ..
                             } => {
                                 // Key held long enough to resolve as hold.
@@ -212,7 +201,7 @@ impl<K: key::Key> PressedKeyState<K> {
                                 }
                             }
                             key::Event::Key {
-                                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                                key_event: Event::TapHoldTimeout,
                                 ..
                             } => {
                                 // Key held long enough to resolve as hold.
@@ -232,7 +221,7 @@ impl<K: key::Key> PressedKeyState<K> {
                                 }
                             }
                             key::Event::Key {
-                                key_event: key::ModifierKeyEvent::Modifier(Event::TapHoldTimeout),
+                                key_event: Event::TapHoldTimeout,
                                 ..
                             } => {
                                 // Key held long enough to resolve as hold.
@@ -246,33 +235,36 @@ impl<K: key::Key> PressedKeyState<K> {
             _ => None,
         }
     }
+
+    /// Returns the key output state.
+    pub fn key_output(&self) -> key::KeyOutputState {
+        match &self.pressed_key {
+            Some(pk) => pk.key_output(),
+            None => key::KeyOutputState::pending(),
+        }
+    }
 }
 
-impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
-    type Event = key::ModifierKeyEvent<Event, K::Event>;
-
+impl<K: key::Key> PressedKeyState<K>
+where
+    K::Context: Into<Context>,
+    K::Event: TryInto<Event>,
+    K::Event: From<Event>,
+{
     /// Returns at most 2 events
-    fn handle_event_for(
+    pub fn handle_event_for(
         &mut self,
-        key::ModifierKeyContext {
-            context,
-            inner_context,
-        }: <Key<K> as key::Key>::Context,
+        context: K::Context,
         keymap_index: u16,
         key: &Key<K>,
-        event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
+        event: key::Event<K::Event>,
+    ) -> key::PressedKeyEvents<K::Event> {
         let mut pke = key::PressedKeyEvents::no_events();
 
         // Add events from inner pk handle_event
-        if let Ok(inner_ev) = event.try_into_key_event(|mke| mke.try_into_inner()) {
-            if let Some(pk) = &mut self.pressed_key {
-                let pk_ev = pk
-                    .pressed_key_state
-                    .handle_event_for(inner_context, keymap_index, &pk.key, inner_ev)
-                    .map_events(|ev| key::ModifierKeyEvent::Inner(ev));
-                pke.extend(pk_ev);
-            }
+        if let Some(pk) = &mut self.pressed_key {
+            let pk_ev = pk.handle_event(context, event);
+            pke.extend(pk_ev);
         }
 
         // Check for interrupting taps
@@ -288,22 +280,25 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
         }
 
         // Resolve tap-hold state per the event.
-        match self.hold_resolution(context.config.interrupt_response, keymap_index, event) {
-            Some(TapHoldState::Hold) => {
-                self.resolve(TapHoldState::Hold);
+        let Context { config, .. } = context.into();
+        if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+            match self.hold_resolution(config.interrupt_response, keymap_index, ev) {
+                Some(TapHoldState::Hold) => {
+                    self.resolve(TapHoldState::Hold);
 
-                let (hold_pk, hold_pke) = key.hold.new_pressed_key(inner_context, keymap_index);
-                self.pressed_key = Some(hold_pk);
-                pke.extend(hold_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
-            }
-            Some(TapHoldState::Tap) => {
-                self.resolve(TapHoldState::Tap);
+                    let (hold_pk, hold_pke) = key.hold.new_pressed_key(context, keymap_index);
+                    self.pressed_key = Some(hold_pk);
+                    pke.extend(hold_pke);
+                }
+                Some(TapHoldState::Tap) => {
+                    self.resolve(TapHoldState::Tap);
 
-                let (tap_pk, tap_pke) = key.tap.new_pressed_key(inner_context, keymap_index);
-                self.pressed_key = Some(tap_pk);
-                pke.extend(tap_pke.map_events(|ev| key::ModifierKeyEvent::Inner(ev)));
+                    let (tap_pk, tap_pke) = key.tap.new_pressed_key(context, keymap_index);
+                    self.pressed_key = Some(tap_pk);
+                    pke.extend(tap_pke);
+                }
+                _ => {}
             }
-            _ => {}
         }
 
         match event {
@@ -320,8 +315,7 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                                 pressed_keymap_index: keymap_index,
                             };
                             let release_ev = input::Event::VirtualKeyRelease { key_code };
-                            let mut events: key::PressedKeyEvents<Self::Event> =
-                                key::PressedKeyEvents::event(press_ev.into());
+                            let mut events = key::PressedKeyEvents::event(press_ev.into());
                             events.schedule_event(10, release_ev.into());
                             pke.extend(events);
                         }
@@ -332,13 +326,6 @@ impl<K: key::Key> key::PressedKeyState<Key<K>> for PressedKeyState<K> {
                 }
             }
             _ => pke,
-        }
-    }
-
-    fn key_output(&self, _key: &Key<K>) -> key::KeyOutputState {
-        match &self.pressed_key {
-            Some(pk) => pk.key_output(),
-            None => key::KeyOutputState::pending(),
         }
     }
 }
