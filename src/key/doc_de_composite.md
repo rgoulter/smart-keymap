@@ -5,7 +5,7 @@
 ```rust
 use smart_keymap::key;
 
-use key::{composite, keyboard, layered};
+use key::{composite, keyboard};
 
 type Ctx = composite::Context;
 type Key = composite::BaseKey;
