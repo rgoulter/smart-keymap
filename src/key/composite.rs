@@ -69,6 +69,32 @@ pub enum LayeredKey<K: LayeredNestable> {
     Pass(K),
 }
 
+impl key::Key for layered::ModifierKey {
+    type Context = Context;
+    type Event = Event;
+    type PressedKey = PressedBaseKey;
+
+    fn new_pressed_key(
+        &self,
+        _context: Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
+        let (pks, lmod_ev) = self.new_pressed_key();
+        let pk = PressedBaseKey {
+            key: (*self).into(),
+            keymap_index,
+            pressed_key_state: pks.into(),
+        };
+        (
+            pk,
+            key::PressedKeyEvents::event(key::Event::key_event(
+                keymap_index,
+                Event::LayerModification(lmod_ev),
+            )),
+        )
+    }
+}
+
 impl key::Key for keyboard::Key {
     type Context = Context;
     type Event = Event;
@@ -102,11 +128,7 @@ impl key::Key for BaseKey {
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
             BaseKey::Keyboard(key) => key::Key::new_pressed_key(key, context, keymap_index),
-            BaseKey::LayerModifier(key) => {
-                // XXX
-                let (pressed_key, events) = key::Key::new_pressed_key(key, (), keymap_index);
-                (pressed_key.into_pressed_key(), events.into_events())
-            }
+            BaseKey::LayerModifier(key) => key::Key::new_pressed_key(key, context, keymap_index),
         }
     }
 }
@@ -410,8 +432,14 @@ impl PressedBaseKeyState {
         match (key, self) {
             (BaseKey::LayerModifier(key), PressedBaseKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let events = pks.handle_event_for(context.into(), keymap_index, key, ev);
-                    events.into_events()
+                    let events = pks.handle_event_for(keymap_index, key, ev);
+                    match events {
+                        Some(ev) => key::PressedKeyEvents::event(key::Event::key_event(
+                            keymap_index,
+                            Event::LayerModification(ev),
+                        )),
+                        None => key::PressedKeyEvents::no_events(),
+                    }
                 } else {
                     key::PressedKeyEvents::no_events()
                 }
@@ -422,9 +450,6 @@ impl PressedBaseKeyState {
 
     fn key_output(&self, key: &BaseKey) -> key::KeyOutputState {
         match (key, self) {
-            (BaseKey::LayerModifier(key), PressedBaseKeyState::LayerModifier(pks)) => {
-                pks.key_output(key)
-            }
             (BaseKey::Keyboard(key), PressedBaseKeyState::Keyboard(pks)) => pks.key_output(key),
             _ => key::KeyOutputState::no_output(),
         }
