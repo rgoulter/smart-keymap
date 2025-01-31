@@ -9,7 +9,9 @@ use core::fmt::Debug;
 use serde::Deserialize;
 
 use crate::{input, key};
-use key::{keyboard, layered, tap_hold};
+use key::keyboard;
+use key::layered;
+use key::tap_hold;
 
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
