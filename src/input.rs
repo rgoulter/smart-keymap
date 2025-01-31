@@ -77,11 +77,11 @@ impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> cr
 
 /// State resulting from [Event].
 #[derive(Debug, Clone, Copy)]
-pub enum PressedInput {
+pub enum PressedInput<PK> {
     /// Physically pressed key.
     Key {
-        /// The index of the pressed key in the keymap.
-        keymap_index: u16,
+        /// The pressed key.
+        pressed_key: PK,
     },
     /// Virtually pressed key.
     Virtual {
@@ -90,9 +90,9 @@ pub enum PressedInput {
     },
 }
 
-impl PressedInput {
+impl<PK> PressedInput<PK> {
     /// Constructor for a [PressedInput::Key].
-    pub fn new_pressed_key(keymap_index: u16) -> Self {
-        Self::Key { keymap_index }
+    pub fn new_pressed_key(pressed_key: PK) -> Self {
+        Self::Key { pressed_key }
     }
 }
