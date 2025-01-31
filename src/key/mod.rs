@@ -518,48 +518,6 @@ impl<T> From<input::Event> for Event<T> {
     }
 }
 
-/// Sum type for events which modify other keys.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModifierKeyEvent<T, U> {
-    /// The modifier's event type.
-    Modifier(T),
-    /// The inner key's event type.
-    Inner(U),
-}
-
-impl<T: Copy, U: Copy> ModifierKeyEvent<T, U> {
-    /// Applies a function to either Modifier or Inner.
-    pub fn map_events<V>(self, f: fn(T) -> V, g: fn(U) -> V) -> V {
-        match self {
-            ModifierKeyEvent::Modifier(t) => f(t),
-            ModifierKeyEvent::Inner(u) => g(u),
-        }
-    }
-
-    /// Results in Ok if this is the inner event.
-    pub fn try_into_inner(self) -> Result<U, EventError> {
-        match self {
-            ModifierKeyEvent::Inner(u) => Ok(u),
-            _ => Err(EventError::UnmappableEvent),
-        }
-    }
-
-    /// Tries to construct either variant.
-    pub fn try_from<V: Copy>(
-        v: V,
-        f: fn(V) -> EventResult<T>,
-        g: fn(V) -> EventResult<U>,
-    ) -> EventResult<ModifierKeyEvent<T, U>> {
-        if let Ok(t) = f(v) {
-            Ok(ModifierKeyEvent::Modifier(t))
-        } else if let Ok(u) = g(v) {
-            Ok(ModifierKeyEvent::Inner(u))
-        } else {
-            Err(EventError::UnmappableEvent)
-        }
-    }
-}
-
 /// Schedule for a [ScheduledEvent].
 #[allow(unused)]
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
