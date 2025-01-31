@@ -555,13 +555,14 @@ mod tests {
 
     #[test]
     fn test_keymap_with_keyboard_key_with_composite_context() {
-        use key::composite::{Context, Event};
+        use key::composite::{Context, Event, PressedKey};
         use key::keyboard;
         use tuples::Keys1;
 
         // Assemble
         type Ctx = Context;
-        let keys: Keys1<keyboard::Key, Context, Event> = Keys1::new((keyboard::Key::new(0x04),));
+        let keys: Keys1<keyboard::Key, Context, Event, PressedKey> =
+            Keys1::new((keyboard::Key::new(0x04),));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
@@ -647,10 +648,10 @@ mod tests {
         use key::{composite, keyboard};
         use tuples::Keys1;
 
-        use composite::{Context, Event};
+        use composite::{Context, Event, PressedKey};
 
         // Assemble
-        let keys: Keys1<composite::Key, Context, Event> =
+        let keys: Keys1<composite::Key, Context, Event, PressedKey> =
             Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
         let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
