@@ -71,27 +71,29 @@ macro_rules! define_keys {
                 #[derive(core::fmt::Debug)]
                 pub struct [<Keys $n>]<
                     #(
-                        K~I: crate::key::Key,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK>,
                     )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug,
-                Ev: Copy + core::fmt::Debug,
+                Ctx,
+                Ev,
+                PK,
                 const M: usize = 2,
                 >(
                     #(
-                        crate::key::dynamic::DynamicKey<K~I, Ctx, Ev>,
+                        K~I,
                     )*
                 );
 
                 impl<
                     #(
-                        K~I: crate::key::Key,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + Copy,
                     )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug,
-                Ev: Copy + core::fmt::Debug,
+                Ctx,
+                Ev,
+                PK,
                 const M: usize,
                 > [<Keys $n>]<
                     #(K~I,)*
-                Ctx, Ev, M
+                Ctx, Ev, PK, M
                     >
                 {
                     /// Constructs a KeysN tuple struct with the given tuple.
@@ -102,7 +104,7 @@ macro_rules! define_keys {
                     )) -> Self {
                         [<Keys $n>](
                             #(
-                                crate::key::dynamic::DynamicKey::new(k~I),
+                                (k~I),
                             )*
                         )
                     }
@@ -110,23 +112,18 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: crate::key::Key + 'static,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
                     )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
-                Ev: Copy + core::fmt::Debug + 'static,
+                Ctx,
+                Ev,
+                PK,
                 const M: usize,
                 > core::ops::Index<usize> for [<Keys $n>]<
                     #(K~I,)*
-                Ctx, Ev, M
+                Ctx, Ev, PK, M
                     >
-                where
-                    #(
-                    <K~I as crate::key::Key>::Event: TryFrom<Ev>,
-                    Ev: From<<K~I as crate::key::Key>::Event>,
-                    <K~I as crate::key::Key>::Context: From<Ctx>,
-                )*
                 {
-                    type Output = dyn crate::key::dynamic::Key<Ev, M, Context = Ctx>;
+                    type Output = dyn crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK>;
 
                     fn index(&self, idx: usize) -> &Self::Output {
                         match idx {
@@ -140,21 +137,16 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: crate::key::Key + 'static,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
                     )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
-                Ev: Copy + core::fmt::Debug + 'static,
+                Ctx,
+                Ev,
+                PK,
                 const M: usize,
                 > core::ops::IndexMut<usize> for [<Keys $n>]<
                     #(K~I,)*
-                Ctx, Ev, M
+                Ctx, Ev, PK, M
                     >
-                where
-                    #(
-                    <K~I as crate::key::Key>::Event: TryFrom<Ev>,
-                    Ev: From<<K~I as crate::key::Key>::Event>,
-                    <K~I as crate::key::Key>::Context: From<Ctx>,
-                )*
                 {
                     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
                         match idx {
