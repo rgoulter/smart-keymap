@@ -24,21 +24,11 @@ impl ModifierKey {
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
-    pub fn new_pressed_key(
-        &self,
-        keymap_index: u16,
-    ) -> (input::PressedKey<Self, PressedModifierKeyState>, LayerEvent) {
+    pub fn new_pressed_key(&self) -> (PressedModifierKeyState, LayerEvent) {
         match self {
             ModifierKey::Hold(layer) => {
                 let event = LayerEvent::LayerActivated(*layer);
-                (
-                    input::PressedKey {
-                        keymap_index,
-                        key: *self,
-                        pressed_key_state: PressedModifierKeyState,
-                    },
-                    event,
-                )
+                (PressedModifierKeyState, event)
             }
         }
     }
@@ -46,28 +36,6 @@ impl ModifierKey {
 
 impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
-}
-
-impl key::Key for ModifierKey {
-    type Context = ();
-    type ContextEvent = ();
-    type Event = LayerEvent;
-    type PressedKeyState = PressedModifierKeyState;
-
-    fn new_pressed_key(
-        &self,
-        _context: Self::Context,
-        keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, Self::PressedKeyState>,
-        key::PressedKeyEvents<Self::Event>,
-    ) {
-        let (pk, ev) = ModifierKey::new_pressed_key(self, keymap_index);
-        (
-            pk,
-            key::PressedKeyEvents::event(key::Event::key_event(keymap_index, ev)),
-        )
-    }
 }
 
 /// Tracks state of active layers.
@@ -170,14 +138,14 @@ impl core::fmt::Display for LayersError {
 }
 
 /// Trait for layers of [LayeredKey].
-pub trait Layers<K: key::Key>: Copy + Debug + PartialEq {
+pub trait Layers<K: key::Key>: Copy + Debug {
     /// Get the highest active key, if any, for the given [LayerState].
     fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K>;
     /// Constructs layers; return Err if the iterable has more keys than Layers can store.
     fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError>;
 }
 
-impl<K: key::Key, const L: usize> Layers<K> for [Option<K>; L] {
+impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
     fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K> {
         for layer in layer_state.active_layers() {
             if let Some(key) = self[layer] {
@@ -222,8 +190,8 @@ pub const fn layered_keys<K: Copy, const L: usize>(
 }
 
 /// A key whose behavior depends on which layer is active.
-#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub struct LayeredKey<K: key::Key> {
+#[derive(Debug, Deserialize, Clone, Copy)]
+pub struct LayeredKey<K: key::Key + Copy> {
     /// The base key, used when no layers are active.
     pub base: K,
     /// The layered keys, used when the corresponding layer is active.
@@ -233,7 +201,6 @@ pub struct LayeredKey<K: key::Key> {
 }
 
 /// Deserialize a [Layers].
-///
 fn deserialize_layered<'de, K, L: Layers<K>, D>(deserializer: D) -> Result<L, D::Error>
 where
     K: key::Key + Deserialize<'de>,
@@ -244,7 +211,7 @@ where
     L::from_iterable(keys_vec).map_err(serde::de::Error::custom)
 }
 
-impl<K: key::Key> LayeredKey<K> {
+impl<K: key::Key + Copy> LayeredKey<K> {
     /// Constructs a new [LayeredKey].
     pub const fn new<const L: usize>(base: K, layered: [Option<K>; L]) -> Self {
         let layered = layered_keys(layered);
@@ -252,40 +219,23 @@ impl<K: key::Key> LayeredKey<K> {
     }
 }
 
-impl<K: key::Key> key::Key for LayeredKey<K> {
-    type Context = key::ModifierKeyContext<Context, K::Context>;
-    type ContextEvent = LayerEvent;
-    type Event = K::Event;
-    type PressedKeyState = PressedLayeredKeyState<K>;
-
-    fn new_pressed_key(
+impl<K: key::Key + Copy> LayeredKey<K>
+where
+    K::Context: Into<Context>,
+{
+    /// Presses the key, using the highest active key, if any.
+    pub fn new_pressed_key(
         &self,
-        key::ModifierKeyContext {
-            context,
-            inner_context,
-        }: Self::Context,
+        context: K::Context,
         keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, Self::PressedKeyState>,
-        key::PressedKeyEvents<Self::Event>,
-    ) {
+    ) -> (K::PressedKey, key::PressedKeyEvents<K::Event>) {
+        let layer_context: Context = context.into();
         let passthrough_key = self
             .layered
-            .highest_active_key(context.layer_state())
+            .highest_active_key(layer_context.layer_state())
             .unwrap_or(self.base);
 
-        let (passthrough_pk, passthrough_events) =
-            passthrough_key.new_pressed_key(inner_context, keymap_index);
-
-        let pressed_key_state = PressedLayeredKeyState::new(passthrough_pk);
-        (
-            input::PressedKey {
-                keymap_index,
-                key: *self,
-                pressed_key_state,
-            },
-            passthrough_events,
-        )
+        passthrough_key.new_pressed_key(context, keymap_index)
     }
 }
 
@@ -302,78 +252,26 @@ pub enum LayerEvent {
 #[derive(Debug, Clone, Copy)]
 pub struct PressedModifierKeyState;
 
-/// Type alias for [crate::input::PressedKey] of [ModifierKey].
-pub type PressedModifierKey = input::PressedKey<ModifierKey, PressedModifierKeyState>;
-
-impl key::PressedKeyState<ModifierKey> for PressedModifierKeyState {
-    type Event = LayerEvent;
-
-    fn handle_event_for(
+impl PressedModifierKeyState {
+    /// Handle the given event for the given key.
+    pub fn handle_event_for(
         &mut self,
-        _context: (),
         keymap_index: u16,
         key: &ModifierKey,
-        event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
+        event: key::Event<LayerEvent>,
+    ) -> Option<LayerEvent> {
         match key {
             ModifierKey::Hold(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
-                        key::PressedKeyEvents::event(key::Event::key_event(
-                            keymap_index,
-                            LayerEvent::LayerDeactivated(*layer),
-                        ))
+                        Some(LayerEvent::LayerDeactivated(*layer))
                     } else {
-                        key::PressedKeyEvents::no_events()
+                        None
                     }
                 }
-                _ => key::PressedKeyEvents::no_events(),
+                _ => None,
             },
         }
-    }
-
-    fn key_output(&self, _key: &ModifierKey) -> key::KeyOutputState {
-        key::KeyOutputState::no_output()
-    }
-}
-
-/// [LayeredKey's] 'pressed key' associated type.
-/// Passes through to the pressed key.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedLayeredKeyState<K: key::Key> {
-    passthrough_pk: input::PressedKey<K, K::PressedKeyState>,
-}
-
-impl<K: key::Key> PressedLayeredKeyState<K> {
-    /// Constructs [PressedLayeredKeyState].
-    pub fn new(passthrough_pk: input::PressedKey<K, K::PressedKeyState>) -> Self {
-        Self { passthrough_pk }
-    }
-}
-
-/// Type alias for [crate::input::PressedKey] of [LayeredKey].
-pub type PressedLayeredKey<K> = input::PressedKey<LayeredKey<K>, PressedLayeredKeyState<K>>;
-
-impl<K: key::Key> key::PressedKeyState<LayeredKey<K>> for PressedLayeredKeyState<K> {
-    type Event = K::Event;
-
-    fn handle_event_for(
-        &mut self,
-        context: <LayeredKey<K> as key::Key>::Context,
-        _keymap_index: u16,
-        _key: &LayeredKey<K>,
-        event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
-        use crate::key::PressedKey as _;
-
-        self.passthrough_pk
-            .handle_event(context.inner_context, event)
-    }
-
-    fn key_output(&self, _key: &LayeredKey<K>) -> key::KeyOutputState {
-        use crate::key::PressedKey as _;
-
-        self.passthrough_pk.key_output()
     }
 }
 
