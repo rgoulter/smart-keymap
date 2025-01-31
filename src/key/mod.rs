@@ -142,31 +142,6 @@ impl Context for () {
     fn handle_event(&mut self, _event: Self::Event) {}
 }
 
-/// Context struct for use by "modifier" keys.
-/// (Keys which modify the behaviour of some key,
-///  e.g. [layered::LayeredKey]).
-#[derive(Debug, Clone, Copy)]
-pub struct ModifierKeyContext<Ctx: Copy, NCtx: Copy> {
-    /// The [Context] for the modifier key.
-    pub context: Ctx,
-    /// The [Context] for the modified key.
-    pub inner_context: NCtx,
-}
-
-impl<MC: Copy, IC: Copy> ModifierKeyContext<MC, IC> {
-    /// Constructs a ModifierKeyContext from the given context, using the provided functions for context/inner_context.
-    pub fn from_context<FC: Copy>(
-        fc: FC,
-        f: fn(FC) -> MC,
-        g: fn(FC) -> IC,
-    ) -> ModifierKeyContext<MC, IC> {
-        ModifierKeyContext {
-            context: f(fc),
-            inner_context: g(fc),
-        }
-    }
-}
-
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
 #[derive(Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardModifiers {
