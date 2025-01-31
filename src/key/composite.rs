@@ -310,14 +310,6 @@ pub const DEFAULT_CONTEXT: Context = Context {
 };
 
 impl Context {
-    /// Constructs a new [Context].
-    pub const fn new(layer_context: layered::Context, tap_hold_context: tap_hold::Context) -> Self {
-        Self {
-            layer_context,
-            tap_hold_context,
-        }
-    }
-
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
