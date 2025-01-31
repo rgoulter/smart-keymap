@@ -4,7 +4,7 @@ use core::ops::IndexMut;
 use crate::input;
 use crate::key;
 
-use key::{composite, Context, Event};
+use key::{composite, Context, Event, PressedKey};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct ScheduledEvent<E: Debug> {
@@ -228,13 +228,17 @@ impl HIDKeyboardReporter {
 pub struct Keymap<I> {
     key_definitions: I,
     context: composite::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput, 16>,
+    pressed_inputs: heapless::Vec<input::PressedInput<composite::PressedKey>, 16>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
 }
 
 impl<
-        K: key::dynamic::Key<key::composite::Event, Context = key::composite::Context> + ?Sized,
+        K: key::Key<
+                Context = composite::Context,
+                Event = composite::Event,
+                PressedKey = composite::PressedKey,
+            > + ?Sized,
         I: IndexMut<usize, Output = K>,
     > Keymap<I>
 {
@@ -260,9 +264,9 @@ impl<
     pub fn handle_input(&mut self, ev: input::Event) {
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
-            if let input::PressedInput::Key { keymap_index, .. } = pi {
-                let key = &mut self.key_definitions[*keymap_index as usize];
-                key.handle_event(self.context, ev.into())
+            if let input::PressedInput::Key { pressed_key, .. } = pi {
+                pressed_key
+                    .handle_event(self.context, ev.into())
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
@@ -274,12 +278,13 @@ impl<
             input::Event::Press { keymap_index } => {
                 let key = &mut self.key_definitions[keymap_index as usize];
 
-                key.handle_event(self.context, ev.into())
-                    .into_iter()
+                let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
+
+                pke.into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
                 self.pressed_inputs
-                    .push(input::PressedInput::new_pressed_key(keymap_index))
+                    .push(input::PressedInput::new_pressed_key(pk))
                     .unwrap();
             }
             input::Event::Release { keymap_index } => {
@@ -287,7 +292,11 @@ impl<
                     .iter()
                     .position(|pi| match pi {
                         input::PressedInput::Key {
-                            keymap_index: ki, ..
+                            pressed_key:
+                                input::PressedKey {
+                                    keymap_index: ki, ..
+                                },
+                            ..
                         } => keymap_index == *ki,
                         _ => false,
                     })
@@ -308,8 +317,8 @@ impl<
                     .pressed_inputs
                     .iter()
                     .position(|k| match k {
-                        input::PressedInput::Key { keymap_index, .. } => {
-                            *keymap_index == pressed_keymap_index
+                        input::PressedInput::Key { pressed_key, .. } => {
+                            pressed_key.keymap_index == pressed_keymap_index
                         }
                         _ => false,
                     })
@@ -336,9 +345,9 @@ impl<
         while let Some(ev) = self.event_scheduler.dequeue() {
             // Update each of the pressed keys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key { keymap_index, .. } = pi {
-                    let key = &mut self.key_definitions[*keymap_index as usize];
-                    key.handle_event(self.context, ev)
+                if let input::PressedInput::Key { pressed_key, .. } = pi {
+                    pressed_key
+                        .handle_event(self.context, ev)
                         .into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                 }
@@ -368,16 +377,14 @@ impl<
             .pressed_inputs
             .iter()
             .take_while(|pi| match pi {
-                input::PressedInput::Key { keymap_index, .. } => {
-                    let key = &self.key_definitions[*keymap_index as usize];
-                    key.key_output().is_resolved()
+                input::PressedInput::Key { pressed_key, .. } => {
+                    pressed_key.key_output().is_resolved()
                 }
                 _ => true,
             })
             .filter_map(|pi| match pi {
-                input::PressedInput::Key { keymap_index, .. } => {
-                    let key = &self.key_definitions[*keymap_index as usize];
-                    key.key_output().to_option()
+                input::PressedInput::Key { pressed_key, .. } => {
+                    pressed_key.key_output().to_option()
                 }
                 input::PressedInput::Virtual { key_code } => {
                     Some(key::KeyOutput::from_key_code(*key_code))
