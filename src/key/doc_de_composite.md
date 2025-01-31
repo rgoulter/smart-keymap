@@ -8,12 +8,12 @@ use smart_keymap::key;
 use key::{composite, keyboard, layered};
 
 type Ctx = composite::Context;
-type Key = composite::Key;
+type Key = composite::BaseKey;
 
 let json = r#"
   { "key_code": 4 }
 "#;
-let expected_key: Key = composite::Key::keyboard(keyboard::Key::new(0x04));
+let expected_key: Key = Key::keyboard(keyboard::Key::new(0x04));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -28,12 +28,12 @@ use smart_keymap::key;
 use key::{composite, keyboard, layered, tap_hold};
 
 type Ctx = composite::Context;
-type Key = composite::Key;
+type Key = composite::TapHoldKey<composite::BaseKey>;
 
 let json = r#"
   { "hold": { "key_code": 224 }, "tap": { "key_code": 4 } }
 "#;
-let expected_key: Key = composite::Key::tap_hold(tap_hold::Key {
+let expected_key: Key = Key::tap_hold(tap_hold::Key {
     tap: keyboard::Key::new(4).into(),
     hold: keyboard::Key::new(224).into(),
   });
@@ -51,12 +51,12 @@ use smart_keymap::key;
 use key::{composite, layered};
 
 type Ctx = composite::Context;
-type Key = composite::Key;
+type Key = composite::BaseKey;
 
 let json = r#"
   { "Hold": 2 }
 "#;
-let expected_key: Key = composite::Key::layer_modifier(layered::ModifierKey::Hold(2));
+let expected_key: Key = Key::layer_modifier(layered::ModifierKey::Hold(2));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(actual_key, expected_key);
 ```
@@ -71,7 +71,7 @@ use smart_keymap::key;
 use key::{composite, keyboard, layered};
 
 type Ctx = composite::Context;
-type Key = composite::Key;
+type Key = composite::LayeredKey<composite::TapHoldKey<composite::BaseKey>>;
 
 let json = r#"
   {
@@ -79,7 +79,7 @@ let json = r#"
     "layered": [{ "key_code": 5 }, null, { "key_code": 7 }]
   }
 "#;
-let expected_key: Key = composite::Key::layered(layered::LayeredKey::new(
+let expected_key: Key = Key::layered(layered::LayeredKey::new(
     keyboard::Key::new(0x04).into(),
     [Some(keyboard::Key::new(0x05).into()), None, Some(keyboard::Key::new(0x07).into())],
   ));
