@@ -494,16 +494,18 @@ impl<T: Copy> Event<T> {
     }
 
     /// Maps the Event into a new type.
-    pub fn try_into_key_event<U>(&self, f: fn(T) -> EventResult<U>) -> EventResult<Event<U>> {
+    pub fn try_into_key_event<U, E>(&self, f: fn(T) -> Result<U, E>) -> EventResult<Event<U>> {
         match self {
             Event::Input(event) => Ok(Event::Input(*event)),
             Event::Key {
                 key_event,
                 keymap_index,
-            } => f(*key_event).map(|key_event| Event::Key {
-                key_event,
-                keymap_index: *keymap_index,
-            }),
+            } => f(*key_event)
+                .map(|key_event| Event::Key {
+                    key_event,
+                    keymap_index: *keymap_index,
+                })
+                .map_err(|_| EventError::UnmappableEvent),
         }
     }
 }
