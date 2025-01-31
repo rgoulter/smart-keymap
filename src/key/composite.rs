@@ -615,6 +615,9 @@ impl<PKS: Into<PressedTapHoldKeyState<BaseKey>>> From<PKS>
     }
 }
 
+/// Convenience type alias for the 'highest' composite key.
+pub type PressedKey = PressedBaseKey;
+
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
