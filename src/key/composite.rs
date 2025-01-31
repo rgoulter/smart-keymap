@@ -622,19 +622,6 @@ impl From<tap_hold::Event> for Event {
     }
 }
 
-impl<ME: Copy, IE: Copy> From<key::ModifierKeyEvent<ME, IE>> for Event
-where
-    Event: From<ME>,
-    Event: From<IE>,
-{
-    fn from(ev: key::ModifierKeyEvent<ME, IE>) -> Self {
-        match ev {
-            key::ModifierKeyEvent::Modifier(key_event) => key_event.into(),
-            key::ModifierKeyEvent::Inner(key_event) => key_event.into(),
-        }
-    }
-}
-
 impl TryFrom<Event> for layered::LayerEvent {
     type Error = key::EventError;
 
@@ -661,28 +648,6 @@ impl TryFrom<Event> for tap_hold::Event {
         match ev {
             Event::TapHold(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl<ME: Copy, IE: Copy> TryFrom<Event> for key::ModifierKeyEvent<ME, IE>
-where
-    ME: TryFrom<Event>,
-    IE: TryFrom<Event>,
-{
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        let res: Result<ME, _> = ev.try_into();
-        if let Ok(key_event) = res {
-            Ok(key::ModifierKeyEvent::Modifier(key_event))
-        } else {
-            let res: Result<IE, _> = ev.try_into();
-            if let Ok(key_event) = res {
-                Ok(key::ModifierKeyEvent::Inner(key_event))
-            } else {
-                Err(key::EventError::UnmappableEvent)
-            }
         }
     }
 }
