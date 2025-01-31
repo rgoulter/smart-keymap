@@ -235,7 +235,7 @@ pub struct Keymap<I> {
 
 impl<
         K: key::dynamic::Key<key::composite::Event, Context = key::composite::Context> + ?Sized,
-        I: IndexMut<usize, Output = K> + crate::tuples::KeysReset,
+        I: IndexMut<usize, Output = K>,
     > Keymap<I>
 {
     /// Constructs a new keymap with the given key definitions and context.
@@ -253,7 +253,6 @@ impl<
     pub fn init(&mut self) {
         self.pressed_inputs.clear();
         self.event_scheduler.init();
-        self.key_definitions.reset();
         self.hid_reporter.init();
     }
 
