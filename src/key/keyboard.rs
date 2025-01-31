@@ -2,7 +2,7 @@
 
 use serde::Deserialize;
 
-use crate::{input, key};
+use crate::key;
 
 /// A key for HID Keyboard usage codes.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -43,64 +43,20 @@ impl Key {
     pub fn key_code(&self) -> u8 {
         self.key_code
     }
-}
 
-impl key::Key for Key {
-    type Context = ();
-    type ContextEvent = ();
-    type Event = Event;
-    type PressedKeyState = PressedKeyState;
-
-    fn new_pressed_key(
-        &self,
-        _context: Self::Context,
-        keymap_index: u16,
-    ) -> (
-        input::PressedKey<Self, Self::PressedKeyState>,
-        key::PressedKeyEvents<Self::Event>,
-    ) {
-        (
-            input::PressedKey {
-                keymap_index,
-                key: *self,
-                pressed_key_state: PressedKeyState,
-            },
-            key::PressedKeyEvents::no_events(),
-        )
+    /// Constructs a pressed key state
+    pub fn new_pressed_key(&self) -> PressedKeyState {
+        PressedKeyState
     }
 }
-
-/// Unit-like struct for event. (crate::key::keyboard doesn't use events).
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub struct Event();
 
 /// Unit-like struct for [crate::key::PressedKeyState]. (crate::key::keyboard pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKeyState;
 
-/// Convenience type alias for [input::PressedKey] with [Key] and [PressedKeyState].
-pub type PressedKey = input::PressedKey<Key, PressedKeyState>;
-
-impl From<Event> for () {
-    fn from(_: Event) -> Self {}
-}
-
-impl key::PressedKeyState<Key> for PressedKeyState {
-    type Event = Event;
-
-    /// Keyboard key never emits events.
-    fn handle_event_for(
-        &mut self,
-        _context: (),
-        _keymap_index: u16,
-        _key: &Key,
-        _event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
-        key::PressedKeyEvents::no_events()
-    }
-
+impl PressedKeyState {
     /// Keyboard key always has a key_output.
-    fn key_output(&self, key: &Key) -> key::KeyOutputState {
+    pub fn key_output(&self, key: &Key) -> key::KeyOutputState {
         let key_output = key::KeyOutput::from_key_code_with_modifiers(key.key_code, key.modifiers);
         key::KeyOutputState::resolved(key_output)
     }

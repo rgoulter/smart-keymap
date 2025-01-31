@@ -3,38 +3,39 @@ use core::ops::{Index, IndexMut};
 
 use crate::key;
 
-use key::dynamic;
-
 /// A tuple struct for 1 key.
 #[derive(Debug)]
 pub struct Keys1<
-    K0: key::Key,
-    Ctx: key::Context<Event = Ev> + Debug,
-    Ev: Copy + Debug,
+    K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK>,
+    Ctx,
+    Ev,
+    PK,
     const M: usize = 2,
->(dynamic::DynamicKey<K0, Ctx, Ev>);
+>(K0);
 
-impl<K0: key::Key, Ctx: key::Context<Event = Ev> + Debug, Ev: Copy + Debug, const M: usize>
-    Keys1<K0, Ctx, Ev, M>
+impl<
+        K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + Copy,
+        Ctx,
+        Ev,
+        PK,
+        const M: usize,
+    > Keys1<K0, Ctx, Ev, PK, M>
 {
     /// Constructs a KeysN for the given tuple.
     pub const fn new((k0,): (K0,)) -> Self {
-        Keys1(dynamic::DynamicKey::new(k0))
+        Keys1(k0)
     }
 }
 
 impl<
-        K0: key::Key + 'static,
-        Ctx: key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + 'static,
+        K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
+        Ctx,
+        Ev,
+        PK,
         const M: usize,
-    > Index<usize> for Keys1<K0, Ctx, Ev, M>
-where
-    <K0 as key::Key>::Event: TryFrom<Ev>,
-    Ev: From<<K0 as key::Key>::Event>,
-    <K0 as key::Key>::Context: From<Ctx>,
+    > Index<usize> for Keys1<K0, Ctx, Ev, PK, M>
 {
-    type Output = dyn dynamic::Key<Ev, M, Context = Ctx>;
+    type Output = dyn key::Key<Context = Ctx, Event = Ev, PressedKey = PK>;
 
     fn index(&self, idx: usize) -> &Self::Output {
         match idx {
@@ -45,15 +46,12 @@ where
 }
 
 impl<
-        K0: crate::key::Key + 'static,
-        Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + 'static,
+        K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
+        Ctx,
+        Ev,
+        PK,
         const M: usize,
-    > IndexMut<usize> for Keys1<K0, Ctx, Ev, M>
-where
-    <K0 as crate::key::Key>::Event: TryFrom<Ev>,
-    Ev: From<<K0 as crate::key::Key>::Event>,
-    <K0 as crate::key::Key>::Context: From<Ctx>,
+    > IndexMut<usize> for Keys1<K0, Ctx, Ev, PK, M>
 {
     fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
         match idx {
