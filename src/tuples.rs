@@ -5,26 +5,6 @@ use crate::key;
 
 use key::dynamic;
 
-/// A trait for resetting all keys in a tuple struct.
-pub trait KeysReset {
-    /// Reset all keys.
-    fn reset(&mut self);
-}
-
-#[cfg(feature = "std")]
-impl<K: key::Key, Ctx: key::Context<Event = Ev> + Debug + 'static, Ev: Copy + Debug> KeysReset
-    for Vec<dynamic::DynamicKey<K, Ctx, Ev>>
-where
-    K::Event: TryFrom<Ev>,
-    Ev: From<K::Event>,
-    K::Context: From<Ctx>,
-{
-    fn reset(&mut self) {
-        self.iter_mut()
-            .for_each(|k| <dynamic::DynamicKey<K, Ctx, Ev> as dynamic::Key<Ev>>::reset(k));
-    }
-}
-
 /// A tuple struct for 1 key.
 #[derive(Debug)]
 pub struct Keys1<
@@ -80,22 +60,6 @@ where
             0 => &mut self.0,
             _ => panic!("Index out of bounds"),
         }
-    }
-}
-
-impl<
-        K0: crate::key::Key + 'static,
-        Ctx: crate::key::Context<Event = Ev> + Debug + 'static,
-        Ev: Copy + Debug + 'static,
-        const M: usize,
-    > KeysReset for Keys1<K0, Ctx, Ev, M>
-where
-    <K0 as crate::key::Key>::Event: TryFrom<Ev>,
-    Ev: From<<K0 as crate::key::Key>::Event>,
-    <K0 as crate::key::Key>::Context: From<Ctx>,
-{
-    fn reset(&mut self) {
-        <dynamic::DynamicKey<K0, Ctx, Ev> as dynamic::Key<Ev, M>>::reset(&mut self.0)
     }
 }
 
@@ -201,31 +165,6 @@ macro_rules! define_keys {
                             )*
                             _ => panic!("Index out of bounds"),
                         }
-                    }
-                }
-
-                impl<
-                    #(
-                        K~I: crate::key::Key + 'static,
-                    )*
-                Ctx: crate::key::Context<Event = Ev> + core::fmt::Debug + 'static,
-                Ev: Copy + core::fmt::Debug + 'static,
-                const M: usize,
-                > crate::tuples::KeysReset for [<Keys $n>]<
-                    #(K~I,)*
-                Ctx, Ev, M
-                    >
-                where
-                    #(
-                    <K~I as crate::key::Key>::Event: TryFrom<Ev>,
-                    Ev: From<<K~I as crate::key::Key>::Event>,
-                    <K~I as crate::key::Key>::Context: From<Ctx>,
-                )*
-                {
-                    fn reset(&mut self) {
-                        #(
-                        <crate::key::dynamic::DynamicKey<K~I, Ctx, Ev> as crate::key::dynamic::Key<Ev, M>>::reset(&mut self.I);
-                        )*
                     }
                 }
             });
