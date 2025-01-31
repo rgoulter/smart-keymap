@@ -74,6 +74,9 @@ pub mod init {
     /// Alias for Event type; i.e. [composite::Event].
     pub type Event = composite::Event;
 
+    /// Alias for PressedKey type; i.e. [composite::PressedKey].
+    pub type PressedKey = composite::PressedKey;
+
     /// Alias for keys.
     pub type Key = keyboard::Key;
 
@@ -81,7 +84,7 @@ pub mod init {
     pub const CONTEXT: Context = composite::Context::from_config(CONFIG);
 
     /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
-    pub type KeyDefinitionsType = Keys1<Key, Context, Event>;
+    pub type KeyDefinitionsType = Keys1<Key, Context, Event, PressedKey>;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((keyboard::Key::new(0x04),));
