@@ -258,7 +258,7 @@ impl TapHoldKey<BaseKey> {
     }
 }
 
-impl Key {
+impl LayeredKey<TapHoldKey<BaseKey>> {
     /// Constructs a [Key] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
         Self::Pass(TapHoldKey::keyboard(key))
