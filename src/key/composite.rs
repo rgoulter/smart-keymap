@@ -352,19 +352,6 @@ impl From<Context> for tap_hold::Context {
     }
 }
 
-impl<MC, IC> From<Context> for key::ModifierKeyContext<MC, IC>
-where
-    MC: Copy + From<Context>,
-    IC: Copy + From<Context>,
-{
-    fn from(ctx: Context) -> Self {
-        key::ModifierKeyContext {
-            context: ctx.into(),
-            inner_context: ctx.into(),
-        }
-    }
-}
-
 /// Aggregates the [key::PressedKeyState] types.
 #[derive(Debug)]
 pub enum PressedBaseKeyState {
