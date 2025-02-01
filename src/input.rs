@@ -42,10 +42,10 @@ pub struct PressedKey<K, S> {
 
 impl<K, S> PressedKey<K, S> {
     /// Transforms the PressedKey to a new type.
-    pub fn into_pressed_key<IK: key::Key>(self) -> PressedKey<IK, <IK as key::Key>::PressedKeyState>
+    pub fn into_pressed_key<IK, IS>(self) -> PressedKey<IK, IS>
     where
         K: Into<IK>,
-        S: Into<<IK as key::Key>::PressedKeyState>,
+        S: Into<IS>,
     {
         PressedKey {
             keymap_index: self.keymap_index,
