@@ -55,8 +55,10 @@ impl<K, S> PressedKey<K, S> {
     }
 }
 
-impl<K: crate::key::Key, S: crate::key::PressedKeyState<K, Event = K::Event>> crate::key::PressedKey
-    for PressedKey<K, S>
+impl<
+        K: crate::key::Key,
+        S: crate::key::PressedKeyState<K, Context = K::Context, Event = K::Event>,
+    > crate::key::PressedKey for PressedKey<K, S>
 {
     type Context = K::Context;
     type Event = K::Event;
