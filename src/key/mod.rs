@@ -30,12 +30,8 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     }
 
     /// Constructs a [PressedKeyEvents] with an [Event] scheduled after a delay.
-    pub fn scheduled_event(delay: u16, event: Event<E>) -> Self {
-        PressedKeyEvents(
-            Some(ScheduledEvent::after(delay, event))
-                .into_iter()
-                .collect(),
-        )
+    pub fn scheduled_event(sch_event: ScheduledEvent<E>) -> Self {
+        PressedKeyEvents(Some(sch_event).into_iter().collect())
     }
 
     /// Adds an event with the schedule to the [PressedKeyEvents].
