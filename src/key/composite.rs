@@ -45,6 +45,16 @@ pub enum TapHoldKey<K: TapHoldNestable> {
     Pass(K),
 }
 
+impl<K: TapHoldNestable> TapHoldKey<K> {
+    /// Maps K to BaseKey.
+    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
+        match self {
+            TapHoldKey::TapHold(key) => TapHoldKey::TapHold(key.map_key(|k| k.into())),
+            TapHoldKey::Pass(key) => TapHoldKey::Pass(key.into()),
+        }
+    }
+}
+
 /// Trait for types which can be nested in [LayeredKey] variants.
 pub trait LayeredNestable: key::Key {}
 
