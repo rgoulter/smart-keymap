@@ -26,7 +26,7 @@ pub enum BaseKey {
 
 /// Trait for types which can be nested in [TapHoldKey] variants.
 pub trait TapHoldNestable:
-    key::Key<Context = Context, Event = Event, PressedKey = PressedBaseKey> + Copy + Into<BaseKey>
+    key::Key<Context = Context, Event = Event, PressedKey = BasePressedKey> + Copy + Into<BaseKey>
 {
 }
 
@@ -75,7 +75,7 @@ pub enum LayeredKey<K: LayeredNestable> {
 impl key::Key for layered::ModifierKey {
     type Context = Context;
     type Event = Event;
-    type PressedKey = PressedBaseKey;
+    type PressedKey = BasePressedKey;
 
     fn new_pressed_key(
         &self,
@@ -83,7 +83,7 @@ impl key::Key for layered::ModifierKey {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let (pks, lmod_ev) = self.new_pressed_key();
-        let pk = PressedBaseKey {
+        let pk = BasePressedKey {
             key: (*self).into(),
             keymap_index,
             pressed_key_state: pks.into(),
@@ -101,7 +101,7 @@ impl key::Key for layered::ModifierKey {
 impl key::Key for keyboard::Key {
     type Context = Context;
     type Event = Event;
-    type PressedKey = PressedBaseKey;
+    type PressedKey = BasePressedKey;
 
     fn new_pressed_key(
         &self,
@@ -109,7 +109,7 @@ impl key::Key for keyboard::Key {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let pks = self.new_pressed_key();
-        let pk = PressedBaseKey {
+        let pk = BasePressedKey {
             key: (*self).into(),
             keymap_index,
             pressed_key_state: pks.into(),
@@ -122,7 +122,7 @@ impl key::Key for keyboard::Key {
 impl key::Key for BaseKey {
     type Context = Context;
     type Event = Event;
-    type PressedKey = PressedBaseKey;
+    type PressedKey = BasePressedKey;
 
     fn new_pressed_key(
         &self,
@@ -420,7 +420,7 @@ pub enum BasePressedKeyState {
 }
 
 /// Convenience type alias for a [key::PressedKey] with a base key.
-pub type PressedBaseKey = input::PressedKey<BaseKey, BasePressedKeyState>;
+pub type BasePressedKey = input::PressedKey<BaseKey, BasePressedKeyState>;
 
 impl key::PressedKey for input::PressedKey<BaseKey, BasePressedKeyState> {
     type Context = Context;
@@ -672,7 +672,7 @@ impl<PKS: Into<PressedTapHoldKeyState<BaseKey>>> From<PKS>
 }
 
 /// Convenience type alias for the 'highest' composite key.
-pub type PressedKey = PressedBaseKey;
+pub type PressedKey = BasePressedKey;
 
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
