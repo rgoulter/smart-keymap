@@ -145,6 +145,31 @@ impl<K: key::Key> PressedKeyState<K> {
         }
     }
 
+    /// Maps the Key of the PressedKeyState into a new type.
+    pub fn map_pressed_key<T: key::Key>(
+        self,
+        f: fn(K::PressedKey) -> T::PressedKey,
+    ) -> PressedKeyState<T> {
+        let PressedKeyState {
+            state,
+            pressed_key,
+            other_pressed_keymap_index,
+        } = self;
+        PressedKeyState {
+            state,
+            pressed_key: pressed_key.map(f),
+            other_pressed_keymap_index,
+        }
+    }
+
+    /// Maps the Key of the PressedKeyState into a new type.
+    pub fn into_pressed_key<T: key::Key>(self) -> PressedKeyState<T>
+    where
+        T::PressedKey: From<K::PressedKey>,
+    {
+        self.map_pressed_key(|pk| pk.into())
+    }
+
     /// Resolves the state of the key, unless it has already been resolved.
     fn resolve(&mut self, state: TapHoldState) {
         if let TapHoldState::Pending = self.state {
