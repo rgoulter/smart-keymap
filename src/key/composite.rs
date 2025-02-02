@@ -151,7 +151,7 @@ impl From<layered::ModifierKey> for BaseKey {
 impl<K: TapHoldNestable> key::Key for tap_hold::Key<K> {
     type Context = Context;
     type Event = Event;
-    type PressedKey = PressedTapHoldKey<K>;
+    type PressedKey = TapHoldPressedKey<K>;
 
     fn new_pressed_key(
         &self,
@@ -159,7 +159,7 @@ impl<K: TapHoldNestable> key::Key for tap_hold::Key<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let (pks, sch_ev) = self.new_pressed_key(context.into(), keymap_index);
-        let pk = PressedTapHoldKey {
+        let pk = TapHoldPressedKey {
             key: (*self).into(),
             keymap_index,
             pressed_key_state: pks.into(),
@@ -176,7 +176,7 @@ where
 {
     type Context = Context;
     type Event = Event;
-    type PressedKey = PressedTapHoldKey<K>;
+    type PressedKey = TapHoldPressedKey<K>;
 
     fn new_pressed_key(
         &self,
@@ -497,9 +497,9 @@ pub enum TapHoldPressedKeyState<K: TapHoldNestable> {
 }
 
 /// Convenience type alias for a [key::PressedKey] with a taphold key.
-pub type PressedTapHoldKey<K> = input::PressedKey<TapHoldKey<K>, TapHoldPressedKeyState<K>>;
+pub type TapHoldPressedKey<K> = input::PressedKey<TapHoldKey<K>, TapHoldPressedKeyState<K>>;
 
-impl<K: TapHoldNestable> key::PressedKey for PressedTapHoldKey<K> {
+impl<K: TapHoldNestable> key::PressedKey for TapHoldPressedKey<K> {
     type Context = Context;
     type Event = Event;
 
