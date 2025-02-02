@@ -41,6 +41,15 @@ pub struct PressedKey<K, S> {
 }
 
 impl<K, S> PressedKey<K, S> {
+    /// Maps the key and pressed key state of the PressedKey to a new type.
+    pub fn map_pressed_key<IK, IS>(self, f_k: fn(K) -> IK, f_s: fn(S) -> IS) -> PressedKey<IK, IS> {
+        PressedKey {
+            keymap_index: self.keymap_index,
+            key: f_k(self.key),
+            pressed_key_state: f_s(self.pressed_key_state),
+        }
+    }
+
     /// Transforms the PressedKey to a new type.
     pub fn into_pressed_key<IK, IS>(self) -> PressedKey<IK, IS>
     where
