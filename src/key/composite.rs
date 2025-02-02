@@ -13,6 +13,8 @@ use key::keyboard;
 use key::layered;
 use key::tap_hold;
 
+use key::PressedKeyState as _;
+
 /// An aggregate of [key::Key] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
@@ -432,36 +434,22 @@ pub enum BasePressedKeyState {
 /// Convenience type alias for a [key::PressedKey] with a base key.
 pub type BasePressedKey = input::PressedKey<BaseKey, BasePressedKeyState>;
 
-impl key::PressedKey for input::PressedKey<BaseKey, BasePressedKeyState> {
+impl<K: Copy + Into<BaseKey>> key::PressedKeyState<K> for BasePressedKeyState {
     type Context = Context;
     type Event = Event;
 
-    fn handle_event(
-        &mut self,
-        context: Self::Context,
-        event: crate::key::Event<Self::Event>,
-    ) -> crate::key::PressedKeyEvents<Self::Event> {
-        self.pressed_key_state
-            .handle_event_for(context, self.keymap_index, &self.key, event)
-    }
-
-    fn key_output(&self) -> key::KeyOutputState {
-        self.pressed_key_state.key_output(&self.key)
-    }
-}
-
-impl BasePressedKeyState {
     fn handle_event_for(
         &mut self,
-        context: Context,
+        _context: Context,
         keymap_index: u16,
-        key: &BaseKey,
+        key: &K,
         event: key::Event<Event>,
     ) -> key::PressedKeyEvents<Event> {
-        match (key, self) {
+        let bk: BaseKey = (*key).into();
+        match (bk, self) {
             (BaseKey::LayerModifier(key), BasePressedKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let events = pks.handle_event_for(keymap_index, key, ev);
+                    let events = pks.handle_event_for(keymap_index, &key, ev);
                     match events {
                         Some(ev) => key::PressedKeyEvents::event(key::Event::key_event(
                             keymap_index,
@@ -477,9 +465,10 @@ impl BasePressedKeyState {
         }
     }
 
-    fn key_output(&self, key: &BaseKey) -> key::KeyOutputState {
-        match (key, self) {
-            (BaseKey::Keyboard(key), BasePressedKeyState::Keyboard(pks)) => pks.key_output(key),
+    fn key_output(&self, key: &K) -> key::KeyOutputState {
+        let bk: BaseKey = (*key).into();
+        match (bk, self) {
+            (BaseKey::Keyboard(key), BasePressedKeyState::Keyboard(pks)) => pks.key_output(&key),
             _ => key::KeyOutputState::no_output(),
         }
     }
