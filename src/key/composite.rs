@@ -179,10 +179,7 @@ impl<K: TapHoldNestable> key::Key for tap_hold::Key<K> {
     }
 }
 
-impl<K: TapHoldNestable> key::Key for TapHoldKey<K>
-where
-    TapHoldKey<K>: Into<TapHoldKey<BaseKey>>,
-{
+impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
     type Context = Context;
     type Event = Event;
     type PressedKey = TapHoldPressedKey<BaseKey>;
