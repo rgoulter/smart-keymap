@@ -28,7 +28,10 @@ pub enum BaseKey {
 
 /// Trait for types which can be nested in [TapHoldKey] variants.
 pub trait TapHoldNestable:
-    key::Key<Context = Context, Event = Event, PressedKey = BasePressedKey> + Copy + Into<BaseKey>
+    key::Key<Context = Context, Event = Event, PressedKey = BasePressedKey>
+    + Copy
+    + PartialEq
+    + Into<BaseKey>
 {
 }
 
@@ -58,7 +61,7 @@ impl<K: TapHoldNestable> TapHoldKey<K> {
 }
 
 /// Newtype for [TapHoldNestable] keys so they can implement [key::Key] for [TapHoldPressedKey].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TapHold<K: TapHoldNestable>(K);
 
 impl<K: TapHoldNestable> TapHold<K> {
@@ -71,7 +74,9 @@ impl<K: TapHoldNestable> TapHold<K> {
 
 /// Trait for types which can be nested in [LayeredKey] variants.
 pub trait LayeredNestable:
-    key::Key<Context = Context, Event = Event, PressedKey = TapHoldPressedKey<BaseKey>> + Copy
+    key::Key<Context = Context, Event = Event, PressedKey = TapHoldPressedKey<BaseKey>>
+    + Copy
+    + PartialEq
 {
     /// Construct a 'full representation' of the nestable key.
     fn as_fat_key(self) -> TapHoldKey<BaseKey>;
@@ -99,7 +104,7 @@ impl<K: TapHoldNestable> LayeredNestable for TapHoldKey<K> {
 }
 
 /// An aggregate of [key::Key] types.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(untagged))]
 pub enum LayeredKey<K: LayeredNestable> {
