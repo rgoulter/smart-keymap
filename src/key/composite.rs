@@ -57,6 +57,10 @@ impl<K: TapHoldNestable> TapHoldKey<K> {
     }
 }
 
+/// Newtype for [TapHoldNestable] keys so they can implement [key::Key] for [TapHoldPressedKey].
+#[derive(Debug, Clone, Copy)]
+pub struct TapHold<K: TapHoldNestable>(K);
+
 /// Trait for types which can be nested in [LayeredKey] variants.
 pub trait LayeredNestable:
     key::Key<Context = Context, Event = Event, PressedKey = TapHoldPressedKey<BaseKey>> + Copy
@@ -204,6 +208,22 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
                 (pressed_key.into_pressed_key(), events.into_events())
             }
         }
+    }
+}
+
+impl<K: TapHoldNestable> key::Key for TapHold<K> {
+    type Context = Context;
+    type Event = Event;
+    type PressedKey = TapHoldPressedKey<BaseKey>;
+
+    fn new_pressed_key(
+        &self,
+        context: Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
+        let TapHold(key) = self;
+        let (pressed_key, events) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
+        (pressed_key.into_pressed_key(), events)
     }
 }
 
