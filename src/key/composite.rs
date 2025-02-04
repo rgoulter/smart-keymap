@@ -459,7 +459,7 @@ impl From<Context> for tap_hold::Context {
 }
 
 /// Aggregates the [key::PressedKeyState] types.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum BasePressedKeyState {
     /// A keyboard key's pressed state.
     Keyboard(keyboard::PressedKeyState),
@@ -523,7 +523,7 @@ impl From<layered::PressedModifierKeyState> for BasePressedKeyState {
 }
 
 /// Aggregates the [key::PressedKeyState] types.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum TapHoldPressedKeyState<K: TapHoldNestable> {
     /// A tap-hold key's pressed state.
     TapHold(tap_hold::PressedKeyState<K>),
@@ -612,7 +612,7 @@ impl<PKS: Into<BasePressedKeyState>> From<PKS> for TapHoldPressedKeyState<BaseKe
 }
 
 /// Aggregates the [key::PressedKeyState] types.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct LayeredPressedKeyState<K: LayeredNestable>(K::PressedKey);
 
 /// Convenience type alias for a [key::PressedKey] with a layered key.
