@@ -190,8 +190,8 @@ pub const fn layered_keys<K: Copy, const L: usize>(
 }
 
 /// A key whose behavior depends on which layer is active.
-#[derive(Debug, Deserialize, Clone, Copy)]
-pub struct LayeredKey<K: key::Key + Copy> {
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
+pub struct LayeredKey<K: key::Key + Copy + PartialEq> {
     /// The base key, used when no layers are active.
     pub base: K,
     /// The layered keys, used when the corresponding layer is active.
@@ -211,7 +211,7 @@ where
     L::from_iterable(keys_vec).map_err(serde::de::Error::custom)
 }
 
-impl<K: key::Key + Copy> LayeredKey<K> {
+impl<K: key::Key + Copy + PartialEq> LayeredKey<K> {
     /// Constructs a new [LayeredKey].
     pub const fn new<const L: usize>(base: K, layered: [Option<K>; L]) -> Self {
         let layered = layered_keys(layered);
@@ -219,7 +219,7 @@ impl<K: key::Key + Copy> LayeredKey<K> {
     }
 }
 
-impl<K: key::Key + Copy> LayeredKey<K>
+impl<K: key::Key + Copy + PartialEq> LayeredKey<K>
 where
     K::Context: Into<Context>,
 {
