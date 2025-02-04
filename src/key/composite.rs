@@ -642,7 +642,7 @@ impl<K: Copy + Into<LayeredKey<NK>>, NK: LayeredNestable> key::PressedKeyState<K
 }
 
 /// Convenience type alias for the 'highest' composite key.
-pub type PressedKey = BasePressedKey;
+pub type PressedKey = LayeredPressedKey<TapHoldKey<BaseKey>>;
 
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
