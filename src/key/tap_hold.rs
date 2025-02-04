@@ -123,7 +123,7 @@ impl Context {
 }
 
 /// The state of a tap-hold key.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TapHoldState {
     /// Not yet resolved as tap or hold.
     Pending,
@@ -141,7 +141,7 @@ pub enum Event {
 }
 
 /// The state of a pressed tap-hold key.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct PressedKeyState<K: key::Key> {
     state: TapHoldState,
     pressed_key: Option<K::PressedKey>,
