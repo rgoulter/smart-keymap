@@ -279,15 +279,18 @@ impl PressedModifierKeyState {
 mod tests {
     use super::*;
 
-    use key::{keyboard, Context as _, Key, KeyOutput, PressedKey as _};
+    use key::keyboard;
+
+    use key::KeyOutput;
+
+    use key::composite::BasePressedKeyState;
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
         let layer = 0;
         let key = ModifierKey::Hold(layer);
 
-        let keymap_index = 9; // arbitrary
-        let (_pressed_key, layer_event) = key.new_pressed_key(keymap_index);
+        let (_pressed_key, layer_event) = key.new_pressed_key();
 
         assert_eq!(layer_event, LayerEvent::LayerActivated(layer));
     }
@@ -298,24 +301,21 @@ mod tests {
         let layer = 0;
         let key = ModifierKey::Hold(layer);
         let keymap_index = 9; // arbitrary
-        let (mut pressed_key, _) = key.new_pressed_key(keymap_index);
+        let (mut pressed_key_state, _) = key.new_pressed_key();
 
         // Act: the modifier key handles "release key" input event
-        let actual_events = pressed_key
-            .handle_event(
-                (),
+        let actual_events = pressed_key_state
+            .handle_event_for(
+                keymap_index,
+                &key,
                 key::Event::Input(input::Event::Release { keymap_index }),
             )
             .into_iter()
             .next();
 
         // Assert: the pressed key should have emitted a layer deactivation event
-        let first_ev = actual_events.into_iter().next().map(|sch_ev| sch_ev.event);
-        if let Some(key::Event::Key {
-            key_event: actual_layer_event,
-            ..
-        }) = first_ev
-        {
+        let first_ev = actual_events.into_iter().next();
+        if let Some(actual_layer_event) = first_ev {
             let expected_layer_event = LayerEvent::LayerDeactivated(layer);
             assert_eq!(actual_layer_event, expected_layer_event);
         } else {
@@ -329,15 +329,15 @@ mod tests {
         let layer = 0;
         let key = ModifierKey::Hold(layer);
         let keymap_index = 9; // arbitrary
-        let (mut pressed_key, _) = key.new_pressed_key(keymap_index);
+        let (mut pressed_key_state, _) = key.new_pressed_key();
 
         // Act: the modifier key handles "release key" input event for a different key
         let different_keymap_index = keymap_index + 1;
         let different_key_released_ev = key::Event::Input(input::Event::Release {
             keymap_index: different_keymap_index,
         });
-        let actual_events = pressed_key
-            .handle_event((), different_key_released_ev)
+        let actual_events = pressed_key_state
+            .handle_event_for(keymap_index, &key, different_key_released_ev)
             .into_iter()
             .next();
 
@@ -349,6 +349,8 @@ mod tests {
 
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
+        use key::Context as _;
+
         let mut context: Context = Context::default();
 
         context.handle_event(LayerEvent::LayerActivated(1));
@@ -360,10 +362,7 @@ mod tests {
     #[test]
     fn test_pressing_layered_key_acts_as_base_key_when_no_layers_active() {
         // Assemble
-        let context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
-            context: Context::default(),
-            inner_context: (),
-        };
+        let context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x04);
         let layered_key = LayeredKey::new(
             expected_key,
@@ -376,24 +375,24 @@ mod tests {
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
+        let (actual_pressed_key, _actual_event) =
+            layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
+        let expected_pressed_key_state = expected_key.new_pressed_key();
+
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthrough_pk,
-            expected_pressed_key
+            actual_pressed_key.pressed_key_state,
+            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
-        assert_eq!(actual_event, expected_event);
     }
 
     #[test]
     fn test_pressing_layered_key_when_no_layers_active_has_key_code() {
+        use key::PressedKey as _;
+
         // Assemble
-        let context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
-            context: Context::default(),
-            inner_context: (),
-        };
+        let context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x04);
         let layered_key = LayeredKey::new(
             expected_key,
@@ -411,8 +410,8 @@ mod tests {
         let actual_key_output = actual_pressed_key.key_output();
 
         // Assert
-        let (expected_pressed_key, _event) = expected_key.new_pressed_key((), keymap_index);
-        let expected_key_output = expected_pressed_key.key_output();
+        let expected_pressed_key_state = expected_key.new_pressed_key();
+        let expected_key_output = expected_pressed_key_state.key_output(&expected_key);
         assert_eq!(actual_key_output, expected_key_output);
         assert_eq!(
             actual_key_output.to_option(),
@@ -426,37 +425,35 @@ mod tests {
 
     #[test]
     fn test_pressing_layered_key_falls_through_undefined_active_layers() {
+        use key::Context as _;
+
         // Assemble: layered key (with no layered definitions)
-        let mut context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
-            context: Context::default(),
-            inner_context: (),
-        };
+        let mut context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x04);
         let layered_key = LayeredKey::new(expected_key, [None, None, None]);
 
         // Act: activate all layers, press layered key
-        context.context.handle_event(LayerEvent::LayerActivated(0));
-        context.context.handle_event(LayerEvent::LayerActivated(1));
-        context.context.handle_event(LayerEvent::LayerActivated(2));
+        context.handle_event(LayerEvent::LayerActivated(0).into());
+        context.handle_event(LayerEvent::LayerActivated(1).into());
+        context.handle_event(LayerEvent::LayerActivated(2).into());
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
+        let (actual_pressed_key, _actual_event) =
+            layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
+        let expected_pressed_key_state = expected_key.new_pressed_key();
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthrough_pk,
-            expected_pressed_key
+            actual_pressed_key.pressed_key_state,
+            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
-        assert_eq!(actual_event, expected_event);
     }
 
     #[test]
     fn test_pressing_layered_key_acts_as_highest_defined_active_layer() {
+        use key::Context as _;
+
         // Assemble: layered key (with no layered definitions)
-        let mut context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
-            context: Context::default(),
-            inner_context: (),
-        };
+        let mut context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x09);
         let layered_key = LayeredKey::new(
             keyboard::Key::new(0x04),
@@ -468,28 +465,27 @@ mod tests {
         );
 
         // Act: activate all layers, press layered key
-        context.context.handle_event(LayerEvent::LayerActivated(0));
-        context.context.handle_event(LayerEvent::LayerActivated(1));
-        context.context.handle_event(LayerEvent::LayerActivated(2));
+        context.handle_event(LayerEvent::LayerActivated(0).into());
+        context.handle_event(LayerEvent::LayerActivated(1).into());
+        context.handle_event(LayerEvent::LayerActivated(2).into());
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
+        let (actual_pressed_key, _actual_event) =
+            layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
+        let expected_pressed_key_state = expected_key.new_pressed_key();
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthrough_pk,
-            expected_pressed_key
+            actual_pressed_key.pressed_key_state,
+            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
-        assert_eq!(actual_event, expected_event);
     }
 
     #[test]
     fn test_pressing_layered_key_with_some_transparency_acts_as_highest_defined_active_layer() {
+        use key::Context as _;
+
         // Assemble: layered key (with no layered definitions)
-        let mut context: key::ModifierKeyContext<Context, ()> = key::ModifierKeyContext {
-            context: Context::default(),
-            inner_context: (),
-        };
+        let mut context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x09);
         let layered_key = LayeredKey::new(
             keyboard::Key::new(0x04),
@@ -497,18 +493,18 @@ mod tests {
         );
 
         // Act: activate all layers, press layered key
-        context.context.handle_event(LayerEvent::LayerActivated(0));
-        context.context.handle_event(LayerEvent::LayerActivated(2));
+        context.handle_event(LayerEvent::LayerActivated(0).into());
+        context.handle_event(LayerEvent::LayerActivated(2).into());
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, actual_event) = layered_key.new_pressed_key(context, keymap_index);
+        let (actual_pressed_key, _actual_event) =
+            layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let (expected_pressed_key, expected_event) = expected_key.new_pressed_key((), keymap_index);
+        let expected_pressed_key_state = expected_key.new_pressed_key();
         assert_eq!(
-            actual_pressed_key.pressed_key_state.passthrough_pk,
-            expected_pressed_key
+            actual_pressed_key.pressed_key_state,
+            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
-        assert_eq!(actual_event, expected_event);
     }
 
     #[test]
