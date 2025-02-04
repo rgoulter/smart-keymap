@@ -89,6 +89,10 @@ pub enum LayeredKey<K: LayeredNestable> {
     Pass(K),
 }
 
+/// Newtype for [LayeredNestable] keys so they can implement [key::Key] for [LayeredPressedKey].
+#[derive(Debug, Clone, Copy)]
+pub struct Layered<K: LayeredNestable>(K);
+
 impl key::Key for layered::ModifierKey {
     type Context = Context;
     type Event = Event;
@@ -269,6 +273,27 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
                 (lpk, events)
             }
         }
+    }
+}
+
+impl<K: LayeredNestable> key::Key for Layered<K> {
+    type Context = Context;
+    type Event = Event;
+    type PressedKey = LayeredPressedKey<TapHoldKey<BaseKey>>;
+
+    fn new_pressed_key(
+        &self,
+        context: Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
+        let Layered(key) = self;
+        let (pk, events) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
+        let lpk = input::PressedKey {
+            key: LayeredKey::Pass(pk.key),
+            keymap_index,
+            pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(pk),
+        };
+        (lpk, events)
     }
 }
 
