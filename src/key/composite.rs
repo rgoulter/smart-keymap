@@ -61,6 +61,14 @@ impl<K: TapHoldNestable> TapHoldKey<K> {
 #[derive(Debug, Clone, Copy)]
 pub struct TapHold<K: TapHoldNestable>(K);
 
+impl<K: TapHoldNestable> TapHold<K> {
+    /// Maps K to BaseKey.
+    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
+        let TapHold(k) = self;
+        TapHoldKey::Pass(k.into())
+    }
+}
+
 /// Trait for types which can be nested in [LayeredKey] variants.
 pub trait LayeredNestable:
     key::Key<Context = Context, Event = Event, PressedKey = TapHoldPressedKey<BaseKey>> + Copy
@@ -69,9 +77,21 @@ pub trait LayeredNestable:
     fn as_fat_key(self) -> TapHoldKey<BaseKey>;
 }
 
-// impl LayeredNestable for layered::ModifierKey {}
-// impl LayeredNestable for keyboard::Key {}
-// impl LayeredNestable for BaseKey {}
+impl LayeredNestable for TapHold<layered::ModifierKey> {
+    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
+        TapHold::as_fat_key(self)
+    }
+}
+impl LayeredNestable for TapHold<keyboard::Key> {
+    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
+        TapHold::as_fat_key(self)
+    }
+}
+impl LayeredNestable for TapHold<BaseKey> {
+    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
+        TapHold::as_fat_key(self)
+    }
+}
 impl<K: TapHoldNestable> LayeredNestable for TapHoldKey<K> {
     fn as_fat_key(self) -> TapHoldKey<BaseKey> {
         TapHoldKey::as_fat_key(self)
