@@ -249,7 +249,7 @@ pub enum LayerEvent {
 }
 
 /// Unit-like struct, for [crate::key::PressedKeyState] of [ModifierKey].
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedModifierKeyState;
 
 impl PressedModifierKeyState {
