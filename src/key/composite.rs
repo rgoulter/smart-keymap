@@ -407,6 +407,20 @@ impl LayeredKey<TapHoldKey<BaseKey>> {
     }
 }
 
+impl Layered<TapHold<keyboard::Key>> {
+    /// Constructs a [Layered] newtype from the given key.
+    pub const fn keyboard(key: keyboard::Key) -> Self {
+        Self(TapHold(key))
+    }
+}
+
+impl Layered<TapHoldKey<keyboard::Key>> {
+    /// Constructs a [Key] from the given [tap_hold::Key].
+    pub const fn tap_hold(key: tap_hold::Key<keyboard::Key>) -> Self {
+        Self(TapHoldKey::TapHold(key))
+    }
+}
+
 /// Config used for constructing initial context
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
