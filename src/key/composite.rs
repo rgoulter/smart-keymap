@@ -364,6 +364,27 @@ impl TapHoldKey<BaseKey> {
     }
 }
 
+impl TapHold<keyboard::Key> {
+    /// Constructs a [TapHold] newtype from the given key.
+    pub const fn keyboard(key: keyboard::Key) -> Self {
+        Self(key)
+    }
+}
+
+impl TapHold<layered::ModifierKey> {
+    /// Constructs a [TapHold] newtypefrom the given key.
+    pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
+        Self(key)
+    }
+}
+
+impl TapHold<BaseKey> {
+    /// Constructs a [TapHold] newtype from the given key.
+    pub const fn base_key(key: BaseKey) -> Self {
+        Self(key)
+    }
+}
+
 impl LayeredKey<TapHoldKey<BaseKey>> {
     /// Constructs a [Key] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
