@@ -579,16 +579,18 @@ mod tests {
 
     #[test]
     fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
-        use key::composite::{Context, Event};
-        use key::{keyboard, tap_hold};
+        use key::composite::{Context, Event, PressedKey};
+        use key::{composite, keyboard, tap_hold};
         use tuples::Keys1;
 
         // Assemble
-        let keys: Keys1<tap_hold::Key<keyboard::Key>, Context, Event> =
-            Keys1::new((tap_hold::Key {
+        type K = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
+        let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
+            composite::TapHoldKey::TapHold(tap_hold::Key {
                 tap: keyboard::Key::new(0x04),
                 hold: keyboard::Key::new(0xE0),
-            },));
+            }),
+        ),));
         let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
@@ -604,8 +606,8 @@ mod tests {
 
     #[test]
     fn test_keymap_with_tap_hold_key_with_composite_context_key_unaffected_by_prev_key_release() {
-        use key::composite::{Context, Event};
-        use key::{keyboard, tap_hold};
+        use key::composite::{Context, Event, PressedKey};
+        use key::{composite, keyboard, tap_hold};
         use tuples::Keys1;
 
         // When a tap-hold key is pressed,
@@ -614,11 +616,13 @@ mod tests {
         //  we do not want the first Timeout to affect the second key press.
 
         // Assemble
-        let keys: Keys1<tap_hold::Key<keyboard::Key>, Context, Event> =
-            Keys1::new((tap_hold::Key {
+        type K = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
+        let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
+            composite::TapHoldKey::TapHold(tap_hold::Key {
                 tap: keyboard::Key::new(0x04),
                 hold: keyboard::Key::new(0xE0),
-            },));
+            }),
+        ),));
         let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
@@ -924,16 +928,17 @@ mod tests {
         // Assemble
         type Ctx = composite::Context;
         type Ev = composite::Event;
+        type PK = composite::PressedKey;
 
-        type K0 = tap_hold::Key<keyboard::Key>;
-        type K1 = keyboard::Key;
+        type K0 = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
+        type K1 = composite::Layered<composite::TapHold<keyboard::Key>>;
 
-        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
-            tap_hold::Key {
+        let keys: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
                 tap: keyboard::Key::new(0x04),
                 hold: keyboard::Key::new(0xE0),
-            },
-            keyboard::Key::new(0x05),
+            })),
+            composite::Layered(composite::TapHold(keyboard::Key::new(0x05))),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
@@ -956,20 +961,22 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        const K_G: u8 = 0x0A;
-        const K_O: u8 = 0x12;
         type Ctx = composite::Context;
         type Ev = composite::Event;
+        type PK = composite::PressedKey;
 
-        type K0 = tap_hold::Key<keyboard::Key>;
-        type K1 = keyboard::Key;
+        type K0 = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
+        type K1 = composite::Layered<composite::TapHold<keyboard::Key>>;
 
-        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
-            tap_hold::Key {
+        const K_G: u8 = 0x0A;
+        const K_O: u8 = 0x12;
+
+        let keys: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
                 tap: keyboard::Key::new(K_O),
                 hold: keyboard::Key::new(0xE0),
-            },
-            keyboard::Key::new(K_G),
+            })),
+            composite::Layered(composite::TapHold(keyboard::Key::new(K_G))),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
