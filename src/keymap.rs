@@ -677,14 +677,17 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = keyboard::Key;
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type MK = layered::ModifierKey;
-        type LK = layered::LayeredKey<NK>;
-        let keys: Keys2<MK, LK, Ctx, Ev> = tuples::Keys2::new((
-            layered::ModifierKey::Hold(0),
-            layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
+        type PK = composite::PressedKey;
+        type MK = composite::Layered<composite::TapHold<layered::ModifierKey>>;
+        type LK = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
+        let keys: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHold(layered::ModifierKey::Hold(0))),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
+            )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
 
@@ -708,12 +711,14 @@ mod tests {
         // Assemble
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key;
-        let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+        type PK = composite::PressedKey;
+        type MK = composite::Layered<composite::TapHold<layered::ModifierKey>>;
+        type LK = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
+        let keys: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHold(layered::ModifierKey::Hold(0))),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -736,12 +741,14 @@ mod tests {
         // Assemble
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key;
-        let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+        type PK = composite::PressedKey;
+        type MK = composite::Layered<composite::TapHold<layered::ModifierKey>>;
+        type LK = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
+        let keys: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHold(layered::ModifierKey::Hold(0))),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -766,12 +773,14 @@ mod tests {
         // Assemble
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key;
-        let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+        type PK = composite::PressedKey;
+        type MK = composite::Layered<composite::TapHold<layered::ModifierKey>>;
+        type LK = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
+        let keys: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHold(layered::ModifierKey::Hold(0))),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -796,12 +805,14 @@ mod tests {
         // Assemble
         type Ctx = composite::Context;
         type Ev = composite::Event;
-        type K = composite::Key;
-        let keys: Keys2<K, K, Ctx, Ev> = tuples::Keys2::new((
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+        type PK = composite::PressedKey;
+        type MK = composite::Layered<composite::TapHold<layered::ModifierKey>>;
+        type LK = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
+        let keys: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHold(layered::ModifierKey::Hold(0))),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
             )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
@@ -829,19 +840,22 @@ mod tests {
         // - In order to have { tap: Keyboard, hold: LayerMod },
         //    we need to use the aggregate composite::Key
         //    as the nested key type.
-        type NK = composite::Key;
         type Ctx = composite::Context;
         type Ev = composite::Event;
+        type PK = composite::PressedKey;
 
-        type K0 = tap_hold::Key<NK>;
-        type K1 = layered::LayeredKey<keyboard::Key>;
+        type K0 = composite::Layered<composite::TapHoldKey<composite::BaseKey>>;
+        type K1 = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
 
-        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
-            tap_hold::Key {
-                tap: NK::keyboard(keyboard::Key::new(0x04)),
-                hold: NK::layer_modifier(layered::ModifierKey::Hold(0)),
-            },
-            layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
+        let keys: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+                tap: composite::BaseKey::Keyboard(keyboard::Key::new(0x04)),
+                hold: composite::BaseKey::LayerModifier(layered::ModifierKey::Hold(0)),
+            })),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
+            )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
 
@@ -856,10 +870,7 @@ mod tests {
             .event_scheduler
             .schedule_event(key::ScheduledEvent::immediate(key::Event::Key {
                 keymap_index: 0,
-                key_event: key::ModifierKeyEvent::<tap_hold::Event, composite::Event>::Modifier(
-                    tap_hold::Event::TapHoldTimeout,
-                )
-                .into(),
+                key_event: tap_hold::Event::TapHoldTimeout.into(),
             }));
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
         let actual_report = keymap.boot_keyboard_report();
@@ -877,19 +888,22 @@ mod tests {
         use tuples::Keys2;
 
         // Assemble
-        type NK = composite::Key;
         type Ctx = composite::Context;
         type Ev = composite::Event;
+        type PK = composite::PressedKey;
 
-        type K0 = tap_hold::Key<NK>;
-        type K1 = layered::LayeredKey<keyboard::Key>;
+        type K0 = composite::Layered<composite::TapHoldKey<composite::BaseKey>>;
+        type K1 = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
 
-        let keys: Keys2<K0, K1, Ctx, Ev> = tuples::Keys2::new((
-            tap_hold::Key {
-                tap: NK::keyboard(keyboard::Key::new(0x04)),
-                hold: NK::layer_modifier(layered::ModifierKey::Hold(0)),
-            },
-            layered::LayeredKey::new(keyboard::Key::new(0x04), [Some(keyboard::Key::new(0x05))]),
+        let keys: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
+            composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+                tap: composite::BaseKey::Keyboard(keyboard::Key::new(0x04)),
+                hold: composite::BaseKey::LayerModifier(layered::ModifierKey::Hold(0)),
+            })),
+            composite::LayeredKey::Layered(layered::LayeredKey::new(
+                composite::TapHold(keyboard::Key::new(0x04)),
+                [Some(composite::TapHold(keyboard::Key::new(0x05)))],
+            )),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
@@ -901,10 +915,7 @@ mod tests {
             .event_scheduler
             .schedule_event(key::ScheduledEvent::immediate(key::Event::Key {
                 keymap_index: 0,
-                key_event: key::ModifierKeyEvent::<tap_hold::Event, composite::Event>::Modifier(
-                    tap_hold::Event::TapHoldTimeout,
-                )
-                .into(),
+                key_event: tap_hold::Event::TapHoldTimeout.into(),
             }));
         keymap.tick();
         // 3. Release the tap-hold key (release layered::LayerModifier::Hold)
