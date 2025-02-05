@@ -983,11 +983,11 @@ mod tests {
         const K_O: u8 = 0x12;
 
         let keys: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
-            composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+            composite::Layered::tap_hold(tap_hold::Key {
                 tap: keyboard::Key::new(K_O),
                 hold: keyboard::Key::new(0xE0),
-            })),
-            composite::Layered(composite::TapHold(keyboard::Key::new(K_G))),
+            }),
+            composite::Layered::keyboard(keyboard::Key::new(K_G)),
         ));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
