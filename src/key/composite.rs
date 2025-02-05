@@ -62,7 +62,7 @@ impl<K: TapHoldNestable> TapHoldKey<K> {
 
 /// Newtype for [TapHoldNestable] keys so they can implement [key::Key] for [TapHoldPressedKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TapHold<K: TapHoldNestable>(K);
+pub struct TapHold<K: TapHoldNestable>(pub K);
 
 impl<K: TapHoldNestable> TapHold<K> {
     /// Maps K to BaseKey.
