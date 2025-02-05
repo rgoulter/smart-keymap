@@ -116,7 +116,7 @@ pub enum LayeredKey<K: LayeredNestable> {
 
 /// Newtype for [LayeredNestable] keys so they can implement [key::Key] for [LayeredPressedKey].
 #[derive(Debug, Clone, Copy)]
-pub struct Layered<K: LayeredNestable>(K);
+pub struct Layered<K: LayeredNestable>(pub K);
 
 impl key::Key for layered::ModifierKey {
     type Context = Context;
