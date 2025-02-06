@@ -281,19 +281,24 @@ let validators = import "validators.ncl" in
           std.array.filter ((!=) null) layered_codegen_values
         in
 
-        # c.f. doc_de_layered.md.
-        # ```
-        #   type Key = layered::LayeredKey<keyboard::Key>;
-        # ```
-        let kt =
+        # Unify nested composite values.
+        #  In order to construct a key::layered::LayeredKey,
+        #  the `tap` and `hold` keys must have the same (Rust) type.
+        #  - case where both same (e.g. both be key::keyboard::Key):
+        #     can use that as the 'unified' type.
+        #  - case where types differ (e.g. one is layered::ModifierKey, other is keyboard::Key),
+        #     need to 'lift' each of tap, hold to a unified key type.
+        #     i.e. a type which implements composite::LayeredNestable.
+        #     (i.e. composite::TapHold<BaseKey>).
+        let unify_cv =
           let base_key_type = base_codegen_values.key_type in
           let layered_key_types = std.array.map (fun { key_type, .. } => key_type) nn_layered_codegen_values in
-          let nested_key_type =
-            if std.array.all (fun kt => kt == base_key_type) layered_key_types then
-              base_key_type
-            else
+          if std.array.all (fun kt => kt == base_key_type) layered_key_types then
+            fun cv => cv
+          else
+            fun cv =>
               (
-                base_codegen_values
+                cv
                 |> match {
                   cv @ { serialized_json = k, .. } if tap_hold.is_serialized_json k =>
                     composite.tap_hold_key.codegen_values cv,
@@ -302,8 +307,15 @@ let validators = import "validators.ncl" in
                     composite.tap_hold_key.codegen_values bk_cv,
                   cv => std.fail_with "bad codegen_values for layered nested key: %{cv |> std.serialize 'Json}",
                 }
-              ).key_type
-          in
+              )
+        in
+
+        # c.f. doc_de_layered.md.
+        # ```
+        #   type Key = layered::LayeredKey<keyboard::Key>;
+        # ```
+        let kt =
+          let nested_key_type = (base_codegen_values |> unify_cv).key_type in
           {
             key_type = "crate::key::layered::LayeredKey",
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
@@ -311,25 +323,7 @@ let validators = import "validators.ncl" in
         in
 
         let expr =
-          let base_key_type = base_codegen_values.key_type in
-          let layered_key_types = std.array.map (fun { key_type, .. } => key_type) nn_layered_codegen_values in
-          let nk_expr =
-            if std.array.all (fun kt => kt == base_key_type) layered_key_types then
-              fun cv => cv.rust_expr
-            else
-              fun cv =>
-                (
-                  cv
-                  |> match {
-                    cv @ { serialized_json = k, .. } if tap_hold.is_serialized_json k =>
-                      composite.tap_hold_key.codegen_values cv,
-                    cv @ { serialized_json = k, .. } if composite.base_key.is_serialized_json k =>
-                      let bk_cv = composite.base_key.codegen_values cv in
-                      composite.tap_hold_key.codegen_values bk_cv,
-                    cv => std.fail_with "bad codegen_values for layered nested key: %{cv |> std.serialize 'Json}",
-                  }
-                ).rust_expr
-          in
+          let nk_expr = fun cv => (cv |> unify_cv).rust_expr in
           let base_expr = nk_expr base_codegen_values in
           let layered_exprs =
             layered_codegen_values
@@ -403,15 +397,32 @@ let validators = import "validators.ncl" in
         let hold_codegen_values = key.codegen_values hold in
         let tap_codegen_values = key.codegen_values tap in
 
-        let kt =
-          let hold_key_type = hold_codegen_values.key_type in
-          let tap_key_type = tap_codegen_values.key_type in
+        let tap_kt = tap_codegen_values.key_type in
+        let hold_kt = hold_codegen_values.key_type in
+
+        # Unify nested composite values.
+        #  In order to construct a key::tap_hold::Key,
+        #  the `tap` and `hold` keys must have the same (Rust) type.
+        #  - case where both same (e.g. both be key::keyboard::Key):
+        #     can use that as the 'unified' type.
+        #  - case where types differ (e.g. one is layered::ModifierKey, other is keyboard::Key),
+        #     need to 'lift' each of tap, hold to a unified key type.
+        #     i.e. a type which implements composite::TapHoldNestable.
+        #     (i.e. composite::BaseKey).
+        let unify_cv = fun cv =>
           # let nested_key_type =
           #   if tap_key_type == hold_key_type then
           #     tap_key_type
           #   else
           #     composite.base_key.key_type tap in
-          let nested_key_type = (composite.base_key.codegen_values tap_codegen_values).key_type in
+          composite.base_key.codegen_values cv
+        in
+
+        let hold_cv = hold_codegen_values |> unify_cv in
+        let tap_cv = tap_codegen_values |> unify_cv in
+
+        let kt =
+          let nested_key_type = tap_cv.key_type in
           {
             key_type = "crate::key::tap_hold::Key",
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
@@ -419,16 +430,8 @@ let validators = import "validators.ncl" in
         in
 
         let expr =
-          let tap_kt = tap_codegen_values.key_type in
-          let hold_kt = hold_codegen_values.key_type in
-          # let nk_expr =
-          #   if tap_kt == hold_kt then
-          #     key.rust_expr
-          #   else
-          #     composite.base_key.rust_expr in
-          let nk_expr = fun cv => (composite.base_key.codegen_values cv).rust_expr in
-          let hold_expr = nk_expr hold_codegen_values in
-          let tap_expr = nk_expr tap_codegen_values in
+          let hold_expr = hold_cv.rust_expr in
+          let tap_expr = tap_cv.rust_expr in
           "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})"
         in
 
