@@ -272,13 +272,13 @@ let validators = import "validators.ncl" in
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
       codegen_values = fun k @ { base, layered } =>
-        let base_codegen_values = key.codegen_values base in
+        let base_cv = key.codegen_values base in
         let non_null_layered = std.array.filter ((!=) null) layered in
-        let layered_codegen_values =
+        let layered_cvs =
           std.array.map (fun k => if k != null then key.codegen_values k else null) layered
         in
         let nn_layered_codegen_values =
-          std.array.filter ((!=) null) layered_codegen_values
+          std.array.filter ((!=) null) layered_cvs
         in
 
         # Unify nested composite values.
@@ -291,7 +291,7 @@ let validators = import "validators.ncl" in
         #     i.e. a type which implements composite::LayeredNestable.
         #     (i.e. composite::TapHold<BaseKey>).
         let unify_cv =
-          let base_key_type = base_codegen_values.key_type in
+          let base_key_type = base_cv.key_type in
           let layered_key_types = std.array.map (fun { key_type, .. } => key_type) nn_layered_codegen_values in
           if std.array.all (fun kt => kt == base_key_type) layered_key_types then
             fun cv => cv
@@ -310,32 +310,26 @@ let validators = import "validators.ncl" in
               )
         in
 
-        # c.f. doc_de_layered.md.
-        # ```
-        #   type Key = layered::LayeredKey<keyboard::Key>;
-        # ```
-        let kt =
-          let nested_key_type = (base_codegen_values |> unify_cv).key_type in
-          {
-            key_type = "crate::key::layered::LayeredKey",
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-          }
-        in
-
-        let expr =
-          let nk_expr = fun cv => (cv |> unify_cv).rust_expr in
-          let base_expr = nk_expr base_codegen_values in
-          let layered_exprs =
-            layered_codegen_values
-            |> std.array.map (fun cv => if cv == null then "None" else "Some(%{nk_expr cv})")
-            |> std.string.join ","
-          in
-          "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])"
-        in
-
         {
-          key_type = kt,
-          rust_expr = expr,
+          nested = {
+            base = base_cv |> unify_cv,
+            layered = layered_cvs
+                    |> std.array.map (fun cv => if cv != null then unify_cv cv else null),
+          },
+          key_type =
+            {
+              key_type = "crate::key::layered::LayeredKey",
+              as_rust_type_path = "%{key_type}<%{nested.base.key_type.as_rust_type_path}>",
+            },
+          rust_expr =
+            let nk_expr = fun cv => cv.rust_expr in
+            let base_expr = nk_expr nested.base in
+            let layered_exprs =
+              nested.layered
+              |> std.array.map (fun cv => if cv == null then "None" else "Some(%{nk_expr cv})")
+              |> std.string.join ","
+            in
+            "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
           serialized_json = k,
         },
     },
@@ -418,26 +412,21 @@ let validators = import "validators.ncl" in
           composite.base_key.codegen_values cv
         in
 
-        let hold_cv = hold_codegen_values |> unify_cv in
-        let tap_cv = tap_codegen_values |> unify_cv in
-
-        let kt =
-          let nested_key_type = tap_cv.key_type in
-          {
-            key_type = "crate::key::tap_hold::Key",
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
-          }
-        in
-
-        let expr =
-          let hold_expr = hold_cv.rust_expr in
-          let tap_expr = tap_cv.rust_expr in
-          "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})"
-        in
-
         {
-          key_type = kt,
-          rust_expr = expr,
+          nested = {
+            tap = tap_codegen_values |> unify_cv,
+            hold = hold_codegen_values |> unify_cv,
+          },
+          key_type =
+            let nested_key_type = nested.tap.key_type in
+            {
+              key_type = "crate::key::tap_hold::Key",
+              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            },
+          rust_expr =
+            let hold_expr = nested.hold.rust_expr in
+            let tap_expr = nested.tap.rust_expr in
+            "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
           serialized_json = k,
         },
     },
