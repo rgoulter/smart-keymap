@@ -613,6 +613,35 @@ let validators = import "validators.ncl" in
           rust_expr = "crate::key::composite::Layered(%{nested.rust_expr})",
         },
     },
+
+    # Construct codegen values to used with keymap::Keymap.
+    #
+    # keymap::Keymap takes in a `keys` which is an indexable collection
+    #  of `key::Key` implementations which have the associated types
+    #  Context, Event, and PressedKey.
+    #
+    # Since `keymap::Keymap` uses `key::Key` with `PressedKey = key::composite::PressedKey`,
+    #  each of the `K0`, `K1`, etc. passed to `KeysN`
+    #  must impl. `key::Key` with those associated types.
+    # e.g. `key::keyboard::Key` implements `key::Key` with `PressedKey=BasePressedKey`;
+    #  so it needs to be lifted to `Layered(TapHold(keyboard::Key))`.
+    #
+    # e.g. assuming that any nested keys have been 'lifted'
+    #  to a suitable type:
+    # - for key::keyboard::Key, wrap with:
+    #    key::composite::Layered::keyboard(key::keyboard::Key).
+    # - for key::tap_hold::Key wrap with:
+    #    key::composite::Layered::tap_hold(key::tap_hold::Key<NK>).
+    #   - n.b.: NK must be an implemented type.
+    # - for key::layered::LayeredKey,
+    #    key::composite::Layered::layered(key::layered::LayeredKey<NK>).
+    #   - n.b.: NK must be an implemented type.
+    lift_to_key =
+      match {
+        cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
+          cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv => std.fail_with "bad codegen value for to_keymap_key: %{cv |> std.serialize 'Json}",
+      }
   },
 
   key = {
@@ -681,6 +710,7 @@ let validators = import "validators.ncl" in
       let codegen_values =
         keys
         |> std.array.map key.codegen_values
+        |> std.array.map composite.lift_to_key
       in
       let key_types =
         codegen_values
