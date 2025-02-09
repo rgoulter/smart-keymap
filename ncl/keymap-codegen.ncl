@@ -552,6 +552,18 @@ let validators = import "validators.ncl" in
       },
     },
 
+    tap_hold_ = {
+      codegen_values = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::TapHold",
+            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+          },
+          rust_expr = "crate::key::composite::TapHold(%{nested.rust_expr})",
+        },
+    },
+
     layered_key = {
       SerializedJson = std.contract.from_validator serialized_json_validator,
 
