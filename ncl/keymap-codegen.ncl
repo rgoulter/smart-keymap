@@ -601,6 +601,18 @@ let validators = import "validators.ncl" in
         cv => std.fail_with "bad codegen_values for layered_key: %{cv |> std.serialize 'Json}",
       },
     },
+
+    layered_ = {
+      codegen_values = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::Layered",
+            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+          },
+          rust_expr = "crate::key::composite::Layered(%{nested.rust_expr})",
+        },
+    },
   },
 
   key = {
