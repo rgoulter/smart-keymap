@@ -606,10 +606,10 @@ let validators = import "validators.ncl" in
         cv @ { serialized_json = k, .. } if composite.tap_hold_key.is_serialized_json k =>
           let { key_type = k_key_type, rust_expr = k_expr, .. } = cv in
           {
+            nested = cv,
             key_type = {
               key_type = "crate::key::composite::LayeredKey",
-              nested_key_type = "crate::key::composite::TapHoldKey",
-              as_rust_type_path = "%{key_type}<%{nested_key_type}>",
+              as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
             },
             rust_expr = "crate::key::composite::LayeredKey::Pass(%{k_expr})",
             serialized_json = k,
