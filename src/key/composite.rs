@@ -400,9 +400,11 @@ impl LayeredKey<TapHoldKey<BaseKey>> {
     pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
         Self::Pass(TapHoldKey::layer_modifier(key))
     }
+}
 
+impl<K: LayeredNestable> LayeredKey<K> {
     /// Constructs a [Key] from the given [layered::LayeredKey].
-    pub const fn layered(key: layered::LayeredKey<TapHoldKey<BaseKey>>) -> Self {
+    pub const fn layered(key: layered::LayeredKey<K>) -> Self {
         Self::Layered(key)
     }
 }
