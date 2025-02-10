@@ -332,6 +332,14 @@ let validators = import "validators.ncl" in
             "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
           serialized_json = k,
         },
+
+      map_nested = fun f cv@{ nested, ..rest } =>
+        rest & {
+          nested = {
+            base = f cv.nested.base,
+            layered = std.array.map (fun cv => if cv != null then f cv else null) cv.nested.layered,
+          },
+        },
     },
 
   checks.check_tap_hold = {
@@ -428,6 +436,14 @@ let validators = import "validators.ncl" in
             let tap_expr = nested.tap.rust_expr in
             "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
           serialized_json = k,
+        },
+
+      map_nested = fun f cv@{ nested, ..rest } =>
+        rest & {
+          nested = {
+            tap = f cv.nested.tap,
+            hold = f cv.nested.hold,
+          },
         },
     },
 
