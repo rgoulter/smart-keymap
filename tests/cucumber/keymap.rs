@@ -15,15 +15,11 @@ use smart_keymap_nickel_helper::{
 };
 
 type Key = key::composite::Key;
-type Context = key::composite::Context;
-type Event = key::composite::Event;
-
-type DynamicKey = key::dynamic::DynamicKey<Key, Context, Event>;
 
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap(keymap::Keymap<Vec<DynamicKey>>),
+    Keymap(keymap::Keymap<Vec<Key>>),
 }
 
 impl LoadedKeymap {
@@ -81,11 +77,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
             let keymap_result: serde_json::Result<Keymap> = serde_json::from_str(&json);
             match keymap_result {
                 Ok(keymap) => {
-                    let dyn_keys = keymap
-                        .keys
-                        .into_iter()
-                        .map(|k| DynamicKey::new(k))
-                        .collect();
+                    let dyn_keys = keymap.keys.into_iter().collect();
                     let context = key::composite::Context::from_config(keymap.config);
                     world.keymap_ncl = keymap_ncl.into();
                     world.keymap = LoadedKeymap::Keymap(keymap::Keymap::new(dyn_keys, context));
