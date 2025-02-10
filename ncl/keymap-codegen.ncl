@@ -646,6 +646,12 @@ let validators = import "validators.ncl" in
       match {
         cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
           cv |> tap_hold_.codegen_values,
+        cv if cv.key_type.key_type == "crate::key::layered::ModifierKey" =>
+          cv |> tap_hold_.codegen_values,
+        cv if cv.key_type.key_type == "crate::key::composite::BaseKey" =>
+          cv |> tap_hold_.codegen_values,
+        cv if cv.key_type.key_type == "crate::key::tap_hold::Key" =>
+          cv |> tap_hold.codegen_values,
         cv => std.fail_with "bad codegen value for lift_to_layered_nestable: %{cv |> std.serialize 'Json}",
       },
 
