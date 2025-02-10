@@ -630,6 +630,25 @@ let validators = import "validators.ncl" in
         },
     },
 
+    # lift into a type which impl. composite::LayeredNestable
+    #
+    # i.e. into one of:
+    #   - key::composite::TapHoldKey(NK)
+    #      where NK impl. TapHoldNestable.
+    #   - key::composite::TapHold(NK)
+    #      where NK impl. TapHoldNestable.
+    #
+    # Recall, TapHoldNestable is a trait which is implemented by:
+    #   - key::keyboard::Key,
+    #   - key::layered::ModifierKey,
+    #   - key::composite::BaseKey,
+    lift_to_layered_nestable =
+      match {
+        cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
+          cv |> tap_hold_.codegen_values,
+        cv => std.fail_with "bad codegen value for lift_to_layered_nestable: %{cv |> std.serialize 'Json}",
+      },
+
     # Construct codegen values to used with keymap::Keymap.
     #
     # keymap::Keymap takes in a `keys` which is an indexable collection
