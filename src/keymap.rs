@@ -373,27 +373,31 @@ impl<
         }
     }
 
+    fn handle_event(&mut self, ev: key::Event<composite::Event>) {
+        // Update each of the pressed keys with the event.
+        self.pressed_inputs.iter_mut().for_each(|pi| {
+            if let input::PressedInput::Key { pressed_key, .. } = pi {
+                pressed_key
+                    .handle_event(self.context, ev)
+                    .into_iter()
+                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+            }
+        });
+
+        // Update context with the event
+        if let key::Event::Key { key_event, .. } = ev {
+            self.context.handle_event(key_event);
+        }
+
+        if let Event::Input(input_ev) = ev {
+            self.handle_input(input_ev);
+        }
+    }
+
     fn handle_all_pending_events(&mut self) {
         // take from pending
         while let Some(ev) = self.event_scheduler.dequeue() {
-            // Update each of the pressed keys with the event.
-            self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key { pressed_key, .. } = pi {
-                    pressed_key
-                        .handle_event(self.context, ev)
-                        .into_iter()
-                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-                }
-            });
-
-            // Update context with the event
-            if let key::Event::Key { key_event, .. } = ev {
-                self.context.handle_event(key_event);
-            }
-
-            if let Event::Input(input_ev) = ev {
-                self.handle_input(input_ev);
-            }
+            self.handle_event(ev);
         }
     }
 
