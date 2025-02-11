@@ -292,7 +292,8 @@ impl<
 
     /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
-        if let Some(_pending_state) = &self.pending_key_state {
+        if let Some(PendingState { queued_events, .. }) = &mut self.pending_key_state {
+            queued_events.push(ev.into()).unwrap();
         } else {
             // Update each of the pressed keys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
