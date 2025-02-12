@@ -25,7 +25,7 @@ const KEYS: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
-fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output() {
+fn rolled_presses() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
@@ -42,7 +42,7 @@ fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output() {
 }
 
 #[test]
-fn test_keymap_with_tap_hold_ignoring_interrupts_rolled_presses_output_desc_keycodes() {
+fn rolled_presses_desc_keycodes() {
     // Assemble
     const K_G: u8 = 0x0A;
     const K_O: u8 = 0x12;

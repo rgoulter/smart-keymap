@@ -25,22 +25,7 @@ const KEYS: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
-fn test_keymap_with_layered_key_press_active_layer_when_layer_mod_held() {
-    // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
-
-    // Act
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    let actual_report = keymap.boot_keyboard_report();
-
-    // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
-}
-
-#[test]
-fn test_keymap_with_composite_layered_key_press_base_key() {
+fn press_base_key_when_no_layers_active() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
@@ -54,7 +39,7 @@ fn test_keymap_with_composite_layered_key_press_base_key() {
 }
 
 #[test]
-fn test_keymap_with_composite_layered_key_press_active_layer_when_layer_mod_held() {
+fn press_active_layer_when_layer_mod_held() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
@@ -69,7 +54,7 @@ fn test_keymap_with_composite_layered_key_press_active_layer_when_layer_mod_held
 }
 
 #[test]
-fn test_keymap_with_composite_layered_key_press_retained_when_layer_mod_released() {
+fn press_retained_when_layer_mod_released() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
@@ -85,7 +70,7 @@ fn test_keymap_with_composite_layered_key_press_retained_when_layer_mod_released
 }
 
 #[test]
-fn test_keymap_with_composite_layered_key_uses_base_when_pressed_after_layer_mod_released() {
+fn uses_base_when_pressed_after_layer_mod_released() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
