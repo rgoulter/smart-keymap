@@ -40,9 +40,13 @@ Feature: TapHold Key (configure interrupt response: ignore)
         release (K.A & K.hold K.LeftCtrl),
       ]
       """
-    Then the HID keyboard report should equal
+    Then the output should be equivalent to output from
       """
-      { key_codes = [K.A, K.B] }
+      [
+        press (K.A),
+        press (K.B),
+        release (K.A),
+      ]
       """
 
   Example: interrupting tap (press TH(A), press B, release B, release TH(A))
@@ -60,7 +64,12 @@ Feature: TapHold Key (configure interrupt response: ignore)
         release (K.A & K.hold K.LeftCtrl),
       ]
       """
-    Then the HID keyboard report should equal
+    Then the output should be equivalent to output from
       """
-      { key_codes = [K.A] }
+      [
+        press (K.A),
+        press (K.B),
+        release (K.B),
+        release (K.A),
+      ]
       """
