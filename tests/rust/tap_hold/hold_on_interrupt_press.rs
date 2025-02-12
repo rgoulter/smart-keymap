@@ -32,12 +32,28 @@ const CONTEXT: Ctx = Ctx {
 };
 
 #[test]
-fn rolled_presses() {
+fn rolled_presses_resolves_hold() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
     // Act
     // Roll the keys: press 0, press 1, release 0,
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    let actual_report = keymap.boot_keyboard_report();
+
+    // Assert
+    let expected_report: [u8; 8] = [0x01, 0, 0x05, 0, 0, 0, 0, 0];
+    assert_eq!(actual_report, expected_report);
+}
+
+#[test]
+fn interrupting_press_resolves_hold() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+
+    // Act
+    // Press the TH key, then interrupt it with a press.
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
     let actual_report = keymap.boot_keyboard_report();
