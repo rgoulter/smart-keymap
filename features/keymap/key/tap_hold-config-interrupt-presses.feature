@@ -38,9 +38,12 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
         press (K.B),
       ]
       """
-    Then the HID keyboard report should equal
+    Then the output should be equivalent to output from
       """
-      { modifiers = { left_ctrl = true }, key_codes = [K.B] }
+      [
+        press (K.LeftCtrl),
+        press (K.B),
+      ]
       """
 
   Example: interrupting tap (press TH(A), press B, release B, release TH(A))
@@ -60,4 +63,12 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
     Then the HID keyboard report should equal
       """
       { modifiers = { left_ctrl = true } }
+      """
+    Then the output should be equivalent to output from
+      """
+      [
+        press (K.LeftCtrl),
+        press (K.B),
+        release (K.B),
+      ]
       """
