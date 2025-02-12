@@ -28,7 +28,7 @@ const KEYS: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
-fn test_keymap_with_tap_keyboard_hold_layermod_press_active_layer_when_held() {
+fn press_active_layer_when_hold_layer_mod_held() {
     // Check TapHold { tap: Keyboard, hold: LayerModifier } works
 
     // Assemble
@@ -58,7 +58,7 @@ fn test_keymap_with_tap_keyboard_hold_layermod_press_active_layer_when_held() {
 }
 
 #[test]
-fn test_keymap_with_tap_keyboard_hold_layermod_uses_base_when_pressed_after_layer_mod_released() {
+fn uses_base_when_pressed_after_hold_layer_mod_released() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 

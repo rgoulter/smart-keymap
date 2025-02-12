@@ -22,7 +22,7 @@ const KEYS: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layere
 const CONTEXT: Context = composite::DEFAULT_CONTEXT;
 
 #[test]
-fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
+fn key_tapped() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
 
@@ -37,7 +37,7 @@ fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
 }
 
 #[test]
-fn test_keymap_with_tap_hold_key_with_composite_context_key_unaffected_by_prev_key_release() {
+fn key_unaffected_by_prev_key_release() {
     // When a tap-hold key is pressed,
     //  it schedules a Timeout event after 200 ticks.
     // In case of releasing, then pressing the key a second time within 200 ticks,
