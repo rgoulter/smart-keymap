@@ -8,22 +8,23 @@ use smart_keymap::tuples;
 
 use keymap::Keymap;
 
+use key::composite::{Context, Event, PressedKey};
+use key::{composite, keyboard, tap_hold};
+use tuples::Keys1;
+
+type K = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
+const KEYS: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
+    composite::TapHoldKey::TapHold(tap_hold::Key {
+        tap: keyboard::Key::new(0x04),
+        hold: keyboard::Key::new(0xE0),
+    }),
+),));
+const CONTEXT: Context = composite::DEFAULT_CONTEXT;
+
 #[test]
 fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
-    use key::composite::{Context, Event, PressedKey};
-    use key::{composite, keyboard, tap_hold};
-    use tuples::Keys1;
-
     // Assemble
-    type K = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
-    let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
-        composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        }),
-    ),));
-    let context: Context = composite::DEFAULT_CONTEXT;
-    let mut keymap = Keymap::new(keys, context);
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -37,25 +38,13 @@ fn test_keymap_with_tap_hold_key_with_composite_context_key_tapped() {
 
 #[test]
 fn test_keymap_with_tap_hold_key_with_composite_context_key_unaffected_by_prev_key_release() {
-    use key::composite::{Context, Event, PressedKey};
-    use key::{composite, keyboard, tap_hold};
-    use tuples::Keys1;
-
     // When a tap-hold key is pressed,
     //  it schedules a Timeout event after 200 ticks.
     // In case of releasing, then pressing the key a second time within 200 ticks,
     //  we do not want the first Timeout to affect the second key press.
 
     // Assemble
-    type K = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
-    let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
-        composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        }),
-    ),));
-    let context: Context = composite::DEFAULT_CONTEXT;
-    let mut keymap = Keymap::new(keys, context);
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
 
     // Act
     // Press key (starting a 200 tick timeout),
