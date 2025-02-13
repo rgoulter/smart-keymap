@@ -223,6 +223,27 @@ impl HIDKeyboardReporter {
     }
 }
 
+/// For tracking distinct HID reports from the keymap.
+#[cfg(feature = "std")]
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct DistinctReports(Vec<[u8; 8]>);
+
+#[cfg(feature = "std")]
+impl DistinctReports {
+    /// Constructs a new DistinctReports.
+    pub const fn new() -> Self {
+        Self(Vec::new())
+    }
+
+    /// Adds the report to the distinct reports.
+    pub fn update(&mut self, report: [u8; 8]) {
+        match self.0.last() {
+            Some(last_report) if last_report == &report => {}
+            _ => self.0.push(report),
+        }
+    }
+}
+
 /// State for a keymap that handles input, and outputs HID keyboard reports.
 #[derive(Debug)]
 pub struct Keymap<I> {
