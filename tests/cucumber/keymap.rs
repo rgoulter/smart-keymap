@@ -92,9 +92,7 @@ struct DocstringKeymap {
     keys: Vec<Key>,
 }
 
-#[given("a keymap.ncl:")]
-fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
-    let keymap_ncl = step.docstring().unwrap();
+fn load_keymap(keymap_ncl: &str) -> Keymap {
     match nickel_json_serialization_for_keymap(
         format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
         keymap_ncl,
@@ -105,8 +103,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
                 Ok(keymap) => {
                     let dyn_keys = keymap.keys.into_iter().collect();
                     let context = key::composite::Context::from_config(keymap.config);
-                    world.keymap_ncl = keymap_ncl.into();
-                    world.keymap = LoadedKeymap::keymap(keymap::Keymap::new(dyn_keys, context));
+                    keymap::Keymap::new(dyn_keys, context)
                 }
                 Err(e) => {
                     panic!(
@@ -125,6 +122,13 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
             ),
         },
     }
+}
+
+#[given("a keymap.ncl:")]
+fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
+    let keymap_ncl = step.docstring().unwrap();
+    world.keymap_ncl = keymap_ncl.into();
+    world.keymap = LoadedKeymap::keymap(load_keymap(keymap_ncl));
 }
 
 #[when("the keymap registers the following input")]
