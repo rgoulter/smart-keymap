@@ -23,6 +23,10 @@ enum LoadedKeymap {
 }
 
 impl LoadedKeymap {
+    pub fn keymap(keymap: keymap::Keymap<Vec<Key>>) -> Self {
+        LoadedKeymap::Keymap(keymap)
+    }
+
     pub fn handle_input(&mut self, ev: input::Event) {
         match self {
             LoadedKeymap::Keymap(keymap) => keymap.handle_input(ev),
@@ -80,7 +84,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
                     let dyn_keys = keymap.keys.into_iter().collect();
                     let context = key::composite::Context::from_config(keymap.config);
                     world.keymap_ncl = keymap_ncl.into();
-                    world.keymap = LoadedKeymap::Keymap(keymap::Keymap::new(dyn_keys, context));
+                    world.keymap = LoadedKeymap::keymap(keymap::Keymap::new(dyn_keys, context));
                 }
                 Err(e) => {
                     panic!(
