@@ -19,29 +19,29 @@ type Key = key::composite::Key;
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap(keymap::Keymap<Vec<Key>>),
+    Keymap { keymap: keymap::Keymap<Vec<Key>> },
 }
 
 impl LoadedKeymap {
     pub fn keymap(keymap: keymap::Keymap<Vec<Key>>) -> Self {
-        LoadedKeymap::Keymap(keymap)
+        LoadedKeymap::Keymap { keymap }
     }
 
     pub fn handle_input(&mut self, ev: input::Event) {
         match self {
-            LoadedKeymap::Keymap(keymap) => keymap.handle_input(ev),
+            LoadedKeymap::Keymap { keymap, .. } => keymap.handle_input(ev),
             _ => panic!("No keymap loaded"),
         }
     }
     pub fn tick(&mut self) {
         match self {
-            LoadedKeymap::Keymap(keymap) => keymap.tick(),
+            LoadedKeymap::Keymap { keymap, .. } => keymap.tick(),
             _ => panic!("No keymap loaded"),
         }
     }
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         match self {
-            LoadedKeymap::Keymap(keymap) => {
+            LoadedKeymap::Keymap { keymap, .. } => {
                 smart_keymap::keymap::KeymapOutput::new(keymap.pressed_keys())
                     .as_hid_boot_keyboard_report()
             }
