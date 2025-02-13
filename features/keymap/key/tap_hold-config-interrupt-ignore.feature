@@ -25,7 +25,7 @@ Feature: TapHold Key (configure interrupt response: ignore)
       }
       """
 
-  Example: rolling key presses (press TH(A), press B, release TH(A)
+  Example: rolling key presses (press TH(A), press B, release TH(A))
 
     Rolling the tap-hold key with another key
     (i.e. interrupting the tap-hold key with another key press),
