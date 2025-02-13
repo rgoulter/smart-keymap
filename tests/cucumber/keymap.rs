@@ -19,12 +19,18 @@ type Key = key::composite::Key;
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap { keymap: keymap::Keymap<Vec<Key>> },
+    Keymap {
+        keymap: keymap::Keymap<Vec<Key>>,
+        distinct_reports: keymap::DistinctReports,
+    },
 }
 
 impl LoadedKeymap {
     pub fn keymap(keymap: keymap::Keymap<Vec<Key>>) -> Self {
-        LoadedKeymap::Keymap { keymap }
+        LoadedKeymap::Keymap {
+            keymap,
+            distinct_reports: keymap::DistinctReports::new(),
+        }
     }
 
     pub fn handle_input(&mut self, ev: input::Event) {
