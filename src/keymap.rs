@@ -231,8 +231,8 @@ pub struct DistinctReports(Vec<[u8; 8]>);
 #[cfg(feature = "std")]
 impl DistinctReports {
     /// Constructs a new DistinctReports.
-    pub const fn new() -> Self {
-        Self(Vec::new())
+    pub fn new() -> Self {
+        Self(vec![[0; 8]])
     }
 
     /// Adds the report to the distinct reports.
