@@ -39,6 +39,7 @@ impl LoadedKeymap {
             _ => panic!("No keymap loaded"),
         }
     }
+
     pub fn tick(&mut self) {
         match self {
             LoadedKeymap::Keymap {
@@ -51,6 +52,7 @@ impl LoadedKeymap {
             _ => panic!("No keymap loaded"),
         }
     }
+
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         match self {
             LoadedKeymap::Keymap { keymap, .. } => {
