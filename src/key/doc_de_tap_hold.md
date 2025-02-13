@@ -11,6 +11,6 @@ let expected_key: Key<keyboard::Key> = Key {
   tap: keyboard::Key::new(4),
 };
 let actual_key: Key<keyboard::Key> = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 

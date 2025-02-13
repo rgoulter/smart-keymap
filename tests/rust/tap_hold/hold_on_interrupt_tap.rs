@@ -45,7 +45,7 @@ fn rolled_presses_resolves_tap() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x04, 0x05, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }
 
 #[test]
@@ -62,5 +62,5 @@ fn interrupting_tap_resolves_hold() {
 
     // Assert
     let expected_report: [u8; 8] = [0x01, 0, 0, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }

@@ -38,7 +38,7 @@ fn rolled_presses() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x04, 0x05, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }
 
 #[test]
@@ -64,13 +64,13 @@ fn rolled_presses_desc_keycodes() {
         keymap.tick();
         let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
         let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
     {
         keymap.tick();
         let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
         let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
 
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
@@ -97,12 +97,12 @@ fn rolled_presses_desc_keycodes() {
         keymap.tick();
         let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
         let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
     {
         keymap.tick();
         let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
         let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
 }

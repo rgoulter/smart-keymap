@@ -464,7 +464,7 @@ mod tests {
 
         // Assert - check the 0xE0 gets considered as a "modifier".
         let expected_report: [u8; 8] = [0x01, 0, 0x04, 0, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
 
     #[test]
@@ -484,7 +484,7 @@ mod tests {
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
-        assert_eq!(actual_outputs, expected_outputs);
+        assert_eq!(expected_outputs, actual_outputs);
     }
 
     #[test]
@@ -506,7 +506,7 @@ mod tests {
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
-        assert_eq!(actual_outputs, expected_outputs);
+        assert_eq!(expected_outputs, actual_outputs);
     }
 
     #[test]
@@ -529,7 +529,7 @@ mod tests {
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
-        assert_eq!(actual_outputs, expected_outputs);
+        assert_eq!(expected_outputs, actual_outputs);
     }
 
     #[test]
@@ -569,8 +569,8 @@ mod tests {
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
         assert_eq!(
+            KeymapOutput::new(expected_outputs).as_hid_boot_keyboard_report(),
             KeymapOutput::new(actual_outputs).as_hid_boot_keyboard_report(),
-            KeymapOutput::new(expected_outputs).as_hid_boot_keyboard_report()
         );
     }
 
@@ -595,7 +595,7 @@ mod tests {
 
         // Assert
         let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
 
     #[test]
@@ -617,6 +617,6 @@ mod tests {
 
         // Assert
         let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-        assert_eq!(actual_report, expected_report);
+        assert_eq!(expected_report, actual_report);
     }
 }

@@ -753,7 +753,7 @@ mod tests {
                 key_event: Event::LayerModification(layered::LayerEvent::LayerDeactivated(layer)),
                 ..
             }) => {
-                assert_eq!(layer, 0);
+                assert_eq!(0, layer);
             }
             _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
         };
@@ -790,7 +790,7 @@ mod tests {
 
         // Assert
         let expected_active_layers = &[true];
-        assert_eq!(actual_active_layers[0..1], expected_active_layers[0..1]);
+        assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
     }
 
     #[test]
@@ -826,7 +826,7 @@ mod tests {
 
         // Assert
         let expected_active_layers = &[false];
-        assert_eq!(actual_active_layers[0..1], expected_active_layers[0..1]);
+        assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
     }
 
     #[test]
@@ -853,7 +853,7 @@ mod tests {
 
         // Assert
         let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
-        assert_eq!(actual_keycode.to_option(), expected_keycode);
+        assert_eq!(expected_keycode, actual_keycode.to_option());
     }
 
     #[test]
@@ -880,6 +880,6 @@ mod tests {
 
         // Assert
         let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
-        assert_eq!(actual_keycode.to_option(), expected_keycode);
+        assert_eq!(expected_keycode, actual_keycode.to_option());
     }
 }
