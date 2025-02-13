@@ -41,7 +41,13 @@ impl LoadedKeymap {
     }
     pub fn tick(&mut self) {
         match self {
-            LoadedKeymap::Keymap { keymap, .. } => keymap.tick(),
+            LoadedKeymap::Keymap {
+                keymap,
+                distinct_reports,
+            } => {
+                keymap.tick();
+                distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+            }
             _ => panic!("No keymap loaded"),
         }
     }
