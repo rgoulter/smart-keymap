@@ -248,5 +248,9 @@ fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
 }
 
 fn main() {
-    futures::executor::block_on(KeymapWorld::run("features/keymap/"));
+    futures::executor::block_on(
+        KeymapWorld::cucumber().filter_run("features/keymap/", |_, _, scenario| {
+            !scenario.tags.iter().any(|t| t == "ignore")
+        }),
+    );
 }
