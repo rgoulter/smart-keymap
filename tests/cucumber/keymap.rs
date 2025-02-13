@@ -16,6 +16,12 @@ use smart_keymap_nickel_helper::{
 
 type Key = key::composite::Key;
 
+/// Keymap with basic keycodes, useful for the "check report equivalences" step.
+const TEST_KEYMAP_NCL: &str = r#"
+  let K = import "keys.ncl" in
+  { keys = [ K.A, K.B, K.C, K.LeftCtrl ] }
+"#;
+
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
