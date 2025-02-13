@@ -16,6 +16,8 @@ use smart_keymap_nickel_helper::{
 
 type Key = key::composite::Key;
 
+type Keymap = keymap::Keymap<Vec<Key>>;
+
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"
   let K = import "keys.ncl" in
@@ -26,13 +28,13 @@ const TEST_KEYMAP_NCL: &str = r#"
 enum LoadedKeymap {
     NoKeymap,
     Keymap {
-        keymap: keymap::Keymap<Vec<Key>>,
+        keymap: Keymap,
         distinct_reports: keymap::DistinctReports,
     },
 }
 
 impl LoadedKeymap {
-    pub fn keymap(keymap: keymap::Keymap<Vec<Key>>) -> Self {
+    pub fn keymap(keymap: Keymap) -> Self {
         LoadedKeymap::Keymap {
             keymap,
             distinct_reports: keymap::DistinctReports::new(),
