@@ -243,6 +243,14 @@ fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
         expected_reports.update(test_keymap.report_output().as_hid_boot_keyboard_report());
     }
 
+    // tick() the 'actual' keymap
+    // (incl. updating the 'actual' distinct reports).
+    // Helps with cases where a pending key (e.g. tap-hold)
+    // resolves, and has scheduled events.
+    for _ in 0..20 {
+        world.keymap.tick();
+    }
+
     let actual_reports = world.keymap.distinct_reports();
     assert_eq!(&expected_reports, actual_reports);
 }
