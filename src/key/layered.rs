@@ -292,7 +292,7 @@ mod tests {
 
         let (_pressed_key, layer_event) = key.new_pressed_key();
 
-        assert_eq!(layer_event, LayerEvent::LayerActivated(layer));
+        assert_eq!(LayerEvent::LayerActivated(layer), layer_event);
     }
 
     #[test]
@@ -317,7 +317,7 @@ mod tests {
         let first_ev = actual_events.into_iter().next();
         if let Some(actual_layer_event) = first_ev {
             let expected_layer_event = LayerEvent::LayerDeactivated(layer);
-            assert_eq!(actual_layer_event, expected_layer_event);
+            assert_eq!(expected_layer_event, actual_layer_event);
         } else {
             panic!("Expected Some LayerDeactivated event");
         }
@@ -382,8 +382,8 @@ mod tests {
         let expected_pressed_key_state = expected_key.new_pressed_key();
 
         assert_eq!(
+            BasePressedKeyState::Keyboard(expected_pressed_key_state),
             actual_pressed_key.pressed_key_state,
-            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
     }
 
@@ -412,10 +412,10 @@ mod tests {
         // Assert
         let expected_pressed_key_state = expected_key.new_pressed_key();
         let expected_key_output = expected_pressed_key_state.key_output(&expected_key);
-        assert_eq!(actual_key_output, expected_key_output);
+        assert_eq!(expected_key_output, actual_key_output);
         assert_eq!(
+            Some(KeyOutput::from_key_code(0x04)),
             actual_key_output.to_option(),
-            Some(KeyOutput::from_key_code(0x04))
         );
     }
 
@@ -443,8 +443,8 @@ mod tests {
         // Assert
         let expected_pressed_key_state = expected_key.new_pressed_key();
         assert_eq!(
+            BasePressedKeyState::Keyboard(expected_pressed_key_state),
             actual_pressed_key.pressed_key_state,
-            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
     }
 
@@ -475,8 +475,8 @@ mod tests {
         // Assert
         let expected_pressed_key_state = expected_key.new_pressed_key();
         assert_eq!(
+            BasePressedKeyState::Keyboard(expected_pressed_key_state),
             actual_pressed_key.pressed_key_state,
-            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
     }
 
@@ -502,8 +502,8 @@ mod tests {
         // Assert
         let expected_pressed_key_state = expected_key.new_pressed_key();
         assert_eq!(
+            BasePressedKeyState::Keyboard(expected_pressed_key_state),
             actual_pressed_key.pressed_key_state,
-            BasePressedKeyState::Keyboard(expected_pressed_key_state)
         );
     }
 
@@ -513,7 +513,7 @@ mod tests {
 
         let actual_key: key::keyboard::Key = ron::from_str("Key(key_code: 0x04)").unwrap();
         let expected_key: key::keyboard::Key = keyboard::Key::new(0x04);
-        assert_eq!(actual_key, expected_key);
+        assert_eq!(expected_key, actual_key);
     }
 
     #[test]
@@ -523,14 +523,14 @@ mod tests {
         let actual_key: Option<key::keyboard::Key> =
             ron::from_str("Some(Key(key_code: 0x04))").unwrap();
         let expected_key: Option<key::keyboard::Key> = Some(keyboard::Key::new(0x04));
-        assert_eq!(actual_key, expected_key);
+        assert_eq!(expected_key, actual_key);
     }
 
     #[test]
     fn test_deserialize_ron_array1_u8() {
         let actual: [u8; 1] = ron::from_str("(5)").unwrap();
         let expected: [u8; 1] = [5];
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 
     #[test]
@@ -538,7 +538,7 @@ mod tests {
         let actual: [Option<key::keyboard::Key>; 1] =
             ron::from_str("(Some(Key(key_code: 0x04)))").unwrap();
         let expected: [Option<key::keyboard::Key>; 1] = [Some(keyboard::Key::new(0x04))];
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 
     #[test]
@@ -546,7 +546,7 @@ mod tests {
         let actual: Option<key::keyboard::Key> =
             serde_json::from_str(r#"{"key_code": 4}"#).unwrap();
         let expected: Option<key::keyboard::Key> = Some(keyboard::Key::new(0x04));
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 
     #[test]
@@ -555,7 +555,7 @@ mod tests {
             serde_json::from_str(r#"[{"key_code": 4}]"#).unwrap();
         let mut expected: heapless::Vec<Option<key::keyboard::Key>, 1> = heapless::Vec::new();
         expected.push(Some(keyboard::Key::new(0x04))).unwrap();
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 
     #[test]
@@ -563,7 +563,7 @@ mod tests {
         let actual: [Option<key::keyboard::Key>; 1] =
             serde_json::from_str(r#"[{"key_code": 4}]"#).unwrap();
         let expected: [Option<key::keyboard::Key>; 1] = [Some(keyboard::Key::new(0x04))];
-        assert_eq!(actual, expected);
+        assert_eq!(expected, actual);
     }
 
     #[test]
@@ -572,7 +572,7 @@ mod tests {
             ron::from_str("(base: (key_code: 0x04), layered: [])").unwrap();
         let expected_key: LayeredKey<key::keyboard::Key> =
             LayeredKey::new(key::keyboard::Key::new(0x04), []);
-        assert_eq!(actual_key, expected_key);
+        assert_eq!(expected_key, actual_key);
     }
 
     #[test]
@@ -581,7 +581,7 @@ mod tests {
             serde_json::from_str(r#"{"base": {"key_code": 4}, "layered": []}"#).unwrap();
         let expected_key: LayeredKey<key::keyboard::Key> =
             LayeredKey::new(key::keyboard::Key::new(0x04), []);
-        assert_eq!(actual_key, expected_key);
+        assert_eq!(expected_key, actual_key);
     }
 
     #[test]
@@ -590,7 +590,7 @@ mod tests {
             ron::from_str("LayeredKey(base: Key(key_code: 0x04), layered: [None])").unwrap();
         let expected_key: LayeredKey<key::keyboard::Key> =
             LayeredKey::new(key::keyboard::Key::new(0x04), [None]);
-        assert_eq!(actual_key, expected_key);
+        assert_eq!(expected_key, actual_key);
     }
 
     #[test]
@@ -602,6 +602,6 @@ mod tests {
         let actual_active_layers: Vec<LayerIndex> = layer_state.active_layers().collect();
         let expected_active_layers: Vec<LayerIndex> = vec![3, 1, 0];
 
-        assert_eq!(actual_active_layers, expected_active_layers);
+        assert_eq!(expected_active_layers, actual_active_layers);
     }
 }

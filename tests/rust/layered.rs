@@ -35,7 +35,7 @@ fn press_base_key_when_no_layers_active() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report,);
 }
 
 #[test]
@@ -50,7 +50,7 @@ fn press_active_layer_when_layer_mod_held() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }
 
 #[test]
@@ -66,7 +66,7 @@ fn press_retained_when_layer_mod_released() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }
 
 #[test]
@@ -82,5 +82,5 @@ fn uses_base_when_pressed_after_layer_mod_released() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }

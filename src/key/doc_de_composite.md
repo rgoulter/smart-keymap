@@ -15,7 +15,7 @@ let json = r#"
 "#;
 let expected_key: Key = Key::keyboard(keyboard::Key::new(0x04));
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 
 # TapHold variant
@@ -38,7 +38,7 @@ let expected_key: Key = Key::tap_hold(tap_hold::Key {
     hold: keyboard::Key::new(224).into(),
   });
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 
 # Layer Modifier Key variant
@@ -58,7 +58,7 @@ let json = r#"
 "#;
 let expected_key: Key = Key::layer_modifier(layered::ModifierKey::Hold(2));
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 
 # Layered Key variant
@@ -84,5 +84,5 @@ let expected_key: Key = Key::layered(layered::LayeredKey::new(
     [Some(keyboard::Key::new(0x05).into()), None, Some(keyboard::Key::new(0x07).into())],
   ));
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```

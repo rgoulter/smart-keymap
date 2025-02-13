@@ -9,7 +9,7 @@ let json = r#"
 "#;
 let expected_key: Key = Key::new(0x04);
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 
 Modifiers:
@@ -24,7 +24,7 @@ let expected_key: Key = Key::from_modifiers(
     KeyboardModifiers::LEFT_CTRL,
 );
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 
 Key code with modifiers:
@@ -40,5 +40,5 @@ let expected_key: Key = Key::new_with_modifiers(
     KeyboardModifiers::LEFT_CTRL,
 );
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```

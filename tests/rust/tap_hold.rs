@@ -35,7 +35,7 @@ fn key_tapped() {
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }
 
 #[test]
@@ -68,5 +68,5 @@ fn key_unaffected_by_prev_key_release() {
     // Assert
     // Second timeout not invoked, key is still "Pending" state.
     let expected_report: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
-    assert_eq!(actual_report, expected_report);
+    assert_eq!(expected_report, actual_report);
 }

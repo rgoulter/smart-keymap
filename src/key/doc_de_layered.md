@@ -10,7 +10,7 @@ let json = r#"
 "#;
 let expected_key: ModifierKey = ModifierKey::Hold(2);
 let actual_key: ModifierKey = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
 
 # Layered Keys
@@ -35,5 +35,5 @@ let expected_key: Key = layered::LayeredKey::new(
   [Some(keyboard::Key::new(0x05)), None, Some(keyboard::Key::new(0x07))],
 );
 let actual_key: Key = serde_json::from_str(json).unwrap();
-assert_eq!(actual_key, expected_key);
+assert_eq!(expected_key, actual_key);
 ```
