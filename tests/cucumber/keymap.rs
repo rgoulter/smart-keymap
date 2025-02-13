@@ -43,7 +43,13 @@ impl LoadedKeymap {
 
     pub fn handle_input(&mut self, ev: input::Event) {
         match self {
-            LoadedKeymap::Keymap { keymap, .. } => keymap.handle_input(ev),
+            LoadedKeymap::Keymap {
+                keymap,
+                distinct_reports,
+            } => {
+                keymap.handle_input(ev);
+                distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+            }
             _ => panic!("No keymap loaded"),
         }
     }
