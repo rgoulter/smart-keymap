@@ -76,6 +76,15 @@ impl LoadedKeymap {
             _ => panic!("No keymap loaded"),
         }
     }
+
+    pub fn distinct_reports(&self) -> &keymap::DistinctReports {
+        match self {
+            LoadedKeymap::Keymap {
+                distinct_reports, ..
+            } => distinct_reports,
+            _ => panic!("No keymap loaded"),
+        }
+    }
 }
 #[derive(Debug, World)]
 pub struct KeymapWorld {
