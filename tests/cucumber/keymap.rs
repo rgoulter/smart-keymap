@@ -85,7 +85,7 @@ impl Default for KeymapWorld {
 }
 
 #[derive(Deserialize)]
-struct Keymap {
+struct DocstringKeymap {
     config: key::composite::Config,
     keys: Vec<Key>,
 }
@@ -98,7 +98,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
         keymap_ncl,
     ) {
         Ok(json) => {
-            let keymap_result: serde_json::Result<Keymap> = serde_json::from_str(&json);
+            let keymap_result: serde_json::Result<DocstringKeymap> = serde_json::from_str(&json);
             match keymap_result {
                 Ok(keymap) => {
                     let dyn_keys = keymap.keys.into_iter().collect();
