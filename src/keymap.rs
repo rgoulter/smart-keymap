@@ -496,8 +496,8 @@ impl<
     /// Updates the keymap indicating a report is sent; returns the reportable keymap output.
     pub fn report_output(&mut self) -> KeymapOutput {
         self.hid_reporter.update(self.pressed_keys());
-        let output = KeymapOutput::new(self.hid_reporter.reportable_key_outputs());
         self.hid_reporter.report_sent();
+        let output = KeymapOutput::new(self.hid_reporter.reportable_key_outputs());
         output
     }
 
