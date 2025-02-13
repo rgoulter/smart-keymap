@@ -131,22 +131,16 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
     world.keymap = LoadedKeymap::keymap(load_keymap(keymap_ncl));
 }
 
-#[when("the keymap registers the following input")]
-fn perform_input(world: &mut KeymapWorld, step: &Step) {
-    let inputs_ncl = step.docstring().unwrap();
+fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<input::Event> {
     match nickel_json_serialization_for_inputs(
         format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-        world.keymap_ncl.as_str(),
+        keymap_ncl,
         inputs_ncl,
     ) {
         Ok(json) => {
             let inputs_result: serde_json::Result<Vec<input::Event>> = serde_json::from_str(&json);
             match inputs_result {
-                Ok(inputs) => {
-                    for input in inputs {
-                        world.keymap.handle_input(input);
-                    }
-                }
+                Ok(inputs) => inputs,
                 Err(e) => {
                     panic!(
                         "\n\nerror deserailizing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
@@ -163,6 +157,16 @@ fn perform_input(world: &mut KeymapWorld, step: &Step) {
                 nickel_error_message
             ),
         },
+    }
+}
+
+#[when("the keymap registers the following input")]
+fn perform_input(world: &mut KeymapWorld, step: &Step) {
+    let inputs_ncl = step.docstring().unwrap();
+    let inputs = inputs_from_ncl(world.keymap_ncl.as_str(), inputs_ncl);
+
+    for input in inputs {
+        world.keymap.handle_input(input);
     }
 }
 
