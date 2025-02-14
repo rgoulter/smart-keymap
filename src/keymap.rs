@@ -328,7 +328,7 @@ impl<
                 i += 1;
             }
 
-            self.handle_all_pending_events();
+            self.handle_pending_events();
         }
     }
 
@@ -357,8 +357,6 @@ impl<
                             .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                     }
                 });
-
-                self.handle_all_pending_events();
 
                 match ev {
                     input::Event::Press { keymap_index } => {
@@ -434,7 +432,7 @@ impl<
 
         self.handle_resolved_pending_key_state(ev.into());
 
-        self.handle_all_pending_events();
+        self.handle_pending_events();
     }
 
     // Called from handle_all_pending_events,
@@ -472,9 +470,9 @@ impl<
         }
     }
 
-    fn handle_all_pending_events(&mut self) {
+    fn handle_pending_events(&mut self) {
         // take from pending
-        while let Some(ev) = self.event_scheduler.dequeue() {
+        if let Some(ev) = self.event_scheduler.dequeue() {
             self.handle_event(ev);
         }
     }
@@ -483,7 +481,7 @@ impl<
     pub fn tick(&mut self) {
         self.event_scheduler.tick();
 
-        self.handle_all_pending_events();
+        self.handle_pending_events();
     }
 
     /// Returns the the pressed key outputs.
