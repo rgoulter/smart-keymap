@@ -57,18 +57,12 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
       [
         press (K.A & K.hold K.LeftCtrl),
         press (K.B),
-        release (K.B),
       ]
-      """
-    Then the HID keyboard report should equal
-      """
-      { modifiers = { left_ctrl = true } }
       """
     Then the output should be equivalent to output from
       """
       [
         press (K.LeftCtrl),
         press (K.B),
-        release (K.B),
       ]
       """

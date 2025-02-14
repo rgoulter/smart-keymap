@@ -242,6 +242,17 @@ impl DistinctReports {
             _ => self.0.push(report),
         }
     }
+
+    /// Access reports as slice of reports.
+    pub fn reports(&self) -> &[[u8; 8]] {
+        self.0.as_slice()
+    }
+}
+
+#[derive(Debug)]
+struct PendingState {
+    pressed_key: composite::PressedKey,
+    queued_events: heapless::Vec<key::Event<composite::Event>, 16>,
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
@@ -252,6 +263,7 @@ pub struct Keymap<I> {
     pressed_inputs: heapless::Vec<input::PressedInput<composite::PressedKey>, 16>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
+    pending_key_state: Option<PendingState>,
 }
 
 impl<
@@ -271,6 +283,7 @@ impl<
             pressed_inputs: heapless::Vec::new(),
             event_scheduler: EventScheduler::new(),
             hid_reporter: HIDKeyboardReporter::new(),
+            pending_key_state: None,
         }
     }
 
@@ -279,109 +292,190 @@ impl<
         self.pressed_inputs.clear();
         self.event_scheduler.init();
         self.hid_reporter.init();
+        self.pending_key_state = None;
+    }
+
+    // If the pending key state is resolved,
+    //  then clear the pending key state.
+    fn handle_resolved_pending_key_state(&mut self, ev: key::Event<composite::Event>) {
+        if let Some(PendingState {
+            pressed_key,
+            queued_events,
+            ..
+        }) = self
+            .pending_key_state
+            .take_if(|PendingState { pressed_key, .. }| pressed_key.key_output().is_resolved())
+        {
+            // Add the pending state's pressed key to pressed inputs
+            //  if the ev which resolved the PK is not a key release event for that key.
+            match ev {
+                key::Event::Input(input::Event::Release { keymap_index })
+                    if keymap_index == pressed_key.keymap_index => {}
+
+                _ => {
+                    self.pressed_inputs
+                        .push(input::PressedInput::new_pressed_key(pressed_key))
+                        .unwrap();
+                }
+            }
+
+            // Schedule each of the queued events,
+            //  delaying each consecutive event by a tick
+            //  (in order to allow press/release events to affect the HID report)
+            let mut i = 1;
+            for ev in queued_events {
+                self.event_scheduler.schedule_after(i, ev);
+                i += 1;
+            }
+
+            self.handle_all_pending_events();
+        }
     }
 
     /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
+        match &mut self.pending_key_state {
+            Some(PendingState {
+                queued_events,
+                pressed_key,
+                ..
+            }) if !pressed_key.key_output().is_resolved() => {
+                pressed_key
+                    .handle_event(self.context, ev.into())
+                    .into_iter()
+                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+
+                queued_events.push(ev.into()).unwrap();
+            }
+            _ => {
+                // Update each of the pressed keys with the event.
+                self.pressed_inputs.iter_mut().for_each(|pi| {
+                    if let input::PressedInput::Key { pressed_key, .. } = pi {
+                        pressed_key
+                            .handle_event(self.context, ev.into())
+                            .into_iter()
+                            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                    }
+                });
+
+                self.handle_all_pending_events();
+
+                match ev {
+                    input::Event::Press { keymap_index } => {
+                        let key = &mut self.key_definitions[keymap_index as usize];
+
+                        let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
+
+                        pke.into_iter()
+                            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+
+                        if pk.key_output().is_resolved() {
+                            self.pressed_inputs
+                                .push(input::PressedInput::new_pressed_key(pk))
+                                .unwrap();
+                        } else {
+                            self.pending_key_state = Some(PendingState {
+                                pressed_key: pk,
+                                queued_events: heapless::Vec::new(),
+                            });
+                        }
+                    }
+                    input::Event::Release { keymap_index } => {
+                        self.pressed_inputs
+                            .iter()
+                            .position(|pi| match pi {
+                                input::PressedInput::Key {
+                                    pressed_key:
+                                        input::PressedKey {
+                                            keymap_index: ki, ..
+                                        },
+                                    ..
+                                } => keymap_index == *ki,
+                                _ => false,
+                            })
+                            .map(|i| self.pressed_inputs.remove(i));
+
+                        self.event_scheduler
+                            .cancel_events_for_keymap_index(keymap_index);
+                    }
+
+                    input::Event::VirtualKeyPress {
+                        key_code,
+                        pressed_keymap_index,
+                    } => {
+                        // Insert into pressed_keys before the pressed key with the
+                        //  given keymap index.
+                        let pressed_key = input::PressedInput::Virtual { key_code };
+                        let pos = self
+                            .pressed_inputs
+                            .iter()
+                            .position(|k| match k {
+                                input::PressedInput::Key { pressed_key, .. } => {
+                                    pressed_key.keymap_index == pressed_keymap_index
+                                }
+                                _ => false,
+                            })
+                            .unwrap_or(self.pressed_inputs.len());
+                        self.pressed_inputs.insert(pos, pressed_key).unwrap();
+                    }
+                    input::Event::VirtualKeyRelease { key_code } => {
+                        // Remove from pressed keys.
+                        self.pressed_inputs
+                            .iter()
+                            .position(|k| match k {
+                                input::PressedInput::Virtual { key_code: kc } => key_code == *kc,
+                                _ => false,
+                            })
+                            .map(|i| self.pressed_inputs.remove(i));
+                    }
+                }
+            }
+        }
+
+        self.handle_resolved_pending_key_state(ev.into());
+
+        self.handle_all_pending_events();
+    }
+
+    // Called from handle_all_pending_events,
+    //  and for handling the (resolving) queue of events from pending key state.
+    fn handle_event(&mut self, ev: key::Event<composite::Event>) {
+        // pending state needs to handle events
+        if let Some(PendingState { pressed_key, .. }) = &mut self.pending_key_state {
+            if !pressed_key.key_output().is_resolved() {
+                pressed_key
+                    .handle_event(self.context, ev)
+                    .into_iter()
+                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+            }
+        }
+
+        self.handle_resolved_pending_key_state(ev.into());
+
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
             if let input::PressedInput::Key { pressed_key, .. } = pi {
                 pressed_key
-                    .handle_event(self.context, ev.into())
+                    .handle_event(self.context, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
         });
 
-        self.handle_all_pending_events();
-
-        match ev {
-            input::Event::Press { keymap_index } => {
-                let key = &mut self.key_definitions[keymap_index as usize];
-
-                let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
-
-                pke.into_iter()
-                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-
-                self.pressed_inputs
-                    .push(input::PressedInput::new_pressed_key(pk))
-                    .unwrap();
-            }
-            input::Event::Release { keymap_index } => {
-                self.pressed_inputs
-                    .iter()
-                    .position(|pi| match pi {
-                        input::PressedInput::Key {
-                            pressed_key:
-                                input::PressedKey {
-                                    keymap_index: ki, ..
-                                },
-                            ..
-                        } => keymap_index == *ki,
-                        _ => false,
-                    })
-                    .map(|i| self.pressed_inputs.remove(i));
-
-                self.event_scheduler
-                    .cancel_events_for_keymap_index(keymap_index);
-            }
-
-            input::Event::VirtualKeyPress {
-                key_code,
-                pressed_keymap_index,
-            } => {
-                // Insert into pressed_keys before the pressed key with the
-                //  given keymap index.
-                let pressed_key = input::PressedInput::Virtual { key_code };
-                let pos = self
-                    .pressed_inputs
-                    .iter()
-                    .position(|k| match k {
-                        input::PressedInput::Key { pressed_key, .. } => {
-                            pressed_key.keymap_index == pressed_keymap_index
-                        }
-                        _ => false,
-                    })
-                    .unwrap_or(self.pressed_inputs.len());
-                self.pressed_inputs.insert(pos, pressed_key).unwrap();
-            }
-            input::Event::VirtualKeyRelease { key_code } => {
-                // Remove from pressed keys.
-                self.pressed_inputs
-                    .iter()
-                    .position(|k| match k {
-                        input::PressedInput::Virtual { key_code: kc } => key_code == *kc,
-                        _ => false,
-                    })
-                    .map(|i| self.pressed_inputs.remove(i));
-            }
+        // Update context with the event
+        if let key::Event::Key { key_event, .. } = ev {
+            self.context.handle_event(key_event);
         }
 
-        self.handle_all_pending_events();
+        if let Event::Input(input_ev) = ev {
+            self.handle_input(input_ev);
+        }
     }
 
     fn handle_all_pending_events(&mut self) {
         // take from pending
         while let Some(ev) = self.event_scheduler.dequeue() {
-            // Update each of the pressed keys with the event.
-            self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key { pressed_key, .. } = pi {
-                    pressed_key
-                        .handle_event(self.context, ev)
-                        .into_iter()
-                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-                }
-            });
-
-            // Update context with the event
-            if let key::Event::Key { key_event, .. } = ev {
-                self.context.handle_event(key_event);
-            }
-
-            if let Event::Input(input_ev) = ev {
-                self.handle_input(input_ev);
-            }
+            self.handle_event(ev);
         }
     }
 
@@ -394,23 +488,12 @@ impl<
 
     /// Returns the the pressed key outputs.
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, 16> {
-        let pressed_key_codes = self
-            .pressed_inputs
-            .iter()
-            .take_while(|pi| match pi {
-                input::PressedInput::Key { pressed_key, .. } => {
-                    pressed_key.key_output().is_resolved()
-                }
-                _ => true,
-            })
-            .filter_map(|pi| match pi {
-                input::PressedInput::Key { pressed_key, .. } => {
-                    pressed_key.key_output().to_option()
-                }
-                input::PressedInput::Virtual { key_code } => {
-                    Some(key::KeyOutput::from_key_code(*key_code))
-                }
-            });
+        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
+            input::PressedInput::Key { pressed_key, .. } => pressed_key.key_output().to_option(),
+            input::PressedInput::Virtual { key_code } => {
+                Some(key::KeyOutput::from_key_code(*key_code))
+            }
+        });
 
         pressed_key_codes.collect()
     }
@@ -418,8 +501,8 @@ impl<
     /// Updates the keymap indicating a report is sent; returns the reportable keymap output.
     pub fn report_output(&mut self) -> KeymapOutput {
         self.hid_reporter.update(self.pressed_keys());
-        let output = KeymapOutput::new(self.hid_reporter.reportable_key_outputs());
         self.hid_reporter.report_sent();
+        let output = KeymapOutput::new(self.hid_reporter.reportable_key_outputs());
         output
     }
 
@@ -427,6 +510,12 @@ impl<
     #[doc(hidden)]
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         KeymapOutput::new(self.pressed_keys()).as_hid_boot_keyboard_report()
+    }
+
+    #[doc(hidden)]
+    pub fn has_scheduled_events(&self) -> bool {
+        self.event_scheduler.pending_events.len() > 0
+            || self.event_scheduler.scheduled_events.len() > 0
     }
 }
 
