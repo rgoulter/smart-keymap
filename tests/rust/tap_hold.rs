@@ -8,6 +8,7 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 use smart_keymap::tuples;
 
+use keymap::DistinctReports;
 use keymap::Keymap;
 
 use key::composite::{Context, Event, PressedKey};
@@ -27,15 +28,28 @@ const CONTEXT: Context = composite::DEFAULT_CONTEXT;
 fn key_tapped() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    let actual_report = keymap.boot_keyboard_report();
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-    assert_eq!(expected_report, actual_report);
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
@@ -47,26 +61,40 @@ fn key_unaffected_by_prev_key_release() {
 
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
 
     // Act
     // Press key (starting a 200 tick timeout),
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     // Release, then press key a second time before 200 ticks.
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     for _ in 0..150 {
         keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     }
+
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     // Tick a few more times, until the first timeout would be scheduled,
     // (but before the second timeout is scheduled)
     for _ in 0..100 {
         // 250
         keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     }
-    let actual_report = keymap.boot_keyboard_report();
 
     // Assert
     // Second timeout not invoked, key is still "Pending" state.
-    let expected_report: [u8; 8] = [0, 0, 0, 0, 0, 0, 0, 0];
-    assert_eq!(expected_report, actual_report);
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
 }

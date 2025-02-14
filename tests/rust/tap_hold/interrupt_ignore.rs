@@ -3,6 +3,7 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 use smart_keymap::tuples;
 
+use keymap::DistinctReports;
 use keymap::Keymap;
 
 use key::{composite, keyboard, tap_hold};
@@ -28,17 +29,32 @@ const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 fn rolled_presses() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
 
     // Act
     // Roll the keys: press 0, press 1, release 0,
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    let actual_report = keymap.boot_keyboard_report();
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x04, 0x05, 0, 0, 0, 0];
-    assert_eq!(expected_report, actual_report);
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
+        [0, 0, 0x05, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
@@ -56,53 +72,61 @@ fn rolled_presses_desc_keycodes() {
     ));
     let mut keymap = Keymap::new(keys, CONTEXT);
 
-    // Roll the keys: press 0, press 1, release 0,
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    keymap.handle_input(input::Event::Release { keymap_index: 0 });
     {
-        keymap.tick();
-        let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
-        let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
-        assert_eq!(expected_report, actual_report);
-    }
-    {
-        keymap.tick();
-        let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
-        let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
-        assert_eq!(expected_report, actual_report);
+        let mut actual_reports = DistinctReports::new();
+
+        // Roll the keys: press 0, press 1, release 0,
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+        while keymap.has_scheduled_events() {
+            keymap.tick();
+            actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+        }
+
+        let expected_reports: &[[u8; 8]] = &[
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, K_O, 0, 0, 0, 0, 0],
+            [0, 0, K_O, K_G, 0, 0, 0, 0],
+            [0, 0, K_G, 0, 0, 0, 0, 0],
+        ];
+        assert_eq!(expected_reports, actual_reports.reports());
     }
 
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
 
-    // Tick until the "tap" virtual key from tap-hold
-    //  has been released
-    for _ in 0..200 {
-        keymap.tick();
-        let _ = keymap.pressed_keys();
-    }
-
-    let _ = keymap.report_output();
-
     // Act
     // Roll a second time
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    {
+        let mut actual_reports = DistinctReports::new();
 
-    // Assert
-    // Only one pressed key reported in each new report,
-    //  even for multiple rolls.
-    {
-        keymap.tick();
-        let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
-        let expected_report: [u8; 8] = [0, 0, K_O, 0, 0, 0, 0, 0];
-        assert_eq!(expected_report, actual_report);
-    }
-    {
-        keymap.tick();
-        let actual_report = keymap.report_output().as_hid_boot_keyboard_report();
-        let expected_report: [u8; 8] = [0, 0, K_O, K_G, 0, 0, 0, 0];
-        assert_eq!(expected_report, actual_report);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+        while keymap.has_scheduled_events() {
+            keymap.tick();
+            actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+        }
+
+        // Assert
+        let expected_reports: &[[u8; 8]] = &[
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, K_O, 0, 0, 0, 0, 0],
+            [0, 0, K_O, K_G, 0, 0, 0, 0],
+            [0, 0, K_G, 0, 0, 0, 0, 0],
+        ];
+        assert_eq!(expected_reports, actual_reports.reports());
     }
 }
