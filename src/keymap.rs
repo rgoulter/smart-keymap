@@ -317,7 +317,7 @@ impl<
             // Schedule each of the queued events,
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
-            let mut i = 0;
+            let mut i = 1;
             for ev in queued_events {
                 self.event_scheduler.schedule_after(i, ev);
                 i += 1;
