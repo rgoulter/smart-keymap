@@ -37,12 +37,16 @@ impl<E: Debug> EventScheduler<E> {
     pub fn schedule_event(&mut self, scheduled_event: key::ScheduledEvent<E>) {
         match scheduled_event.schedule {
             key::Schedule::Immediate => {
-                self.pending_events.enqueue(scheduled_event.event).unwrap();
+                self.enqueue_event(scheduled_event.event);
             }
             key::Schedule::After(delay) => {
                 self.schedule_after(delay as u32, scheduled_event.event);
             }
         }
+    }
+
+    pub fn enqueue_event(&mut self, event: Event<E>) {
+        self.pending_events.enqueue(event).unwrap();
     }
 
     pub fn schedule_after(&mut self, delay: u32, event: Event<E>) {
