@@ -28,6 +28,7 @@
     pkgs.cargo-nextest
     pkgs.elf2uf2-rs
     pkgs.just
+    pkgs.lldb
     pkgs.nickel
     pkgs.rust-cbindgen
     pkgs.yaml-language-server
