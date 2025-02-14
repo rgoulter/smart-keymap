@@ -3,6 +3,7 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 use smart_keymap::tuples;
 
+use keymap::DistinctReports;
 use keymap::Keymap;
 
 use key::{composite, keyboard, tap_hold};
@@ -35,30 +36,54 @@ const CONTEXT: Ctx = Ctx {
 fn rolled_presses_resolves_hold() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
 
     // Act
-    // Roll the keys: press 0, press 1, release 0,
+    // Roll the keys: press 0, press 1, ...
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    let actual_report = keymap.boot_keyboard_report();
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
 
     // Assert
-    let expected_report: [u8; 8] = [0x01, 0, 0x05, 0, 0, 0, 0, 0];
-    assert_eq!(expected_report, actual_report);
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0x01, 0, 0, 0, 0, 0, 0, 0],
+        [0x01, 0, 0x05, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn interrupting_press_resolves_hold() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
 
     // Act
     // Press the TH key, then interrupt it with a press.
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    let actual_report = keymap.boot_keyboard_report();
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
 
     // Assert
-    let expected_report: [u8; 8] = [0x01, 0, 0x05, 0, 0, 0, 0, 0];
-    assert_eq!(expected_report, actual_report);
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0x01, 0, 0, 0, 0, 0, 0, 0],
+        [0x01, 0, 0x05, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
 }
