@@ -85,6 +85,22 @@ impl LoadedKeymap {
             _ => panic!("No keymap loaded"),
         }
     }
+
+    pub fn tick_until_no_scheduled_events(&mut self) {
+        match self {
+            LoadedKeymap::Keymap {
+                keymap,
+                distinct_reports,
+                ..
+            } => {
+                while keymap.has_scheduled_events() {
+                    keymap.tick();
+                    distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+                }
+            }
+            _ => panic!("No keymap loaded"),
+        }
+    }
 }
 #[derive(Debug, World)]
 pub struct KeymapWorld {
@@ -243,13 +259,7 @@ fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
         expected_reports.update(test_keymap.report_output().as_hid_boot_keyboard_report());
     }
 
-    // tick() the 'actual' keymap
-    // (incl. updating the 'actual' distinct reports).
-    // Helps with cases where a pending key (e.g. tap-hold)
-    // resolves, and has scheduled events.
-    for _ in 0..20 {
-        world.keymap.tick();
-    }
+    world.keymap.tick_until_no_scheduled_events();
 
     let actual_reports = world.keymap.distinct_reports();
     assert_eq!(&expected_reports, actual_reports);
