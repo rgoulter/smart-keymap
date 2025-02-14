@@ -248,7 +248,6 @@ impl DistinctReports {
 struct PendingState {
     pressed_key: composite::PressedKey,
     queued_events: heapless::Vec<key::Event<composite::Event>, 16>,
-    key_released: bool,
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
@@ -291,32 +290,55 @@ impl<
         self.pending_key_state = None;
     }
 
+    // If the pending key state is resolved,
+    //  then clear the pending key state.
+    fn handle_resolved_pending_key_state(&mut self, ev: key::Event<composite::Event>) {
+        if let Some(PendingState {
+            pressed_key,
+            queued_events,
+            ..
+        }) = self
+            .pending_key_state
+            .take_if(|PendingState { pressed_key, .. }| pressed_key.key_output().is_resolved())
+        {
+            // Add the pending state's pressed key to pressed inputs
+            //  if the ev which resolved the PK is not a key release event for that key.
+            match ev {
+                key::Event::Input(input::Event::Release { keymap_index })
+                    if keymap_index == pressed_key.keymap_index => {}
+
+                _ => {
+                    self.pressed_inputs
+                        .push(input::PressedInput::new_pressed_key(pressed_key))
+                        .unwrap();
+                }
+            }
+
+            // Schedule each of the queued events,
+            //  delaying each consecutive event by a tick
+            //  (in order to allow press/release events to affect the HID report)
+            let mut i = 0;
+            for ev in queued_events {
+                self.event_scheduler.schedule_after(i, ev);
+                i += 1;
+            }
+
+            self.handle_all_pending_events();
+        }
+    }
+
     /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
         match &mut self.pending_key_state {
             Some(PendingState {
                 queued_events,
                 pressed_key,
-                key_released,
+                ..
             }) if !pressed_key.key_output().is_resolved() => {
                 pressed_key
                     .handle_event(self.context, ev.into())
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-
-                // If the pending pressed key was resolved by
-                //  a key release event, update pending key state.
-                if pressed_key.key_output().is_resolved() {
-                    match ev {
-                        input::Event::Release { keymap_index }
-                            if keymap_index == pressed_key.keymap_index =>
-                        {
-                            *key_released = true;
-                        }
-
-                        _ => {}
-                    }
-                }
 
                 queued_events.push(ev.into()).unwrap();
             }
@@ -350,7 +372,6 @@ impl<
                             self.pending_key_state = Some(PendingState {
                                 pressed_key: pk,
                                 queued_events: heapless::Vec::new(),
-                                key_released: false,
                             });
                         }
                     }
@@ -406,6 +427,8 @@ impl<
             }
         }
 
+        self.handle_resolved_pending_key_state(ev.into());
+
         self.handle_all_pending_events();
     }
 
@@ -413,33 +436,16 @@ impl<
     //  and for handling the (resolving) queue of events from pending key state.
     fn handle_event(&mut self, ev: key::Event<composite::Event>) {
         // pending state needs to handle events
-        if let Some(PendingState {
-            pressed_key,
-            key_released,
-            ..
-        }) = &mut self.pending_key_state
-        {
+        if let Some(PendingState { pressed_key, .. }) = &mut self.pending_key_state {
             if !pressed_key.key_output().is_resolved() {
                 pressed_key
                     .handle_event(self.context, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-
-                // If the pending pressed key was resolved by
-                //  a key release event, update pending key state.
-                if pressed_key.key_output().is_resolved() {
-                    match ev {
-                        key::Event::Input(input::Event::Release { keymap_index })
-                            if keymap_index == pressed_key.keymap_index =>
-                        {
-                            *key_released = true;
-                        }
-
-                        _ => {}
-                    }
-                }
             }
         }
+
+        self.handle_resolved_pending_key_state(ev.into());
 
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
@@ -471,41 +477,6 @@ impl<
     /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
         self.event_scheduler.tick();
-
-        // If the keymap has some pending key state,
-        //  and the pending key has resolved,
-        //  process through the events which were queued
-        //  when the key was pending.
-        let pending_state_has_queued_events = self
-            .pending_key_state
-            .as_ref()
-            .filter(|ps| ps.pressed_key.key_output().is_resolved())
-            .map(|ps| !ps.queued_events.is_empty());
-        if let Some(has_queued_events) = pending_state_has_queued_events {
-            if has_queued_events {
-                let ev = self
-                    .pending_key_state
-                    .as_mut()
-                    .unwrap()
-                    .queued_events
-                    .remove(0);
-                self.handle_event(ev);
-            } else {
-                let pending_key_state = self.pending_key_state.take();
-                if let Some(PendingState {
-                    pressed_key,
-                    key_released,
-                    ..
-                }) = pending_key_state
-                {
-                    if !key_released {
-                        self.pressed_inputs
-                            .push(input::PressedInput::new_pressed_key(pressed_key))
-                            .unwrap();
-                    }
-                }
-            }
-        }
 
         self.handle_all_pending_events();
     }
