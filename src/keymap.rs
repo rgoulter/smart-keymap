@@ -242,6 +242,11 @@ impl DistinctReports {
             _ => self.0.push(report),
         }
     }
+
+    /// Access reports as slice of reports.
+    pub fn reports(&self) -> &[[u8; 8]] {
+        self.0.as_slice()
+    }
 }
 
 #[derive(Debug)]
