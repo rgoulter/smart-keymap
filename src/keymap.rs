@@ -506,6 +506,12 @@ impl<
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         KeymapOutput::new(self.pressed_keys()).as_hid_boot_keyboard_report()
     }
+
+    #[doc(hidden)]
+    pub fn has_scheduled_events(&self) -> bool {
+        self.event_scheduler.pending_events.len() > 0
+            || self.event_scheduler.scheduled_events.len() > 0
+    }
 }
 
 #[cfg(test)]
