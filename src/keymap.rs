@@ -268,6 +268,7 @@ pub struct Keymap<I> {
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState>,
+    input_queue: heapless::spsc::Queue<input::Event, 32>,
 }
 
 impl<
@@ -288,6 +289,7 @@ impl<
             event_scheduler: EventScheduler::new(),
             hid_reporter: HIDKeyboardReporter::new(),
             pending_key_state: None,
+            input_queue: heapless::spsc::Queue::new(),
         }
     }
 
@@ -297,11 +299,14 @@ impl<
         self.event_scheduler.init();
         self.hid_reporter.init();
         self.pending_key_state = None;
+        while !self.input_queue.is_empty() {
+            self.input_queue.dequeue().unwrap();
+        }
     }
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
-    fn handle_resolved_pending_key_state(&mut self, ev: key::Event<composite::Event>) {
+    fn handle_resolved_pending_key_state(&mut self, _ev: key::Event<composite::Event>) {
         if let Some(PendingState {
             pressed_key,
             queued_events,
@@ -311,25 +316,24 @@ impl<
             .take_if(|PendingState { pressed_key, .. }| pressed_key.key_output().is_resolved())
         {
             // Add the pending state's pressed key to pressed inputs
-            //  if the ev which resolved the PK is not a key release event for that key.
-            match ev {
-                key::Event::Input(input::Event::Release { keymap_index })
-                    if keymap_index == pressed_key.keymap_index => {}
-
-                _ => {
-                    self.pressed_inputs
-                        .push(input::PressedInput::new_pressed_key(pressed_key))
-                        .unwrap();
-                }
-            }
+            self.pressed_inputs
+                .push(input::PressedInput::new_pressed_key(pressed_key))
+                .unwrap();
 
             // Schedule each of the queued events,
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
             let mut i = 1;
             for ev in queued_events {
-                self.event_scheduler.schedule_after(i, ev);
-                i += 1;
+                match ev {
+                    key::Event::Input(ie) => {
+                        self.input_queue.enqueue(ie.into()).unwrap();
+                    }
+                    _ => {
+                        self.event_scheduler.schedule_after(i, ev);
+                        i += 1;
+                    }
+                }
             }
 
             self.handle_pending_events();
@@ -338,6 +342,14 @@ impl<
 
     /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
+        self.input_queue.enqueue(ev).unwrap();
+
+        if let Some(ie) = self.input_queue.dequeue() {
+            self.process_input(ie);
+        }
+    }
+
+    fn process_input(&mut self, ev: input::Event) {
         match &mut self.pending_key_state {
             Some(PendingState {
                 queued_events,
@@ -470,7 +482,7 @@ impl<
         }
 
         if let Event::Input(input_ev) = ev {
-            self.handle_input(input_ev);
+            self.process_input(input_ev);
         }
     }
 
@@ -483,6 +495,11 @@ impl<
 
     /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
+        if !self.input_queue.is_empty() {
+            let ie = self.input_queue.dequeue().unwrap();
+            self.process_input(ie);
+        }
+
         self.event_scheduler.tick();
 
         self.handle_pending_events();
@@ -518,6 +535,7 @@ impl<
     pub fn has_scheduled_events(&self) -> bool {
         self.event_scheduler.pending_events.len() > 0
             || self.event_scheduler.scheduled_events.len() > 0
+            || self.input_queue.len() > 0
     }
 }
 
