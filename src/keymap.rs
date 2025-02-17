@@ -6,6 +6,12 @@ use crate::key;
 
 use key::{composite, Context, Event, PressedKey};
 
+const MAX_PENDING_EVENTS: usize = 32;
+const MAX_SCHEDULED_EVENTS: usize = 32;
+
+/// Maximum number of pressed keys supported.
+pub const MAX_PRESSED_KEYS: usize = 16;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct ScheduledEvent<E: Debug> {
     time: u32,
@@ -14,8 +20,8 @@ struct ScheduledEvent<E: Debug> {
 
 #[derive(Debug)]
 struct EventScheduler<E: Debug> {
-    pending_events: heapless::spsc::Queue<Event<E>, 256>,
-    scheduled_events: heapless::Vec<ScheduledEvent<E>, 16>,
+    pending_events: heapless::spsc::Queue<Event<E>, { MAX_PENDING_EVENTS }>,
+    scheduled_events: heapless::Vec<ScheduledEvent<E>, { MAX_SCHEDULED_EVENTS }>,
     schedule_counter: u32,
 }
 
@@ -96,12 +102,12 @@ impl<E: Debug> EventScheduler<E> {
 /// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
 #[derive(Debug)]
 pub struct KeymapOutput {
-    pressed_key_codes: heapless::Vec<key::KeyOutput, 16>,
+    pressed_key_codes: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>,
 }
 
 impl KeymapOutput {
     /// Constructs a new keymap output.
-    pub fn new(pressed_key_codes: heapless::Vec<key::KeyOutput, 16>) -> Self {
+    pub fn new(pressed_key_codes: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>) -> Self {
         Self { pressed_key_codes }
     }
 
@@ -156,7 +162,7 @@ impl KeymapOutput {
 ///  so that the USB host doesn't confuse the sequence of pressed keys.
 #[derive(Debug)]
 pub struct HIDKeyboardReporter {
-    pressed_key_outputs: heapless::Vec<key::KeyOutput, 16>,
+    pressed_key_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>,
     num_reportable_keys: u8,
 }
 
@@ -176,7 +182,10 @@ impl HIDKeyboardReporter {
     }
 
     /// Updates the state of the HIDKeyboardReporter with the given pressed key outputs.
-    pub fn update(&mut self, pressed_key_outputs: heapless::Vec<key::KeyOutput, 16>) {
+    pub fn update(
+        &mut self,
+        pressed_key_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>,
+    ) {
         // e.g.
         //  WAS: A B C
         //  NOW: A   C D
@@ -218,7 +227,7 @@ impl HIDKeyboardReporter {
     }
 
     /// Gets the filtered pressed key outputs, suitable for sending for HID reports.
-    pub fn reportable_key_outputs(&self) -> heapless::Vec<key::KeyOutput, 16> {
+    pub fn reportable_key_outputs(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         self.pressed_key_outputs
             .clone()
             .into_iter()
@@ -256,7 +265,7 @@ impl DistinctReports {
 #[derive(Debug)]
 struct PendingState {
     pressed_key: composite::PressedKey,
-    queued_events: heapless::Vec<key::Event<composite::Event>, 16>,
+    queued_events: heapless::Vec<key::Event<composite::Event>, { MAX_PRESSED_KEYS }>,
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
@@ -264,7 +273,7 @@ struct PendingState {
 pub struct Keymap<I> {
     key_definitions: I,
     context: composite::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput<composite::PressedKey>, 16>,
+    pressed_inputs: heapless::Vec<input::PressedInput<composite::PressedKey>, { MAX_PRESSED_KEYS }>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState>,
@@ -510,7 +519,7 @@ impl<
     }
 
     /// Returns the the pressed key outputs.
-    pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, 16> {
+    pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key { pressed_key, .. } => pressed_key.key_output().to_option(),
             input::PressedInput::Virtual { key_code } => {
@@ -552,7 +561,7 @@ mod tests {
     #[test]
     fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {
         // Assemble - include modifier key left ctrl
-        let mut input: heapless::Vec<key::KeyOutput, 16> = heapless::Vec::new();
+        let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
         input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
         input.push(key::KeyOutput::from_key_code(0xE0)).unwrap();
 
@@ -567,7 +576,7 @@ mod tests {
     #[test]
     fn test_keymap_output_as_hid_boot_keyboard_report_gathers_modifiers() {
         // Assemble - include modifier key left ctrl
-        let mut input: heapless::Vec<key::KeyOutput, 16> = heapless::Vec::new();
+        let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
         input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
         input.push(key::KeyOutput::from_key_code(0xE0)).unwrap();
 
@@ -583,7 +592,7 @@ mod tests {
     #[test]
     fn test_hid_keyboard_reporter_reports_single_keypress() {
         // Assemble
-        let mut input: heapless::Vec<key::KeyOutput, 16> = heapless::Vec::new();
+        let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
         input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
 
         let mut reporter = HIDKeyboardReporter::new();
@@ -593,7 +602,7 @@ mod tests {
         let actual_outputs = reporter.reportable_key_outputs();
 
         // Assert
-        let expected_outputs: heapless::Vec<key::KeyOutput, 16> = [0x04]
+        let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
@@ -603,7 +612,7 @@ mod tests {
     #[test]
     fn test_hid_keyboard_reporter_reports_single_new_keypress_per_report_sent() {
         // Assemble
-        let input: heapless::Vec<key::KeyOutput, 16> = [0x04, 0x05]
+        let input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
@@ -615,7 +624,7 @@ mod tests {
         let actual_outputs = reporter.reportable_key_outputs();
 
         // Assert
-        let expected_outputs: heapless::Vec<key::KeyOutput, 16> = [0x04]
+        let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
@@ -625,7 +634,7 @@ mod tests {
     #[test]
     fn test_hid_keyboard_reporter_reports_more_keypresses_after_report_sent() {
         // Assemble
-        let input: heapless::Vec<key::KeyOutput, 16> = [0x04, 0x05]
+        let input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
@@ -638,7 +647,7 @@ mod tests {
         let actual_outputs = reporter.reportable_key_outputs();
 
         // Assert
-        let expected_outputs: heapless::Vec<key::KeyOutput, 16> = [0x04, 0x05]
+        let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
@@ -648,18 +657,19 @@ mod tests {
     #[test]
     fn test_hid_keyboard_reporter_reports_updates_for_key_releases() {
         // Assemble
-        let input: heapless::Vec<key::KeyOutput, 16> = [0x04, 0x05]
+        let input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
-        let input_after_key_released: heapless::Vec<key::KeyOutput, 16> = [0x05]
+        let input_after_key_released: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x05]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
-        let input_after_more_keys_pressed: heapless::Vec<key::KeyOutput, 16> = [0x05, 0x06, 0x07]
-            .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
-            .collect();
+        let input_after_more_keys_pressed: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> =
+            [0x05, 0x06, 0x07]
+                .iter()
+                .map(|kc| key::KeyOutput::from_key_code(*kc))
+                .collect();
 
         let mut reporter = HIDKeyboardReporter::new();
 
@@ -677,7 +687,7 @@ mod tests {
         let actual_outputs = reporter.reportable_key_outputs();
 
         // Assert
-        let expected_outputs: heapless::Vec<key::KeyOutput, 16> = [0x05, 0x06]
+        let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x05, 0x06]
             .iter()
             .map(|kc| key::KeyOutput::from_key_code(*kc))
             .collect();
