@@ -121,10 +121,10 @@ let A_S = K.S & K.hold K.RightAlt in
 
 {
   keys = [
-    K.Quote, K.Comma, K.Dot, K.P, K.Y,          K.F, K.G, K.C, K.R, K.L,
-    A_A, G_O, C_E, S_U, K.I,                    K.D, S_H, C_T, G_N, A_S,
-    K.Semicolon, K.Q, K.J, K.K, K.X,            K.B, K.M, K.W, K.V, K.Z,
-    K.LeftCtrl, K.LeftGUI, K.LeftAlt, K.Tab, K.Escape, K.Space,   K.Backspace, K.Return, K.Delete, K.RightAlt, K.RightGUI, K.RightCtrl,
+    K.QUOT, K.COMM, K.DOT,  K.P,   K.Y,                  K.F,   K.G,   K.C,    K.R,    K.L,
+    A_A,    G_O,    C_E,    S_U,   K.I,                  K.D,   S_H,   C_T,    G_N,    A_S,
+    K.SCLN, K.Q,    K.J,    K.K,   K.X,                  K.B,   K.M,   K.W,    K.V,    K.Z,
+    K.LCTL, K.LGUI, K.LALT, K.TAB, K.ESC, K.SPC, K.BSPC, K.RET, K.DEL, K.RALT, K.RGUI, K.RCTL,
   ],
 }
 ```
