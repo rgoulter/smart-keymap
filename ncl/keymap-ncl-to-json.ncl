@@ -339,7 +339,7 @@ let validators = import "validators.ncl" in
       if std.array.length layers == 0 then
         std.fail_with "keys or layers must be provided"
       else if std.array.length layers <= 1 then
-        std.array.at 0 layers
+        std.array.at 0 layers |> layer_as_array_of_keys
       else
         let base_keys = std.array.first layers_of_keys in
         let layered_keys = std.array.drop_first layers_of_keys in
