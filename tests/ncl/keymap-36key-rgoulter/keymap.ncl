@@ -13,6 +13,7 @@ let MOU_R = 4 in
 let MED_R = 5 in
 
 {
+  config.tap_hold.interrupt_response = "HoldOnKeyTap",
   custom_keys = fun K =>
     let HoldLayerMod = fun layer_index => K.hold (K.layer_mod.hold layer_index) in
     {
