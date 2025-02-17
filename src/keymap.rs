@@ -442,6 +442,7 @@ impl<
                             })
                             .map(|i| self.pressed_inputs.remove(i));
                     }
+                    _ => {}
                 }
             }
         }
