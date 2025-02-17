@@ -23,7 +23,7 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
       }
       """
 
-  Example: rolling key presses (press TH(A), press B)
+  Example: rolling key presses (press TH(A), press B, release TH(A), release B)
 
     Rolling the tap-hold key
     with another key
@@ -36,6 +36,8 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
       [
         press (K.A & K.hold K.LeftCtrl),
         press (K.B),
+        release (K.A & K.hold K.LeftCtrl),
+        release (K.B),
       ]
       """
     Then the output should be equivalent to output from
@@ -43,6 +45,8 @@ Feature: TapHold Key (configure interrupt response: hold on key press)
       [
         press (K.LeftCtrl),
         press (K.B),
+        release (K.LeftCtrl),
+        release (K.B),
       ]
       """
 
