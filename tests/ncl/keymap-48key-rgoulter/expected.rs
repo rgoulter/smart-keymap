@@ -4,7 +4,7 @@ pub mod init {
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         tap_hold: crate::key::tap_hold::Config {
             timeout: 200,
-            interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
+            interrupt_response: crate::key::tap_hold::InterruptResponse::HoldOnKeyTap,
         },
     };
 
