@@ -324,6 +324,9 @@ impl<
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
             let mut i = 1;
+            self.input_queue
+                .enqueue(input::Event::InputResolved)
+                .unwrap();
             for ev in queued_events {
                 match ev {
                     key::Event::Input(ie) => {
