@@ -16,6 +16,7 @@ keymap_key_features=(
     "tap_hold-config-timeout"
     "tap_hold-config-interrupt-ignore"
     "tap_hold-config-interrupt-presses"
+    "tap_hold-config-interrupt-tap"
     "layered"
 )
 
