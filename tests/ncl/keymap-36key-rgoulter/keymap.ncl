@@ -30,7 +30,7 @@ let MED_R = 5 in
       S_U = K.U & K.H_LShift,
 
       S_H = K.H & K.H_RShift,
-      C_T = K.T & K.H_RCtrl,
+      C_T = K.T & K.H_LCtrl,
       G_N = K.N & K.H_RGUI,
       A_S = K.S & K.H_LAlt,
     },

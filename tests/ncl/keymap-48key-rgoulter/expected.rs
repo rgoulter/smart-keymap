@@ -687,7 +687,7 @@ pub mod init {
                 crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(23)),
                 crate::key::composite::BaseKey::keyboard(
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::RIGHT_CTRL
+                        crate::key::KeyboardModifiers::LEFT_CTRL
                             .union(&crate::key::KeyboardModifiers::new()),
                     ),
                 ),
