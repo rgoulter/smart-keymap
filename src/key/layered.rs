@@ -283,7 +283,7 @@ mod tests {
 
     use key::KeyOutput;
 
-    use key::composite::BasePressedKeyState;
+    use key::composite::BasePressedKey;
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
@@ -379,12 +379,12 @@ mod tests {
             layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let expected_pressed_key_state = expected_key.new_pressed_key();
-
-        assert_eq!(
-            BasePressedKeyState::Keyboard(expected_pressed_key_state),
-            actual_pressed_key.pressed_key_state,
-        );
+        let expected_pressed_key: BasePressedKey = input::PressedKey {
+            keymap_index,
+            key: expected_key.into(),
+            pressed_key_state: expected_key.new_pressed_key().into(),
+        };
+        assert_eq!(expected_pressed_key, actual_pressed_key,);
     }
 
     #[test]
@@ -441,11 +441,12 @@ mod tests {
             layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let expected_pressed_key_state = expected_key.new_pressed_key();
-        assert_eq!(
-            BasePressedKeyState::Keyboard(expected_pressed_key_state),
-            actual_pressed_key.pressed_key_state,
-        );
+        let expected_pressed_key: BasePressedKey = input::PressedKey {
+            keymap_index,
+            key: expected_key.into(),
+            pressed_key_state: expected_key.new_pressed_key().into(),
+        };
+        assert_eq!(expected_pressed_key, actual_pressed_key,);
     }
 
     #[test]
@@ -473,11 +474,12 @@ mod tests {
             layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let expected_pressed_key_state = expected_key.new_pressed_key();
-        assert_eq!(
-            BasePressedKeyState::Keyboard(expected_pressed_key_state),
-            actual_pressed_key.pressed_key_state,
-        );
+        let expected_pressed_key: BasePressedKey = input::PressedKey {
+            keymap_index,
+            key: expected_key.into(),
+            pressed_key_state: expected_key.new_pressed_key().into(),
+        };
+        assert_eq!(expected_pressed_key, actual_pressed_key,);
     }
 
     #[test]
@@ -500,11 +502,12 @@ mod tests {
             layered_key.new_pressed_key(context, keymap_index);
 
         // Assert
-        let expected_pressed_key_state = expected_key.new_pressed_key();
-        assert_eq!(
-            BasePressedKeyState::Keyboard(expected_pressed_key_state),
-            actual_pressed_key.pressed_key_state,
-        );
+        let expected_pressed_key: BasePressedKey = input::PressedKey {
+            keymap_index,
+            key: expected_key.into(),
+            pressed_key_state: expected_key.new_pressed_key().into(),
+        };
+        assert_eq!(expected_pressed_key, actual_pressed_key,);
     }
 
     #[test]
