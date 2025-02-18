@@ -168,3 +168,39 @@ impl PressedKeyState {
 //         None
 //     }
 // }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use key::keyboard;
+
+    use key::KeyOutput;
+
+    use key::composite::BasePressedKey;
+
+    #[test]
+    fn test_timeout_resolves_unsatisfied_key_state_as_passthrough_key() {}
+
+    #[test]
+    fn test_timeout_resolves_satisfied_key_state_as_chord() {}
+
+    #[test]
+    fn test_press_non_chorded_key_resolves_state_as_interrupted() {}
+
+    // "unambiguous" in the sense that the chord
+    // is not overlapped by another chord.
+    // e.g. chord "01" is overlapped by chord "012",
+    //  and "01" would be 'ambiguous'.
+    #[test]
+    fn test_press_chorded_key_resolves_unambiguous_state_as_chord() {}
+
+    #[test]
+    fn test_release_resolved_chord_state_releases_chord() {}
+
+    #[test]
+    fn test_release_resolved_passthrough_state_releases_passthrough_key() {}
+
+    #[test]
+    fn test_release_pending_state_resolves_as_tapped_key() {}
+}
