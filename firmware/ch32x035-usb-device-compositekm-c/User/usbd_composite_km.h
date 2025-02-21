@@ -18,10 +18,6 @@
 
 #include <stdint.h>
 
-#include "debug.h"
-#include "string.h"
-#include "usb_desc.h"
-
 /*******************************************************************************/
 /* Keyboard Key Value Macro Definition */
 #define DEF_KEY_CHAR_W 0x1A /* "W" */

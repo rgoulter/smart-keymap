@@ -16,6 +16,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 /* IO definitions */
 #ifdef __cplusplus
   #define     __I     volatile                /* defines 'read only' permissions */

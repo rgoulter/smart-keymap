@@ -84,7 +84,9 @@ typedef enum IRQn
 #define HardFault_IRQn    EXC_IRQn
 
 #include <stdint.h>
+
 #include "core_riscv.h"
+
 #include "system_ch32x035.h"
 
 /* Standard Peripheral Library old definitions (maintained for legacy purpose) */
