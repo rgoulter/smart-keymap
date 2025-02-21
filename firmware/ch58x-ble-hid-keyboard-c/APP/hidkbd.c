@@ -13,11 +13,12 @@
 /*********************************************************************
  * INCLUDES
  */
-#include "hidkbd.h"
 #include "CONFIG.h"
+
 #include "battservice.h"
 #include "devinfoservice.h"
 #include "hiddev.h"
+#include "hidkbd.h"
 #include "hidkbdservice.h"
 
 #include "keyboard_wabble60.h"

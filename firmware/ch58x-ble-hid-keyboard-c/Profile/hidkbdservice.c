@@ -11,10 +11,11 @@
 /*********************************************************************
  * INCLUDES
  */
-#include "hidkbdservice.h"
 #include "CONFIG.h"
+
 #include "battservice.h"
 #include "hiddev.h"
+#include "hidkbdservice.h"
 
 /*********************************************************************
  * MACROS

@@ -11,8 +11,8 @@
 
 /******************************************************************************/
 /* 头文件包含 */
-#include "CONFIG.h"
 #include "HAL.h"
+
 #include "hiddev.h"
 #include "hidkbd.h"
 

@@ -11,8 +11,9 @@
 /*********************************************************************
  * INCLUDES
  */
-#include "scanparamservice.h"
 #include "CONFIG.h"
+
+#include "scanparamservice.h"
 
 /*********************************************************************
  * MACROS
