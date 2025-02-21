@@ -149,8 +149,6 @@
     = m%"
   #include <stdbool.h>
 
-  #include "ch32x035.h"
-
   #include "debug.h"
 
   #include "ch32x035_gpio.h"
