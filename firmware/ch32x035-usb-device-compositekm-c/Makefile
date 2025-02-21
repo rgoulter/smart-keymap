@@ -16,6 +16,10 @@ test:
 	  ncl/test-expected-ch32x-48.ncl \
 	  ncl/test-actual-ch32x-48.ncl
 
+.PHONY: format
+format:
+	find User -name '*.c' -or -name '*.h' | xargs clang-format -i
+
 .PHONY: generated/matrix.c
 generated/matrix.c:
 	nickel export \
