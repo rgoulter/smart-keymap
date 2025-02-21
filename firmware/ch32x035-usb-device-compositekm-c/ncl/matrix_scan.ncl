@@ -151,6 +151,8 @@
 
   #include "ch32x035.h"
 
+  #include "debug.h"
+
   #include "smart_keymap.h"
 
   %{keyboard_matrix_init board}
