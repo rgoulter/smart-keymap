@@ -11,7 +11,7 @@ add_executable(usb-device-compositekm
   User/main.c
   User/system_ch32x035.c
   User/usb_desc.c
-  User/usbd_compostie_km.c
+  User/usbd_composite_km.c
 )
 target_include_directories(usb-device-compositekm PUBLIC User)
 
