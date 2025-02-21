@@ -47,3 +47,18 @@ make
 ```
 
 and flashed using `wchlink`.
+
+### LSP Configuration for clangd
+
+`clangd` can be configured using a file `.clangd` with contents e.g.:
+
+```
+CompileFlags:
+  Remove:
+    - -mcmodel=medany
+    - -mabi=*
+    - -march=*
+    - -mno-save-restore
+    - -G
+  CompilationDatabase: "build"
+```
