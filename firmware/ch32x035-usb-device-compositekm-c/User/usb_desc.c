@@ -1,15 +1,15 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : composite_km_desc.h
+/********************************** (C) COPYRIGHT
+ ******************************** File Name          : composite_km_desc.h
  * Author             : WCH
  * Version            : V1.0.0
  * Date               : 2023/04/06
- * Description        : All descriptors for the keyboard and mouse composite device.
-*********************************************************************************
-* Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
-* Attention: This software (modified or not) and binary are used for 
-* microcontroller manufactured by Nanjing Qinheng Microelectronics.
-*******************************************************************************/
-
+ * Description        : All descriptors for the keyboard and mouse composite
+ *device.
+ *********************************************************************************
+ * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
+ * Attention: This software (modified or not) and binary are used for
+ * microcontroller manufactured by Nanjing Qinheng Microelectronics.
+ *******************************************************************************/
 
 /*******************************************************************************/
 /* Header File */
@@ -210,23 +210,8 @@ const uint8_t MyLangDescr[ ] =
 
 // clang-format on
 /* Manufacturer Descriptor */
-const uint8_t MyManuInfo[ ] =
-{
-    0x0E,
-    0x03,
-    'w',
-    0,
-    'c',
-    0,
-    'h',
-    0,
-    '.',
-    0,
-    'c',
-    0,
-    'n',
-    0
-};
+const uint8_t MyManuInfo[] = {0x0E, 0x03, 'w', 0,   'c', 0,   'h',
+                              0,    '.',  0,   'c', 0,   'n', 0};
 // clang-format on
 
 // clang-format off

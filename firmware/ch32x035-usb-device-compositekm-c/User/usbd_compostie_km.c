@@ -1,20 +1,19 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : usbd_composite_km.c
+/********************************** (C) COPYRIGHT
+ ******************************** File Name          : usbd_composite_km.c
  * Author             : WCH
  * Version            : V1.0.0
  * Date               : 2023/04/06
  * Description        : USB keyboard and mouse processing.
-*********************************************************************************
-* Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
-* Attention: This software (modified or not) and binary are used for 
-* microcontroller manufactured by Nanjing Qinheng Microelectronics.
-*******************************************************************************/
-
+ *********************************************************************************
+ * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
+ * Attention: This software (modified or not) and binary are used for
+ * microcontroller manufactured by Nanjing Qinheng Microelectronics.
+ *******************************************************************************/
 
 /*******************************************************************************/
 /* Header Files */
-#include <ch32x035_usbfs_device.h>
 #include "usbd_composite_km.h"
+#include <ch32x035_usbfs_device.h>
 
 #include "keyboard_ch32x_48.h"
 #include "smart_keymap.h"
@@ -23,13 +22,15 @@
 /* Global Variable Definition */
 
 /* Keyboard */
-volatile uint8_t  KB_Scan_Done = 0x00;                                          // Keyboard Keys Scan Done
-volatile uint16_t KB_Scan_Result = (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11);                                      // Keyboard Keys Current Scan Result
-volatile uint16_t KB_Scan_Last_Result = (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11);                                 // Keyboard Keys Last Scan Result
-uint8_t  KB_Data_Pack[ 8 ] = { 0x00 };                                          // Keyboard IN Data Packet
-uint8_t  PREV_KB_Data_Pack[ 8 ] = { 0x00 };                                          // Keyboard IN Data Packet
-volatile uint8_t  KB_LED_Last_Status = 0x00;                                    // Keyboard LED Last Result
-volatile uint8_t  KB_LED_Cur_Status = 0x00;                                     // Keyboard LED Current Result
+volatile uint8_t KB_Scan_Done = 0x00; // Keyboard Keys Scan Done
+volatile uint16_t KB_Scan_Result =
+    (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11); // Keyboard Keys Current Scan Result
+volatile uint16_t KB_Scan_Last_Result =
+    (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11);   // Keyboard Keys Last Scan Result
+uint8_t KB_Data_Pack[8] = {0x00};           // Keyboard IN Data Packet
+uint8_t PREV_KB_Data_Pack[8] = {0x00};      // Keyboard IN Data Packet
+volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
+volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
 /*******************************************************************************/
 /* Interrupt Function Declaration */
@@ -45,31 +46,30 @@ void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
  *
  * @return  none
  */
-void TIM3_Init( uint16_t arr, uint16_t psc )
-{
-    TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure = { 0 };
-    NVIC_InitTypeDef NVIC_InitStructure = { 0 };
+void TIM3_Init(uint16_t arr, uint16_t psc) {
+  TIM_TimeBaseInitTypeDef TIM_TimeBaseStructure = {0};
+  NVIC_InitTypeDef NVIC_InitStructure = {0};
 
-    /* Enable Timer3 Clock */
-    RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM3, ENABLE );
+  /* Enable Timer3 Clock */
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM3, ENABLE);
 
-    /* Initialize Timer3 */
-    TIM_TimeBaseStructure.TIM_Period = arr;
-    TIM_TimeBaseStructure.TIM_Prescaler = psc;
-    TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
-    TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-    TIM_TimeBaseInit( TIM3, &TIM_TimeBaseStructure );
+  /* Initialize Timer3 */
+  TIM_TimeBaseStructure.TIM_Period = arr;
+  TIM_TimeBaseStructure.TIM_Prescaler = psc;
+  TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV1;
+  TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+  TIM_TimeBaseInit(TIM3, &TIM_TimeBaseStructure);
 
-    TIM_ITConfig( TIM3, TIM_IT_Update, ENABLE );
+  TIM_ITConfig(TIM3, TIM_IT_Update, ENABLE);
 
-    NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
-    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
-    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
-    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
-    NVIC_Init( &NVIC_InitStructure );
+  NVIC_InitStructure.NVIC_IRQChannel = TIM3_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 2;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
 
-    /* Enable Timer3 */
-    TIM_Cmd( TIM3, ENABLE );
+  /* Enable Timer3 */
+  TIM_Cmd(TIM3, ENABLE);
 }
 
 /*********************************************************************
@@ -79,38 +79,36 @@ void TIM3_Init( uint16_t arr, uint16_t psc )
  *
  * @return  none
  */
-void TIM3_IRQHandler( void )
-{
-    static uint16_t led_timer = 0;
-    static uint8_t led_state = 0;
+void TIM3_IRQHandler(void) {
+  static uint16_t led_timer = 0;
+  static uint8_t led_state = 0;
 
-    if( TIM_GetITStatus( TIM3, TIM_IT_Update ) != RESET )
-    {
+  if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
 
-        /* Handle keyboard scan */
-        KB_Scan( );
+    /* Handle keyboard scan */
+    KB_Scan();
 
-        /* Handle keyboard scan data */
-        KB_Scan_Handle(  );
+    /* Handle keyboard scan data */
+    KB_Scan_Handle();
 
-        // Toggle the LED every 1000 ticks
-        // (should be 1s)
-        led_timer++;
-        if (led_timer > 1000) {
-            led_timer = 0;
-            led_state = 1 - led_state;
+    // Toggle the LED every 1000 ticks
+    // (should be 1s)
+    led_timer++;
+    if (led_timer > 1000) {
+      led_timer = 0;
+      led_state = 1 - led_state;
 
-            // LED = A5
-            GPIO_WriteBit(GPIOA, GPIO_Pin_5, led_state);
-        }
-
-        if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0) {
-            keymap_tick(KB_Data_Pack);
-        }
-
-        /* Clear interrupt flag */
-        TIM_ClearITPendingBit( TIM3, TIM_IT_Update );
+      // LED = A5
+      GPIO_WriteBit(GPIOA, GPIO_Pin_5, led_state);
     }
+
+    if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0) {
+      keymap_tick(KB_Data_Pack);
+    }
+
+    /* Clear interrupt flag */
+    TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
+  }
 }
 
 /*********************************************************************
@@ -120,29 +118,28 @@ void TIM3_IRQHandler( void )
  *
  * @return  none
  */
-void KB_Scan_Init( void )
-{
-    keyboard_matrix_init();
+void KB_Scan_Init(void) {
+  keyboard_matrix_init();
 
-    GPIO_ResetBits(GPIOB, GPIO_Pin_1); // col0
-    Delay_Us(5);
-    bool is_boot = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4) != 1; // row0
-    if (is_boot) {
-        SystemReset_StartMode(Start_Mode_BOOT);
-        NVIC_SystemReset();
-    }
+  GPIO_ResetBits(GPIOB, GPIO_Pin_1); // col0
+  Delay_Us(5);
+  bool is_boot = GPIO_ReadInputDataBit(GPIOA, GPIO_Pin_4) != 1; // row0
+  if (is_boot) {
+    SystemReset_StartMode(Start_Mode_BOOT);
+    NVIC_SystemReset();
+  }
 
-    keymap_init();
+  keymap_init();
 
-    // Init LED
-    // LED, A5
-    {
-        GPIO_InitTypeDef GPIO_InitStructure = {0};
-        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-        GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-        GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-        GPIO_Init(GPIOA, &GPIO_InitStructure);
-    }
+  // Init LED
+  // LED, A5
+  {
+    GPIO_InitTypeDef GPIO_InitStructure = {0};
+    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_Init(GPIOA, &GPIO_InitStructure);
+  }
 }
 
 /*********************************************************************
@@ -152,42 +149,42 @@ void KB_Scan_Init( void )
  *
  * @return  none
  */
-void KB_Sleep_Wakeup_Cfg( void )
-{
-    EXTI_InitTypeDef EXTI_InitStructure = { 0 };
+void KB_Sleep_Wakeup_Cfg(void) {
+  EXTI_InitTypeDef EXTI_InitStructure = {0};
 
-    /* Enable GPIOB clock */
-    RCC_APB2PeriphClockCmd( RCC_APB2Periph_AFIO, ENABLE );
+  /* Enable GPIOB clock */
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
 
-    GPIO_EXTILineConfig( GPIO_PortSourceGPIOB, GPIO_PinSource0 );
-    EXTI_InitStructure.EXTI_Line = EXTI_Line0;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init( &EXTI_InitStructure );
+  GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource0);
+  EXTI_InitStructure.EXTI_Line = EXTI_Line0;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
 
-    GPIO_EXTILineConfig( GPIO_PortSourceGPIOB, GPIO_PinSource1 );
-    EXTI_InitStructure.EXTI_Line = EXTI_Line1;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init( &EXTI_InitStructure );
+  GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource1);
+  EXTI_InitStructure.EXTI_Line = EXTI_Line1;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
 
-    GPIO_EXTILineConfig( GPIO_PortSourceGPIOB, GPIO_PinSource3 );
-    EXTI_InitStructure.EXTI_Line = EXTI_Line3;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init( &EXTI_InitStructure );
+  GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource3);
+  EXTI_InitStructure.EXTI_Line = EXTI_Line3;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
 
-    GPIO_EXTILineConfig( GPIO_PortSourceGPIOB, GPIO_PinSource11 );
-    EXTI_InitStructure.EXTI_Line = EXTI_Line11;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init( &EXTI_InitStructure );
+  GPIO_EXTILineConfig(GPIO_PortSourceGPIOB, GPIO_PinSource11);
+  EXTI_InitStructure.EXTI_Line = EXTI_Line11;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Falling;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
 
-    EXTI->INTENR |= EXTI_INTENR_MR0 | EXTI_INTENR_MR1 | EXTI_INTENR_MR3 | EXTI_INTENR_MR11;
+  EXTI->INTENR |=
+      EXTI_INTENR_MR0 | EXTI_INTENR_MR1 | EXTI_INTENR_MR3 | EXTI_INTENR_MR11;
 }
 
 /*********************************************************************
@@ -197,10 +194,9 @@ void KB_Sleep_Wakeup_Cfg( void )
  *
  * @return  none
  */
-void KB_Scan( void )
-{
-    keyboard_matrix_scan();
-    KB_Scan_Done = 1;
+void KB_Scan(void) {
+  keyboard_matrix_scan();
+  KB_Scan_Done = 1;
 }
 
 /*********************************************************************
@@ -210,9 +206,7 @@ void KB_Scan( void )
  *
  * @return  none
  */
-void KB_Scan_Handle( void )
-{
-}
+void KB_Scan_Handle(void) {}
 
 /*********************************************************************
  * @fn      KB_LED_Handle
@@ -221,45 +215,31 @@ void KB_Scan_Handle( void )
  *
  * @return  none
  */
-void KB_LED_Handle( void )
-{
-    if( KB_LED_Cur_Status != KB_LED_Last_Status )
-    {
-        if( ( KB_LED_Cur_Status & 0x01 ) != ( KB_LED_Last_Status & 0x01 ) )
-        {
-            if( KB_LED_Cur_Status & 0x01 )
-            {
-                printf("Turn on the NUM LED\r\n");
-            }
-            else
-            {
-                printf("Turn off the NUM LED\r\n");
-            }
-        }
-        if( ( KB_LED_Cur_Status & 0x02 ) != ( KB_LED_Last_Status & 0x02 ) )
-        {
-            if( KB_LED_Cur_Status & 0x02 )
-            {
-                printf("Turn on the CAPS LED\r\n");
-            }
-            else
-            {
-                printf("Turn off the CAPS LED\r\n");
-            }
-        }
-        if( ( KB_LED_Cur_Status & 0x04 ) != ( KB_LED_Last_Status & 0x04 ) )
-        {
-            if( KB_LED_Cur_Status & 0x04 )
-            {
-                printf("Turn on the SCROLL LED\r\n");
-            }
-            else
-            {
-                printf("Turn off the SCROLL LED\r\n");
-            }
-        }
-        KB_LED_Last_Status = KB_LED_Cur_Status;
+void KB_LED_Handle(void) {
+  if (KB_LED_Cur_Status != KB_LED_Last_Status) {
+    if ((KB_LED_Cur_Status & 0x01) != (KB_LED_Last_Status & 0x01)) {
+      if (KB_LED_Cur_Status & 0x01) {
+        printf("Turn on the NUM LED\r\n");
+      } else {
+        printf("Turn off the NUM LED\r\n");
+      }
     }
+    if ((KB_LED_Cur_Status & 0x02) != (KB_LED_Last_Status & 0x02)) {
+      if (KB_LED_Cur_Status & 0x02) {
+        printf("Turn on the CAPS LED\r\n");
+      } else {
+        printf("Turn off the CAPS LED\r\n");
+      }
+    }
+    if ((KB_LED_Cur_Status & 0x04) != (KB_LED_Last_Status & 0x04)) {
+      if (KB_LED_Cur_Status & 0x04) {
+        printf("Turn on the SCROLL LED\r\n");
+      } else {
+        printf("Turn off the SCROLL LED\r\n");
+      }
+    }
+    KB_LED_Last_Status = KB_LED_Cur_Status;
+  }
 }
 
 /*********************************************************************
@@ -269,15 +249,14 @@ void KB_LED_Handle( void )
  *
  * @return  none
  */
-void USB_Sleep_Wakeup_CFG( void )
-{
-    EXTI_InitTypeDef EXTI_InitStructure = { 0 };
+void USB_Sleep_Wakeup_CFG(void) {
+  EXTI_InitTypeDef EXTI_InitStructure = {0};
 
-    EXTI_InitStructure.EXTI_Line = EXTI_Line28;
-    EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
-    EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
-    EXTI_InitStructure.EXTI_LineCmd = ENABLE;
-    EXTI_Init( &EXTI_InitStructure );
+  EXTI_InitStructure.EXTI_Line = EXTI_Line28;
+  EXTI_InitStructure.EXTI_Mode = EXTI_Mode_Event;
+  EXTI_InitStructure.EXTI_Trigger = EXTI_Trigger_Rising;
+  EXTI_InitStructure.EXTI_LineCmd = ENABLE;
+  EXTI_Init(&EXTI_InitStructure);
 }
 
 /*********************************************************************
@@ -287,28 +266,26 @@ void USB_Sleep_Wakeup_CFG( void )
  *
  * @return  none
  */
-void MCU_Sleep_Wakeup_Operate( void )
-{
-    printf( "Sleep\r\n" );
-    __disable_irq();
-    EXTI_ClearFlag( EXTI_Line0 | EXTI_Line1 | EXTI_Line3 | EXTI_Line11 );
-    EXTI_ClearFlag( EXTI_Line4 | EXTI_Line5 | EXTI_Line6 | EXTI_Line7 );
+void MCU_Sleep_Wakeup_Operate(void) {
+  printf("Sleep\r\n");
+  __disable_irq();
+  EXTI_ClearFlag(EXTI_Line0 | EXTI_Line1 | EXTI_Line3 | EXTI_Line11);
+  EXTI_ClearFlag(EXTI_Line4 | EXTI_Line5 | EXTI_Line6 | EXTI_Line7);
 
-    PWR_EnterSTOPMode(PWR_STOPEntry_WFE);
-    SystemInit();
-    SystemCoreClockUpdate();
-    USBFS_RCC_Init();
+  PWR_EnterSTOPMode(PWR_STOPEntry_WFE);
+  SystemInit();
+  SystemCoreClockUpdate();
+  USBFS_RCC_Init();
 
-    if( EXTI_GetFlagStatus( EXTI_Line0 | EXTI_Line1 | EXTI_Line3 | EXTI_Line11 ) != RESET  )
-    {
-        EXTI_ClearFlag( EXTI_Line0 | EXTI_Line1 | EXTI_Line3 | EXTI_Line11 );
-        USBFS_Send_Resume( );
-    }
-    else if( EXTI_GetFlagStatus( EXTI_Line4 | EXTI_Line5 | EXTI_Line6 | EXTI_Line7 ) != RESET )
-    {
-        EXTI_ClearFlag( EXTI_Line4 | EXTI_Line5 | EXTI_Line6 | EXTI_Line7 );
-        USBFS_Send_Resume( );
-    }
-    __enable_irq();
-    printf( "Wake\r\n" );
+  if (EXTI_GetFlagStatus(EXTI_Line0 | EXTI_Line1 | EXTI_Line3 | EXTI_Line11) !=
+      RESET) {
+    EXTI_ClearFlag(EXTI_Line0 | EXTI_Line1 | EXTI_Line3 | EXTI_Line11);
+    USBFS_Send_Resume();
+  } else if (EXTI_GetFlagStatus(EXTI_Line4 | EXTI_Line5 | EXTI_Line6 |
+                                EXTI_Line7) != RESET) {
+    EXTI_ClearFlag(EXTI_Line4 | EXTI_Line5 | EXTI_Line6 | EXTI_Line7);
+    USBFS_Send_Resume();
+  }
+  __enable_irq();
+  printf("Wake\r\n");
 }
