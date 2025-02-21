@@ -3,6 +3,8 @@ cmake_minimum_required(VERSION 3.29)
 project(ble-hid-keyboard)
 enable_language(C ASM)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_executable(HID_Keyboard
     APP/hidkbd.c
     APP/hidkbd_main.c
