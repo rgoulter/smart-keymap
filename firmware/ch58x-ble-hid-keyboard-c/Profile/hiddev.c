@@ -12,12 +12,14 @@
 /*********************************************************************
  * INCLUDES
  */
+
+#include <stdint.h>
+
 #include "CONFIG.h"
 
 #include "battservice.h"
 #include "devinfoservice.h"
 #include "hiddev.h"
-#include "hidkbd.h"
 #include "scanparamservice.h"
 
 /*********************************************************************

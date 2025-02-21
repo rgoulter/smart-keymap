@@ -11,6 +11,9 @@
 /*********************************************************************
  * INCLUDES
  */
+
+#include <stdint.h>
+
 #include "CONFIG.h"
 
 #include "devinfoservice.h"

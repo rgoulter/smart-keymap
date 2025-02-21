@@ -20,6 +20,10 @@ extern "C" {
  * INCLUDES
  */
 
+#include <stdint.h>
+
+#include "CONFIG.h"
+
 /*********************************************************************
  * MACROS
  */
