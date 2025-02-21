@@ -1,0 +1,24 @@
+board := "ncl/wabble-60.ncl"
+
+default: build
+
+_libsmartkeymap:
+  make libsmartkeymap
+
+generate-matrix:
+  make generated/matrix.c BOARD={{board}}
+
+cmake-generate: _libsmartkeymap generate-matrix
+  mkdir -p build
+  cd build && \
+    cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
+
+build: cmake-generate
+  cd build && \
+    make
+
+await-bootloader:
+  timeout 30 ./scripts/wchisp-await-bootloader.sh
+
+flash: build await-bootloader
+  wchisp flash build/HID_Keyboard.hex
