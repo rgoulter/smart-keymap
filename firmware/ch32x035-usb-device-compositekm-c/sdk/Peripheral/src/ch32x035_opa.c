@@ -9,8 +9,8 @@
 * Attention: This software (modified or not) and binary are used for
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
-#include "ch32x035_opa.h"
 
+#include "ch32x035_opa.h"
 
 /* FLASH Keys */
 #define OPA_KEY1                 ((uint32_t)0x45670123)

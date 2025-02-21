@@ -7,6 +7,7 @@
  * Attention: This software (modified or not) and binary are used for
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
+
 #include "ch32x035_it.h"
 
 void NMI_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast")));

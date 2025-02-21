@@ -9,7 +9,9 @@
 * Attention: This software (modified or not) and binary are used for
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
+
 #include "ch32x035_pwr.h"
+
 #include "ch32x035_rcc.h"
 
 #include "debug.h"

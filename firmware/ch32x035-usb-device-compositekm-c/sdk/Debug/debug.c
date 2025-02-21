@@ -10,6 +10,7 @@
 * Attention: This software (modified or not) and binary are used for
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
+
 #include "debug.h"
 
 #include "ch32x035.h"
