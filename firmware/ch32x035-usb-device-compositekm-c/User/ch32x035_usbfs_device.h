@@ -18,14 +18,11 @@
 
 #include <stdint.h>
 
-#include "ch32x035.h" // IWYU pragma: keep (core rv.h uses this)
-
-#include "core_riscv.h"
+#include "ch32x035.h" // IWYU pragma: keep (core rv.h included through this)
 
 #include "ch32x035_pwr.h"
 
 #include "usb_desc.h"
-#include <ch32x035_usb.h>
 
 /*******************************************************************************/
 /* Macro Definition */

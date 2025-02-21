@@ -27,9 +27,9 @@
 #include "ch32x035_dbgmcu.h"
 #include "ch32x035_misc.h"
 
+#include "ch32x035_usbfs_device.h"
 #include "system_ch32x035.h"
 #include "usbd_composite_km.h"
-#include "ch32x035_usbfs_device.h"
 
 extern uint8_t KB_Data_Pack[8];
 extern uint8_t PREV_KB_Data_Pack[8];

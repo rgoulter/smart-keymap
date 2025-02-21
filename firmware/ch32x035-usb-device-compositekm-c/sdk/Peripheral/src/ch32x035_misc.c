@@ -9,6 +9,7 @@
 * Attention: This software (modified or not) and binary are used for 
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
+
 #include "ch32x035_misc.h"
 
 __IO uint32_t NVIC_Priority_Group = 0;

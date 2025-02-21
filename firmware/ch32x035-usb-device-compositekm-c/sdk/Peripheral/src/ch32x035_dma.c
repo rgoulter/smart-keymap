@@ -9,8 +9,10 @@
 * Attention: This software (modified or not) and binary are used for 
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
+
 #include "ch32x035_dma.h"
-#include "ch32x035_rcc.h"
+
+#include "ch32x035.h"
 
 /* DMA1 Channelx interrupt pending bit masks */
 #define DMA1_Channel1_IT_Mask    ((uint32_t)(DMA_GIF1 | DMA_TCIF1 | DMA_HTIF1 | DMA_TEIF1))

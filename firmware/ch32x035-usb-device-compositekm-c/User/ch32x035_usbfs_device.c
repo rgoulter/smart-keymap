@@ -19,6 +19,7 @@
 
 #include "ch32x035_gpio.h"
 #include "ch32x035_rcc.h"
+#include "ch32x035_usb.h"
 
 #include "usbd_composite_km.h"
 
@@ -46,7 +47,8 @@ volatile uint8_t USBFS_HidIdle[2];
 volatile uint8_t USBFS_HidProtocol[2];
 
 /* Endpoint Buffer */
-__attribute__((aligned(4))) uint8_t USBFS_EP0_Buf[DEF_USBD_UEP0_SIZE]; // ep0(64)
+__attribute__((
+    aligned(4))) uint8_t USBFS_EP0_Buf[DEF_USBD_UEP0_SIZE]; // ep0(64)
 __attribute__((
     aligned(4))) uint8_t USBFS_EP1_Buf[DEF_USB_EP1_FS_SIZE]; // ep1_in(64)
 __attribute__((

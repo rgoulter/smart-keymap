@@ -9,6 +9,7 @@
 * Attention: This software (modified or not) and binary are used for
 * microcontroller manufactured by Nanjing Qinheng Microelectronics.
 *******************************************************************************/
+
 #include "ch32x035_dbgmcu.h"
 
 #define IDCODE_DEVID_MASK    ((uint32_t)0x0000FFFF)

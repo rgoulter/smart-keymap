@@ -13,7 +13,6 @@
 #ifndef __CH32X035_USBPD_H
 #define __CH32X035_USBPD_H
 
-
 #ifdef __cplusplus
  extern "C" {
 #endif
