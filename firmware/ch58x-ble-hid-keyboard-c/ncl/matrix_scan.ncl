@@ -101,6 +101,8 @@
 
   #include "CH58x_common.h"
 
+  #include "smart_keymap.h"
+
   bool previousScan[%{std.to_string board.num_keys}] = { false };
   bool currentScan[%{std.to_string board.num_keys}] = { false };
 
