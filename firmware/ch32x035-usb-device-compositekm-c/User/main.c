@@ -19,6 +19,8 @@
  * B11.
  */
 
+#include <stdint.h>
+
 #include "debug.h"
 #include "usbd_composite_km.h"
 #include <ch32x035_usbfs_device.h>
