@@ -16,6 +16,11 @@ test:
 	  ncl/test-expected-wabble-60.ncl \
 	  ncl/test-actual-wabble-60.ncl
 
+.PHONY: format
+format:
+	find APP -name '*.c' -or -name '*.h' | xargs clang-format -i
+	find Profile -name '*.c' -or -name '*.h' | xargs clang-format -i
+
 .PHONY: generated/matrix.c
 generated/matrix.c:
 	nickel export \
