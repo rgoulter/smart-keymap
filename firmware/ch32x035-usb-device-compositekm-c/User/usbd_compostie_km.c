@@ -18,6 +18,8 @@
 
 #include "debug.h"
 
+#include "system_ch32x035.h"
+
 #include <ch32x035_usbfs_device.h>
 
 #include "keyboard_ch32x_48.h"

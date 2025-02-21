@@ -14,6 +14,8 @@
 
 #include "ch32x035.h"
 
+#include "system_ch32x035.h"
+
 static uint8_t  p_us = 0;
 static uint16_t p_ms = 0;
 
