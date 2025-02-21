@@ -45,3 +45,17 @@ The WeAct core board, for some reason, has code protection enabled. This require
 and a WCH link compatible with the CH32X035, such as WCH-LinkE.
 (SEE: https://github.com/ch32-rs/wchisp/issues/68#issuecomment-2558167356).
 
+### LSP Configuration for clangd
+
+`clangd` can be configured using a file `.clangd` with contents e.g.:
+
+```
+CompileFlags:
+  Remove:
+    - -mcmodel=medany
+    - -mabi=*
+    - -march=*
+    - -mno-save-restore
+    - -G
+  CompilationDatabase: "build"
+```
