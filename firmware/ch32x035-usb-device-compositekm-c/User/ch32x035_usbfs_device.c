@@ -17,6 +17,9 @@
 
 #include "debug.h"
 
+#include "ch32x035_gpio.h"
+#include "ch32x035_rcc.h"
+
 #include "usbd_composite_km.h"
 
 /*******************************************************************************/

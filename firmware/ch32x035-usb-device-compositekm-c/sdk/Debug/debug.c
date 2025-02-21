@@ -14,6 +14,10 @@
 
 #include "ch32x035.h"
 
+#include "ch32x035_gpio.h"
+#include "ch32x035_rcc.h"
+#include "ch32x035_usart.h"
+
 #include "system_ch32x035.h"
 
 static uint8_t  p_us = 0;
