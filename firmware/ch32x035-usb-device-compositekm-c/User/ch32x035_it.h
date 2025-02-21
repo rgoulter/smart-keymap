@@ -10,6 +10,4 @@
 #ifndef __CH32X035_IT_H
 #define __CH32X035_IT_H
 
-#include "debug.h"
-
 #endif

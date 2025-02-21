@@ -12,6 +12,8 @@
 #include "ch32x035_pwr.h"
 #include "ch32x035_rcc.h"
 
+#include "debug.h"
+
 /* PWR registers bit mask */
 /* CTLR register bit mask */
 #define CTLR_DS_MASK     ((uint32_t)0xFFFFFFFD)
