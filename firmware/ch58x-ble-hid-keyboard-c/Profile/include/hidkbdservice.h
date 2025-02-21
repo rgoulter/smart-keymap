@@ -1,12 +1,9 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : hidkbdservice.h
- * Author             : WCH
- * Version            : V1.0
- * Date               : 2018/12/10
- * Description        :
+/********************************** (C) COPYRIGHT
+ ******************************** File Name          : hidkbdservice.h Author :
+ *WCH Version            : V1.0 Date               : 2018/12/10 Description :
  *********************************************************************************
  * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
- * Attention: This software (modified or not) and binary are used for 
+ * Attention: This software (modified or not) and binary are used for
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
 
@@ -26,16 +23,16 @@ extern "C" {
  */
 
 // Number of HID reports defined in the service
-#define HID_NUM_REPORTS        7
+#define HID_NUM_REPORTS 7
 
 // HID Report IDs for the service
-#define HID_RPT_ID_KEY_IN      0                      // Keyboard input report ID
-#define HID_RPT_ID_MOUSE_IN    1                      // Mouse input report ID
-#define HID_RPT_ID_LED_OUT     0                      // LED output report ID
-#define HID_RPT_ID_FEATURE     0                      // Feature report ID
+#define HID_RPT_ID_KEY_IN 0   // Keyboard input report ID
+#define HID_RPT_ID_MOUSE_IN 1 // Mouse input report ID
+#define HID_RPT_ID_LED_OUT 0  // LED output report ID
+#define HID_RPT_ID_FEATURE 0  // Feature report ID
 
 // HID feature flags
-#define HID_FEATURE_FLAGS      HID_FLAGS_REMOTE_WAKE
+#define HID_FEATURE_FLAGS HID_FLAGS_REMOTE_WAKE
 
 /*********************************************************************
  * TYPEDEFS
@@ -81,8 +78,8 @@ extern bStatus_t Hid_AddService(void);
  *
  * @return  GATT status code.
  */
-extern uint8_t Hid_SetParameter(uint8_t id, uint8_t type, uint16_t uuid, uint8_t len,
-                                void *pValue);
+extern uint8_t Hid_SetParameter(uint8_t id, uint8_t type, uint16_t uuid,
+                                uint8_t len, void *pValue);
 
 /*********************************************************************
  * @fn      Hid_GetParameter
@@ -100,7 +97,8 @@ extern uint8_t Hid_SetParameter(uint8_t id, uint8_t type, uint16_t uuid, uint8_t
  *
  * @return  GATT status code.
  */
-extern uint8_t Hid_GetParameter(uint8_t id, uint8_t type, uint16_t uuid, uint16_t *pLen, void *pValue);
+extern uint8_t Hid_GetParameter(uint8_t id, uint8_t type, uint16_t uuid,
+                                uint16_t *pLen, void *pValue);
 
 /*********************************************************************
 *********************************************************************/
