@@ -24,8 +24,10 @@
 
 #include "debug.h"
 
-#include "system_ch32x035.h"
+#include "ch32x035_dbgmcu.h"
+#include "ch32x035_misc.h"
 
+#include "system_ch32x035.h"
 #include "usbd_composite_km.h"
 #include "ch32x035_usbfs_device.h"
 

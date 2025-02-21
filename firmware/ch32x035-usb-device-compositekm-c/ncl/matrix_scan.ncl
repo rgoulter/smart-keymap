@@ -153,6 +153,9 @@
 
   #include "debug.h"
 
+  #include "ch32x035_gpio.h"
+  #include "ch32x035_rcc.h"
+
   #include "smart_keymap.h"
 
   %{keyboard_matrix_init board}
