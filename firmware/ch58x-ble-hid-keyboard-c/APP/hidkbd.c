@@ -97,6 +97,7 @@ static uint8_t hidEmuTaskId = INVALID_TASK_ID;
  * LOCAL VARIABLES
  */
 
+// clang-format off
 // GAP Profile - Name attribute for SCAN RSP data
 static uint8_t scanRspData[] = {
     0x05, // length of this data
@@ -119,7 +120,9 @@ static uint8_t scanRspData[] = {
     GAP_ADTYPE_POWER_LEVEL,
     0 // 0dBm
 };
+// clang-format on
 
+// clang-format off
 // Advertising data
 static uint8_t advertData[] = {
     // flags
@@ -148,6 +151,7 @@ static uint8_t advertData[] = {
     'r',
     'd',  // connection interval range
 };
+// clang-format on
 
 // Device name attribute value
 static const uint8_t attDeviceName[GAP_DEVICE_NAME_LEN] = "HID Keyboard";

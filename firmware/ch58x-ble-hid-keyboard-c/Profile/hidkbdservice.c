@@ -77,13 +77,16 @@ const uint8_t hidProtocolModeUUID[ATT_BT_UUID_SIZE] = {
  * LOCAL VARIABLES
  */
 
+// clang-format off
 // HID Information characteristic value
 static const uint8_t hidInfo[HID_INFORMATION_LEN] = {
     LO_UINT16(0x0111), HI_UINT16(0x0111), // bcdHID (USB HID version)
     0x00,                                 // bCountryCode
     HID_FEATURE_FLAGS                     // Flags
 };
+// clang-format on
 
+// clang-format off
 // HID Report Map characteristic value
 static const uint8_t hidReportMap[] = {
     0x05, 0x01, // Usage Pg (Generic Desktop)
@@ -131,6 +134,7 @@ static const uint8_t hidReportMap[] = {
                 //
     0xC0        // End Collection
 };
+// clang-format on
 
 // HID report map length
 uint16_t hidReportMapLen = sizeof(hidReportMap);

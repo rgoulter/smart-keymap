@@ -118,6 +118,7 @@ static const uint8_t devInfoSoftwareRev[] = "Software Revision";
 static uint8_t       devInfoMfrNameProps = GATT_PROP_READ;
 static const uint8_t devInfoMfrName[] = "Manufacturer Name";
 
+// clang-format off
 // IEEE 11073-20601 Regulatory Certification Data List characteristic
 static uint8_t       devInfo11073CertProps = GATT_PROP_READ;
 static const uint8_t devInfo11073Cert[] = {
@@ -125,7 +126,9 @@ static const uint8_t devInfo11073Cert[] = {
     0x00,                   // authoritative body structure type
                             // authoritative body data follows below:
     'e', 'x', 'p', 'e', 'r', 'i', 'm', 'e', 'n', 't', 'a', 'l'};
+// clang-format on
 
+// clang-format off
 // System ID characteristic
 static uint8_t devInfoPnpIdProps = GATT_PROP_READ;
 static uint8_t devInfoPnpId[DEVINFO_PNP_ID_LEN] = {
@@ -134,6 +137,7 @@ static uint8_t devInfoPnpId[DEVINFO_PNP_ID_LEN] = {
     LO_UINT16(0x0000), HI_UINT16(0x0000), // Product ID (vendor-specific)
     LO_UINT16(0x0110), HI_UINT16(0x0110)  // Product version (JJ.M.N)
 };
+// clang-format on
 
 /*********************************************************************
  * Profile Attributes - Table
