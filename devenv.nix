@@ -23,9 +23,10 @@
   };
 
   packages = [
-    pkgs.cmake-language-server
     pkgs.cargo-binutils
     pkgs.cargo-nextest
+    pkgs.clang-tools
+    pkgs.cmake-language-server
     pkgs.elf2uf2-rs
     pkgs.just
     pkgs.lldb
