@@ -13,8 +13,8 @@
 #ifndef __DEBUG_H
 #define __DEBUG_H
 
-#include "stdio.h"
-#include "ch32x035.h"
+#include <stdint.h>
+#include <stdio.h> // IWYU pragma: export
 
 #ifdef __cplusplus
 extern "C" {
