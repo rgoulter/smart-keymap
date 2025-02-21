@@ -19,9 +19,9 @@
 #define CHIP_ID								ID_CH583
 
 #ifdef CH58xBLE_ROM
-#include "CH58xBLE_ROM.h"
+#include "CH58xBLE_ROM.h" // IWYU pragma: export
 #else
-#include "CH58xBLE_LIB.h"
+#include "CH58xBLE_LIB.h" // IWYU pragma: export
 #endif
 
 #include "CH58x_common.h"
