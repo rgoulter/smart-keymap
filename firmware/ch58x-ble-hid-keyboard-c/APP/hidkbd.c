@@ -1,24 +1,24 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : hidkbd.c
- * Author             : WCH
+/********************************** (C) COPYRIGHT
+ ******************************** File Name          : hidkbd.c Author : WCH
  * Version            : V1.0
  * Date               : 2018/12/10
- * Description        : 蓝牙键盘应用程序，初始化广播连接参数，然后广播，直至连接主机后，定时上传键值
+ * Description        :
+ *蓝牙键盘应用程序，初始化广播连接参数，然后广播，直至连接主机后，定时上传键值
  *********************************************************************************
  * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
- * Attention: This software (modified or not) and binary are used for 
+ * Attention: This software (modified or not) and binary are used for
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
 
 /*********************************************************************
  * INCLUDES
  */
-#include "CONFIG.h"
-#include "devinfoservice.h"
-#include "battservice.h"
-#include "hidkbdservice.h"
-#include "hiddev.h"
 #include "hidkbd.h"
+#include "CONFIG.h"
+#include "battservice.h"
+#include "devinfoservice.h"
+#include "hiddev.h"
+#include "hidkbdservice.h"
 
 #include "keyboard_wabble60.h"
 #include "smart_keymap.h"
@@ -27,52 +27,52 @@
  * MACROS
  */
 // HID keyboard input report length
-#define HID_KEYBOARD_IN_RPT_LEN              8
+#define HID_KEYBOARD_IN_RPT_LEN 8
 
 // HID LED output report length
-#define HID_LED_OUT_RPT_LEN                  1
+#define HID_LED_OUT_RPT_LEN 1
 
 /*********************************************************************
  * CONSTANTS
  */
 // Param update delay
-#define START_PARAM_UPDATE_EVT_DELAY         12800
+#define START_PARAM_UPDATE_EVT_DELAY 12800
 
 // Param update delay
-#define START_PHY_UPDATE_DELAY               1600
+#define START_PHY_UPDATE_DELAY 1600
 
 // HID idle timeout in msec; set to zero to disable timeout
-#define DEFAULT_HID_IDLE_TIMEOUT             60000
+#define DEFAULT_HID_IDLE_TIMEOUT 60000
 
 // Minimum connection interval (units of 1.25ms)
-#define DEFAULT_DESIRED_MIN_CONN_INTERVAL    8
+#define DEFAULT_DESIRED_MIN_CONN_INTERVAL 8
 
 // Maximum connection interval (units of 1.25ms)
-#define DEFAULT_DESIRED_MAX_CONN_INTERVAL    8
+#define DEFAULT_DESIRED_MAX_CONN_INTERVAL 8
 
 // Slave latency to use if parameter update request
-#define DEFAULT_DESIRED_SLAVE_LATENCY        0
+#define DEFAULT_DESIRED_SLAVE_LATENCY 0
 
 // Supervision timeout value (units of 10ms)
-#define DEFAULT_DESIRED_CONN_TIMEOUT         500
+#define DEFAULT_DESIRED_CONN_TIMEOUT 500
 
 // Default passcode
-#define DEFAULT_PASSCODE                     0
+#define DEFAULT_PASSCODE 0
 
 // Default GAP pairing mode
-#define DEFAULT_PAIRING_MODE                 GAPBOND_PAIRING_MODE_WAIT_FOR_REQ
+#define DEFAULT_PAIRING_MODE GAPBOND_PAIRING_MODE_WAIT_FOR_REQ
 
 // Default MITM mode (TRUE to require passcode or OOB when pairing)
-#define DEFAULT_MITM_MODE                    FALSE
+#define DEFAULT_MITM_MODE FALSE
 
 // Default bonding mode, TRUE to bond
-#define DEFAULT_BONDING_MODE                 TRUE
+#define DEFAULT_BONDING_MODE TRUE
 
 // Default GAP bonding I/O capabilities
-#define DEFAULT_IO_CAPABILITIES              GAPBOND_IO_CAP_NO_INPUT_NO_OUTPUT
+#define DEFAULT_IO_CAPABILITIES GAPBOND_IO_CAP_NO_INPUT_NO_OUTPUT
 
 // Battery level is critical when it is less than this %
-#define DEFAULT_BATT_CRITICAL_LEVEL          6
+#define DEFAULT_BATT_CRITICAL_LEVEL 6
 
 /*********************************************************************
  * TYPEDEFS
@@ -168,23 +168,20 @@ static uint16_t hidEmuConnHandle = GAP_CONNHANDLE_INIT;
  * LOCAL FUNCTIONS
  */
 
-static void    hidEmu_ProcessTMOSMsg(tmos_event_hdr_t *pMsg);
-static void    hidEmuSendKbdReport(uint8_t keycode);
+static void hidEmu_ProcessTMOSMsg(tmos_event_hdr_t *pMsg);
+static void hidEmuSendKbdReport(uint8_t keycode);
 static uint8_t hidEmuRcvReport(uint8_t len, uint8_t *pData);
 static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
                            uint8_t oper, uint16_t *pLen, uint8_t *pData);
-static void    hidEmuEvtCB(uint8_t evt);
-static void    hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent);
+static void hidEmuEvtCB(uint8_t evt);
+static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent);
 
 /*********************************************************************
  * PROFILE CALLBACKS
  */
 
-static hidDevCB_t hidEmuHidCBs = {
-    hidEmuRptCB,
-    hidEmuEvtCB,
-    NULL,
-    hidEmuStateCB};
+static hidDevCB_t hidEmuHidCBs = {hidEmuRptCB, hidEmuEvtCB, NULL,
+                                  hidEmuStateCB};
 
 /*********************************************************************
  * PUBLIC FUNCTIONS
@@ -204,56 +201,63 @@ static hidDevCB_t hidEmuHidCBs = {
  *
  * @return  none
  */
-void HidEmu_Init()
-{
-    hidEmuTaskId = TMOS_ProcessEventRegister(HidEmu_ProcessEvent);
+void HidEmu_Init() {
+  hidEmuTaskId = TMOS_ProcessEventRegister(HidEmu_ProcessEvent);
 
-    // Setup the GAP Peripheral Role Profile
-    {
-        uint8_t initial_advertising_enable = TRUE;
+  // Setup the GAP Peripheral Role Profile
+  {
+    uint8_t initial_advertising_enable = TRUE;
 
-        // Set the GAP Role Parameters
-        GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
+    // Set the GAP Role Parameters
+    GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t),
+                         &initial_advertising_enable);
 
-        GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
-        GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, sizeof(scanRspData), scanRspData);
-    }
+    GAPRole_SetParameter(GAPROLE_ADVERT_DATA, sizeof(advertData), advertData);
+    GAPRole_SetParameter(GAPROLE_SCAN_RSP_DATA, sizeof(scanRspData),
+                         scanRspData);
+  }
 
-    // Set the GAP Characteristics
-    GGS_SetParameter(GGS_DEVICE_NAME_ATT, sizeof(attDeviceName), (void *)attDeviceName);
+  // Set the GAP Characteristics
+  GGS_SetParameter(GGS_DEVICE_NAME_ATT, sizeof(attDeviceName),
+                   (void *)attDeviceName);
 
-    // Setup the GAP Bond Manager
-    {
-        uint32_t passkey = DEFAULT_PASSCODE;
-        uint8_t  pairMode = DEFAULT_PAIRING_MODE;
-        uint8_t  mitm = DEFAULT_MITM_MODE;
-        uint8_t  ioCap = DEFAULT_IO_CAPABILITIES;
-        uint8_t  bonding = DEFAULT_BONDING_MODE;
-        GAPBondMgr_SetParameter(GAPBOND_PERI_DEFAULT_PASSCODE, sizeof(uint32_t), &passkey);
-        GAPBondMgr_SetParameter(GAPBOND_PERI_PAIRING_MODE, sizeof(uint8_t), &pairMode);
-        GAPBondMgr_SetParameter(GAPBOND_PERI_MITM_PROTECTION, sizeof(uint8_t), &mitm);
-        GAPBondMgr_SetParameter(GAPBOND_PERI_IO_CAPABILITIES, sizeof(uint8_t), &ioCap);
-        GAPBondMgr_SetParameter(GAPBOND_PERI_BONDING_ENABLED, sizeof(uint8_t), &bonding);
-    }
+  // Setup the GAP Bond Manager
+  {
+    uint32_t passkey = DEFAULT_PASSCODE;
+    uint8_t pairMode = DEFAULT_PAIRING_MODE;
+    uint8_t mitm = DEFAULT_MITM_MODE;
+    uint8_t ioCap = DEFAULT_IO_CAPABILITIES;
+    uint8_t bonding = DEFAULT_BONDING_MODE;
+    GAPBondMgr_SetParameter(GAPBOND_PERI_DEFAULT_PASSCODE, sizeof(uint32_t),
+                            &passkey);
+    GAPBondMgr_SetParameter(GAPBOND_PERI_PAIRING_MODE, sizeof(uint8_t),
+                            &pairMode);
+    GAPBondMgr_SetParameter(GAPBOND_PERI_MITM_PROTECTION, sizeof(uint8_t),
+                            &mitm);
+    GAPBondMgr_SetParameter(GAPBOND_PERI_IO_CAPABILITIES, sizeof(uint8_t),
+                            &ioCap);
+    GAPBondMgr_SetParameter(GAPBOND_PERI_BONDING_ENABLED, sizeof(uint8_t),
+                            &bonding);
+  }
 
-    // Setup Battery Characteristic Values
-    {
-        uint8_t critical = DEFAULT_BATT_CRITICAL_LEVEL;
-        Batt_SetParameter(BATT_PARAM_CRITICAL_LEVEL, sizeof(uint8_t), &critical);
-    }
+  // Setup Battery Characteristic Values
+  {
+    uint8_t critical = DEFAULT_BATT_CRITICAL_LEVEL;
+    Batt_SetParameter(BATT_PARAM_CRITICAL_LEVEL, sizeof(uint8_t), &critical);
+  }
 
-    // Set up HID keyboard service
-    Hid_AddService();
+  // Set up HID keyboard service
+  Hid_AddService();
 
-    // Register for HID Dev callback
-    HidDev_Register(&hidEmuCfg, &hidEmuHidCBs);
+  // Register for HID Dev callback
+  HidDev_Register(&hidEmuCfg, &hidEmuHidCBs);
 
-    // Setup a delayed profile startup
-    tmos_set_event(hidEmuTaskId, START_DEVICE_EVT);
+  // Setup a delayed profile startup
+  tmos_set_event(hidEmuTaskId, START_DEVICE_EVT);
 
-    // SmartKeymap
-    keyboard_matrix_init();
-    keymap_init();
+  // SmartKeymap
+  keyboard_matrix_init();
+  keymap_init();
 }
 
 /*********************************************************************
@@ -269,73 +273,65 @@ void HidEmu_Init()
  *
  * @return  events not processed
  */
-uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events)
-{
-    static uint8_t send_char = 0;
-    static uint8_t report_status = SUCCESS;
-    static uint8_t buf[HID_KEYBOARD_IN_RPT_LEN] = { 0 };
+uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
+  static uint8_t send_char = 0;
+  static uint8_t report_status = SUCCESS;
+  static uint8_t buf[HID_KEYBOARD_IN_RPT_LEN] = {0};
 
-    if(events & SYS_EVENT_MSG)
-    {
-        uint8_t *pMsg;
+  if (events & SYS_EVENT_MSG) {
+    uint8_t *pMsg;
 
-        if((pMsg = tmos_msg_receive(hidEmuTaskId)) != NULL)
-        {
-            hidEmu_ProcessTMOSMsg((tmos_event_hdr_t *)pMsg);
+    if ((pMsg = tmos_msg_receive(hidEmuTaskId)) != NULL) {
+      hidEmu_ProcessTMOSMsg((tmos_event_hdr_t *)pMsg);
 
-            // Release the TMOS message
-            tmos_msg_deallocate(pMsg);
-        }
-
-        // return unprocessed events
-        return (events ^ SYS_EVENT_MSG);
+      // Release the TMOS message
+      tmos_msg_deallocate(pMsg);
     }
 
-    if(events & START_DEVICE_EVT)
-    {
-        return (events ^ START_DEVICE_EVT);
+    // return unprocessed events
+    return (events ^ SYS_EVENT_MSG);
+  }
+
+  if (events & START_DEVICE_EVT) {
+    return (events ^ START_DEVICE_EVT);
+  }
+
+  if (events & START_PARAM_UPDATE_EVT) {
+    // Send connect param update request
+    GAPRole_PeripheralConnParamUpdateReq(
+        hidEmuConnHandle, DEFAULT_DESIRED_MIN_CONN_INTERVAL,
+        DEFAULT_DESIRED_MAX_CONN_INTERVAL, DEFAULT_DESIRED_SLAVE_LATENCY,
+        DEFAULT_DESIRED_CONN_TIMEOUT, hidEmuTaskId);
+
+    return (events ^ START_PARAM_UPDATE_EVT);
+  }
+
+  if (events & START_PHY_UPDATE_EVT) {
+    // start phy update
+    PRINT("Send Phy Update %x...\n",
+          GAPRole_UpdatePHY(hidEmuConnHandle, 0, GAP_PHY_BIT_LE_2M,
+                            GAP_PHY_BIT_LE_2M, GAP_PHY_OPTIONS_NOPRE));
+
+    return (events ^ START_PHY_UPDATE_EVT);
+  }
+
+  if (events & START_REPORT_EVT) {
+    // SmartKeymap
+
+    keyboard_matrix_scan();
+
+    if (report_status == SUCCESS) {
+      keymap_tick(buf);
     }
 
-    if(events & START_PARAM_UPDATE_EVT)
-    {
-        // Send connect param update request
-        GAPRole_PeripheralConnParamUpdateReq(hidEmuConnHandle,
-                                             DEFAULT_DESIRED_MIN_CONN_INTERVAL,
-                                             DEFAULT_DESIRED_MAX_CONN_INTERVAL,
-                                             DEFAULT_DESIRED_SLAVE_LATENCY,
-                                             DEFAULT_DESIRED_CONN_TIMEOUT,
-                                             hidEmuTaskId);
+    report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
+                                  HID_KEYBOARD_IN_RPT_LEN, buf);
 
-        return (events ^ START_PARAM_UPDATE_EVT);
-    }
-
-    if(events & START_PHY_UPDATE_EVT)
-    {
-        // start phy update
-        PRINT("Send Phy Update %x...\n", GAPRole_UpdatePHY(hidEmuConnHandle, 0, 
-                    GAP_PHY_BIT_LE_2M, GAP_PHY_BIT_LE_2M, GAP_PHY_OPTIONS_NOPRE));
-
-        return (events ^ START_PHY_UPDATE_EVT);
-    }
-
-    if(events & START_REPORT_EVT)
-    {
-        // SmartKeymap
-
-        keyboard_matrix_scan();
-
-        if (report_status == SUCCESS) {
-            keymap_tick(buf);
-        }
-
-        report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
-                      HID_KEYBOARD_IN_RPT_LEN, buf);
-
-        // 13 * 625 microseconds = 8.125ms, approx 125Hz
-        tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 13);
-        return (events ^ START_REPORT_EVT);
-    }
-    return 0;
+    // 13 * 625 microseconds = 8.125ms, approx 125Hz
+    tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 13);
+    return (events ^ START_REPORT_EVT);
+  }
+  return 0;
 }
 
 /*********************************************************************
@@ -347,13 +343,11 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events)
  *
  * @return  none
  */
-static void hidEmu_ProcessTMOSMsg(tmos_event_hdr_t *pMsg)
-{
-    switch(pMsg->event)
-    {
-        default:
-            break;
-    }
+static void hidEmu_ProcessTMOSMsg(tmos_event_hdr_t *pMsg) {
+  switch (pMsg->event) {
+  default:
+    break;
+  }
 }
 
 /*********************************************************************
@@ -365,21 +359,20 @@ static void hidEmu_ProcessTMOSMsg(tmos_event_hdr_t *pMsg)
  *
  * @return  none
  */
-static void hidEmuSendKbdReport(uint8_t keycode)
-{
-    uint8_t buf[HID_KEYBOARD_IN_RPT_LEN];
+static void hidEmuSendKbdReport(uint8_t keycode) {
+  uint8_t buf[HID_KEYBOARD_IN_RPT_LEN];
 
-    buf[0] = 0;       // Modifier keys
-    buf[1] = 0;       // Reserved
-    buf[2] = keycode; // Keycode 1
-    buf[3] = 0;       // Keycode 2
-    buf[4] = 0;       // Keycode 3
-    buf[5] = 0;       // Keycode 4
-    buf[6] = 0;       // Keycode 5
-    buf[7] = 0;       // Keycode 6
+  buf[0] = 0;       // Modifier keys
+  buf[1] = 0;       // Reserved
+  buf[2] = keycode; // Keycode 1
+  buf[3] = 0;       // Keycode 2
+  buf[4] = 0;       // Keycode 3
+  buf[5] = 0;       // Keycode 4
+  buf[6] = 0;       // Keycode 5
+  buf[7] = 0;       // Keycode 6
 
-    HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
-                  HID_KEYBOARD_IN_RPT_LEN, buf);
+  HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
+                HID_KEYBOARD_IN_RPT_LEN, buf);
 }
 
 /*********************************************************************
@@ -391,73 +384,63 @@ static void hidEmuSendKbdReport(uint8_t keycode)
  *
  * @return  none
  */
-static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent)
-{
-    switch(newState & GAPROLE_STATE_ADV_MASK)
-    {
-        case GAPROLE_STARTED:
-        {
-            uint8_t ownAddr[6];
-            GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddr);
-            GAP_ConfigDeviceAddr(ADDRTYPE_STATIC, ownAddr);
-            PRINT("Initialized..\n");
-        }
-        break;
+static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent) {
+  switch (newState & GAPROLE_STATE_ADV_MASK) {
+  case GAPROLE_STARTED: {
+    uint8_t ownAddr[6];
+    GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddr);
+    GAP_ConfigDeviceAddr(ADDRTYPE_STATIC, ownAddr);
+    PRINT("Initialized..\n");
+  } break;
 
-        case GAPROLE_ADVERTISING:
-            if(pEvent->gap.opcode == GAP_MAKE_DISCOVERABLE_DONE_EVENT)
-            {
-                PRINT("Advertising..\n");
-            }
-            break;
-
-        case GAPROLE_CONNECTED:
-            if(pEvent->gap.opcode == GAP_LINK_ESTABLISHED_EVENT)
-            {
-                gapEstLinkReqEvent_t *event = (gapEstLinkReqEvent_t *)pEvent;
-
-                // get connection handle
-                hidEmuConnHandle = event->connectionHandle;
-                tmos_start_task(hidEmuTaskId, START_PARAM_UPDATE_EVT, START_PARAM_UPDATE_EVT_DELAY);
-                PRINT("Connected..\n");
-            }
-            break;
-
-        case GAPROLE_CONNECTED_ADV:
-            if(pEvent->gap.opcode == GAP_MAKE_DISCOVERABLE_DONE_EVENT)
-            {
-                PRINT("Connected Advertising..\n");
-            }
-            break;
-
-        case GAPROLE_WAITING:
-            if(pEvent->gap.opcode == GAP_END_DISCOVERABLE_DONE_EVENT)
-            {
-                PRINT("Waiting for advertising..\n");
-            }
-            else if(pEvent->gap.opcode == GAP_LINK_TERMINATED_EVENT)
-            {
-                PRINT("Disconnected.. Reason:%x\n", pEvent->linkTerminate.reason);
-            }
-            else if(pEvent->gap.opcode == GAP_LINK_ESTABLISHED_EVENT)
-            {
-                PRINT("Advertising timeout..\n");
-            }
-            // Enable advertising
-            {
-                uint8_t initial_advertising_enable = TRUE;
-                // Set the GAP Role Parameters
-                GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t), &initial_advertising_enable);
-            }
-            break;
-
-        case GAPROLE_ERROR:
-            PRINT("Error %x ..\n", pEvent->gap.opcode);
-            break;
-
-        default:
-            break;
+  case GAPROLE_ADVERTISING:
+    if (pEvent->gap.opcode == GAP_MAKE_DISCOVERABLE_DONE_EVENT) {
+      PRINT("Advertising..\n");
     }
+    break;
+
+  case GAPROLE_CONNECTED:
+    if (pEvent->gap.opcode == GAP_LINK_ESTABLISHED_EVENT) {
+      gapEstLinkReqEvent_t *event = (gapEstLinkReqEvent_t *)pEvent;
+
+      // get connection handle
+      hidEmuConnHandle = event->connectionHandle;
+      tmos_start_task(hidEmuTaskId, START_PARAM_UPDATE_EVT,
+                      START_PARAM_UPDATE_EVT_DELAY);
+      PRINT("Connected..\n");
+    }
+    break;
+
+  case GAPROLE_CONNECTED_ADV:
+    if (pEvent->gap.opcode == GAP_MAKE_DISCOVERABLE_DONE_EVENT) {
+      PRINT("Connected Advertising..\n");
+    }
+    break;
+
+  case GAPROLE_WAITING:
+    if (pEvent->gap.opcode == GAP_END_DISCOVERABLE_DONE_EVENT) {
+      PRINT("Waiting for advertising..\n");
+    } else if (pEvent->gap.opcode == GAP_LINK_TERMINATED_EVENT) {
+      PRINT("Disconnected.. Reason:%x\n", pEvent->linkTerminate.reason);
+    } else if (pEvent->gap.opcode == GAP_LINK_ESTABLISHED_EVENT) {
+      PRINT("Advertising timeout..\n");
+    }
+    // Enable advertising
+    {
+      uint8_t initial_advertising_enable = TRUE;
+      // Set the GAP Role Parameters
+      GAPRole_SetParameter(GAPROLE_ADVERT_ENABLED, sizeof(uint8_t),
+                           &initial_advertising_enable);
+    }
+    break;
+
+  case GAPROLE_ERROR:
+    PRINT("Error %x ..\n", pEvent->gap.opcode);
+    break;
+
+  default:
+    break;
+  }
 }
 
 /*********************************************************************
@@ -470,18 +453,14 @@ static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent)
  *
  * @return  status
  */
-static uint8_t hidEmuRcvReport(uint8_t len, uint8_t *pData)
-{
-    // verify data length
-    if(len == HID_LED_OUT_RPT_LEN)
-    {
-        // set LEDs
-        return SUCCESS;
-    }
-    else
-    {
-        return ATT_ERR_INVALID_VALUE_SIZE;
-    }
+static uint8_t hidEmuRcvReport(uint8_t len, uint8_t *pData) {
+  // verify data length
+  if (len == HID_LED_OUT_RPT_LEN) {
+    // set LEDs
+    return SUCCESS;
+  } else {
+    return ATT_ERR_INVALID_VALUE_SIZE;
+  }
 }
 
 /*********************************************************************
@@ -499,38 +478,31 @@ static uint8_t hidEmuRcvReport(uint8_t len, uint8_t *pData)
  * @return  GATT status code.
  */
 static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
-                           uint8_t oper, uint16_t *pLen, uint8_t *pData)
-{
-    uint8_t status = SUCCESS;
+                           uint8_t oper, uint16_t *pLen, uint8_t *pData) {
+  uint8_t status = SUCCESS;
 
-    // write
-    if(oper == HID_DEV_OPER_WRITE)
-    {
-        if(uuid == REPORT_UUID)
-        {
-            // process write to LED output report; ignore others
-            if(type == HID_REPORT_TYPE_OUTPUT)
-            {
-                status = hidEmuRcvReport(*pLen, pData);
-            }
-        }
+  // write
+  if (oper == HID_DEV_OPER_WRITE) {
+    if (uuid == REPORT_UUID) {
+      // process write to LED output report; ignore others
+      if (type == HID_REPORT_TYPE_OUTPUT) {
+        status = hidEmuRcvReport(*pLen, pData);
+      }
+    }
 
-        if(status == SUCCESS)
-        {
-            status = Hid_SetParameter(id, type, uuid, *pLen, pData);
-        }
+    if (status == SUCCESS) {
+      status = Hid_SetParameter(id, type, uuid, *pLen, pData);
     }
-    // read
-    else if(oper == HID_DEV_OPER_READ)
-    {
-        status = Hid_GetParameter(id, type, uuid, pLen, pData);
-    }
-    // notifications enabled
-    else if(oper == HID_DEV_OPER_ENABLE)
-    {
-        tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 500);
-    }
-    return status;
+  }
+  // read
+  else if (oper == HID_DEV_OPER_READ) {
+    status = Hid_GetParameter(id, type, uuid, pLen, pData);
+  }
+  // notifications enabled
+  else if (oper == HID_DEV_OPER_ENABLE) {
+    tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 500);
+  }
+  return status;
 }
 
 /*********************************************************************
@@ -542,10 +514,9 @@ static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
  *
  * @return  HID response code.
  */
-static void hidEmuEvtCB(uint8_t evt)
-{
-    // process enter/exit suspend or enter/exit boot mode
-    return;
+static void hidEmuEvtCB(uint8_t evt) {
+  // process enter/exit suspend or enter/exit boot mode
+  return;
 }
 
 /*********************************************************************

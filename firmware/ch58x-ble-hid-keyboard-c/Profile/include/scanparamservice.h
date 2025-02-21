@@ -1,12 +1,9 @@
-/********************************** (C) COPYRIGHT *******************************
- * File Name          : scanparamservice.h
- * Author             : WCH
- * Version            : V1.0
- * Date               : 2018/12/11
- * Description        :
+/********************************** (C) COPYRIGHT
+ ******************************** File Name          : scanparamservice.h Author
+ *: WCH Version            : V1.0 Date               : 2018/12/11 Description :
  *********************************************************************************
  * Copyright (c) 2021 Nanjing Qinheng Microelectronics Co., Ltd.
- * Attention: This software (modified or not) and binary are used for 
+ * Attention: This software (modified or not) and binary are used for
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
 
@@ -26,18 +23,18 @@ extern "C" {
  */
 
 // Scan Characteristic Lengths
-#define SCAN_INTERVAL_WINDOW_CHAR_LEN    4
-#define SCAN_PARAM_REFRESH_LEN           1
+#define SCAN_INTERVAL_WINDOW_CHAR_LEN 4
+#define SCAN_PARAM_REFRESH_LEN 1
 
 // Scan Parameter Refresh Values
-#define SCAN_PARAM_REFRESH_REQ           0x00
+#define SCAN_PARAM_REFRESH_REQ 0x00
 
 // Callback events
-#define SCAN_INTERVAL_WINDOW_SET         1
+#define SCAN_INTERVAL_WINDOW_SET 1
 
 // Get/Set parameters
-#define SCAN_PARAM_PARAM_INTERVAL        0
-#define SCAN_PARAM_PARAM_WINDOW          1
+#define SCAN_PARAM_PARAM_INTERVAL 0
+#define SCAN_PARAM_PARAM_WINDOW 1
 
 /*********************************************************************
  * TYPEDEFS
@@ -93,7 +90,8 @@ extern void ScanParam_Register(scanParamServiceCB_t pfnServiceCB);
  *
  * @return  bStatus_t
  */
-extern bStatus_t ScanParam_SetParameter(uint8_t param, uint8_t len, void *value);
+extern bStatus_t ScanParam_SetParameter(uint8_t param, uint8_t len,
+                                        void *value);
 
 /*********************************************************************
  * @fn      ScanParam_GetParameter
@@ -121,7 +119,8 @@ extern bStatus_t ScanParam_GetParameter(uint8_t param, void *value);
  */
 extern void ScanParam_RefreshNotify(uint16_t connHandle);
 
-extern void ScanParam_HandleConnStatusCB(uint16_t connHandle, uint8_t changeType);
+extern void ScanParam_HandleConnStatusCB(uint16_t connHandle,
+                                         uint8_t changeType);
 
 /*********************************************************************
 *********************************************************************/
