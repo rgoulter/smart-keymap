@@ -14,6 +14,8 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
+
 extern uint32_t SystemCoreClock; /* System Clock Frequency (Core Clock) */
 
 /* System_Exported_Functions */

@@ -15,6 +15,9 @@
 
 /*******************************************************************************/
 /* Header File */
+
+#include <stdint.h>
+
 #include "debug.h"
 #include "string.h"
 #include "usb_desc.h"

@@ -10,6 +10,8 @@
  * microcontroller manufactured by Nanjing Qinheng Microelectronics.
  *******************************************************************************/
 
+#include <stdint.h>
+
 #include "usbd_composite_km.h"
 #include <ch32x035_usbfs_device.h>
 
