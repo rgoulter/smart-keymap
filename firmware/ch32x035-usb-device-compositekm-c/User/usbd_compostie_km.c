@@ -13,6 +13,11 @@
 /*******************************************************************************/
 /* Header Files */
 #include "usbd_composite_km.h"
+
+#include <string.h>
+
+#include "debug.h"
+
 #include <ch32x035_usbfs_device.h>
 
 #include "keyboard_ch32x_48.h"
