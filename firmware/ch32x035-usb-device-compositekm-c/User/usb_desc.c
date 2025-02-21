@@ -15,6 +15,7 @@
 /* Header File */
 #include "usb_desc.h"
 
+// clang-format off
 /*******************************************************************************/
 /* Device Descriptor */
 const uint8_t MyDevDescr[ ] =
@@ -34,7 +35,9 @@ const uint8_t MyDevDescr[ ] =
     0x03,                                                   // iSerialNumber
     0x01,                                                   // bNumConfigurations
 };
+// clang-format on
 
+// clang-format off
 /* Configuration Descriptor Set */
 const uint8_t MyCfgDescr[ ] =
 {
@@ -104,7 +107,9 @@ const uint8_t MyCfgDescr[ ] =
     0x08, 0x00,                                             // wMaxPacketSize
     0x01                                                    // bInterval: 1mS
 };
+// clang-format on
 
+// clang-format off
 /* Keyboard Report Descriptor */
 const uint8_t KeyRepDesc[ ] =
 {
@@ -140,7 +145,9 @@ const uint8_t KeyRepDesc[ ] =
     0x81, 0x00,                                             // Input(Data,Array,Absolute)
     0xC0                                                    // End Collection
 };
+// clang-format on
 
+// clang-format off
 /* Mouse Report Descriptor */
 const uint8_t MouseRepDesc[ ] =
 {
@@ -172,7 +179,9 @@ const uint8_t MouseRepDesc[ ] =
     0xC0,                                                   // End Collection
     0xC0                                                    // End Collection
 };
+// clang-format on
 
+// clang-format off
 /* Qualifier Descriptor */
 const uint8_t  MyQuaDesc[ ] =
 {
@@ -186,7 +195,9 @@ const uint8_t  MyQuaDesc[ ] =
     0x00,                                                   // bNumConfigurations
     0x00                                                    // bReserved
 };
+// clang-format on
 
+// clang-format off
 /* Language Descriptor */
 const uint8_t MyLangDescr[ ] =
 {
@@ -195,7 +206,9 @@ const uint8_t MyLangDescr[ ] =
     0x09,
     0x04
 };
+// clang-format on
 
+// clang-format on
 /* Manufacturer Descriptor */
 const uint8_t MyManuInfo[ ] =
 {
@@ -214,7 +227,9 @@ const uint8_t MyManuInfo[ ] =
     'n',
     0
 };
+// clang-format on
 
+// clang-format off
 /* Product Information */
 const uint8_t MyProdInfo[ ]  =
 {
@@ -237,7 +252,9 @@ const uint8_t MyProdInfo[ ]  =
     '5',
     0
 };
+// clang-format on
 
+// clang-format off
 /* Serial Number Information */
 const uint8_t  MySerNumInfo[ ] =
 {
@@ -264,3 +281,4 @@ const uint8_t  MySerNumInfo[ ] =
     '9',
     0
 };
+// clang-format on
