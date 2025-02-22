@@ -5,7 +5,7 @@
     | {
       cols | Array { port | String, pin | Number },
       rows | Array { port | String, pin | Number },
-      num_keys | Number,
+      key_count | Number,
     }
     | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
     =
@@ -13,7 +13,7 @@
       {
         cols = [p.B0, p.B1],
         rows = [p.B3, p.B11],
-        num_keys = 4,
+        key_count = 4,
       },
 
   keymap_index_for_key
