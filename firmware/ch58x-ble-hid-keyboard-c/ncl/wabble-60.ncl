@@ -5,7 +5,7 @@
     | {
       cols | Array { port | String, pin | Number },
       rows | Array { port | String, pin | Number },
-      num_keys | Number,
+      key_count | Number,
     }
     | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
     =
@@ -13,7 +13,7 @@
       {
         cols = [gp.A4, gp.A5, gp.A15, gp.A14, gp.A13, gp.A12, gp.A11, gp.A10],
         rows = [gp.A8, gp.A9, gp.B15, gp.B14, gp.B13, gp.B12, gp.B7, gp.B4],
-        num_keys = 60,
+        key_count = 60,
       },
 
   # The WABBLE-60 uses a digital matrix of 8x8 rows and columns,
@@ -28,7 +28,7 @@
     | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index."
     = fun { column_index | Number, row_index | Number, .. } =>
       let columnwise_index = column_index * 8 + row_index in
-      if columnwise_index >= board.num_keys then
+      if columnwise_index >= board.key_count then
         'Error "no key at this column/row index."
       else
         let physical_column_index = std.number.floor (columnwise_index / 5) in

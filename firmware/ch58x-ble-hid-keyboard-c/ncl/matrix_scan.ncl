@@ -15,7 +15,7 @@
     | {
       cols | Array { port | String, pin | Number },
       rows | Array { port | String, pin | Number },
-      num_keys | Number,
+      key_count | Number,
     }
     | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
 
@@ -103,8 +103,8 @@
 
   #include "smart_keymap.h"
 
-  bool previousScan[%{std.to_string board.num_keys}] = { false };
-  bool currentScan[%{std.to_string board.num_keys}] = { false };
+  bool previousScan[%{std.to_string board.key_count}] = { false };
+  bool currentScan[%{std.to_string board.key_count}] = { false };
 
   %{keyboard_matrix_init board}
 
