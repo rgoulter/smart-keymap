@@ -5,7 +5,7 @@
     | {
       cols | Array { port | String, pin | Number },
       rows | Array { port | String, pin | Number },
-      num_keys | Number,
+      key_count | Number,
     }
     | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
     =
@@ -13,7 +13,7 @@
       {
         cols = [p.B1, p.A6, p.A9, p.A0, p.C3, p.A10, p.A11],
         rows = [p.A4, p.C19, p.A3, p.A2, p.A1, p.C18, p.A7],
-        num_keys = 48,
+        key_count = 48,
       },
 
   # The CH32X-48 uses a digital matrix of 7x7 rows and columns,
@@ -28,7 +28,7 @@
     | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index."
     = fun { column_index | Number, row_index | Number, .. } =>
       let columnwise_index = column_index * 7 + row_index in
-      if columnwise_index >= board.num_keys then
+      if columnwise_index >= board.key_count then
         'Error "no key at this column/row index."
       else
         let physical_column_index = std.number.floor (columnwise_index / 4) in

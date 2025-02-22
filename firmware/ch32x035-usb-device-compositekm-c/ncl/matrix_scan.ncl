@@ -15,7 +15,7 @@
     | {
       cols | Array { port | String, pin | Number },
       rows | Array { port | String, pin | Number },
-      num_keys | Number,
+      key_count | Number,
     }
     | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
 
@@ -104,7 +104,7 @@
     | doc "Generates C fragment with the keyboard_matrix_scan function, for the given cols/rows."
     = fun { cols, rows, .. } =>
       m%"
-  void keyboard_matrix_scan_raw(bool scan_buf[%{std.to_string board.num_keys}]) {
+  void keyboard_matrix_scan_raw(bool scan_buf[%{std.to_string board.key_count}]) {
       %{board.cols |> std.array.map_with_index (fun idx c => matrix_scan_column ({ col = c, column_index = idx, rows = board.rows })) |> std.string.join "\n"}
   }
   "%,
@@ -116,14 +116,14 @@
   %{keyboard_matrix_scan_raw args}
 
   void keyboard_matrix_scan(void) {
-      static bool debounced_state[%{std.to_string board.num_keys}] = { false };
-      static bool previous_raw_scan[%{std.to_string board.num_keys}] = { false };
-      static bool current_raw_scan[%{std.to_string board.num_keys}] = { false };
-      static uint8_t debounce_counter[%{std.to_string board.num_keys}] = { 0 };
+      static bool debounced_state[%{std.to_string board.key_count}] = { false };
+      static bool previous_raw_scan[%{std.to_string board.key_count}] = { false };
+      static bool current_raw_scan[%{std.to_string board.key_count}] = { false };
+      static uint8_t debounce_counter[%{std.to_string board.key_count}] = { 0 };
 
       keyboard_matrix_scan_raw(current_raw_scan);
 
-      for (uint32_t i = 0; i < %{std.to_string board.num_keys}; i++) {
+      for (uint32_t i = 0; i < %{std.to_string board.key_count}; i++) {
           if (current_raw_scan[i] == debounced_state[i]) {
               debounce_counter[i] = 0;
           } else {
