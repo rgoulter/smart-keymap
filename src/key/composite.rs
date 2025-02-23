@@ -277,22 +277,24 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
             LayeredKey::Layered(key) => {
-                let (pk, events) = key.new_pressed_key(context.into(), keymap_index);
-                let lpk = input::PressedKey {
-                    key: LayeredKey::Pass(pk.key),
+                let (layered_pk, pke) = key.new_pressed_key(context.into(), keymap_index);
+                let pk = input::PressedKey {
+                    key: LayeredKey::Pass(layered_pk.key),
                     keymap_index,
-                    pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(pk),
+                    pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(layered_pk),
                 };
-                (lpk, events)
+                (pk, pke)
             }
             LayeredKey::Pass(key) => {
-                let (pk, events) = key.new_pressed_key(context.into(), keymap_index);
-                let lpk = input::PressedKey {
-                    key: LayeredKey::Pass(pk.key),
+                let (passthrough_pk, pke) = key.new_pressed_key(context.into(), keymap_index);
+                let pk = input::PressedKey {
+                    key: LayeredKey::Pass(passthrough_pk.key),
                     keymap_index,
-                    pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(pk),
+                    pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(
+                        passthrough_pk,
+                    ),
                 };
-                (lpk, events)
+                (pk, pke)
             }
         }
     }
