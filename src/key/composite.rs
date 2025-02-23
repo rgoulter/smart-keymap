@@ -10,7 +10,6 @@ use serde::Deserialize;
 
 use crate::{input, key};
 use key::keyboard;
-use key::layered;
 
 use key::PressedKey as _;
 
@@ -27,7 +26,7 @@ pub trait TapHoldNestable:
 {
 }
 
-impl TapHoldNestable for layered::ModifierKey {}
+impl TapHoldNestable for key::layered::ModifierKey {}
 impl TapHoldNestable for keyboard::Key {}
 impl TapHoldNestable for BaseKey {}
 
@@ -74,7 +73,7 @@ pub trait LayeredNestable:
     fn as_fat_key(self) -> TapHoldKey<BaseKey>;
 }
 
-impl LayeredNestable for TapHold<layered::ModifierKey> {
+impl LayeredNestable for TapHold<key::layered::ModifierKey> {
     fn as_fat_key(self) -> TapHoldKey<BaseKey> {
         TapHold::as_fat_key(self)
     }
@@ -101,7 +100,7 @@ impl<K: TapHoldNestable> LayeredNestable for TapHoldKey<K> {
 #[cfg_attr(feature = "std", serde(untagged))]
 pub enum LayeredKey<K: LayeredNestable> {
     /// A layered key.
-    Layered(layered::LayeredKey<K>),
+    Layered(key::layered::LayeredKey<K>),
     /// Non-layered,
     Pass(K),
 }
@@ -266,8 +265,8 @@ impl TapHoldKey<BaseKey> {
         Self::TapHold(key)
     }
 
-    /// Constructs a [TapHoldKey] from the given [layered::ModifierKey].
-    pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
+    /// Constructs a [TapHoldKey] from the given [key::layered::ModifierKey].
+    pub const fn layer_modifier(key: key::layered::ModifierKey) -> Self {
         Self::Pass(BaseKey::layer_modifier(key))
     }
 }
@@ -279,9 +278,9 @@ impl TapHold<keyboard::Key> {
     }
 }
 
-impl TapHold<layered::ModifierKey> {
+impl TapHold<key::layered::ModifierKey> {
     /// Constructs a [TapHold] newtypefrom the given key.
-    pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
+    pub const fn layer_modifier(key: key::layered::ModifierKey) -> Self {
         Self(key)
     }
 }
@@ -304,15 +303,15 @@ impl LayeredKey<TapHoldKey<BaseKey>> {
         Self::Pass(TapHoldKey::tap_hold(key))
     }
 
-    /// Constructs a [Key] from the given [layered::ModifierKey].
-    pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
+    /// Constructs a [Key] from the given [key::layered::ModifierKey].
+    pub const fn layer_modifier(key: key::layered::ModifierKey) -> Self {
         Self::Pass(TapHoldKey::layer_modifier(key))
     }
 }
 
 impl<K: LayeredNestable> LayeredKey<K> {
-    /// Constructs a [Key] from the given [layered::LayeredKey].
-    pub const fn layered(key: layered::LayeredKey<K>) -> Self {
+    /// Constructs a [Key] from the given [key::layered::LayeredKey].
+    pub const fn layered(key: key::layered::LayeredKey<K>) -> Self {
         Self::Layered(key)
     }
 }
@@ -349,14 +348,14 @@ pub const DEFAULT_CONFIG: Config = Config {
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
     /// The layered key context.
-    pub layer_context: layered::Context,
+    pub layer_context: key::layered::Context,
     /// The tap hold key context.
     pub tap_hold_context: key::tap_hold::Context,
 }
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
-    layer_context: layered::DEFAULT_CONTEXT,
+    layer_context: key::layered::DEFAULT_CONTEXT,
     tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
 };
 
@@ -364,7 +363,7 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
-            layer_context: layered::DEFAULT_CONTEXT,
+            layer_context: key::layered::DEFAULT_CONTEXT,
             tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
         }
     }
@@ -391,7 +390,7 @@ impl From<Context> for () {
     fn from(_: Context) -> Self {}
 }
 
-impl From<Context> for layered::Context {
+impl From<Context> for key::layered::Context {
     fn from(ctx: Context) -> Self {
         ctx.layer_context
     }
@@ -526,11 +525,11 @@ pub enum Event {
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
     /// A layer modification event.
-    LayerModification(layered::LayerEvent),
+    LayerModification(key::layered::LayerEvent),
 }
 
-impl From<layered::LayerEvent> for Event {
-    fn from(ev: layered::LayerEvent) -> Self {
+impl From<key::layered::LayerEvent> for Event {
+    fn from(ev: key::layered::LayerEvent) -> Self {
         Event::LayerModification(ev)
     }
 }
@@ -541,7 +540,7 @@ impl From<key::tap_hold::Event> for Event {
     }
 }
 
-impl TryFrom<Event> for layered::LayerEvent {
+impl TryFrom<Event> for key::layered::LayerEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -570,13 +569,13 @@ mod tests {
     #[test]
     fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
         use crate::input;
-        use key::{composite, layered, Key, PressedKey};
+        use key::{composite, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
         type K = composite::Key;
         let keymap_index: u16 = 0;
-        let key = K::layer_modifier(layered::ModifierKey::Hold(0));
+        let key = K::layer_modifier(key::layered::ModifierKey::Hold(0));
         let context: Ctx = DEFAULT_CONTEXT;
         let (mut pressed_lmod_key, _) = key.new_pressed_key(context, keymap_index);
 
@@ -589,7 +588,8 @@ mod tests {
         // Assert
         let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
             Some(key::Event::Key {
-                key_event: Event::LayerModification(layered::LayerEvent::LayerDeactivated(layer)),
+                key_event:
+                    Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer)),
                 ..
             }) => {
                 assert_eq!(0, layer);
@@ -600,14 +600,14 @@ mod tests {
 
     #[test]
     fn test_composite_context_updates_with_composite_layermodifier_press_event() {
-        use key::{composite, keyboard, layered, Context, Key};
+        use key::{composite, keyboard, Context, Key};
 
         // Assemble
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 2] = [
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
+            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layered(key::layered::LayeredKey::new(
                 keyboard::Key::new(0x04).into(),
                 [Some(keyboard::Key::new(0x05).into())],
             )),
@@ -635,14 +635,14 @@ mod tests {
     #[test]
     fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
         use crate::input;
-        use key::{composite, keyboard, layered, Context, Key, PressedKey};
+        use key::{composite, keyboard, Context, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 2] = [
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
+            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layered(key::layered::LayeredKey::new(
                 keyboard::Key::new(0x04).into(),
                 [Some(keyboard::Key::new(0x05).into())],
             )),
@@ -670,14 +670,14 @@ mod tests {
 
     #[test]
     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
-        use key::{composite, keyboard, layered, Key, PressedKey};
+        use key::{composite, keyboard, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 3] = [
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
+            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layered(key::layered::LayeredKey::new(
                 keyboard::Key::new(0x04).into(),
                 [Some(keyboard::Key::new(0x05).into())],
             )),
@@ -697,14 +697,14 @@ mod tests {
 
     #[test]
     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
-        use key::{composite, keyboard, layered, Key, PressedKey};
+        use key::{composite, keyboard, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 3] = [
-            K::layer_modifier(layered::ModifierKey::Hold(0)),
-            K::layered(layered::LayeredKey::new(
+            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layered(key::layered::LayeredKey::new(
                 keyboard::Key::new(0x04).into(),
                 [Some(keyboard::Key::new(0x05).into())],
             )),
