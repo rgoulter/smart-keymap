@@ -248,8 +248,8 @@ impl<K: TapHoldNestable> key::Key for TapHold<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let TapHold(key) = self;
-        let (pressed_key, events) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
-        (pressed_key.into_pressed_key(), events)
+        let (pk, pke) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
+        (pk.into_pressed_key(), pke)
     }
 }
 
