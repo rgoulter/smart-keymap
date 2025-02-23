@@ -9,7 +9,6 @@ use core::fmt::Debug;
 use serde::Deserialize;
 
 use crate::{input, key};
-use key::keyboard;
 
 use key::PressedKey as _;
 
@@ -27,7 +26,7 @@ pub trait TapHoldNestable:
 }
 
 impl TapHoldNestable for key::layered::ModifierKey {}
-impl TapHoldNestable for keyboard::Key {}
+impl TapHoldNestable for key::keyboard::Key {}
 impl TapHoldNestable for BaseKey {}
 
 /// An aggregate of [key::Key] types.
@@ -78,7 +77,7 @@ impl LayeredNestable for TapHold<key::layered::ModifierKey> {
         TapHold::as_fat_key(self)
     }
 }
-impl LayeredNestable for TapHold<keyboard::Key> {
+impl LayeredNestable for TapHold<key::keyboard::Key> {
     fn as_fat_key(self) -> TapHoldKey<BaseKey> {
         TapHold::as_fat_key(self)
     }
@@ -255,8 +254,8 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
 pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
 
 impl TapHoldKey<BaseKey> {
-    /// Constructs a [TapHoldKey] from the given [keyboard::Key].
-    pub const fn keyboard(key: keyboard::Key) -> Self {
+    /// Constructs a [TapHoldKey] from the given [key::keyboard::Key].
+    pub const fn keyboard(key: key::keyboard::Key) -> Self {
         Self::Pass(BaseKey::keyboard(key))
     }
 
@@ -271,9 +270,9 @@ impl TapHoldKey<BaseKey> {
     }
 }
 
-impl TapHold<keyboard::Key> {
+impl TapHold<key::keyboard::Key> {
     /// Constructs a [TapHold] newtype from the given key.
-    pub const fn keyboard(key: keyboard::Key) -> Self {
+    pub const fn keyboard(key: key::keyboard::Key) -> Self {
         Self(key)
     }
 }
@@ -293,8 +292,8 @@ impl TapHold<BaseKey> {
 }
 
 impl LayeredKey<TapHoldKey<BaseKey>> {
-    /// Constructs a [Key] from the given [keyboard::Key].
-    pub const fn keyboard(key: keyboard::Key) -> Self {
+    /// Constructs a [Key] from the given [key::keyboard::Key].
+    pub const fn keyboard(key: key::keyboard::Key) -> Self {
         Self::Pass(TapHoldKey::keyboard(key))
     }
 
@@ -316,16 +315,16 @@ impl<K: LayeredNestable> LayeredKey<K> {
     }
 }
 
-impl Layered<TapHold<keyboard::Key>> {
+impl Layered<TapHold<key::keyboard::Key>> {
     /// Constructs a [Layered] newtype from the given key.
-    pub const fn keyboard(key: keyboard::Key) -> Self {
+    pub const fn keyboard(key: key::keyboard::Key) -> Self {
         Self(TapHold(key))
     }
 }
 
-impl Layered<TapHoldKey<keyboard::Key>> {
+impl Layered<TapHoldKey<key::keyboard::Key>> {
     /// Constructs a [Key] from the given [key::tap_hold::Key].
-    pub const fn tap_hold(key: key::tap_hold::Key<keyboard::Key>) -> Self {
+    pub const fn tap_hold(key: key::tap_hold::Key<key::keyboard::Key>) -> Self {
         Self(TapHoldKey::TapHold(key))
     }
 }
@@ -600,7 +599,7 @@ mod tests {
 
     #[test]
     fn test_composite_context_updates_with_composite_layermodifier_press_event() {
-        use key::{composite, keyboard, Context, Key};
+        use key::{composite, Context, Key};
 
         // Assemble
         type Ctx = composite::Context;
@@ -608,8 +607,8 @@ mod tests {
         let keys: [K; 2] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
             K::layered(key::layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+                key::keyboard::Key::new(0x04).into(),
+                [Some(key::keyboard::Key::new(0x05).into())],
             )),
         ];
         let mut context: Ctx = DEFAULT_CONTEXT;
@@ -635,7 +634,7 @@ mod tests {
     #[test]
     fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
         use crate::input;
-        use key::{composite, keyboard, Context, Key, PressedKey};
+        use key::{composite, Context, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
@@ -643,8 +642,8 @@ mod tests {
         let keys: [K; 2] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
             K::layered(key::layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+                key::keyboard::Key::new(0x04).into(),
+                [Some(key::keyboard::Key::new(0x05).into())],
             )),
         ];
         let mut context: Ctx = DEFAULT_CONTEXT;
@@ -670,7 +669,7 @@ mod tests {
 
     #[test]
     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
-        use key::{composite, keyboard, Key, PressedKey};
+        use key::{composite, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
@@ -678,10 +677,10 @@ mod tests {
         let keys: [K; 3] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
             K::layered(key::layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+                key::keyboard::Key::new(0x04).into(),
+                [Some(key::keyboard::Key::new(0x05).into())],
             )),
-            K::keyboard(keyboard::Key::new(0x06)),
+            K::keyboard(key::keyboard::Key::new(0x06)),
         ];
         let context: Ctx = DEFAULT_CONTEXT;
 
@@ -697,7 +696,7 @@ mod tests {
 
     #[test]
     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
-        use key::{composite, keyboard, Key, PressedKey};
+        use key::{composite, Key, PressedKey};
 
         // Assemble
         type Ctx = composite::Context;
@@ -705,10 +704,10 @@ mod tests {
         let keys: [K; 3] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
             K::layered(key::layered::LayeredKey::new(
-                keyboard::Key::new(0x04).into(),
-                [Some(keyboard::Key::new(0x05).into())],
+                key::keyboard::Key::new(0x04).into(),
+                [Some(key::keyboard::Key::new(0x05).into())],
             )),
-            K::keyboard(keyboard::Key::new(0x06)),
+            K::keyboard(key::keyboard::Key::new(0x06)),
         ];
         let context: Ctx = DEFAULT_CONTEXT;
 
