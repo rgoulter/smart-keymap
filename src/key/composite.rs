@@ -39,6 +39,9 @@ pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 pub struct Config {
+    /// The chorded configuration.
+    #[cfg_attr(feature = "std", serde(default))]
+    pub chorded: key::chorded::Config,
     /// The tap hold configuration.
     #[cfg_attr(feature = "std", serde(default))]
     pub tap_hold: key::tap_hold::Config,
@@ -46,12 +49,15 @@ pub struct Config {
 
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
+    chorded: key::chorded::DEFAULT_CONFIG,
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
+    /// The chorded key context.
+    pub chorded_context: key::chorded::Context,
     /// The layered key context.
     pub layer_context: key::layered::Context,
     /// The tap hold key context.
@@ -60,6 +66,7 @@ pub struct Context {
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
+    chorded_context: key::chorded::DEFAULT_CONTEXT,
     layer_context: key::layered::DEFAULT_CONTEXT,
     tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
 };
@@ -68,6 +75,7 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
+            chorded_context: key::chorded::Context::from_config(config.chorded),
             layer_context: key::layered::DEFAULT_CONTEXT,
             tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
         }
@@ -97,6 +105,12 @@ impl From<Context> for () {
     fn from(_: Context) -> Self {}
 }
 
+impl From<Context> for key::chorded::Context {
+    fn from(ctx: Context) -> Self {
+        ctx.chorded_context
+    }
+}
+
 impl From<Context> for key::layered::Context {
     fn from(ctx: Context) -> Self {
         ctx.layer_context
@@ -115,10 +129,18 @@ pub type PressedKey = LayeredPressedKey<TapHoldKey<BaseKey>>;
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
+    /// A chorded event.
+    Chorded(key::chorded::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
     /// A layer modification event.
     LayerModification(key::layered::LayerEvent),
+}
+
+impl From<key::chorded::Event> for Event {
+    fn from(ev: key::chorded::Event) -> Self {
+        Event::Chorded(ev)
+    }
 }
 
 impl From<key::layered::LayerEvent> for Event {
@@ -130,6 +152,17 @@ impl From<key::layered::LayerEvent> for Event {
 impl From<key::tap_hold::Event> for Event {
     fn from(ev: key::tap_hold::Event) -> Self {
         Event::TapHold(ev)
+    }
+}
+
+impl TryFrom<Event> for key::chorded::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Chorded(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
     }
 }
 
