@@ -11,7 +11,6 @@ use serde::Deserialize;
 use crate::{input, key};
 use key::keyboard;
 use key::layered;
-use key::tap_hold;
 
 use key::PressedKey as _;
 
@@ -38,7 +37,7 @@ impl TapHoldNestable for BaseKey {}
 #[cfg_attr(feature = "std", serde(untagged))]
 pub enum TapHoldKey<K: TapHoldNestable> {
     /// A tap-hold key.
-    TapHold(tap_hold::Key<K>),
+    TapHold(key::tap_hold::Key<K>),
     /// A non-tap-hold key.
     Pass(K),
 }
@@ -111,7 +110,7 @@ pub enum LayeredKey<K: LayeredNestable> {
 #[derive(Debug, Clone, Copy)]
 pub struct Layered<K: LayeredNestable>(pub K);
 
-impl<K: TapHoldNestable> key::Key for tap_hold::Key<K> {
+impl<K: TapHoldNestable> key::Key for key::tap_hold::Key<K> {
     type Context = Context;
     type Event = Event;
     type PressedKey = TapHoldPressedKey<BaseKey>;
@@ -144,8 +143,11 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
             TapHoldKey::TapHold(key) => {
-                let (pressed_key, pke) =
-                    <tap_hold::Key<K> as key::Key>::new_pressed_key(key, context, keymap_index);
+                let (pressed_key, pke) = <key::tap_hold::Key<K> as key::Key>::new_pressed_key(
+                    key,
+                    context,
+                    keymap_index,
+                );
                 (pressed_key.map_pressed_key(|k| k, |pks| pks), pke)
             }
             TapHoldKey::Pass(key) => {
@@ -172,8 +174,8 @@ impl<K: TapHoldNestable> key::Key for TapHold<K> {
     }
 }
 
-impl<K: TapHoldNestable> From<tap_hold::Key<K>> for TapHoldKey<K> {
-    fn from(key: tap_hold::Key<K>) -> Self {
+impl<K: TapHoldNestable> From<key::tap_hold::Key<K>> for TapHoldKey<K> {
+    fn from(key: key::tap_hold::Key<K>) -> Self {
         TapHoldKey::TapHold(key)
     }
 }
@@ -259,8 +261,8 @@ impl TapHoldKey<BaseKey> {
         Self::Pass(BaseKey::keyboard(key))
     }
 
-    /// Constructs a [TapHoldKey] from the given [tap_hold::Key].
-    pub const fn tap_hold(key: tap_hold::Key<BaseKey>) -> Self {
+    /// Constructs a [TapHoldKey] from the given [key::tap_hold::Key].
+    pub const fn tap_hold(key: key::tap_hold::Key<BaseKey>) -> Self {
         Self::TapHold(key)
     }
 
@@ -297,8 +299,8 @@ impl LayeredKey<TapHoldKey<BaseKey>> {
         Self::Pass(TapHoldKey::keyboard(key))
     }
 
-    /// Constructs a [Key] from the given [tap_hold::Key].
-    pub const fn tap_hold(key: tap_hold::Key<BaseKey>) -> Self {
+    /// Constructs a [Key] from the given [key::tap_hold::Key].
+    pub const fn tap_hold(key: key::tap_hold::Key<BaseKey>) -> Self {
         Self::Pass(TapHoldKey::tap_hold(key))
     }
 
@@ -323,8 +325,8 @@ impl Layered<TapHold<keyboard::Key>> {
 }
 
 impl Layered<TapHoldKey<keyboard::Key>> {
-    /// Constructs a [Key] from the given [tap_hold::Key].
-    pub const fn tap_hold(key: tap_hold::Key<keyboard::Key>) -> Self {
+    /// Constructs a [Key] from the given [key::tap_hold::Key].
+    pub const fn tap_hold(key: key::tap_hold::Key<keyboard::Key>) -> Self {
         Self(TapHoldKey::TapHold(key))
     }
 }
@@ -335,12 +337,12 @@ impl Layered<TapHoldKey<keyboard::Key>> {
 pub struct Config {
     /// The tap hold configuration.
     #[cfg_attr(feature = "std", serde(default))]
-    pub tap_hold: tap_hold::Config,
+    pub tap_hold: key::tap_hold::Config,
 }
 
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
-    tap_hold: tap_hold::DEFAULT_CONFIG,
+    tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
 /// An aggregate context for [key::Context]s.
@@ -349,13 +351,13 @@ pub struct Context {
     /// The layered key context.
     pub layer_context: layered::Context,
     /// The tap hold key context.
-    pub tap_hold_context: tap_hold::Context,
+    pub tap_hold_context: key::tap_hold::Context,
 }
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
     layer_context: layered::DEFAULT_CONTEXT,
-    tap_hold_context: tap_hold::DEFAULT_CONTEXT,
+    tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
 };
 
 impl Context {
@@ -363,7 +365,7 @@ impl Context {
     pub const fn from_config(config: Config) -> Self {
         Self {
             layer_context: layered::DEFAULT_CONTEXT,
-            tap_hold_context: tap_hold::Context::from_config(config.tap_hold),
+            tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
         }
     }
 }
@@ -395,7 +397,7 @@ impl From<Context> for layered::Context {
     }
 }
 
-impl From<Context> for tap_hold::Context {
+impl From<Context> for key::tap_hold::Context {
     fn from(ctx: Context) -> Self {
         ctx.tap_hold_context
     }
@@ -405,7 +407,7 @@ impl From<Context> for tap_hold::Context {
 #[derive(Debug, PartialEq)]
 pub enum TapHoldPressedKeyState<K: TapHoldNestable> {
     /// A tap-hold key's pressed state.
-    TapHold(tap_hold::PressedKeyState<K>),
+    TapHold(key::tap_hold::PressedKeyState<K>),
     /// Passthrough state.
     Pass(BasePressedKeyState),
 }
@@ -473,8 +475,8 @@ impl<K: Copy + Into<TapHoldKey<NK>>, NK: TapHoldNestable> key::PressedKeyState<K
     }
 }
 
-impl<K: TapHoldNestable> From<tap_hold::PressedKeyState<K>> for TapHoldPressedKeyState<K> {
-    fn from(pks: tap_hold::PressedKeyState<K>) -> Self {
+impl<K: TapHoldNestable> From<key::tap_hold::PressedKeyState<K>> for TapHoldPressedKeyState<K> {
+    fn from(pks: key::tap_hold::PressedKeyState<K>) -> Self {
         TapHoldPressedKeyState::TapHold(pks)
     }
 }
@@ -522,7 +524,7 @@ pub type PressedKey = LayeredPressedKey<TapHoldKey<BaseKey>>;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
     /// A tap-hold event.
-    TapHold(tap_hold::Event),
+    TapHold(key::tap_hold::Event),
     /// A layer modification event.
     LayerModification(layered::LayerEvent),
 }
@@ -533,8 +535,8 @@ impl From<layered::LayerEvent> for Event {
     }
 }
 
-impl From<tap_hold::Event> for Event {
-    fn from(ev: tap_hold::Event) -> Self {
+impl From<key::tap_hold::Event> for Event {
+    fn from(ev: key::tap_hold::Event) -> Self {
         Event::TapHold(ev)
     }
 }
@@ -550,7 +552,7 @@ impl TryFrom<Event> for layered::LayerEvent {
     }
 }
 
-impl TryFrom<Event> for tap_hold::Event {
+impl TryFrom<Event> for key::tap_hold::Event {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
