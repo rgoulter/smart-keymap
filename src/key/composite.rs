@@ -311,13 +311,13 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let Layered(key) = self;
-        let (pk, events) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
-        let lpk = input::PressedKey {
-            key: LayeredKey::Pass(pk.key),
+        let (passthrough_pk, pke) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
+        let pk = input::PressedKey {
+            key: LayeredKey::Pass(passthrough_pk.key),
             keymap_index,
-            pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(pk),
+            pressed_key_state: LayeredPressedKeyState::<TapHoldKey<BaseKey>>(passthrough_pk),
         };
-        (lpk, events)
+        (pk, pke)
     }
 }
 
