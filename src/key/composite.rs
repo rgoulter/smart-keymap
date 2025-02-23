@@ -134,13 +134,11 @@ impl key::Key for layered::ModifierKey {
             keymap_index,
             pressed_key_state: pks.into(),
         };
-        (
-            pk.into_pressed_key(),
-            key::PressedKeyEvents::event(key::Event::key_event(
-                keymap_index,
-                Event::LayerModification(lmod_ev),
-            )),
-        )
+        let pke = key::PressedKeyEvents::event(key::Event::key_event(
+            keymap_index,
+            Event::LayerModification(lmod_ev),
+        ));
+        (pk.into_pressed_key(), pke)
     }
 }
 
