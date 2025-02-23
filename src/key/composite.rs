@@ -518,6 +518,7 @@ impl<K: Copy + Into<BaseKey>> key::PressedKeyState<K> for BasePressedKeyState {
         event: key::Event<Event>,
     ) -> key::PressedKeyEvents<Event> {
         let bk: BaseKey = (*key).into();
+
         match (bk, self) {
             (BaseKey::LayerModifier(key), BasePressedKeyState::LayerModifier(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
@@ -539,6 +540,7 @@ impl<K: Copy + Into<BaseKey>> key::PressedKeyState<K> for BasePressedKeyState {
 
     fn key_output(&self, key: &K) -> key::KeyOutputState {
         let bk: BaseKey = (*key).into();
+
         match (bk, self) {
             (BaseKey::Keyboard(key), BasePressedKeyState::Keyboard(pks)) => pks.key_output(&key),
             _ => key::KeyOutputState::no_output(),
