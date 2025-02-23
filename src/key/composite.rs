@@ -609,13 +609,8 @@ impl<K: Copy + Into<TapHoldKey<NK>>, NK: TapHoldNestable> key::PressedKeyState<K
                 }
             }
             (TapHoldKey::Pass(key), TapHoldPressedKeyState::Pass(pks)) => {
-                let k: BaseKey = key.into();
-
-                if let Ok(ev) = event.try_into_key_event(|event| {
-                    event
-                        .try_into()
-                        .map_err(|_| key::EventError::UnmappableEvent)
-                }) {
+                if let Ok(ev) = event.try_into_key_event(|event| event.try_into()) {
+                    let k: BaseKey = key.into();
                     let events = pks.handle_event_for(context.into(), keymap_index, &k, ev);
                     events.into_events()
                 } else {
