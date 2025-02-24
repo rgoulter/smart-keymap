@@ -39,7 +39,7 @@ pub use tap_hold::{
 ///
 ///   Chorded := Chorded<Layered> | AuxChorded<Layered> | Layered
 ///   ```
-pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
+pub type Key = ChordedKey<LayeredKey<TapHoldKey<BaseKey>>>;
 
 /// Config used for constructing initial context
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -130,7 +130,7 @@ impl From<Context> for key::tap_hold::Context {
 }
 
 /// Convenience type alias for the 'highest' composite key.
-pub type PressedKey = LayeredPressedKey<TapHoldKey<BaseKey>>;
+pub type PressedKey = ChordedPressedKey<LayeredKey<TapHoldKey<BaseKey>>>;
 
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
