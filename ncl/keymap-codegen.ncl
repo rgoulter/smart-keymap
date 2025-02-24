@@ -778,11 +778,17 @@ let validators = import "validators.ncl" in
 pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
+        chorded: crate::key::chorded::Config {
+          chords: [],
+        },
         tap_hold: %{tap_hold_config_expr},
     };
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
+
+    /// The maximum number of chords.
+    pub const MAX_CHORDS: usize = 0;
 
     /// Alias for Context type; i.e. [crate::key::composite::Context] with generics.
     pub type Context = crate::key::composite::Context;
@@ -794,12 +800,7 @@ pub mod init {
     pub type PressedKey = crate::key::composite::PressedKey;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = crate::key::composite::Context {
-        layer_context: crate::key::layered::Context {
-            active_layers: [false; crate::key::layered::LAYER_COUNT],
-        },
-        tap_hold_context: crate::key::tap_hold::Context::from_config(CONFIG.tap_hold),
-    };
+    pub const CONTEXT: Context = crate::key::composite::Context::from_config(CONFIG);
 
     crate::tuples::define_keys!(%{std.to_string keymap_len});
 
