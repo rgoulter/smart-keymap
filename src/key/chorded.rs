@@ -154,6 +154,23 @@ where
             pressed_key_state: PressedKeyState::new(keymap_index),
         }
     }
+
+    /// Maps the Key of the Key into a new type.
+    pub fn map_key<T: key::Key + Copy>(self, f: fn(K) -> T) -> Key<T> {
+        let Key { chord, passthrough } = self;
+        Key {
+            chord: f(chord),
+            passthrough: f(passthrough),
+        }
+    }
+
+    /// Maps the Key of the Key into a new type.
+    pub fn into_key<T: key::Key + Copy>(self) -> Key<T>
+    where
+        K: Into<T>,
+    {
+        self.map_key(|k| k.into())
+    }
 }
 
 /// Auxiliary chorded key (with a passthrough key).
