@@ -67,6 +67,14 @@ impl<K: LayeredNestable> LayeredKey<K> {
 #[derive(Debug, Clone, Copy)]
 pub struct Layered<K: LayeredNestable>(pub K);
 
+impl<K: LayeredNestable> Layered<K> {
+    /// Constructs a 'fat' key value from the given tap hold key.
+    pub fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
+        let Layered(key) = self;
+        LayeredKey::Pass(key.as_fat_key())
+    }
+}
+
 impl<K: LayeredNestable> key::Key for LayeredKey<K> {
     type Context = Context;
     type Event = Event;
