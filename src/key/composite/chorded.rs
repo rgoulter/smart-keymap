@@ -22,24 +22,9 @@ pub trait ChordedNestable:
     fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>>;
 }
 
-impl ChordedNestable for Layered<TapHold<key::layered::ModifierKey>> {
+impl<K: LayeredNestable> ChordedNestable for Layered<K> {
     fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
-        todo!() // TODO
-    }
-}
-impl ChordedNestable for Layered<TapHold<key::keyboard::Key>> {
-    fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
-        todo!() // TODO
-    }
-}
-impl ChordedNestable for Layered<TapHold<BaseKey>> {
-    fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
-        todo!() // TODO
-    }
-}
-impl<K: TapHoldNestable> ChordedNestable for Layered<TapHoldKey<K>> {
-    fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
-        todo!() // TODO
+        self.as_fat_key()
     }
 }
 impl<K: LayeredNestable> ChordedNestable for LayeredKey<K> {
