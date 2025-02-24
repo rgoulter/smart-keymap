@@ -56,7 +56,10 @@ pub enum ChordedKey<K: ChordedNestable> {
     /// A chorded key.
     Chorded(key::chorded::Key<K>),
     /// A chorded key.
-    Auxiliary(key::chorded::AuxiliaryKey<K>),
+    Auxiliary {
+        /// The auxiliary chorded key.
+        chorded: key::chorded::AuxiliaryKey<K>,
+    },
     /// Non-chorded,
     Pass(K),
 }
@@ -76,8 +79,8 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
-            ChordedKey::Chorded(key) => todo!(),
-            ChordedKey::Auxiliary(key) => todo!(),
+            ChordedKey::Chorded(key) => todo!(),          // TODO
+            ChordedKey::Auxiliary { chorded } => todo!(), // TODO
             ChordedKey::Pass(key) => {
                 let (passthrough_pk, pke) = key.new_pressed_key(context.into(), keymap_index);
                 let pk = input::PressedKey {
@@ -98,8 +101,8 @@ impl<K: ChordedNestable> ChordedKey<K> {
     /// Constructs a 'fat' key value from the given chorded key.
     pub fn as_fat_key(self) -> ChordedKey<LayeredKey<TapHoldKey<BaseKey>>> {
         match self {
-            ChordedKey::Chorded(key) => todo!(),   // TODO
-            ChordedKey::Auxiliary(key) => todo!(), // TODO
+            ChordedKey::Chorded(key) => todo!(),          // TODO
+            ChordedKey::Auxiliary { chorded } => todo!(), // TODO
             ChordedKey::Pass(key) => ChordedKey::Pass(key.as_fat_key()),
         }
     }
@@ -182,7 +185,7 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
 
         match (k, self) {
             (ChordedKey::Chorded(key), ChordedPressedKeyState::Chorded(pks)) => todo!(),
-            (ChordedKey::Auxiliary(key), ChordedPressedKeyState::Auxiliary(pks)) => todo!(),
+            (ChordedKey::Auxiliary { chorded }, ChordedPressedKeyState::Auxiliary(pks)) => todo!(),
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|event| event.try_into()) {
                     let k: LayeredKey<TapHoldKey<BaseKey>> = key.as_fat_key();
@@ -201,7 +204,9 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
 
         match (k, self) {
             (ChordedKey::Chorded(key), ChordedPressedKeyState::Chorded(pks)) => todo!(),
-            (ChordedKey::Auxiliary(key), ChordedPressedKeyState::Auxiliary(pks)) => todo!(),
+            (ChordedKey::Auxiliary { chorded: key }, ChordedPressedKeyState::Auxiliary(pks)) => {
+                todo!()
+            }
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => pks.key_output(&key),
             _ => key::KeyOutputState::no_output(),
         }
