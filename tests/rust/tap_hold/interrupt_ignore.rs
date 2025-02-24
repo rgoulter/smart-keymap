@@ -13,15 +13,19 @@ type Ctx = composite::Context;
 type Ev = composite::Event;
 type PK = composite::PressedKey;
 
-type K0 = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
-type K1 = composite::Layered<composite::TapHold<keyboard::Key>>;
+type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
+type K1 = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
 
 const KEYS: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
-    composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-        tap: keyboard::Key::new(0x04),
-        hold: keyboard::Key::new(0xE0),
-    })),
-    composite::Layered(composite::TapHold(keyboard::Key::new(0x05))),
+    composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+        tap_hold::Key {
+            tap: keyboard::Key::new(0x04),
+            hold: keyboard::Key::new(0xE0),
+        },
+    ))),
+    composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+        0x05,
+    )))),
 ));
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
@@ -68,11 +72,11 @@ fn rolled_presses_desc_keycodes() {
     const K_O: u8 = 0x12;
 
     let keys: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
-        composite::Layered::tap_hold(tap_hold::Key {
+        key::composite::Chorded(composite::Layered::tap_hold(tap_hold::Key {
             tap: keyboard::Key::new(K_O),
             hold: keyboard::Key::new(0xE0),
-        }),
-        composite::Layered::keyboard(keyboard::Key::new(K_G)),
+        })),
+        key::composite::Chorded(composite::Layered::keyboard(keyboard::Key::new(K_G))),
     ));
     let mut keymap = Keymap::new(keys, CONTEXT);
 
