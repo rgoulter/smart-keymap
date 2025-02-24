@@ -694,14 +694,14 @@ let validators = import "validators.ncl" in
     #   - n.b.: NK must be an implemented type.
     lift_to_key = match {
       cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
-        cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::layered::ModifierKey" =>
-        cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::tap_hold::Key" =>
-        cv |> tap_hold_key.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_key.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::layered::LayeredKey" =>
         # cv's nested needs to be lifted to LayeredNestable.
-        cv |> layered_key.codegen_values,
+        cv |> layered_key.codegen_values |> chorded_.codegen_values,
       cv => std.fail_with "bad codegen value for lift_to_key: %{cv |> std.serialize 'Json}",
     }
   },
