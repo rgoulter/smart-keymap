@@ -49,8 +49,7 @@ use crate::{input, key};
 
 use key::PressedKey;
 
-/// The maximum number of chords.
-const MAX_CHORDS: usize = 4;
+pub use crate::init::MAX_CHORDS;
 
 /// The maximum number of keys in a chord.
 const MAX_CHORD_SIZE: usize = 2;
