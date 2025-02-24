@@ -16,6 +16,9 @@ mod layered;
 mod tap_hold;
 
 pub use base::{BaseKey, BasePressedKey, BasePressedKeyState};
+pub use chorded::{
+    Chorded, ChordedKey, ChordedNestable, ChordedPressedKey, ChordedPressedKeyState,
+};
 pub use layered::{
     Layered, LayeredKey, LayeredNestable, LayeredPressedKey, LayeredPressedKeyState,
 };
