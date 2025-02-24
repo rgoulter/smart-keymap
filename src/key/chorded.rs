@@ -143,6 +143,11 @@ where
     K::Event: TryInto<Event>,
     K::Event: From<Event>,
 {
+    /// Constructs new chorded key.
+    pub const fn new(chord: K, passthrough: K) -> Self {
+        Key { chord, passthrough }
+    }
+
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
@@ -188,6 +193,11 @@ where
     K::Event: TryInto<Event>,
     K::Event: From<Event>,
 {
+    /// Constructs new auxiliary chorded key.
+    pub const fn new(passthrough: K) -> Self {
+        AuxiliaryKey(passthrough)
+    }
+
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
