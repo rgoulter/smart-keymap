@@ -219,8 +219,12 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
         let k: ChordedKey<NK> = (*key).into();
 
         match (k, self) {
-            (ChordedKey::Chorded(key), ChordedPressedKeyState::Chorded(pks)) => todo!(),
-            (ChordedKey::Auxiliary { chorded }, ChordedPressedKeyState::Auxiliary(pks)) => todo!(),
+            (ChordedKey::Chorded(key), ChordedPressedKeyState::Chorded(pks)) => {
+                pks.handle_event_for(context, keymap_index, &key, event)
+            }
+            (ChordedKey::Auxiliary { chorded }, ChordedPressedKeyState::Auxiliary(pks)) => {
+                pks.handle_event_for(context, keymap_index, &chorded, event)
+            }
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => {
                 if let Ok(ev) = event.try_into_key_event(|event| event.try_into()) {
                     let k: LayeredKey<TapHoldKey<BaseKey>> = key.as_fat_key();
@@ -238,9 +242,9 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
         let k: ChordedKey<LayeredKey<TapHoldKey<BaseKey>>> = (*key).into().as_fat_key();
 
         match (k, self) {
-            (ChordedKey::Chorded(key), ChordedPressedKeyState::Chorded(pks)) => todo!(),
-            (ChordedKey::Auxiliary { chorded: key }, ChordedPressedKeyState::Auxiliary(pks)) => {
-                todo!()
+            (ChordedKey::Chorded(_), ChordedPressedKeyState::Chorded(pks)) => pks.key_output(),
+            (ChordedKey::Auxiliary { chorded: _ }, ChordedPressedKeyState::Auxiliary(pks)) => {
+                pks.key_output()
             }
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => pks.key_output(&key),
             _ => key::KeyOutputState::no_output(),
