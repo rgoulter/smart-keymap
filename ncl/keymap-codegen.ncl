@@ -634,6 +634,18 @@ let validators = import "validators.ncl" in
         },
     },
 
+    chorded_ = {
+      codegen_values = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::Chorded",
+            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+          },
+          rust_expr = "crate::key::composite::Chorded(%{nested.rust_expr})",
+        },
+    },
+
     # lift into a type which impl. composite::LayeredNestable
     #
     # i.e. into one of:
