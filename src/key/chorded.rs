@@ -224,6 +224,16 @@ pub trait ChordedKey<K: key::Key> {
     fn chorded_key(&self) -> Option<&K>;
 }
 
+impl<K: key::Key> ChordedKey<K> for Key<K> {
+    fn passthrough_key(&self) -> &K {
+        &self.passthrough
+    }
+
+    fn chorded_key(&self) -> Option<&K> {
+        Some(&self.chord)
+    }
+}
+
 impl<K: key::Key> ChordedKey<K> for AuxiliaryKey<K> {
     fn passthrough_key(&self) -> &K {
         &self.0
