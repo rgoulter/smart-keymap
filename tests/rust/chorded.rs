@@ -27,7 +27,13 @@ const KEYS: Keys2<CK, AK, Ctx, Ev, PK> = tuples::Keys2::new((
     },
 ));
 
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
+const CONTEXT: Ctx = key::composite::Context {
+    chorded_context: chorded::Context::from_config(chorded::Config {
+        chords: [Some(chorded::ChordIndices::Chord2(0, 1)), None, None, None],
+        ..chorded::DEFAULT_CONFIG
+    }),
+    ..composite::DEFAULT_CONTEXT
+};
 
 #[test]
 fn tap_auxiliary_key_acts_as_passthrough() {
@@ -80,5 +86,28 @@ fn tap_chorded_key_acts_as_passthrough() {
         [0, 0, 0x04, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn tap_chord_acts_as_chord() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x06, 0, 0, 0, 0, 0]];
     assert_eq!(expected_reports, actual_reports.reports());
 }
