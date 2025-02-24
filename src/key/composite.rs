@@ -11,6 +11,7 @@ use serde::Deserialize;
 use crate::key;
 
 mod base;
+mod chorded;
 mod layered;
 mod tap_hold;
 
@@ -32,6 +33,8 @@ pub use tap_hold::{
 ///   TapHold := TapHold<Base> | Base
 ///
 ///   Layered := Layered<TapHold> | TapHold
+///
+///   Chorded := Chorded<Layered> | AuxChorded<Layered> | Layered
 ///   ```
 pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
 
