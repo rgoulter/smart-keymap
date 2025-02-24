@@ -76,7 +76,20 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
-            _ => todo!(), // TODO
+            ChordedKey::Chorded(key) => todo!(),
+            ChordedKey::Auxiliary(key) => todo!(),
+            ChordedKey::Pass(key) => {
+                let (passthrough_pk, pke) = key.new_pressed_key(context.into(), keymap_index);
+                let pk = input::PressedKey {
+                    key: ChordedKey::Pass(passthrough_pk.key),
+                    keymap_index,
+                    pressed_key_state:
+                        ChordedPressedKeyState::<LayeredKey<TapHoldKey<BaseKey>>>::Pass(
+                            passthrough_pk.pressed_key_state,
+                        ),
+                };
+                (pk, pke)
+            }
         }
     }
 }
