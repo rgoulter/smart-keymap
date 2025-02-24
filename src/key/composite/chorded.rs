@@ -44,7 +44,7 @@ impl<K: TapHoldNestable> ChordedNestable for Layered<TapHoldKey<K>> {
 }
 impl<K: LayeredNestable> ChordedNestable for LayeredKey<K> {
     fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
-        todo!() // TODO
+        self.as_fat_key()
     }
 }
 
