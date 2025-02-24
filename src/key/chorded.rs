@@ -199,6 +199,20 @@ where
             pressed_key_state: PressedKeyState::new(keymap_index),
         }
     }
+
+    /// Maps the Key of the Key into a new type.
+    pub fn map_key<T: key::Key + Copy>(self, f: fn(K) -> T) -> AuxiliaryKey<T> {
+        let AuxiliaryKey(k) = self;
+        AuxiliaryKey(f(k))
+    }
+
+    /// Maps the Key of the Key into a new type.
+    pub fn into_key<T: key::Key + Copy>(self) -> AuxiliaryKey<T>
+    where
+        K: Into<T>,
+    {
+        self.map_key(|k| k.into())
+    }
 }
 
 /// Trait for [PressedKeyState].
