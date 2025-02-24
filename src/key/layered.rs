@@ -217,6 +217,24 @@ impl<K: key::Key + Copy + PartialEq> LayeredKey<K> {
         let layered = layered_keys(layered);
         Self { base, layered }
     }
+
+    /// Maps the Key of the Key into a new type.
+    pub fn map_key<T: key::Key + Copy + PartialEq>(self, f: fn(K) -> T) -> LayeredKey<T> {
+        let LayeredKey { base, layered } = self;
+
+        LayeredKey {
+            base: f(base),
+            layered: layered.map(|k| k.map(f)),
+        }
+    }
+
+    /// Maps the Key of the Key into a new type.
+    pub fn into_key<T: key::Key + Copy + PartialEq>(self) -> LayeredKey<T>
+    where
+        K: Into<T>,
+    {
+        self.map_key(|k| k.into())
+    }
 }
 
 impl<K: key::Key + Copy + PartialEq> LayeredKey<K>
