@@ -84,7 +84,11 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
 impl<K: ChordedNestable> ChordedKey<K> {
     /// Constructs a 'fat' key value from the given chorded key.
     pub fn as_fat_key(self) -> ChordedKey<LayeredKey<TapHoldKey<BaseKey>>> {
-        todo!() // XXX
+        match self {
+            ChordedKey::Chorded(key) => todo!(),   // TODO
+            ChordedKey::Auxiliary(key) => todo!(), // TODO
+            ChordedKey::Pass(key) => ChordedKey::Pass(key.as_fat_key()),
+        }
     }
 }
 
