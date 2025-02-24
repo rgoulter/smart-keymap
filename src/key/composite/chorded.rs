@@ -6,11 +6,9 @@ use serde::Deserialize;
 use crate::{input, key};
 
 use super::BaseKey;
+use super::TapHoldKey;
 use super::{Context, Event};
 use super::{Layered, LayeredKey, LayeredNestable, LayeredPressedKey, LayeredPressedKeyState};
-use super::{TapHold, TapHoldKey, TapHoldNestable};
-
-use key::PressedKey as _;
 
 /// Trait for types which can be nested in [ChordedKey] variants.
 pub trait ChordedNestable:
