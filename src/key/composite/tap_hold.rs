@@ -32,7 +32,7 @@ pub enum TapHoldKey<K: TapHoldNestable> {
 }
 
 impl<K: TapHoldNestable> TapHoldKey<K> {
-    /// Maps K to BaseKey.
+    /// Constructs a 'fat' key value from the given tap hold key.
     pub fn as_fat_key(self) -> TapHoldKey<BaseKey> {
         match self {
             TapHoldKey::TapHold(key) => TapHoldKey::TapHold(key.map_key(|k| k.into())),
@@ -46,7 +46,7 @@ impl<K: TapHoldNestable> TapHoldKey<K> {
 pub struct TapHold<K: TapHoldNestable>(pub K);
 
 impl<K: TapHoldNestable> TapHold<K> {
-    /// Maps K to BaseKey.
+    /// Constructs a 'fat' key value from the given tap hold key.
     pub fn as_fat_key(self) -> TapHoldKey<BaseKey> {
         let TapHold(k) = self;
         TapHoldKey::Pass(k.into())
