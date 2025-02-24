@@ -13,15 +13,19 @@ type Ctx = composite::Context;
 type Ev = composite::Event;
 type PK = composite::PressedKey;
 
-type K0 = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
-type K1 = composite::Layered<composite::TapHold<keyboard::Key>>;
+type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
+type K1 = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
 
 const KEYS: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
-    composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-        tap: keyboard::Key::new(0x04),
-        hold: keyboard::Key::new(0xE0),
-    })),
-    composite::Layered(composite::TapHold(keyboard::Key::new(0x05))),
+    composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+        tap_hold::Key {
+            tap: keyboard::Key::new(0x04),
+            hold: keyboard::Key::new(0xE0),
+        },
+    ))),
+    composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+        0x05,
+    )))),
 ));
 
 const CONTEXT: Ctx = Ctx {
@@ -115,16 +119,24 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
 
     // Assemble
     let keys: Keys4<K0, K0, K1, K1, Ctx, Ev, PK> = tuples::Keys4::new((
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x05),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x06))),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x07))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x05),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x06,
+        )))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x07,
+        )))),
     ));
     let mut keymap = Keymap::new(keys, CONTEXT);
     let mut actual_reports = DistinctReports::new();
@@ -182,19 +194,27 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
 
     // Assemble
     let keys: Keys4<K0, K0, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x05),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x06),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x07))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x05),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x06),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x07,
+        )))),
     ));
     let mut keymap = Keymap::new(keys, CONTEXT);
     let mut actual_reports = DistinctReports::new();
@@ -250,16 +270,24 @@ fn tap_th_after_rolling_th_kbd() {
 
     // Assemble
     let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x05))),
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x06),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x07))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x05,
+        )))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x06),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x07,
+        )))),
     ));
     let mut keymap = Keymap::new(keys, CONTEXT);
     let mut actual_reports = DistinctReports::new();
@@ -313,16 +341,24 @@ fn tap_th_then_tap_th() {
 
     // Assemble
     let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x05))),
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x06),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x07))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x04),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x05,
+        )))),
+        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
+            tap_hold::Key {
+                tap: keyboard::Key::new(0x06),
+                hold: keyboard::Key::new(0xE0),
+            },
+        ))),
+        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
+            0x07,
+        )))),
     ));
     let mut keymap = Keymap::new(keys, CONTEXT);
     let mut actual_reports = DistinctReports::new();
