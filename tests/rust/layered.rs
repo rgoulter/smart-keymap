@@ -11,15 +11,17 @@ use tuples::Keys2;
 type Ctx = composite::Context;
 type Ev = composite::Event;
 type PK = composite::PressedKey;
-type MK = composite::Layered<composite::TapHold<layered::ModifierKey>>;
-type LK = composite::LayeredKey<composite::TapHold<keyboard::Key>>;
+type MK = composite::Chorded<composite::Layered<composite::TapHold<layered::ModifierKey>>>;
+type LK = composite::Chorded<composite::LayeredKey<composite::TapHold<keyboard::Key>>>;
 
 const KEYS: Keys2<MK, LK, Ctx, Ev, PK> = tuples::Keys2::new((
-    composite::Layered(composite::TapHold(layered::ModifierKey::Hold(0))),
-    composite::LayeredKey::Layered(layered::LayeredKey::new(
+    composite::Chorded(composite::Layered(composite::TapHold(
+        layered::ModifierKey::Hold(0),
+    ))),
+    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
         composite::TapHold(keyboard::Key::new(0x04)),
         [Some(composite::TapHold(keyboard::Key::new(0x05)))],
-    )),
+    ))),
 ));
 
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
