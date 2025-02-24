@@ -53,6 +53,16 @@ pub enum LayeredKey<K: LayeredNestable> {
     Pass(K),
 }
 
+impl<K: LayeredNestable> LayeredKey<K> {
+    /// Constructs a 'fat' key value from the given tap hold key.
+    pub fn as_fat_key(self) -> LayeredKey<TapHoldKey<BaseKey>> {
+        match self {
+            LayeredKey::Layered(key) => LayeredKey::Layered(key.map_key(|k| k.as_fat_key())),
+            LayeredKey::Pass(key) => LayeredKey::Pass(key.as_fat_key()),
+        }
+    }
+}
+
 /// Newtype for [LayeredNestable] keys so they can implement [key::Key] for [LayeredPressedKey].
 #[derive(Debug, Clone, Copy)]
 pub struct Layered<K: LayeredNestable>(pub K);
