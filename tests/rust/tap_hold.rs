@@ -15,12 +15,12 @@ use key::composite::{Context, Event, PressedKey};
 use key::{composite, keyboard, tap_hold};
 use tuples::Keys1;
 
-type K = composite::Layered<composite::TapHoldKey<keyboard::Key>>;
-const KEYS: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
-    composite::TapHoldKey::TapHold(tap_hold::Key {
+type K = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
+const KEYS: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Chorded(
+    composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
         tap: keyboard::Key::new(0x04),
         hold: keyboard::Key::new(0xE0),
-    }),
+    })),
 ),));
 const CONTEXT: Context = composite::DEFAULT_CONTEXT;
 
