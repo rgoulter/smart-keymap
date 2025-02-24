@@ -53,6 +53,29 @@ pub enum ChordedKey<K: ChordedNestable> {
 #[derive(Debug, Clone, Copy)]
 pub struct Chorded<K: ChordedNestable>(pub K);
 
+impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
+    type Context = Context;
+    type Event = Event;
+    type PressedKey = ChordedPressedKey<LayeredKey<TapHoldKey<BaseKey>>>;
+
+    fn new_pressed_key(
+        &self,
+        _context: Self::Context,
+        keymap_index: u16,
+    ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
+        let fat_key = (*self).map_key(|k| k.as_fat_key());
+        let pk = fat_key.new_pressed_key(keymap_index);
+        let pke = key::PressedKeyEvents::no_events();
+        (
+            pk.map_pressed_key(
+                |k| ChordedKey::Chorded(k),
+                |pks| ChordedPressedKeyState::Chorded(pks),
+            ),
+            pke,
+        )
+    }
+}
+
 impl<K: ChordedNestable> key::Key for ChordedKey<K> {
     type Context = Context;
     type Event = Event;
