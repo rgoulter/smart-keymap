@@ -98,7 +98,15 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
         context: Self::Context,
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
-        todo!() // XXX
+        let Chorded(key) = self;
+        let (pk, pke) = <K as key::Key>::new_pressed_key(key, context, keymap_index);
+        (
+            pk.map_pressed_key(
+                |k| ChordedKey::Pass(k.as_fat_key()),
+                |pks| ChordedPressedKeyState::Pass(pks),
+            ),
+            pke,
+        )
     }
 }
 
