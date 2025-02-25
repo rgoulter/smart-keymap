@@ -242,7 +242,7 @@ where
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        context: Context,
+        context: K::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, PressedKeyState<K>>,
@@ -251,11 +251,11 @@ where
         let pk = input::PressedKey {
             keymap_index,
             key: *self,
-            pressed_key_state: PressedKeyState::new(keymap_index),
+            pressed_key_state: PressedKeyState::new(context, keymap_index),
         };
         let timeout_ev = Event::Timeout;
         let sch_ev = key::ScheduledEvent::after(
-            context.config.timeout,
+            context.into().config.timeout,
             key::Event::key_event(keymap_index, timeout_ev),
         );
         (pk, sch_ev)
@@ -302,7 +302,7 @@ where
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        context: Context,
+        context: K::Context,
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, PressedKeyState<K>>,
@@ -311,11 +311,11 @@ where
         let pk = input::PressedKey {
             keymap_index,
             key: *self,
-            pressed_key_state: PressedKeyState::new(keymap_index),
+            pressed_key_state: PressedKeyState::new(context, keymap_index),
         };
         let timeout_ev = Event::Timeout;
         let sch_ev = key::ScheduledEvent::after(
-            context.config.timeout,
+            context.into().config.timeout,
             key::Event::key_event(keymap_index, timeout_ev),
         );
         (pk, sch_ev)
@@ -421,9 +421,15 @@ where
     K::Event: From<Event>,
 {
     /// Constructs a new [PressedKeyState].
-    pub fn new(keymap_index: u16) -> Self {
-        let mut pressed_indices = heapless::Vec::new();
-        pressed_indices.push(keymap_index).unwrap();
+    pub fn new(context: K::Context, keymap_index: u16) -> Self {
+        let sibling_indices = context.into().sibling_indices(keymap_index);
+        let pressed_indices: heapless::Vec<u16, MAX_CHORD_SIZE> = context
+            .into()
+            .pressed_indices()
+            .iter()
+            .filter(|i| sibling_indices.contains(i))
+            .copied()
+            .collect();
 
         Self::Pending {
             pressed_indices,
@@ -603,7 +609,7 @@ mod tests {
         let expected_key = keyboard::Key::new(0x04);
         let chorded_key = AuxiliaryKey(expected_key);
         let keymap_index: u16 = 0;
-        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(keymap_index);
+        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
         // Act: handle a timeout ev.
         let timeout_ev = key::Event::key_event(keymap_index, Event::Timeout).into_key_event();
@@ -627,7 +633,7 @@ mod tests {
         let expected_key = keyboard::Key::new(0x04);
         let chorded_key = AuxiliaryKey(expected_key);
         let keymap_index: u16 = 0;
-        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(keymap_index);
+        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
         // Act: handle a key press, for an index that's not part of any chord.
         let non_chord_press = input::Event::Press { keymap_index: 9 }.into();
@@ -661,7 +667,7 @@ mod tests {
         let kbd_key = keyboard::Key::new(0x04);
         let chorded_key = AuxiliaryKey(kbd_key);
         let keymap_index: u16 = 0;
-        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(keymap_index);
+        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
         // Act: handle a key press, for an index that completes (satisfies unambiguously) the chord.
         let chord_press = input::Event::Press { keymap_index: 1 }.into();
@@ -689,7 +695,7 @@ mod tests {
         let expected_key = keyboard::Key::new(0x04);
         let chorded_key = AuxiliaryKey(expected_key);
         let keymap_index: u16 = 0;
-        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(keymap_index);
+        let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
         // Act: handle a key press, for an index that's not part of any chord.
         let chorded_key_release = input::Event::Release { keymap_index }.into();
