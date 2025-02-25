@@ -221,7 +221,8 @@ impl Context {
                 keymap_index,
                 key_event,
             } => match key_event {
-                Event::ChordResolved => {
+                // Release the index if resolved as passthrough
+                Event::ChordResolved(false) => {
                     self.release_index(keymap_index);
                 }
                 _ => {}
@@ -389,8 +390,8 @@ impl<K: key::Key> ChordedKey<K> for AuxiliaryKey<K> {
 /// Events for chorded keys.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
-    /// The chorded key was resolved.
-    ChordResolved,
+    /// The chorded key was resolved. (true if chord, false if passthrough)
+    ChordResolved(bool),
 
     /// Timed out waiting for chord to be satisfied.
     Timeout,
@@ -503,7 +504,7 @@ where
         let (pk, mut n_pke) = k.new_pressed_key(context, keymap_index);
         *self = Self::Resolved(ChordResolution::Passthrough(pk));
 
-        let resolved_ev = Event::ChordResolved;
+        let resolved_ev = Event::ChordResolved(false);
         let key_ev = key::Event::key_event(keymap_index, resolved_ev);
         let sch_ev = key::ScheduledEvent::immediate(key_ev);
         n_pke.add_event(sch_ev.into_scheduled_event());
@@ -517,7 +518,7 @@ where
         keymap_index: u16,
         key: &C,
     ) -> key::PressedKeyEvents<K::Event> {
-        let resolved_ev = Event::ChordResolved;
+        let resolved_ev = Event::ChordResolved(true);
         let key_ev = key::Event::key_event(keymap_index, resolved_ev);
 
         if let Some(k) = key.chorded_key() {
