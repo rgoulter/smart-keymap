@@ -169,12 +169,19 @@ impl Context {
     fn pressed_indices(&self) -> heapless::Vec<u16, { MAX_CHORD_SIZE * MAX_CHORDS }> {
         self.pressed_indices.iter().filter_map(|&i| i).collect()
     }
-}
 
-impl key::Context for Context {
-    type Event = Event;
-
-    fn handle_event(&mut self, event: Self::Event) {}
+    /// Updates the context for the given key event.
+    pub fn handle_event(&mut self, event: key::Event<Event>) {
+        match event {
+            key::Event::Input(input::Event::Press { keymap_index }) => {
+                self.press_index(keymap_index);
+            }
+            key::Event::Input(input::Event::Release { keymap_index }) => {
+                self.release_index(keymap_index);
+            }
+            _ => {}
+        }
+    }
 }
 
 /// Primary Chorded key (with a passthrough key).
