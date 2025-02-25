@@ -68,6 +68,13 @@ impl ChordIndices {
             ChordIndices::Chord2(i0, i1) => i0 == &index || i1 == &index,
         }
     }
+
+    /// Returns whether the chord is satisfied by the given indices.
+    pub fn is_satisfied_by(&self, indices: &[u16]) -> bool {
+        match self {
+            ChordIndices::Chord2(i0, i1) => indices.contains(i0) && indices.contains(i1),
+        }
+    }
 }
 
 /// Chord definitions.
