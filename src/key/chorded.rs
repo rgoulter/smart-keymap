@@ -208,6 +208,7 @@ where
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
+        _context: Context,
         keymap_index: u16,
     ) -> input::PressedKey<Self, PressedKeyState<K>> {
         input::PressedKey {
