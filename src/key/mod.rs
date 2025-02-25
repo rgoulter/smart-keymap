@@ -4,6 +4,8 @@ use serde::Deserialize;
 
 use crate::input;
 
+/// Chorded keys. (Chording functionality).
+pub mod chorded;
 /// HID Keyboard keys.
 pub mod keyboard;
 /// Layered keys. (Layering functionality).
@@ -15,7 +17,7 @@ pub mod tap_hold;
 pub mod composite;
 
 /// The maximum number of key events that are emitted [Key] or [PressedKeyState].
-pub const MAX_KEY_EVENTS: usize = 2;
+pub const MAX_KEY_EVENTS: usize = 3;
 
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
@@ -47,6 +49,11 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
     /// Adds events from the other [PressedKeyEvents] to the [PressedKeyEvents].
     pub fn extend(&mut self, other: PressedKeyEvents<E>) {
         other.0.into_iter().for_each(|ev| self.0.push(ev).unwrap());
+    }
+
+    /// Adds an event from to the [PressedKeyEvents].
+    pub fn add_event(&mut self, ev: ScheduledEvent<E>) {
+        self.0.push(ev).unwrap();
     }
 
     /// Maps over the PressedKeyEvents.
