@@ -334,6 +334,9 @@ impl<K: key::Key> ChordedKey<K> for AuxiliaryKey<K> {
 /// Events for chorded keys.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
+    /// The chorded key was resolved.
+    ChordResolved,
+
     /// Timed out waiting for chord to be satisfied.
     Timeout,
 }
@@ -451,6 +454,7 @@ where
                                         self.resolve_as_passthrough(context, keymap_index, key);
                                     pke.extend(n_pke);
                                 }
+                                _ => {}
                             }
                         }
                     }
