@@ -179,6 +179,15 @@ impl Context {
             key::Event::Input(input::Event::Release { keymap_index }) => {
                 self.release_index(keymap_index);
             }
+            key::Event::Key {
+                keymap_index,
+                key_event,
+            } => match key_event {
+                Event::ChordResolved => {
+                    self.release_index(keymap_index);
+                }
+                _ => {}
+            },
             _ => {}
         }
     }
