@@ -70,6 +70,7 @@ jobs:
           cp target/${CH32X_TARGET}/release/libsmart_keymap.a ${FIRMWARE}/libsmartkeymap/
 
       - name: Build Firmware
+        shell: bash
         run: |
           cd ${FIRMWARE}
           make BOARD=ncl/ch32x-48.ncl
