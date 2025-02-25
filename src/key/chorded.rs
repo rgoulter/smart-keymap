@@ -469,11 +469,10 @@ where
                 pressed_indices,
                 satisfaction: _,
             } => {
-                let chords = context
-                    .into()
-                    .chords_for_indices(pressed_indices.as_slice());
+                let ctx: Context = context.into();
+                let chords = ctx.chords_for_indices(pressed_indices.as_slice());
                 match chords.as_slice() {
-                    [_ch] => {
+                    [ch] if ch.is_satisfied_by(&pressed_indices) => {
                         // Only one chord is satisfied by pressed indices.
                         //
                         // This resolves the aux key.
