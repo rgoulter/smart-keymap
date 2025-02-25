@@ -165,6 +165,10 @@ impl Context {
     }
 
     fn insert_pressed_index(&mut self, pos: usize, index: u16) {
+        if self.pressed_indices.is_empty() {
+            return;
+        }
+
         let mut i = self.pressed_indices.len() - 1;
         while i > pos {
             self.pressed_indices[i] = self.pressed_indices[i - 1];
@@ -175,6 +179,10 @@ impl Context {
     }
 
     fn remove_pressed_index(&mut self, pos: usize) {
+        if self.pressed_indices.is_empty() {
+            return;
+        }
+
         let mut i = pos;
         while i < self.pressed_indices.len() - 1 {
             self.pressed_indices[i] = self.pressed_indices[i + 1];
