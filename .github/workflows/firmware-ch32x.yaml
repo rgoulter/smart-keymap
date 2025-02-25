@@ -11,6 +11,7 @@ on:
     branches:
       - master
     paths:
+      - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
       - 'smart_keymap/**'
@@ -19,6 +20,7 @@ on:
     branches:
       - '*'
     paths:
+      - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
       - 'smart_keymap/**'
