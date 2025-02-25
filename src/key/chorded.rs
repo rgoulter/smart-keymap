@@ -73,12 +73,18 @@ impl ChordIndices {
 /// Chord definitions.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
+    /// The timeout (in number of ticks) for a chorded key to resolve.
+    ///
+    /// (Resolves as passthrough key if no chord is satisfied).
+    pub timeout: u16,
+
     /// The keymap chords.
     pub chords: [Option<ChordIndices>; MAX_CHORDS],
 }
 
 /// Default config.
 pub const DEFAULT_CONFIG: Config = Config {
+    timeout: 200,
     chords: [None; MAX_CHORDS],
 };
 
