@@ -404,8 +404,14 @@ where
         key: &C,
     ) -> key::PressedKeyEvents<K::Event> {
         let k = key.passthrough_key();
-        let (pk, n_pke) = k.new_pressed_key(context, keymap_index);
+        let (pk, mut n_pke) = k.new_pressed_key(context, keymap_index);
         *self = Self::Resolved(ChordResolution::Passthrough(pk));
+
+        let resolved_ev = Event::ChordResolved;
+        let key_ev = key::Event::key_event(keymap_index, resolved_ev);
+        let sch_ev = key::ScheduledEvent::immediate(key_ev);
+        n_pke.add_event(sch_ev.into_scheduled_event());
+
         n_pke
     }
 
@@ -415,13 +421,18 @@ where
         keymap_index: u16,
         key: &C,
     ) -> key::PressedKeyEvents<K::Event> {
+        let resolved_ev = Event::ChordResolved;
+        let key_ev = key::Event::key_event(keymap_index, resolved_ev);
+
         if let Some(k) = key.chorded_key() {
-            let (pk, n_pke) = k.new_pressed_key(context, keymap_index);
+            let (pk, mut n_pke) = k.new_pressed_key(context, keymap_index);
             *self = Self::Resolved(ChordResolution::Chord(Some(pk)));
+            let sch_ev = key::ScheduledEvent::immediate(key_ev);
+            n_pke.add_event(sch_ev.into_scheduled_event());
             n_pke
         } else {
             *self = Self::Resolved(ChordResolution::Chord(None));
-            key::PressedKeyEvents::no_events()
+            key::PressedKeyEvents::event(key_ev.into_key_event())
         }
     }
 
