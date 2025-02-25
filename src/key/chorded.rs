@@ -185,14 +185,20 @@ impl Context {
     }
 
     fn press_index(&mut self, index: u16) {
-        match self.pressed_indices.binary_search(&Some(index)) {
+        match self
+            .pressed_indices
+            .binary_search_by_key(&index, |&k| k.unwrap_or(u16::MAX))
+        {
             Ok(_) => {}
             Err(pos) => self.insert_pressed_index(pos, index),
         }
     }
 
     fn release_index(&mut self, index: u16) {
-        match self.pressed_indices.binary_search(&Some(index)) {
+        match self
+            .pressed_indices
+            .binary_search_by_key(&index, |&k| k.unwrap_or(u16::MAX))
+        {
             Ok(pos) => self.remove_pressed_index(pos),
             Err(_) => {}
         }
