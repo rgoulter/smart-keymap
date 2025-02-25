@@ -424,6 +424,8 @@ impl<
                     }
                 });
 
+                self.context.handle_event(ev.into());
+
                 match ev {
                     input::Event::Press { keymap_index } => {
                         let key = &mut self.key_definitions[keymap_index as usize];
