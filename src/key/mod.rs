@@ -51,6 +51,11 @@ impl<E: Copy + Debug> PressedKeyEvents<E> {
         other.0.into_iter().for_each(|ev| self.0.push(ev).unwrap());
     }
 
+    /// Adds an event from to the [PressedKeyEvents].
+    pub fn add_event(&mut self, ev: ScheduledEvent<E>) {
+        self.0.push(ev).unwrap();
+    }
+
     /// Maps over the PressedKeyEvents.
     pub fn map_events<F>(&self, f: fn(E) -> F) -> PressedKeyEvents<F> {
         PressedKeyEvents(
