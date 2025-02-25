@@ -98,6 +98,10 @@ impl Default for Context {
 impl key::Context for Context {
     type Event = Event;
     fn handle_event(&mut self, event: key::Event<Self::Event>) {
+        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+            self.chorded_context.handle_event(e);
+        }
+
         if let key::Event::Key { key_event, .. } = event {
             if let Event::LayerModification(ev) = key_event {
                 self.layer_context.handle_event(ev);
