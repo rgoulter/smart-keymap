@@ -13,3 +13,8 @@ rustflags = [
   "-C", "llvm-args=--inline-threshold=5",
   "-C", "no-vectorize-loops",
 ]
+
+[profile.release]
+opt-level = "z"
+codegen-units = 1
+lto = true
