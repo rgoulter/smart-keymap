@@ -437,6 +437,42 @@ where
         }
     }
 
+    fn check_resolution<C: ChordedKey<K>>(
+        &mut self,
+        context: K::Context,
+        keymap_index: u16,
+        key: &C,
+    ) -> key::PressedKeyEvents<K::Event> {
+        match self {
+            Self::Pending {
+                pressed_indices,
+                satisfaction: _,
+            } => {
+                let chords = context
+                    .into()
+                    .chords_for_indices(pressed_indices.as_slice());
+                match chords.as_slice() {
+                    [_ch] => {
+                        // Only one chord is satisfied by pressed indices.
+                        //
+                        // This resolves the aux key.
+                        self.resolve_as_chord(context, keymap_index, key)
+                    }
+                    [] => {
+                        // Otherwise, this key state resolves to "Passthrough",
+                        //  since it has been interrupted by an unrelated key press.
+                        self.resolve_as_passthrough(context, keymap_index, key)
+                    }
+                    _ => {
+                        // Overlapping chords.
+                        key::PressedKeyEvents::no_events()
+                    }
+                }
+            }
+            _ => key::PressedKeyEvents::no_events(),
+        }
+    }
+
     fn resolve_as_passthrough<C: ChordedKey<K>>(
         &mut self,
         context: K::Context,
@@ -529,27 +565,8 @@ where
                             panic!();
                         }
 
-                        let chords = context
-                            .into()
-                            .chords_for_indices(pressed_indices.as_slice());
-                        match chords.as_slice() {
-                            [_ch] => {
-                                // Only one chord is satisfied by pressed indices.
-                                //
-                                // This resolves the aux key.
-                                let n_pke = self.resolve_as_chord(context, keymap_index, key);
-                                pke.extend(n_pke);
-                            }
-                            [] => {
-                                // Otherwise, this key state resolves to "Passthrough",
-                                //  since it has been interrupted by an unrelated key press.
-                                let n_pke = self.resolve_as_passthrough(context, keymap_index, key);
-                                pke.extend(n_pke);
-                            }
-                            _ => {
-                                // Overlapping chords.
-                            }
-                        }
+                        let n_pke = self.check_resolution(context, keymap_index, key);
+                        pke.extend(n_pke);
                     }
                     key::Event::Input(input::Event::Release {
                         keymap_index: released_keymap_index,
