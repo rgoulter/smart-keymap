@@ -255,7 +255,7 @@ where
         input::PressedKey<Self, PressedKeyState<K>>,
         key::ScheduledEvent<Event>,
     ) {
-        let pk = input::PressedKey {
+        let mut pk = input::PressedKey {
             keymap_index,
             key: *self,
             pressed_key_state: PressedKeyState::new(context, keymap_index),
@@ -265,6 +265,10 @@ where
             context.into().config.timeout,
             key::Event::key_event(keymap_index, timeout_ev),
         );
+        // TODO: return resolved PKE
+        let _pke = pk
+            .pressed_key_state
+            .check_resolution(context, keymap_index, self);
         (pk, sch_ev)
     }
 
@@ -315,7 +319,7 @@ where
         input::PressedKey<Self, PressedKeyState<K>>,
         key::ScheduledEvent<Event>,
     ) {
-        let pk = input::PressedKey {
+        let mut pk = input::PressedKey {
             keymap_index,
             key: *self,
             pressed_key_state: PressedKeyState::new(context, keymap_index),
@@ -325,6 +329,10 @@ where
             context.into().config.timeout,
             key::Event::key_event(keymap_index, timeout_ev),
         );
+        // TODO: return resolved PKE
+        let _pke = pk
+            .pressed_key_state
+            .check_resolution(context, keymap_index, self);
         (pk, sch_ev)
     }
 
