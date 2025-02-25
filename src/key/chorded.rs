@@ -100,6 +100,8 @@ impl Default for Config {
 pub struct Context {
     /// The config used by the context.
     pub config: Config,
+
+    pressed_indices: [Option<u16>; MAX_CHORD_SIZE * MAX_CHORDS],
 }
 
 /// Default context.
@@ -108,7 +110,11 @@ pub const DEFAULT_CONTEXT: Context = Context::from_config(DEFAULT_CONFIG);
 impl Context {
     /// Constructs a context from the given config
     pub const fn from_config(config: Config) -> Context {
-        Context { config }
+        let pressed_indices = [None; MAX_CHORD_SIZE * MAX_CHORDS];
+        Context {
+            config,
+            pressed_indices,
+        }
     }
 
     /// Returns the chord indices for the given pressed indices.
@@ -125,12 +131,50 @@ impl Context {
             .filter(|c| indices.iter().all(|i| c.has_index(*i)))
             .collect()
     }
+
+    fn insert_pressed_index(&mut self, pos: usize, index: u16) {
+        let mut i = self.pressed_indices.len() - 1;
+        while i > pos {
+            self.pressed_indices[i] = self.pressed_indices[i - 1];
+            i -= 1;
+        }
+
+        self.pressed_indices[pos] = Some(index);
+    }
+
+    fn remove_pressed_index(&mut self, pos: usize) {
+        let mut i = pos;
+        while i < self.pressed_indices.len() - 1 {
+            self.pressed_indices[i] = self.pressed_indices[i + 1];
+            i += 1;
+        }
+
+        self.pressed_indices[self.pressed_indices.len() - 1] = None;
+    }
+
+    fn press_index(&mut self, index: u16) {
+        match self.pressed_indices.binary_search(&Some(index)) {
+            Ok(_) => {}
+            Err(pos) => self.insert_pressed_index(pos, index),
+        }
+    }
+
+    fn release_index(&mut self, index: u16) {
+        match self.pressed_indices.binary_search(&Some(index)) {
+            Ok(pos) => self.remove_pressed_index(pos),
+            Err(_) => {}
+        }
+    }
+
+    fn pressed_indices(&self) -> heapless::Vec<u16, { MAX_CHORD_SIZE * MAX_CHORDS }> {
+        self.pressed_indices.iter().filter_map(|&i| i).collect()
+    }
 }
 
 impl key::Context for Context {
     type Event = Event;
 
-    fn handle_event(&mut self, _event: Self::Event) {}
+    fn handle_event(&mut self, event: Self::Event) {}
 }
 
 /// Primary Chorded key (with a passthrough key).
