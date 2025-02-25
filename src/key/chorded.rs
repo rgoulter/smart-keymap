@@ -217,14 +217,23 @@ where
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        _context: Context,
+        context: Context,
         keymap_index: u16,
-    ) -> input::PressedKey<Self, PressedKeyState<K>> {
-        input::PressedKey {
+    ) -> (
+        input::PressedKey<Self, PressedKeyState<K>>,
+        key::ScheduledEvent<Event>,
+    ) {
+        let pk = input::PressedKey {
             keymap_index,
             key: *self,
             pressed_key_state: PressedKeyState::new(keymap_index),
-        }
+        };
+        let timeout_ev = Event::Timeout;
+        let sch_ev = key::ScheduledEvent::after(
+            context.config.timeout,
+            key::Event::key_event(keymap_index, timeout_ev),
+        );
+        (pk, sch_ev)
     }
 
     /// Maps the Key of the Key into a new type.
