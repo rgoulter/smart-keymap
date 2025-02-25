@@ -83,9 +83,11 @@ impl Default for Context {
 
 impl key::Context for Context {
     type Event = Event;
-    fn handle_event(&mut self, event: Self::Event) {
-        if let Event::LayerModification(ev) = event {
-            self.layer_context.handle_event(ev);
+    fn handle_event(&mut self, event: key::Event<Self::Event>) {
+        if let key::Event::Key { key_event, .. } = event {
+            if let Event::LayerModification(ev) = key_event {
+                self.layer_context.handle_event(ev);
+            }
         }
     }
 }
@@ -209,10 +211,7 @@ mod tests {
 
         // Act
         let event = match maybe_ev {
-            Some(key::ScheduledEvent {
-                event: key::Event::Key { key_event, .. },
-                ..
-            }) => key_event,
+            Some(key::ScheduledEvent { event, .. }) => event,
             _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
         };
         context.handle_event(event);
@@ -246,7 +245,7 @@ mod tests {
             key::Event::Input(input::Event::Release { keymap_index: 0 }),
         );
         let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key::Event::Key { key_event, .. }) => key_event,
+            Some(key_event) => key_event,
             _ => panic!("Expected an Event::Key(_)"),
         };
 
