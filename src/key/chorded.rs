@@ -638,6 +638,7 @@ mod tests {
     use key::composite;
     use key::keyboard;
 
+    use key::Context as _;
     use key::PressedKey;
 
     #[test]
@@ -697,7 +698,7 @@ mod tests {
     #[test]
     fn test_press_chorded_key_resolves_unambiguous_aux_state_as_chord() {
         // Assemble: an Auxilary chorded key, and its PKS, with chord 01.
-        let context = key::composite::Context {
+        let mut context = key::composite::Context {
             chorded_context: Context::from_config(Config {
                 chords: [Some(ChordIndices::Chord2(0, 1)), None, None, None],
                 ..DEFAULT_CONFIG
@@ -707,6 +708,7 @@ mod tests {
         let kbd_key = keyboard::Key::new(0x04);
         let chorded_key = AuxiliaryKey(kbd_key);
         let keymap_index: u16 = 0;
+        context.handle_event(key::Event::Input(input::Event::Press { keymap_index: 0 }));
         let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
         // Act: handle a key press, for an index that completes (satisfies unambiguously) the chord.
