@@ -132,6 +132,31 @@ impl Context {
             .collect()
     }
 
+    // All the indices (including the given index) from chords which
+    //  include the given index.
+    //
+    // e.g. for chords {01, 12},
+    //  sibling_indices(0) -> [0, 1]
+    //  sibling_indices(1) -> [0, 1, 2]
+    fn sibling_indices(&self, index: u16) -> heapless::Vec<u16, { MAX_CHORD_SIZE * MAX_CHORDS }> {
+        let mut res: heapless::Vec<u16, { MAX_CHORD_SIZE * MAX_CHORDS }> = heapless::Vec::new();
+
+        let chords = self.chords_for_indices(&[index]);
+
+        chords.iter().for_each(|ch| match ch {
+            ChordIndices::Chord2(i0, i1) => {
+                if let Err(pos) = res.binary_search(&i0) {
+                    res.insert(pos, *i0).unwrap();
+                }
+                if let Err(pos) = res.binary_search(&i1) {
+                    res.insert(pos, *i1).unwrap();
+                }
+            }
+        });
+
+        res
+    }
+
     fn insert_pressed_index(&mut self, pos: usize, index: u16) {
         let mut i = self.pressed_indices.len() - 1;
         while i > pos {
