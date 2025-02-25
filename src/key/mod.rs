@@ -17,7 +17,7 @@ pub mod tap_hold;
 pub mod composite;
 
 /// The maximum number of key events that are emitted [Key] or [PressedKeyState].
-pub const MAX_KEY_EVENTS: usize = 2;
+pub const MAX_KEY_EVENTS: usize = 3;
 
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
