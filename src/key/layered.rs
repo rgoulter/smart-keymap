@@ -106,12 +106,9 @@ impl Context {
     pub fn layer_state(&self) -> &[bool; LAYER_COUNT] {
         &self.active_layers
     }
-}
 
-impl key::Context for Context {
-    type Event = LayerEvent;
-
-    fn handle_event(&mut self, event: Self::Event) {
+    /// Updates the context with the [LayerEvent].
+    pub fn handle_event(&mut self, event: LayerEvent) {
         match event {
             LayerEvent::LayerActivated(layer) => {
                 self.active_layers.activate(layer);
@@ -367,8 +364,6 @@ mod tests {
 
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
-        use key::Context as _;
-
         let mut context: Context = Context::default();
 
         context.handle_event(LayerEvent::LayerActivated(1));
@@ -451,9 +446,18 @@ mod tests {
         let layered_key = LayeredKey::new(expected_key, [None, None, None]);
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(0).into());
-        context.handle_event(LayerEvent::LayerActivated(1).into());
-        context.handle_event(LayerEvent::LayerActivated(2).into());
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(0).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(1).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(2).into(),
+        ));
         let keymap_index = 9; // arbitrary
         let (actual_pressed_key, _actual_event) =
             layered_key.new_pressed_key(context, keymap_index);
@@ -484,9 +488,18 @@ mod tests {
         );
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(0).into());
-        context.handle_event(LayerEvent::LayerActivated(1).into());
-        context.handle_event(LayerEvent::LayerActivated(2).into());
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(0).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(1).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(2).into(),
+        ));
         let keymap_index = 9; // arbitrary
         let (actual_pressed_key, _actual_event) =
             layered_key.new_pressed_key(context, keymap_index);
@@ -513,8 +526,14 @@ mod tests {
         );
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(0).into());
-        context.handle_event(LayerEvent::LayerActivated(2).into());
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(0).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(2).into(),
+        ));
         let keymap_index = 9; // arbitrary
         let (actual_pressed_key, _actual_event) =
             layered_key.new_pressed_key(context, keymap_index);
