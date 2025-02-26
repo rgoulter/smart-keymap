@@ -57,6 +57,10 @@ include!(concat!(env!("OUT_DIR"), "/board.rs"));
 mod app {
     use panic_halt as _;
 
+    use hal::usb::UsbBus;
+
+    use usbd_serial::SerialPort;
+
     use rp2040_rtic_smart_keyboard::app_prelude::*;
 
     use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
@@ -73,6 +77,7 @@ mod app {
     #[shared]
     struct Shared {
         usb_dev: UsbDevice,
+        usb_serial: SerialPort<'static, UsbBus>,
         usb_class: UsbClass,
     }
 
@@ -110,7 +115,7 @@ mod app {
         )));
         let usb_bus = ctx.local.usb_bus.as_ref().unwrap();
 
-        let (usb_dev, usb_class) = app_init::init_usb_device(
+        let (usb_dev, usb_serial, usb_class) = app_init::init_usb_device(
             usb_bus,
             board::VID,
             board::PID,
@@ -151,7 +156,11 @@ mod app {
         };
 
         (
-            Shared { usb_dev, usb_class },
+            Shared {
+                usb_dev,
+                usb_serial,
+                usb_class,
+            },
             Local {
                 alarm,
                 keyboard,
@@ -162,15 +171,23 @@ mod app {
         )
     }
 
-    #[task(binds = USBCTRL_IRQ, priority = 2, shared = [usb_dev, usb_class])]
+    #[task(binds = USBCTRL_IRQ, priority = 2, shared = [usb_dev, usb_serial, usb_class])]
     fn usb_tx(c: usb_tx::Context) {
-        let usb_tx::SharedResources { usb_dev, usb_class } = c.shared;
-        (usb_dev, usb_class).lock(|mut ud, mut uc| usb_poll(&mut ud, &mut uc));
+        let usb_tx::SharedResources {
+            usb_dev,
+            usb_serial,
+            usb_class,
+        } = c.shared;
+        (usb_dev, usb_serial, usb_class)
+            .lock(|mut ud, mut us, mut uc| usb_poll(&mut ud, &mut us, &mut uc));
     }
 
-    #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class], local = [keyboard, backend, alarm, report_success])]
+    #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class, usb_serial], local = [keyboard, backend, alarm, report_success])]
     fn tick(c: tick::Context) {
-        let tick::SharedResources { mut usb_class } = c.shared;
+        let tick::SharedResources {
+            mut usb_class,
+            mut usb_serial,
+        } = c.shared;
         let tick::LocalResources {
             alarm,
             keyboard,

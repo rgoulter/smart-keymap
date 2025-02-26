@@ -17,6 +17,8 @@ use usb_device::device::{StringDescriptors, UsbDeviceBuilder, UsbVidPid};
 
 use usbd_human_interface_device::usb_class::UsbHidClassBuilder;
 
+use usbd_serial::SerialPort;
+
 use crate::common::{UsbClass, UsbDevice};
 
 /// Initializes the clocks.
@@ -63,13 +65,15 @@ pub fn init_usb_device(
     pid: u16,
     mfr: &'static str,
     product: &'static str,
-) -> (UsbDevice, UsbClass) {
+) -> (UsbDevice, SerialPort<'static, UsbBus>, UsbClass) {
     let usb_class = UsbHidClassBuilder::new()
         .add_device(
             usbd_human_interface_device::device::keyboard::NKROBootKeyboardConfig::default(),
         )
         .add_device(usbd_human_interface_device::device::consumer::ConsumerControlConfig::default())
         .build(usb_bus);
+
+    let serial = SerialPort::new(&usb_bus);
 
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
         .strings(&[StringDescriptors::new(LangID::EN_US)
@@ -79,5 +83,5 @@ pub fn init_usb_device(
         .unwrap()
         .build();
 
-    (usb_dev, usb_class)
+    (usb_dev, serial, usb_class)
 }

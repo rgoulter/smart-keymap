@@ -10,6 +10,8 @@ use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
 use usbd_human_interface_device::device::DeviceHList;
 use usbd_human_interface_device::usb_class::UsbHidClass;
 
+use usbd_serial::SerialPort;
+
 /// A USB Vendor ID.
 pub const VID: u16 = 0xcafe;
 
@@ -20,12 +22,19 @@ pub type UsbClass<B> =
 /// Polls the given [UsbDevice] with the [UsbHidClass] that has a [NKROBootKeyboard]. (e.g. [UsbClass]).
 pub fn usb_poll<B, D, Index>(
     usb_dev: &mut UsbDevice<'static, B>,
+    usb_serial: &mut SerialPort<'static, B>,
     keyboard: &mut UsbHidClass<'static, B, D>,
 ) where
     B: UsbBus,
     D: DeviceHList<'static> + Selector<NKROBootKeyboard<'static, B>, Index>,
 {
-    if usb_dev.poll(&mut [keyboard]) {
+    if usb_dev.poll(&mut [keyboard, usb_serial]) {
+        let mut buf = [0u8; 64];
+        match usb_serial.read(&mut buf) {
+            Err(_e) => {}
+            Ok(_count) => {}
+        }
+
         let interface = keyboard.device::<NKROBootKeyboard<'static, B>, _>();
         match interface.read_report() {
             Err(UsbError::WouldBlock) => {}
