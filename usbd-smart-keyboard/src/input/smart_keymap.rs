@@ -38,11 +38,10 @@ impl KeyboardBackend {
     }
 
     /// Writes the HID keyboard and consumer reports from the smart keymap.
-    pub fn write_reports<R, KE, CE>(&mut self, hid_reporter: &mut R)
+    pub fn write_reports<R, CE>(&mut self, hid_reporter: &mut R)
     where
-        KE: core::fmt::Debug, // USBHID Keyboard Error
         CE: core::fmt::Debug, // usb error
-        R: HIDReporter<page::Keyboard, page::Consumer, KE, CE>,
+        R: HIDReporter<page::Keyboard, page::Consumer, CE>,
     {
         let _ = hid_reporter.write_keyboard_report(self.pressed_key_codes.clone());
     }

@@ -50,16 +50,19 @@ impl<const COLS: usize, const ROWS: usize, M: MatrixScanner<COLS, ROWS>> Keyboar
 }
 
 /// Abstract interface writing keyboard/consumer HID reports.
-pub trait HIDReporter<K, C, KE, CE> {
+pub trait HIDReporter<K, C, CE> {
     /// Writes a report with the iterable of HID keyboard codes.
     /// Modifier keys are assumed to be key codes (e.g. LeftCtrl = 0xE0).
-    fn write_keyboard_report(&mut self, report: impl IntoIterator<Item = K>) -> Result<(), KE>;
+    fn write_keyboard_report(
+        &mut self,
+        report: impl IntoIterator<Item = K>,
+    ) -> Result<(), UsbHidError>;
 
     /// Writes a report with the iterable of HID consumer codes.
     fn write_consumer_report(&mut self, report: impl IntoIterator<Item = C>) -> Result<(), CE>;
 }
 
-impl<B> HIDReporter<page::Keyboard, page::Consumer, UsbHidError, UsbError> for common::UsbClass<B>
+impl<B> HIDReporter<page::Keyboard, page::Consumer, UsbError> for common::UsbClass<B>
 where
     B: UsbBus,
 {
