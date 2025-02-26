@@ -186,7 +186,7 @@ mod app {
         backend.tick();
 
         usb_class.lock(|k| {
-            backend.write_reports(k);
+            let _ = backend.write_reports(k);
         });
     }
 }
