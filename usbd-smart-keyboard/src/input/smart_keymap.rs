@@ -1,4 +1,5 @@
 use usbd_human_interface_device::page;
+use usbd_human_interface_device::UsbHidError;
 
 use crate::input::HIDReporter;
 
@@ -38,12 +39,12 @@ impl KeyboardBackend {
     }
 
     /// Writes the HID keyboard and consumer reports from the smart keymap.
-    pub fn write_reports<R, CE>(&mut self, hid_reporter: &mut R)
+    pub fn write_reports<R, CE>(&mut self, hid_reporter: &mut R) -> Result<(), UsbHidError>
     where
         CE: core::fmt::Debug, // usb error
         R: HIDReporter<page::Keyboard, page::Consumer, CE>,
     {
-        let _ = hid_reporter.write_keyboard_report(self.pressed_key_codes.clone());
+        hid_reporter.write_keyboard_report(self.pressed_key_codes.clone())
     }
 }
 
