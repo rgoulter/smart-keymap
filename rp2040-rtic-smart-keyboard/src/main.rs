@@ -81,6 +81,7 @@ mod app {
         alarm: timer::Alarm0,
         keyboard: Keyboard,
         backend: KeyboardBackend,
+        report_success: bool,
     }
 
     #[init(local=[
@@ -155,6 +156,7 @@ mod app {
                 alarm,
                 keyboard,
                 backend,
+                report_success: true,
             },
             init::Monotonics(),
         )
@@ -166,13 +168,14 @@ mod app {
         (usb_dev, usb_class).lock(|mut ud, mut uc| usb_poll(&mut ud, &mut uc));
     }
 
-    #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class], local = [keyboard, backend, alarm])]
+    #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class], local = [keyboard, backend, alarm, report_success])]
     fn tick(c: tick::Context) {
         let tick::SharedResources { mut usb_class } = c.shared;
         let tick::LocalResources {
             alarm,
             keyboard,
             backend,
+            report_success,
         } = c.local;
 
         alarm.clear_interrupt();
@@ -183,10 +186,19 @@ mod app {
                 backend.event(event);
             }
         }
-        backend.tick();
+        if *report_success {
+            backend.tick();
+        }
 
         usb_class.lock(|k| {
-            let _ = backend.write_reports(k);
+            let res = backend.write_reports(k);
+            match res {
+                Err(UsbHidError::WouldBlock) => *report_success = false,
+                Err(UsbHidError::UsbError(_)) => panic!(),
+                Err(UsbHidError::SerializationError) => panic!(),
+                Err(UsbHidError::Duplicate) => *report_success = true,
+                Ok(_) => *report_success = true,
+            }
         });
     }
 }
