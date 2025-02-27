@@ -632,6 +632,18 @@ let validators = import "validators.ncl" in
         },
     },
 
+    chorded_ = {
+      codegen_values = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::Chorded",
+            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+          },
+          rust_expr = "crate::key::composite::Chorded(%{nested.rust_expr})",
+        },
+    },
+
     # lift into a type which impl. composite::LayeredNestable
     #
     # i.e. into one of:
@@ -682,14 +694,14 @@ let validators = import "validators.ncl" in
     #   - n.b.: NK must be an implemented type.
     lift_to_key = match {
       cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
-        cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::layered::ModifierKey" =>
-        cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::tap_hold::Key" =>
-        cv |> tap_hold_key.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_key.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::layered::LayeredKey" =>
         # cv's nested needs to be lifted to LayeredNestable.
-        cv |> layered_key.codegen_values,
+        cv |> layered_key.codegen_values |> chorded_.codegen_values,
       cv => std.fail_with "bad codegen value for lift_to_key: %{cv |> std.serialize 'Json}",
     }
   },
@@ -778,11 +790,18 @@ let validators = import "validators.ncl" in
 pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
+        chorded: crate::key::chorded::Config {
+          timeout: 200,
+          chords: [],
+        },
         tap_hold: %{tap_hold_config_expr},
     };
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
+
+    /// The maximum number of chords.
+    pub const MAX_CHORDS: usize = 0;
 
     /// Alias for Context type; i.e. [crate::key::composite::Context] with generics.
     pub type Context = crate::key::composite::Context;
@@ -794,12 +813,7 @@ pub mod init {
     pub type PressedKey = crate::key::composite::PressedKey;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = crate::key::composite::Context {
-        layer_context: crate::key::layered::Context {
-            active_layers: [false; crate::key::layered::LAYER_COUNT],
-        },
-        tap_hold_context: crate::key::tap_hold::Context::from_config(CONFIG.tap_hold),
-    };
+    pub const CONTEXT: Context = crate::key::composite::Context::from_config(CONFIG);
 
     crate::tuples::define_keys!(%{std.to_string keymap_len});
 
