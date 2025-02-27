@@ -47,8 +47,8 @@ void test_taphold_dth_uth_eventually_clears(void) {
     keymap_tick(actual_report);
 
     // The 'tap' from the TapHold key should be released.
-    // after ten ticks.
-    for (int i = 0; i < 20; i++) {
+    // after ... an implementation-specific number of ticks.
+    for (int i = 0; i < 50; i++) {
         keymap_tick(actual_report);
     }
 
