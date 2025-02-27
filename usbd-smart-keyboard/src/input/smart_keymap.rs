@@ -46,6 +46,10 @@ impl KeyboardBackend {
     {
         hid_reporter.write_keyboard_report(self.pressed_key_codes.clone())
     }
+
+    pub fn pressed_key_codes(&self) -> &heapless::Vec<page::Keyboard, 16> {
+        &self.pressed_key_codes
+    }
 }
 
 /// Constructs a [smart_keymap::input::Event] from a [keyberon::layout::Event],
