@@ -12,6 +12,9 @@ const MAX_SCHEDULED_EVENTS: usize = 32;
 /// Maximum number of pressed keys supported.
 pub const MAX_PRESSED_KEYS: usize = 16;
 
+// Number of ticks before the next input event is processed in tick().
+const INPUT_QUEUE_TICK_DELAY: u8 = 10;
+
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct ScheduledEvent<E: Debug> {
     time: u32,
@@ -278,6 +281,7 @@ pub struct Keymap<I> {
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState>,
     input_queue: heapless::spsc::Queue<input::Event, 32>,
+    input_queue_delay_counter: u8,
 }
 
 impl<
@@ -299,6 +303,7 @@ impl<
             hid_reporter: HIDKeyboardReporter::new(),
             pending_key_state: None,
             input_queue: heapless::spsc::Queue::new(),
+            input_queue_delay_counter: INPUT_QUEUE_TICK_DELAY,
         }
     }
 
@@ -311,6 +316,7 @@ impl<
         while !self.input_queue.is_empty() {
             self.input_queue.dequeue().unwrap();
         }
+        self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
     }
 
     // If the pending key state is resolved,
@@ -507,8 +513,13 @@ impl<
     /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
         if !self.input_queue.is_empty() {
-            let ie = self.input_queue.dequeue().unwrap();
-            self.process_input(ie);
+            if self.input_queue_delay_counter == 0 {
+                let ie = self.input_queue.dequeue().unwrap();
+                self.process_input(ie);
+                self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
+            } else {
+                self.input_queue_delay_counter -= 1;
+            }
         }
 
         self.event_scheduler.tick();
