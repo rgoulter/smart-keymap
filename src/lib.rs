@@ -43,7 +43,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 /// Structs for input to the keymap.
-pub mod input;
+pub mod input; // x
 /// Smart key interface and implementations.
 ///
 /// The core interface for the smart keymap library is [key::Key],
