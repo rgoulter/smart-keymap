@@ -62,8 +62,12 @@ jobs:
 
       - name: Build Keymap
         run: |
+          env RUSTFLAGS="-Zlocation-detail=none -Zfmt-debug=none" \
           cargo build \
             --release \
+            -Z build-std=core \
+            -Z build-std-features="optimize_for_size" \
+            -Z build-std-features=panic_immediate_abort \
             --package "smart_keymap" \
             --target "${CH32X_TARGET}" \
             --no-default-features
