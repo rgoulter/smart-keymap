@@ -15,7 +15,8 @@
     c.enable = true;
     ruby.enable = true;
     rust = {
-      channel = "stable";
+      channel = "nightly";
+      components = [ "rustc" "cargo" "clippy" "rustfmt" "rust-analyzer" "rust-src" ];
       enable = true;
       targets = ["riscv32imac-unknown-none-elf" "thumbv6m-none-eabi"];
     };
