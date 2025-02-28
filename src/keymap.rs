@@ -339,9 +339,8 @@ impl<
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
             let mut i = 1;
-            self.input_queue
-                .enqueue(input::Event::InputResolved)
-                .unwrap();
+            let mut old_input_queue: heapless::spsc::Queue<input::Event, 32> =
+                core::mem::take(&mut self.input_queue);
             for ev in queued_events {
                 match ev {
                     key::Event::Input(ie) => {
@@ -352,6 +351,10 @@ impl<
                         i += 1;
                     }
                 }
+            }
+
+            while let Some(ie) = old_input_queue.dequeue() {
+                self.input_queue.enqueue(ie).unwrap();
             }
 
             self.handle_pending_events();
