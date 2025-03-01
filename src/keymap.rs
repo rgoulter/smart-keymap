@@ -332,6 +332,10 @@ impl<
             .pending_key_state
             .take_if(|PendingState { pressed_key, .. }| pressed_key.key_output().is_resolved())
         {
+            // Cancel events which were scheduled for the (pending) key.
+            self.event_scheduler
+                .cancel_events_for_keymap_index(pressed_key.keymap_index);
+
             // Add the pending state's pressed key to pressed inputs
             self.pressed_inputs
                 .push(input::PressedInput::new_pressed_key(pressed_key))
