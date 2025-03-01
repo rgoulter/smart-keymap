@@ -143,14 +143,75 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    // White box:
-    //   Some ticks() are required after the release of the first tap-hold key.
-    //   Releasing idx0=TH(A) leaves the keymap in a state where the
-    //    press(idx=1), press(idx=2) are pending.
-    for _ in 0..10 {
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
         keymap.tick();
         actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     }
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x05, 0x06, 0, 0, 0],
+        [0, 0, 0x05, 0x06, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn rolling_nested_tap_th_tap_th_tap_th() {
+    // Observed buggy behaviour with,
+    //  (in the case where the releases occur quickly enough,
+    //   quicker than the keymap's INPUT_QUEUE_TICK_DELAY):
+    // - Press TH(A)
+    // - Press TH(B)
+    // - Press TH(C)
+    // - Release TH(A)
+    // - Release TH(B)
+    // - Release TH(C)
+
+    // Assemble
+    let keys: Keys4<K0, K0, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+            tap: keyboard::Key::new(0x04),
+            hold: keyboard::Key::new(0xE0),
+        })),
+        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+            tap: keyboard::Key::new(0x05),
+            hold: keyboard::Key::new(0xE0),
+        })),
+        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+            tap: keyboard::Key::new(0x06),
+            hold: keyboard::Key::new(0xE0),
+        })),
+        composite::Layered(composite::TapHold(keyboard::Key::new(0x07))),
+    ));
+    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    // Press the TH key, then interrupt it with a tap.
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
