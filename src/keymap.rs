@@ -12,6 +12,8 @@ const MAX_SCHEDULED_EVENTS: usize = 32;
 /// Maximum number of pressed keys supported.
 pub const MAX_PRESSED_KEYS: usize = 16;
 
+const MAX_QUEUED_INPUT_EVENTS: usize = 32;
+
 // Number of ticks before the next input event is processed in tick().
 const INPUT_QUEUE_TICK_DELAY: u8 = 10;
 
@@ -280,7 +282,7 @@ pub struct Keymap<I> {
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState>,
-    input_queue: heapless::spsc::Queue<input::Event, 32>,
+    input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
     input_queue_delay_counter: u8,
 }
 
@@ -339,7 +341,7 @@ impl<
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
             let mut i = 1;
-            let mut old_input_queue: heapless::spsc::Queue<input::Event, 32> =
+            let mut old_input_queue: heapless::spsc::Queue<input::Event, MAX_QUEUED_INPUT_EVENTS> =
                 core::mem::take(&mut self.input_queue);
             for ev in queued_events {
                 match ev {
