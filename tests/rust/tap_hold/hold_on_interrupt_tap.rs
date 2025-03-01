@@ -114,7 +114,7 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
     // - Release C
 
     // Assemble
-    const keys: Keys4<K0, K0, K1, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+    let keys: Keys4<K0, K0, K1, K1, Ctx, Ev, PK> = tuples::Keys4::new((
         composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
             tap: keyboard::Key::new(0x04),
             hold: keyboard::Key::new(0xE0),
