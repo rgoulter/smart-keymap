@@ -9,7 +9,7 @@ use crate::input::HIDReporter;
 #[derive(Debug)]
 pub struct KeyboardBackend {
     keymap: smart_keymap::keymap::Keymap<smart_keymap::init::KeyDefinitionsType>,
-    pressed_key_codes: heapless::Vec<page::Keyboard, 16>,
+    pressed_key_codes: heapless::Vec<page::Keyboard, { smart_keymap::keymap::MAX_PRESSED_KEYS }>,
 }
 
 impl KeyboardBackend {
