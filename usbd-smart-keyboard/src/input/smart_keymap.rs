@@ -31,12 +31,18 @@ impl KeyboardBackend {
     /// A time event.
     ///
     /// This method must be called regularly, typically every millisecond.
-    pub fn tick(&mut self) {
+    ///
+    /// Returns true if the pressed_key_codes have changed.
+    pub fn tick(&mut self) -> bool {
         self.keymap.tick();
+
+        let old_pressed_key_codes = core::mem::take(&mut self.pressed_key_codes);
 
         let keymap_output = self.keymap.report_output();
         let pressed_keycodes = keymap_output.pressed_key_codes();
         self.pressed_key_codes = pressed_keycodes.iter().map(|&key| key.into()).collect();
+
+        old_pressed_key_codes != self.pressed_key_codes
     }
 
     /// Writes the HID keyboard and consumer reports from the smart keymap.
