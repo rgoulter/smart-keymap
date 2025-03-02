@@ -5,12 +5,35 @@ use serde::Deserialize;
 use crate::key;
 
 /// A key for HID Keyboard usage codes.
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Deserialize, Clone, Copy, PartialEq)]
 pub struct Key {
     #[serde(default)]
     key_code: u8,
     #[serde(default)]
     modifiers: key::KeyboardModifiers,
+}
+
+impl core::fmt::Debug for Key {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match (
+            self.key_code != 0x00,
+            self.modifiers != key::KeyboardModifiers::new(),
+        ) {
+            (true, true) => f
+                .debug_struct("Key")
+                .field("key_code", &self.key_code)
+                .field("modifiers", &self.modifiers)
+                .finish(),
+            (false, true) => f
+                .debug_struct("Key")
+                .field("modifiers", &self.modifiers)
+                .finish(),
+            _ => f
+                .debug_struct("Key")
+                .field("key_code", &self.key_code)
+                .finish(),
+        }
+    }
 }
 
 impl Key {
