@@ -6,6 +6,7 @@ use crate::input::HIDReporter;
 /// The keyboard "backend", manages the keyboard from the events received
 /// (presses/releases of coordinates on a keyboard layout).
 /// through to listing HID scancodes to report using HIDs.
+#[derive(Debug)]
 pub struct KeyboardBackend {
     keymap: smart_keymap::keymap::Keymap<smart_keymap::init::KeyDefinitionsType>,
     pressed_key_codes: heapless::Vec<page::Keyboard, 16>,
