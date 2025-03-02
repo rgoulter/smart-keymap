@@ -138,7 +138,7 @@ impl Context for () {
 }
 
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
-#[derive(Deserialize, Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Deserialize, Default, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardModifiers {
     #[serde(default)]
     left_ctrl: bool,
@@ -156,6 +156,37 @@ pub struct KeyboardModifiers {
     right_alt: bool,
     #[serde(default)]
     right_gui: bool,
+}
+
+impl core::fmt::Debug for KeyboardModifiers {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        let mut ds = f.debug_struct("KeyboardModifiers");
+        if self.left_ctrl {
+            ds.field("left_ctrl", &true);
+        }
+        if self.left_shift {
+            ds.field("left_shift", &true);
+        }
+        if self.left_alt {
+            ds.field("left_alt", &true);
+        }
+        if self.left_gui {
+            ds.field("left_gui", &true);
+        }
+        if self.right_ctrl {
+            ds.field("right_ctrl", &true);
+        }
+        if self.right_shift {
+            ds.field("right_shift", &true);
+        }
+        if self.right_alt {
+            ds.field("right_alt", &true);
+        }
+        if self.right_gui {
+            ds.field("right_gui", &true);
+        }
+        ds.finish_non_exhaustive()
+    }
 }
 
 impl KeyboardModifiers {
