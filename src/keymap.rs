@@ -274,7 +274,6 @@ struct PendingState {
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
-#[derive(Debug)]
 pub struct Keymap<I> {
     key_definitions: I,
     context: composite::Context,
@@ -284,6 +283,28 @@ pub struct Keymap<I> {
     pending_key_state: Option<PendingState>,
     input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
     input_queue_delay_counter: u8,
+}
+
+impl<
+        K: key::Key<
+                Context = composite::Context,
+                Event = composite::Event,
+                PressedKey = composite::PressedKey,
+            > + ?Sized,
+        I: IndexMut<usize, Output = K>,
+    > core::fmt::Debug for Keymap<I>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Keymap")
+            .field("context", &self.context)
+            .field("event_scheduler", &self.event_scheduler)
+            .field("hid_reporter", &self.hid_reporter)
+            .field("input_queue", &self.input_queue)
+            .field("input_queue_delay_counter", &self.input_queue_delay_counter)
+            .field("pending_key_state", &self.pending_key_state)
+            .field("pressed_inputs", &self.pressed_inputs)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<
