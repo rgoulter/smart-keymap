@@ -237,3 +237,68 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
     ];
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn tap_th_after_rolling_th_kbd() {
+    // Observed buggy behaviour with,
+    // - Press TH(A)
+    // - Press B
+    // - Release TH(A)
+    // - Release B
+    // - Press TH(C)
+    // - Release TH(C)
+
+    // Assemble
+    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+            tap: keyboard::Key::new(0x04),
+            hold: keyboard::Key::new(0xE0),
+        })),
+        composite::Layered(composite::TapHold(keyboard::Key::new(0x05))),
+        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
+            tap: keyboard::Key::new(0x06),
+            hold: keyboard::Key::new(0xE0),
+        })),
+        composite::Layered(composite::TapHold(keyboard::Key::new(0x07))),
+    ));
+    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    // Press the TH key, then interrupt it with a tap.
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
+        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
