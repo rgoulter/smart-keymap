@@ -68,6 +68,9 @@ pub mod init {
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
 
+    /// The maximum number of chords.
+    pub const MAX_CHORDS: usize = 4;
+
     /// Alias for Context type; i.e. [composite::Context].
     pub type Context = composite::Context;
 

@@ -11,10 +11,14 @@ use serde::Deserialize;
 use crate::key;
 
 mod base;
+mod chorded;
 mod layered;
 mod tap_hold;
 
 pub use base::{BaseKey, BasePressedKey, BasePressedKeyState};
+pub use chorded::{
+    Chorded, ChordedKey, ChordedNestable, ChordedPressedKey, ChordedPressedKeyState,
+};
 pub use layered::{
     Layered, LayeredKey, LayeredNestable, LayeredPressedKey, LayeredPressedKeyState,
 };
@@ -32,13 +36,18 @@ pub use tap_hold::{
 ///   TapHold := TapHold<Base> | Base
 ///
 ///   Layered := Layered<TapHold> | TapHold
+///
+///   Chorded := Chorded<Layered> | AuxChorded<Layered> | Layered
 ///   ```
-pub type Key = LayeredKey<TapHoldKey<BaseKey>>;
+pub type Key = ChordedKey<LayeredKey<TapHoldKey<BaseKey>>>;
 
 /// Config used for constructing initial context
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 pub struct Config {
+    /// The chorded configuration.
+    #[cfg_attr(feature = "std", serde(default))]
+    pub chorded: key::chorded::Config,
     /// The tap hold configuration.
     #[cfg_attr(feature = "std", serde(default))]
     pub tap_hold: key::tap_hold::Config,
@@ -46,12 +55,15 @@ pub struct Config {
 
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
+    chorded: key::chorded::DEFAULT_CONFIG,
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
+    /// The chorded key context.
+    pub chorded_context: key::chorded::Context,
     /// The layered key context.
     pub layer_context: key::layered::Context,
     /// The tap hold key context.
@@ -60,6 +72,7 @@ pub struct Context {
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
+    chorded_context: key::chorded::DEFAULT_CONTEXT,
     layer_context: key::layered::DEFAULT_CONTEXT,
     tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
 };
@@ -68,6 +81,7 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
+            chorded_context: key::chorded::Context::from_config(config.chorded),
             layer_context: key::layered::DEFAULT_CONTEXT,
             tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
         }
@@ -84,6 +98,10 @@ impl Default for Context {
 impl key::Context for Context {
     type Event = Event;
     fn handle_event(&mut self, event: key::Event<Self::Event>) {
+        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+            self.chorded_context.handle_event(e);
+        }
+
         if let key::Event::Key { key_event, .. } = event {
             if let Event::LayerModification(ev) = key_event {
                 self.layer_context.handle_event(ev);
@@ -95,6 +113,12 @@ impl key::Context for Context {
 /// keyboard::Context from composite::Context
 impl From<Context> for () {
     fn from(_: Context) -> Self {}
+}
+
+impl From<Context> for key::chorded::Context {
+    fn from(ctx: Context) -> Self {
+        ctx.chorded_context
+    }
 }
 
 impl From<Context> for key::layered::Context {
@@ -110,15 +134,23 @@ impl From<Context> for key::tap_hold::Context {
 }
 
 /// Convenience type alias for the 'highest' composite key.
-pub type PressedKey = LayeredPressedKey<TapHoldKey<BaseKey>>;
+pub type PressedKey = ChordedPressedKey<LayeredKey<TapHoldKey<BaseKey>>>;
 
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
+    /// A chorded event.
+    Chorded(key::chorded::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
     /// A layer modification event.
     LayerModification(key::layered::LayerEvent),
+}
+
+impl From<key::chorded::Event> for Event {
+    fn from(ev: key::chorded::Event) -> Self {
+        Event::Chorded(ev)
+    }
 }
 
 impl From<key::layered::LayerEvent> for Event {
@@ -130,6 +162,17 @@ impl From<key::layered::LayerEvent> for Event {
 impl From<key::tap_hold::Event> for Event {
     fn from(ev: key::tap_hold::Event) -> Self {
         Event::TapHold(ev)
+    }
+}
+
+impl TryFrom<Event> for key::chorded::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Chorded(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
     }
 }
 

@@ -424,6 +424,8 @@ impl<
                     }
                 });
 
+                self.context.handle_event(ev.into());
+
                 match ev {
                     input::Event::Press { keymap_index } => {
                         let key = &mut self.key_definitions[keymap_index as usize];
@@ -746,9 +748,9 @@ mod tests {
 
         // Assemble
         type Ctx = Context;
-        type K = composite::Layered<composite::TapHold<keyboard::Key>>;
-        let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Layered(
-            composite::TapHold(keyboard::Key::new(0x04)),
+        type K = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
+        let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Chorded(
+            composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
         ),));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
