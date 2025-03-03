@@ -90,7 +90,7 @@ fn tap_chorded_key_acts_as_passthrough() {
 }
 
 #[test]
-fn tap_chord_acts_as_chord() {
+fn press_chord_acts_as_chord() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
     let mut actual_reports = DistinctReports::new();
@@ -108,6 +108,78 @@ fn tap_chord_acts_as_chord() {
     }
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x06, 0, 0, 0, 0, 0]];
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn nested_tap_chord_acts_as_chord() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn rolling_tap_chord_acts_as_chord() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
     assert_eq!(expected_reports, actual_reports.reports());
 }
