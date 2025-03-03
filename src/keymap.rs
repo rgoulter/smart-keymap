@@ -14,8 +14,8 @@ pub const MAX_PRESSED_KEYS: usize = 16;
 
 const MAX_QUEUED_INPUT_EVENTS: usize = 32;
 
-// Number of ticks before the next input event is processed in tick().
-const INPUT_QUEUE_TICK_DELAY: u8 = 1;
+/// Number of ticks before the next input event is processed in tick().
+pub const INPUT_QUEUE_TICK_DELAY: u8 = 1;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 struct ScheduledEvent<E: Debug> {
