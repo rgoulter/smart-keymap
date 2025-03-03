@@ -413,12 +413,14 @@ let validators = import "validators.ncl" in
         #     i.e. a type which implements composite::TapHoldNestable.
         #     (i.e. composite::BaseKey).
         let unify_cv = fun cv =>
-          # let nested_key_type =
-          #   if tap_key_type == hold_key_type then
-          #     tap_key_type
-          #   else
-          #     composite.base_key.key_type tap in
-          composite.base_key.codegen_values cv
+          if tap_kt == hold_kt then
+            # Unlike other key::composite types,
+            #  key::composite::BaseKey does not have a "passthrough" newtype equivalent,
+            #  so the tap_hold's nested key type is unified to BaseKey
+            #  even if the tap and hold keys are the same type.
+            composite.base_key.codegen_values cv
+          else
+            composite.base_key.codegen_values cv
         in
 
         {
