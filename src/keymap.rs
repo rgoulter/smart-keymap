@@ -392,8 +392,10 @@ impl<
     pub fn handle_input(&mut self, ev: input::Event) {
         self.input_queue.enqueue(ev).unwrap();
 
-        if let Some(ie) = self.input_queue.dequeue() {
+        if self.input_queue_delay_counter == 0 {
+            let ie = self.input_queue.dequeue().unwrap();
             self.process_input(ie);
+            self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
         }
     }
 
