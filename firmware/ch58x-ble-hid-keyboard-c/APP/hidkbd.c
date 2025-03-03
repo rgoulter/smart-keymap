@@ -323,9 +323,7 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
 
     keyboard_matrix_scan();
 
-    if (report_status == SUCCESS) {
-      keymap_tick(buf);
-    }
+    keymap_tick(buf);
 
     report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
                                   HID_KEYBOARD_IN_RPT_LEN, buf);
