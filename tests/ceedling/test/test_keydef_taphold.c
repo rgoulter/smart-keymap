@@ -26,6 +26,7 @@ void test_taphold_dth_uth_is_tap(void) {
     keymap_init();
 
     keymap_register_input_keypress(0); // First key in keymap is TapHold(C, _)
+    keymap_tick(actual_report);
     keymap_register_input_keyrelease(0);
 
     keymap_tick(actual_report);
@@ -42,6 +43,7 @@ void test_taphold_dth_uth_eventually_clears(void) {
     keymap_init();
 
     keymap_register_input_keypress(0); // First key in keymap is TapHold(C, _)
+    keymap_tick(actual_report);
     keymap_register_input_keyrelease(0);
 
     keymap_tick(actual_report);
