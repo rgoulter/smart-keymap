@@ -326,7 +326,7 @@ impl<
             hid_reporter: HIDKeyboardReporter::new(),
             pending_key_state: None,
             input_queue: heapless::spsc::Queue::new(),
-            input_queue_delay_counter: INPUT_QUEUE_TICK_DELAY,
+            input_queue_delay_counter: 0,
         }
     }
 
@@ -339,7 +339,7 @@ impl<
         while !self.input_queue.is_empty() {
             self.input_queue.dequeue().unwrap();
         }
-        self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
+        self.input_queue_delay_counter = 0;
     }
 
     // If the pending key state is resolved,
