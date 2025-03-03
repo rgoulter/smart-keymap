@@ -60,6 +60,9 @@ fn key_uninterrupted_tap_is_reported() {
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
     keymap.tick();
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());

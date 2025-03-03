@@ -45,6 +45,9 @@ fn press_active_layer_when_layer_mod_held() {
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
     let actual_report = keymap.boot_keyboard_report();
 
@@ -60,7 +63,13 @@ fn press_retained_when_layer_mod_released() {
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
     let actual_report = keymap.boot_keyboard_report();
 
@@ -76,7 +85,13 @@ fn uses_base_when_pressed_after_layer_mod_released() {
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
     let actual_report = keymap.boot_keyboard_report();
 

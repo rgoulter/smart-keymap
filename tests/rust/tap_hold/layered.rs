@@ -86,6 +86,10 @@ fn uses_base_when_pressed_after_hold_layer_mod_released() {
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
+    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+        keymap.tick();
+    }
+
     // Act
     // Press the layered key; it should be the base key.
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
