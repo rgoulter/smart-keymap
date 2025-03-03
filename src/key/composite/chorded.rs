@@ -62,8 +62,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let fat_key = (*self).map_key(|k| k.as_fat_key());
-        let (pk, sch_ev) = fat_key.new_pressed_key(context.into(), keymap_index);
-        let pke = key::PressedKeyEvents::scheduled_event(sch_ev).into_events();
+        let (pk, pke) = fat_key.new_pressed_key(context.into(), keymap_index);
         (
             pk.map_pressed_key(
                 |k| ChordedKey::Chorded(k),
