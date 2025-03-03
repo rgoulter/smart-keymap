@@ -42,6 +42,7 @@ void test_keyboard_keyrelease(void) {
     keymap_init();
 
     keymap_register_input_keypress(2);
+    keymap_tick(actual_report);
     keymap_register_input_keyrelease(2);
 
     copy_hid_boot_keyboard_report(actual_report);
@@ -58,6 +59,7 @@ void test_keyboard_keypress_sequence_da_db(void) {
     keymap_init();
 
     keymap_register_input_keypress(2); // Third key in the keymap is A
+    keymap_tick(actual_report);
     keymap_register_input_keypress(3); // Fourth key in the keymap is B
 
     copy_hid_boot_keyboard_report(actual_report);
@@ -73,6 +75,7 @@ void test_keyboard_keypress_sequence_db_da(void) {
     keymap_init();
 
     keymap_register_input_keypress(3); // Fourth key in the keymap is B
+    keymap_tick(actual_report);
     keymap_register_input_keypress(2); // Third key in the keymap is A
 
     copy_hid_boot_keyboard_report(actual_report);
@@ -88,7 +91,9 @@ void test_keyboard_keypress_sequence_da_db_ub(void) {
     keymap_init();
 
     keymap_register_input_keypress(2); // Third key in the keymap is A
+    keymap_tick(actual_report);
     keymap_register_input_keypress(3); // Fourth key in the keymap is B
+    keymap_tick(actual_report);
     keymap_register_input_keyrelease(3);
 
     copy_hid_boot_keyboard_report(actual_report);
@@ -104,7 +109,9 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
     keymap_init();
 
     keymap_register_input_keypress(2); // Third key in the keymap is A
+    keymap_tick(actual_report);
     keymap_register_input_keypress(3); // Fourth key in the keymap is B
+    keymap_tick(actual_report);
     keymap_register_input_keyrelease(2);
 
     copy_hid_boot_keyboard_report(actual_report);
