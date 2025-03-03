@@ -49,6 +49,11 @@ impl LoadedKeymap {
             } => {
                 keymap.handle_input(ev);
                 distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+                for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
+                    keymap.tick();
+                    distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+                }
             }
             _ => panic!("No keymap loaded"),
         }
