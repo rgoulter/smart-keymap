@@ -544,14 +544,14 @@ impl<
 
     /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
-        if !self.input_queue.is_empty() {
-            if self.input_queue_delay_counter == 0 {
-                let ie = self.input_queue.dequeue().unwrap();
-                self.process_input(ie);
-                self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
-            } else {
-                self.input_queue_delay_counter -= 1;
-            }
+        if !self.input_queue.is_empty() && self.input_queue_delay_counter == 0 {
+            let ie = self.input_queue.dequeue().unwrap();
+            self.process_input(ie);
+            self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
+        }
+
+        if self.input_queue_delay_counter > 0 {
+            self.input_queue_delay_counter -= 1;
         }
 
         self.event_scheduler.tick();
