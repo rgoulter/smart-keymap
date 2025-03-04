@@ -39,10 +39,7 @@ pub enum ChordedKey<K: ChordedNestable> {
     /// A chorded key.
     Chorded(key::chorded::Key<K>),
     /// A chorded key.
-    Auxiliary {
-        /// The auxiliary chorded key.
-        chorded: key::chorded::AuxiliaryKey<K>,
-    },
+    Auxiliary(key::chorded::AuxiliaryKey<K>),
     /// Non-chorded,
     Pass(K),
 }
@@ -88,7 +85,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
         let pke = key::PressedKeyEvents::scheduled_event(sch_ev).into_events();
         (
             pk.map_pressed_key(
-                |k| ChordedKey::Auxiliary { chorded: k },
+                |k| ChordedKey::Auxiliary(k),
                 |pks| ChordedPressedKeyState::Auxiliary(pks),
             ),
             pke,
@@ -108,7 +105,7 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         match self {
             ChordedKey::Chorded(key) => key::Key::new_pressed_key(key, context, keymap_index),
-            ChordedKey::Auxiliary { chorded } => {
+            ChordedKey::Auxiliary(chorded) => {
                 key::Key::new_pressed_key(chorded, context, keymap_index)
             }
             ChordedKey::Pass(key) => {
@@ -132,9 +129,9 @@ impl<K: ChordedNestable> ChordedKey<K> {
     pub fn as_fat_key(self) -> ChordedKey<LayeredKey<TapHoldKey<BaseKey>>> {
         match self {
             ChordedKey::Chorded(key) => ChordedKey::Chorded(key.map_key(|k| k.as_fat_key())),
-            ChordedKey::Auxiliary { chorded } => ChordedKey::Auxiliary {
-                chorded: chorded.map_key(|k| k.as_fat_key()),
-            },
+            ChordedKey::Auxiliary(chorded) => {
+                ChordedKey::Auxiliary(chorded.map_key(|k| k.as_fat_key()))
+            }
             ChordedKey::Pass(key) => ChordedKey::Pass(key.as_fat_key()),
         }
     }
@@ -219,7 +216,7 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
             (ChordedKey::Chorded(key), ChordedPressedKeyState::Chorded(pks)) => {
                 pks.handle_event_for(context, keymap_index, &key, event)
             }
-            (ChordedKey::Auxiliary { chorded }, ChordedPressedKeyState::Auxiliary(pks)) => {
+            (ChordedKey::Auxiliary(chorded), ChordedPressedKeyState::Auxiliary(pks)) => {
                 pks.handle_event_for(context, keymap_index, &chorded, event)
             }
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => {
@@ -240,9 +237,7 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
 
         match (k, self) {
             (ChordedKey::Chorded(_), ChordedPressedKeyState::Chorded(pks)) => pks.key_output(),
-            (ChordedKey::Auxiliary { chorded: _ }, ChordedPressedKeyState::Auxiliary(pks)) => {
-                pks.key_output()
-            }
+            (ChordedKey::Auxiliary(_), ChordedPressedKeyState::Auxiliary(pks)) => pks.key_output(),
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => pks.key_output(&key),
             _ => key::KeyOutputState::no_output(),
         }
