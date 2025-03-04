@@ -316,7 +316,9 @@ where
 /// (i.e. After te primary chorded key, the remaining keys
 ///  in the chord are defined with auxiliary chorded keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct AuxiliaryKey<K>(K);
+pub struct AuxiliaryKey<K> {
+    passthrough: K,
+}
 
 impl<K: key::Key + Copy> AuxiliaryKey<K>
 where
@@ -326,7 +328,7 @@ where
 {
     /// Constructs new auxiliary chorded key.
     pub const fn new(passthrough: K) -> Self {
-        AuxiliaryKey(passthrough)
+        AuxiliaryKey { passthrough }
     }
 
     /// Constructs new pressed key.
@@ -357,8 +359,10 @@ where
 
     /// Maps the Key of the Key into a new type.
     pub fn map_key<T: key::Key + Copy>(self, f: fn(K) -> T) -> AuxiliaryKey<T> {
-        let AuxiliaryKey(k) = self;
-        AuxiliaryKey(f(k))
+        let AuxiliaryKey { passthrough } = self;
+        AuxiliaryKey {
+            passthrough: f(passthrough),
+        }
     }
 
     /// Maps the Key of the Key into a new type.
@@ -391,7 +395,7 @@ impl<K: key::Key> ChordedKey<K> for Key<K> {
 
 impl<K: key::Key> ChordedKey<K> for AuxiliaryKey<K> {
     fn passthrough_key(&self) -> &K {
-        &self.0
+        &self.passthrough
     }
 
     fn chorded_key(&self) -> Option<&K> {
@@ -658,7 +662,9 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x04);
-        let chorded_key = AuxiliaryKey(expected_key);
+        let chorded_key = AuxiliaryKey {
+            passthrough: expected_key,
+        };
         let keymap_index: u16 = 0;
         let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
@@ -683,7 +689,9 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x04);
-        let chorded_key = AuxiliaryKey(expected_key);
+        let chorded_key = AuxiliaryKey {
+            passthrough: expected_key,
+        };
         let keymap_index: u16 = 0;
         let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
@@ -717,8 +725,8 @@ mod tests {
             }),
             ..composite::DEFAULT_CONTEXT
         };
-        let kbd_key = keyboard::Key::new(0x04);
-        let chorded_key = AuxiliaryKey(kbd_key);
+        let passthrough = keyboard::Key::new(0x04);
+        let chorded_key = AuxiliaryKey { passthrough };
         let keymap_index: u16 = 0;
         context.handle_event(key::Event::Input(input::Event::Press { keymap_index: 0 }));
         let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
@@ -747,7 +755,9 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = key::composite::Context::default();
         let expected_key = keyboard::Key::new(0x04);
-        let chorded_key = AuxiliaryKey(expected_key);
+        let chorded_key = AuxiliaryKey {
+            passthrough: expected_key,
+        };
         let keymap_index: u16 = 0;
         let mut pks: PressedKeyState<keyboard::Key> = PressedKeyState::new(context, keymap_index);
 
