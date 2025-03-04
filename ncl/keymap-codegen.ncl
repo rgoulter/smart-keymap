@@ -526,6 +526,45 @@ let validators = import "validators.ncl" in
         },
     },
 
+  chorded_aux
+    | doc "for key::chorded::AuxiliaryKey."
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
+      serialized_json_validator =
+        key.serialized_json_validator,
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = fun k @ { passthrough } =>
+        let passthrough_codegen_values = key.codegen_values passthrough in
+
+        {
+          nested = {
+            passthrough = passthrough_codegen_values,
+          },
+          key_type =
+            let nested_key_type = nested.passthrough.key_type in
+            {
+              key_type = "crate::key::chorded::AuxiliaryKey",
+              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            },
+          rust_expr =
+            let passthrough_expr = nested.passthrough.rust_expr in
+            "crate::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
+          serialized_json = k,
+        },
+
+      map_nested = fun f cv @ { nested, ..rest } =>
+        rest
+        & {
+          nested = {
+            passthrough = f cv.nested.passthrough,
+          },
+        },
+    },
+
   checks.check_composite = {
     check_base_key_codegen_values = {
       # A keyboard::Key lifted to composite::BaseKey
