@@ -451,6 +451,81 @@ let validators = import "validators.ncl" in
         },
     },
 
+  chorded
+    | doc "for key::chorded::Key."
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      # JSON serialization of key::chorded::Key is { chord: key, passthrough: key }
+      serialized_json_validator =
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["chord", "passthrough"],
+          field_validators = {
+            chord = key.serialized_json_validator,
+            passthrough = key.serialized_json_validator,
+          },
+        },
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = fun k @ { chord, passthrough } =>
+        let chord_codegen_values = key.codegen_values chord in
+        let passthrough_codegen_values = key.codegen_values passthrough in
+
+        let chord_kt = chord_codegen_values.key_type in
+        let passthrough_kt = passthrough_codegen_values.key_type in
+
+        # Unify nested composite values.
+        #  In order to construct a key::chorded::Key,
+        #  the `chord` and `passthrough` keys must have the same (Rust) type.
+        let unify_cv =
+          if chord_kt == passthrough_kt then
+            fun cv => cv
+          else
+            fun cv =>
+              (
+                cv
+                |> match {
+                  cv @ { serialized_json = k, .. } if layered.is_serialized_json k =>
+                    composite.layered_key.codegen_values cv,
+                  cv @ { serialized_json = k, .. } if tap_hold.is_serialized_json k =>
+                    composite.tap_hold_key.codegen_values cv,
+                  cv @ { serialized_json = k, .. } if composite.base_key.is_serialized_json k =>
+                    let bk_cv = composite.base_key.codegen_values cv in
+                    composite.tap_hold_key.codegen_values bk_cv,
+                  cv => std.fail_with "bad codegen_values for chorded nested key: %{cv |> std.serialize 'Json}",
+                }
+              )
+        in
+
+        {
+          nested = {
+            chord = chord_codegen_values |> unify_cv,
+            passthrough = passthrough_codegen_values |> unify_cv,
+          },
+          key_type =
+            let nested_key_type = nested.chord.key_type in
+            {
+              key_type = "crate::key::chorded::Key",
+              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            },
+          rust_expr =
+            let chord_expr = nested.chord.rust_expr in
+            let passthrough_expr = nested.passthrough.rust_expr in
+            "crate::key::chorded::Key::new(%{chord_expr}, %{passthrough_expr})",
+          serialized_json = k,
+        },
+
+      map_nested = fun f cv @ { nested, ..rest } =>
+        rest
+        & {
+          nested = {
+            chord = f cv.nested.chord,
+            passthrough = f cv.nested.passthrough,
+          },
+        },
+    },
+
   checks.check_composite = {
     check_base_key_codegen_values = {
       # A keyboard::Key lifted to composite::BaseKey
