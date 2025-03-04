@@ -21,17 +21,7 @@ pub trait LayeredNestable:
     fn as_fat_key(self) -> TapHoldKey<BaseKey>;
 }
 
-impl LayeredNestable for TapHold<key::layered::ModifierKey> {
-    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
-        TapHold::as_fat_key(self)
-    }
-}
-impl LayeredNestable for TapHold<key::keyboard::Key> {
-    fn as_fat_key(self) -> TapHoldKey<BaseKey> {
-        TapHold::as_fat_key(self)
-    }
-}
-impl LayeredNestable for TapHold<BaseKey> {
+impl<K: TapHoldNestable> LayeredNestable for TapHold<K> {
     fn as_fat_key(self) -> TapHoldKey<BaseKey> {
         TapHold::as_fat_key(self)
     }
