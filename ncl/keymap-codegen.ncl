@@ -737,6 +737,10 @@ let validators = import "validators.ncl" in
         serialized_json_keymap
         & {
           config = {
+            chorded = {
+              chords | default = [],
+              timeout | default = 200,
+            },
             tap_hold = {
               timeout | default = 200,
               interrupt_response | default = "Ignore",
@@ -744,6 +748,14 @@ let validators = import "validators.ncl" in
           },
         }
       in
+      let chorded_config_expr = let
+        chords_fragment = ""
+        in m%"
+        crate::key::chorded::Config {
+            timeout: %{std.to_string config.chorded.timeout},
+            chords: [%{chords_fragment}],
+        }
+      "% in
       let tap_hold_config_expr = m%"
         crate::key::tap_hold::Config {
             timeout: %{std.to_string config.tap_hold.timeout},
@@ -792,10 +804,7 @@ let validators = import "validators.ncl" in
 pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
-        chorded: crate::key::chorded::Config {
-          timeout: 200,
-          chords: [],
-        },
+        chorded: %{chorded_config_expr},
         tap_hold: %{tap_hold_config_expr},
     };
 
@@ -803,7 +812,7 @@ pub mod init {
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
 
     /// The maximum number of chords.
-    pub const MAX_CHORDS: usize = 0;
+    pub const MAX_CHORDS: usize = %{config.chorded.chords |> std.array.length |> std.to_string};
 
     /// Alias for Context type; i.e. [crate::key::composite::Context] with generics.
     pub type Context = crate::key::composite::Context;
