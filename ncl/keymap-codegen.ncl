@@ -451,6 +451,121 @@ let validators = import "validators.ncl" in
         },
     },
 
+  chorded
+    | doc "for key::chorded::Key."
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      # JSON serialization of key::chorded::Key is { chord: key, passthrough: key }
+      serialized_json_validator =
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["chord", "passthrough"],
+          field_validators = {
+            chord = key.serialized_json_validator,
+            passthrough = key.serialized_json_validator,
+          },
+        },
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = fun k @ { chord, passthrough } =>
+        let chord_codegen_values = key.codegen_values chord in
+        let passthrough_codegen_values = key.codegen_values passthrough in
+
+        let chord_kt = chord_codegen_values.key_type in
+        let passthrough_kt = passthrough_codegen_values.key_type in
+
+        # Unify nested composite values.
+        #  In order to construct a key::chorded::Key,
+        #  the `chord` and `passthrough` keys must have the same (Rust) type.
+        let unify_cv = fun cv =>
+          #
+          if chord_kt == passthrough_kt then
+            fun cv => cv
+          else
+            fun cv =>
+              (
+                cv
+                |> match {
+                  cv @ { serialized_json = k, .. } if layered.is_serialized_json k =>
+                    composite.layered_key.codegen_values cv,
+                  cv @ { serialized_json = k, .. } if tap_hold.is_serialized_json k =>
+                    composite.tap_hold_key.codegen_values cv,
+                  cv @ { serialized_json = k, .. } if composite.base_key.is_serialized_json k =>
+                    let bk_cv = composite.base_key.codegen_values cv in
+                    composite.tap_hold_key.codegen_values bk_cv,
+                  cv => std.fail_with "bad codegen_values for chorded nested key: %{cv |> std.serialize 'Json}",
+                }
+              )
+        in
+
+        {
+          nested = {
+            chord = chord_codegen_values |> unify_cv,
+            passthrough = passthrough_codegen_values |> unify_cv,
+          },
+          key_type =
+            let nested_key_type = nested.chord.key_type in
+            {
+              key_type = "crate::key::chorded::Key",
+              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            },
+          rust_expr =
+            let chord_expr = nested.chord.rust_expr in
+            let passthrough_expr = nested.passthrough.rust_expr in
+            "crate::key::chorded::Key::new(%{chord_expr}, %{passthrough_expr})",
+          serialized_json = k,
+        },
+
+      map_nested = fun f cv @ { nested, ..rest } =>
+        rest
+        & {
+          nested = {
+            chord = f cv.chord.tap,
+            passthrough = f cv.passthrough.hold,
+          },
+        },
+    },
+
+  chorded_aux
+    | doc "for key::chorded::AuxiliaryKey."
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
+      serialized_json_validator =
+        key.serialized_json_validator,
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = fun k @ { passthrough } =>
+        let passthrough_codegen_values = key.codegen_values passthrough in
+
+        {
+          nested = {
+            passthrough = passthrough_codegen_values,
+          },
+          key_type =
+            let nested_key_type = nested.passthrough.key_type in
+            {
+              key_type = "crate::key::chorded::AuxiliaryKey",
+              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            },
+          rust_expr =
+            let passthrough_expr = nested.passthrough.rust_expr in
+            "crate::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
+          serialized_json = k,
+        },
+
+      map_nested = fun f cv @ { nested, ..rest } =>
+        rest
+        & {
+          nested = {
+            passthrough = f cv.nested.passthrough,
+          },
+        },
+    },
+
   checks.check_composite = {
     check_base_key_codegen_values = {
       # A keyboard::Key lifted to composite::BaseKey
@@ -634,6 +749,68 @@ let validators = import "validators.ncl" in
         },
     },
 
+    chorded_key = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      serialized_json_validator =
+        validators.any_of [
+          chorded.serialized_json_validator,
+          chorded_aux.serialized_json_validator,
+          composite.layered_key.serialized_json_validator,
+        ],
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = match {
+        cv @ { serialized_json = k, .. } if chorded.is_serialized_json k =>
+          let cv = chorded.map_nested lift_to_chorded_nestable cv in
+          {
+            nested = cv,
+            key_type = {
+              key_type = "crate::key::composite::ChordedKey",
+              as_rust_type_path = "%{key_type}<%{nested.nested.passthrough.key_type.as_rust_type_path}>",
+            },
+            rust_expr = "crate::key::composite::ChordedKey::Chorded(%{nested.rust_expr})",
+            serialized_json = k,
+          },
+        cv @ { serialized_json = k, .. } if chorded_aux.is_serialized_json k =>
+          let cv = chorded_aux.map_nested lift_to_chorded_nestable cv in
+          {
+            nested = cv,
+            key_type = {
+              key_type = "crate::key::composite::ChordedKey",
+              as_rust_type_path = "%{key_type}<%{nested.nested.passthrough.key_type.as_rust_type_path}>",
+            },
+            rust_expr = "crate::key::composite::ChordedKey::Auxiliary(%{nested.rust_expr})",
+            serialized_json = k,
+          },
+        cv @ { serialized_json = k, .. } if composite.layered_key.is_serialized_json k =>
+          let { key_type = k_key_type, rust_expr = k_expr, .. } = cv in
+          {
+            nested = cv,
+            key_type = {
+              key_type = "crate::key::composite::ChordedKey",
+              as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+            },
+            rust_expr = "crate::key::composite::ChordedKey::Pass(%{k_expr})",
+            serialized_json = k,
+          },
+        cv => std.fail_with "bad codegen_values for chorded_key: %{cv |> std.serialize 'Json}",
+      },
+    },
+
+    chorded_ = {
+      codegen_values = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::Chorded",
+            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+          },
+          rust_expr = "crate::key::composite::Chorded(%{nested.rust_expr})",
+        },
+    },
+
     # lift into a type which impl. composite::LayeredNestable
     #
     # i.e. into one of:
@@ -684,14 +861,14 @@ let validators = import "validators.ncl" in
     #   - n.b.: NK must be an implemented type.
     lift_to_key = match {
       cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
-        cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::layered::ModifierKey" =>
-        cv |> tap_hold_.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::tap_hold::Key" =>
-        cv |> tap_hold_key.codegen_values |> layered_.codegen_values,
+        cv |> tap_hold_key.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
       cv if cv.key_type.key_type == "crate::key::layered::LayeredKey" =>
         # cv's nested needs to be lifted to LayeredNestable.
-        cv |> layered_key.codegen_values,
+        cv |> layered_key.codegen_values |> chorded_.codegen_values,
       cv => std.fail_with "bad codegen value for lift_to_key: %{cv |> std.serialize 'Json}",
     }
   },
@@ -725,6 +902,10 @@ let validators = import "validators.ncl" in
         serialized_json_keymap
         & {
           config = {
+            chorded = {
+              chords | default = [],
+              timeout | default = 200,
+            },
             tap_hold = {
               timeout | default = 200,
               interrupt_response | default = "Ignore",
@@ -732,6 +913,14 @@ let validators = import "validators.ncl" in
           },
         }
       in
+      let chorded_config_expr = let
+        chords_fragment = ""
+        in m%"
+        crate::key::chorded::Config {
+            timeout: %{std.to_string config.chorded.timeout},
+            chords: [%{chords_fragment}],
+        }
+      "% in
       let tap_hold_config_expr = m%"
         crate::key::tap_hold::Config {
             timeout: %{std.to_string config.tap_hold.timeout},
@@ -780,11 +969,15 @@ let validators = import "validators.ncl" in
 pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
+        chorded: %{chorded_config_expr},
         tap_hold: %{tap_hold_config_expr},
     };
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
+
+    /// The maximum number of chords.
+    pub const MAX_CHORDS: usize = %{config.chorded.chords |> std.array.length |> std.to_string};
 
     /// Alias for Context type; i.e. [crate::key::composite::Context] with generics.
     pub type Context = crate::key::composite::Context;
@@ -796,12 +989,7 @@ pub mod init {
     pub type PressedKey = crate::key::composite::PressedKey;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = crate::key::composite::Context {
-        layer_context: crate::key::layered::Context {
-            active_layers: [false; crate::key::layered::LAYER_COUNT],
-        },
-        tap_hold_context: crate::key::tap_hold::Context::from_config(CONFIG.tap_hold),
-    };
+    pub const CONTEXT: Context = crate::key::composite::Context::from_config(CONFIG);
 
     crate::tuples::define_keys!(%{std.to_string keymap_len});
 
