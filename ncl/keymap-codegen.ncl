@@ -748,6 +748,56 @@ let validators = import "validators.ncl" in
         },
     },
 
+    chorded_key = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      serialized_json_validator =
+        validators.any_of [
+          chorded.serialized_json_validator,
+          chorded_aux.serialized_json_validator,
+          composite.layered_key.serialized_json_validator,
+        ],
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = match {
+        cv @ { serialized_json = k, .. } if chorded.is_serialized_json k =>
+          let cv = chorded.map_nested lift_to_chorded_nestable cv in
+          {
+            nested = cv,
+            key_type = {
+              key_type = "crate::key::composite::ChordedKey",
+              as_rust_type_path = "%{key_type}<%{nested.nested.passthrough.key_type.as_rust_type_path}>",
+            },
+            rust_expr = "crate::key::composite::ChordedKey::Chorded(%{nested.rust_expr})",
+            serialized_json = k,
+          },
+        cv @ { serialized_json = k, .. } if chorded_aux.is_serialized_json k =>
+          let cv = chorded_aux.map_nested lift_to_chorded_nestable cv in
+          {
+            nested = cv,
+            key_type = {
+              key_type = "crate::key::composite::ChordedKey",
+              as_rust_type_path = "%{key_type}<%{nested.nested.passthrough.key_type.as_rust_type_path}>",
+            },
+            rust_expr = "crate::key::composite::ChordedKey::Auxiliary(%{nested.rust_expr})",
+            serialized_json = k,
+          },
+        cv @ { serialized_json = k, .. } if composite.layered_key.is_serialized_json k =>
+          let { key_type = k_key_type, rust_expr = k_expr, .. } = cv in
+          {
+            nested = cv,
+            key_type = {
+              key_type = "crate::key::composite::ChordedKey",
+              as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
+            },
+            rust_expr = "crate::key::composite::ChordedKey::Pass(%{k_expr})",
+            serialized_json = k,
+          },
+        cv => std.fail_with "bad codegen_values for chorded_key: %{cv |> std.serialize 'Json}",
+      },
+    },
+
     chorded_ = {
       codegen_values = fun cv =>
         {
