@@ -43,3 +43,19 @@ In this module,
       - as passthrough key: then the pass through key is released.
     - If the PKS is pending,
       - then the passthrough key is 'tapped'.
+
+# Chord Indices
+## JSON
+
+Plain key code:
+
+```rust
+use smart_keymap::key::chorded::ChordIndices;
+let json = r#"
+  [3, 4]
+"#;
+let expected_chord: ChordIndices = ChordIndices::Chord2(3, 4);
+let actual_chord: ChordIndices = serde_json::from_str(json).unwrap();
+assert_eq!(expected_chord, actual_chord);
+```
+
