@@ -46,6 +46,8 @@
   active_key = fun lk active_layers =>
     lk
     |> match {
+      { passthrough, .. } =>
+        active_key passthrough active_layers,
       { layered, ..base_key } =>
         let zipped_layered_keys =
           std.array.zip_with
