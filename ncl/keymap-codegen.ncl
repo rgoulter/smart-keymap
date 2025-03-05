@@ -862,18 +862,7 @@ let validators = import "validators.ncl" in
     #  each of the `K0`, `K1`, etc. passed to `KeysN`
     #  must impl. `key::Key` with those associated types.
     # e.g. `key::keyboard::Key` implements `key::Key` with `PressedKey=BasePressedKey`;
-    #  so it needs to be lifted to `Layered(TapHold(keyboard::Key))`.
-    #
-    # e.g. assuming that any nested keys have been 'lifted'
-    #  to a suitable type:
-    # - for key::keyboard::Key, wrap with:
-    #    key::composite::Layered::keyboard(key::keyboard::Key).
-    # - for key::tap_hold::Key wrap with:
-    #    key::composite::Layered::tap_hold(key::tap_hold::Key<NK>).
-    #   - n.b.: NK must be an implemented type.
-    # - for key::layered::LayeredKey,
-    #    key::composite::Layered::layered(key::layered::LayeredKey<NK>).
-    #   - n.b.: NK must be an implemented type.
+    #  so it needs to be lifted to `Chorded(Layered(TapHold(keyboard::Key)))`.
     lift_to_key = match {
       cv if cv.key_type.key_type == "crate::key::keyboard::Key" =>
         cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
@@ -884,6 +873,10 @@ let validators = import "validators.ncl" in
       cv if cv.key_type.key_type == "crate::key::layered::LayeredKey" =>
         # cv's nested needs to be lifted to LayeredNestable.
         cv |> layered_key.codegen_values |> chorded_.codegen_values,
+      cv if cv.key_type.key_type == "crate::key::chorded::Key" =>
+        cv |> chorded_key.codegen_values,
+      cv if cv.key_type.key_type == "crate::key::chorded::AuxiliaryKey" =>
+        cv |> chorded_key.codegen_values,
       cv => std.fail_with "bad codegen value for lift_to_key: %{cv |> std.serialize 'Json}",
     }
   },
