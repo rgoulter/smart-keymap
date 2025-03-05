@@ -836,6 +836,22 @@ let validators = import "validators.ncl" in
       cv => std.fail_with "bad codegen value for lift_to_layered_nestable: %{cv |> std.serialize 'Json}",
     },
 
+    # lift into a type which impl. composite::ChordedNestable
+    #
+    # i.e. into one of:
+    #   - key::composite::LayeredKey(NK)
+    #      where NK impl. LayeredNestable.
+    #   - key::composite::Layered(NK)
+    #      where NK impl. LayeredNestable.
+    #
+    lift_to_chorded_nestable =
+      match {
+        cv if cv.key_type.key_type == "crate::key::layered::LayeredKey" =>
+          cv |> layered_key.codegen_values,
+        cv =>
+          cv |> lift_to_layered_nestable |> layered_.codegen_values,
+      },
+
     # Construct codegen values to used with keymap::Keymap.
     #
     # keymap::Keymap takes in a `keys` which is an indexable collection
