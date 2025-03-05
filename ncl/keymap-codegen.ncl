@@ -533,7 +533,12 @@ let validators = import "validators.ncl" in
 
       # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
       serialized_json_validator =
-        key.serialized_json_validator,
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["passthrough"],
+          field_validators = {
+            passthrough = key.serialized_json_validator,
+          },
+        },
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
