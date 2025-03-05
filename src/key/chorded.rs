@@ -43,10 +43,39 @@ pub struct Config {
     /// The timeout (in number of ticks) for a chorded key to resolve.
     ///
     /// (Resolves as passthrough key if no chord is satisfied).
+    #[serde(default = "default_timeout")]
     pub timeout: u16,
 
     /// The keymap chords.
+    #[serde(default = "default_chords")]
+    #[serde(deserialize_with = "deserialize_chords")]
     pub chords: [Option<ChordIndices>; MAX_CHORDS],
+}
+
+fn default_timeout() -> u16 {
+    DEFAULT_CONFIG.timeout
+}
+
+fn default_chords() -> [Option<ChordIndices>; MAX_CHORDS] {
+    DEFAULT_CONFIG.chords
+}
+
+/// Deserialize chords for [Config].
+fn deserialize_chords<'de, D>(
+    deserializer: D,
+) -> Result<[Option<ChordIndices>; MAX_CHORDS], D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let mut v: heapless::Vec<Option<ChordIndices>, MAX_CHORDS> =
+        Deserialize::deserialize(deserializer)?;
+
+    while !v.is_full() {
+        v.push(None).unwrap();
+    }
+
+    v.into_array()
+        .map_err(|_| serde::de::Error::custom("unable to deserialize"))
 }
 
 /// Default config.
