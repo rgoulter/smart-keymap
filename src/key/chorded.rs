@@ -15,7 +15,7 @@ const MAX_CHORD_SIZE: usize = 2;
 
 /// Chords are defined by an (unordered) set of indices into the keymap.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-#[serde(untagged)]
+#[cfg_attr(feature = "std", serde(untagged))]
 pub enum ChordIndices {
     /// A chord from two keys.
     Chord2(u16, u16),
