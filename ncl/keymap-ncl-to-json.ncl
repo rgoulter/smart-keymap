@@ -6,6 +6,8 @@ let validators = import "validators.ncl" in
       layer_modifier.Key,
       layered.Key,
       tap_hold.Key,
+      chorded.Key,
+      chorded_aux.Key,
       std.contract.from_validator validators.is_null,
     ],
 
@@ -252,6 +254,55 @@ let validators = import "validators.ncl" in
         },
     },
 
+  chorded
+    | doc "for key::chorded::Key."
+    = {
+      Key = std.contract.from_validator key_validator,
+
+      key_validator = fun k =>
+        k
+        |> match {
+          { chord = chord_key, passthrough = passthrough_key } =>
+            let valid_chord_key = key.key_validator chord_key in
+            let valid_passthrough_key = key.key_validator passthrough_key in
+            [valid_chord_key, valid_passthrough_key]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
+            },
+          _ => 'Error { message = "expected { chord = Key, passthrough = Key }" },
+        },
+
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_serialized = fun { chord = chord_key, passthrough = passthrough_key } =>
+        {
+          chord = key.to_json_serialized chord_key,
+          passthrough = key.to_json_serialized passthrough_key,
+        },
+    },
+
+  chorded_aux
+    | doc "for key::chorded::AuxiliaryKey."
+    = {
+      Key = std.contract.from_validator key_validator,
+
+      key_validator = fun k =>
+        k
+        |> match {
+          { passthrough = passthrough_key } => key.key_validator passthrough_key,
+          _ => 'Error { message = "expected { passthrough = Key }" },
+        },
+
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_serialized = fun { passthrough = passthrough_key } =>
+        {
+          passthrough = key.to_json_serialized passthrough_key,
+        },
+    },
+
   key = {
     Key = std.contract.from_validator key_validator,
 
@@ -262,11 +313,18 @@ let validators = import "validators.ncl" in
         layer_modifier.key_validator,
         layered.key_validator,
         tap_hold.key_validator,
+        chorded.key_validator,
+        chorded_aux.key_validator,
       ],
 
     is_key = fun k => 'Ok == key_validator k,
 
     to_json_serialized = match {
+      # Make key::chorded::Key
+      k if chorded.is_key k => chorded.to_json_serialized k,
+      # Make key::chorded::AuxiliaryKey
+      k if chorded_aux.is_key k => chorded_aux.to_json_serialized k,
+      # Make key::tap_hold::Key from keys with a "hold" modifier.
       # Make key::layered::LayeredKey
       k if layered.is_key k => layered.to_json_serialized k,
       # Make key::tap_hold::Key from keys with a "hold" modifier.
