@@ -890,6 +890,8 @@ let validators = import "validators.ncl" in
         layer_modifier.serialized_json_validator,
         layered.serialized_json_validator,
         tap_hold.serialized_json_validator,
+        chorded.serialized_json_validator,
+        chorded_aux.serialized_json_validator,
       ],
 
     is_serialized_json = fun k => 'Ok == serialized_json_validator k,
@@ -899,6 +901,8 @@ let validators = import "validators.ncl" in
       k if layer_modifier.is_serialized_json k => layer_modifier.codegen_values k,
       k if layered.is_serialized_json k => layered.codegen_values k,
       k if tap_hold.is_serialized_json k => tap_hold.codegen_values k,
+      k if chorded.is_serialized_json k => chorded.codegen_values k,
+      k if chorded_aux.is_serialized_json k => chorded_aux.codegen_values k,
       k => std.fail_with "bad serialized_json for key: %{k |> std.serialize 'Json}",
     },
   },
