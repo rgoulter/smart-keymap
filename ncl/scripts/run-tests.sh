@@ -19,6 +19,7 @@ ncl_tests=(
     "keymap-1key-tap_hold"
     "keymap-2key-2layer-simple"
     "keymap-2key-2layer-composite"
+    "keymap-2key-chorded"
     "keymap-48key-basic"
     "keymap-48key-rgoulter"
     "keymap-60key-dvorak-simple"
