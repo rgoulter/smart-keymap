@@ -169,6 +169,114 @@ let validators = import "validators.ncl" in
         },
     },
 
+  checks.check_tap_hold = {
+    # Use a serialized value to check the "is" predicate.
+    check_serialized_tap_keyboard_hold_keyboard_is =
+      let serialized_value = {
+        hold = { key_code = 224 },
+        tap = { key_code = 4 },
+      }
+      in
+      tap_hold.is_serialized_json serialized_value,
+
+    check_taphold_codegen_values = {
+      # Current impl: tap_hold::Key<keyboard::Key> is still th::Key<composite::Base>
+      check_taphold_keyboard =
+        let k = {
+          hold = { key_code = 224 },
+          tap = { key_code = 4 },
+        }
+        in
+        let cv = tap_hold.codegen_values k in
+        {
+          check_key_type = {
+            actual = cv.key_type,
+            expected = {
+              as_rust_type_path = "crate::key::tap_hold::Key<crate::key::composite::BaseKey>",
+              key_type = "crate::key::tap_hold::Key",
+            }
+          },
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "crate::key::tap_hold::Key::new(crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)), crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(224)))",
+          },
+        },
+    },
+  },
+
+  tap_hold
+    | doc "for key::tap_hold::Key."
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      # c.f. doc_de_tap_hold.md.
+      # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
+      serialized_json_validator =
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["tap", "hold"],
+          field_validators = {
+            tap = key.serialized_json_validator,
+            hold = key.serialized_json_validator,
+          },
+        },
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = fun k @ { hold, tap } =>
+        let hold_codegen_values = key.codegen_values hold in
+        let tap_codegen_values = key.codegen_values tap in
+
+        let tap_kt = tap_codegen_values.key_type in
+        let hold_kt = hold_codegen_values.key_type in
+
+        # Unify nested composite values.
+        #  In order to construct a key::tap_hold::Key,
+        #  the `tap` and `hold` keys must have the same (Rust) type.
+        #  - case where both same (e.g. both be key::keyboard::Key):
+        #     can use that as the 'unified' type.
+        #  - case where types differ (e.g. one is layered::ModifierKey, other is keyboard::Key),
+        #     need to 'lift' each of tap, hold to a unified key type.
+        #     i.e. a type which implements composite::TapHoldNestable.
+        #     (i.e. composite::BaseKey).
+        let unify_cv = fun cv =>
+          if tap_kt == hold_kt then
+            # Unlike other key::composite types,
+            #  key::composite::BaseKey does not have a "passthrough" newtype equivalent,
+            #  so the tap_hold's nested key type is unified to BaseKey
+            #  even if the tap and hold keys are the same type.
+            composite.base_key.codegen_values cv
+          else
+            composite.base_key.codegen_values cv
+        in
+
+        {
+          nested = {
+            tap = tap_codegen_values |> unify_cv,
+            hold = hold_codegen_values |> unify_cv,
+          },
+          key_type =
+            let nested_key_type = nested.tap.key_type in
+            {
+              key_type = "crate::key::tap_hold::Key",
+              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            },
+          rust_expr =
+            let hold_expr = nested.hold.rust_expr in
+            let tap_expr = nested.tap.rust_expr in
+            "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
+          serialized_json = k,
+        },
+
+      map_nested = fun f cv @ { nested, ..rest } =>
+        rest
+        & {
+          nested = {
+            tap = f cv.nested.tap,
+            hold = f cv.nested.hold,
+          },
+        },
+    },
+
   checks.check_layered = {
     # Use a serialized value to check the "is" predicate.
     check_serialized_base_keyboard_layered_keyboard_is =
@@ -339,114 +447,6 @@ let validators = import "validators.ncl" in
           nested = {
             base = f cv.nested.base,
             layered = std.array.map (fun cv => if cv != null then f cv else null) cv.nested.layered,
-          },
-        },
-    },
-
-  checks.check_tap_hold = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_tap_keyboard_hold_keyboard_is =
-      let serialized_value = {
-        hold = { key_code = 224 },
-        tap = { key_code = 4 },
-      }
-      in
-      tap_hold.is_serialized_json serialized_value,
-
-    check_taphold_codegen_values = {
-      # Current impl: tap_hold::Key<keyboard::Key> is still th::Key<composite::Base>
-      check_taphold_keyboard =
-        let k = {
-          hold = { key_code = 224 },
-          tap = { key_code = 4 },
-        }
-        in
-        let cv = tap_hold.codegen_values k in
-        {
-          check_key_type = {
-            actual = cv.key_type,
-            expected = {
-              as_rust_type_path = "crate::key::tap_hold::Key<crate::key::composite::BaseKey>",
-              key_type = "crate::key::tap_hold::Key",
-            }
-          },
-          check_rust_expr = {
-            actual = cv.rust_expr,
-            expected = "crate::key::tap_hold::Key::new(crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)), crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(224)))",
-          },
-        },
-    },
-  },
-
-  tap_hold
-    | doc "for key::tap_hold::Key."
-    = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
-
-      # c.f. doc_de_tap_hold.md.
-      # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
-      serialized_json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["tap", "hold"],
-          field_validators = {
-            tap = key.serialized_json_validator,
-            hold = key.serialized_json_validator,
-          },
-        },
-
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
-
-      codegen_values = fun k @ { hold, tap } =>
-        let hold_codegen_values = key.codegen_values hold in
-        let tap_codegen_values = key.codegen_values tap in
-
-        let tap_kt = tap_codegen_values.key_type in
-        let hold_kt = hold_codegen_values.key_type in
-
-        # Unify nested composite values.
-        #  In order to construct a key::tap_hold::Key,
-        #  the `tap` and `hold` keys must have the same (Rust) type.
-        #  - case where both same (e.g. both be key::keyboard::Key):
-        #     can use that as the 'unified' type.
-        #  - case where types differ (e.g. one is layered::ModifierKey, other is keyboard::Key),
-        #     need to 'lift' each of tap, hold to a unified key type.
-        #     i.e. a type which implements composite::TapHoldNestable.
-        #     (i.e. composite::BaseKey).
-        let unify_cv = fun cv =>
-          if tap_kt == hold_kt then
-            # Unlike other key::composite types,
-            #  key::composite::BaseKey does not have a "passthrough" newtype equivalent,
-            #  so the tap_hold's nested key type is unified to BaseKey
-            #  even if the tap and hold keys are the same type.
-            composite.base_key.codegen_values cv
-          else
-            composite.base_key.codegen_values cv
-        in
-
-        {
-          nested = {
-            tap = tap_codegen_values |> unify_cv,
-            hold = hold_codegen_values |> unify_cv,
-          },
-          key_type =
-            let nested_key_type = nested.tap.key_type in
-            {
-              key_type = "crate::key::tap_hold::Key",
-              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
-            },
-          rust_expr =
-            let hold_expr = nested.hold.rust_expr in
-            let tap_expr = nested.tap.rust_expr in
-            "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
-          serialized_json = k,
-        },
-
-      map_nested = fun f cv @ { nested, ..rest } =>
-        rest
-        & {
-          nested = {
-            tap = f cv.nested.tap,
-            hold = f cv.nested.hold,
           },
         },
     },
