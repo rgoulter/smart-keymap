@@ -4,6 +4,58 @@ let validators = import "validators.ncl" in
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json."
     | { keys | Array key.SerializedJson, .. },
 
+  keyboard_modifiers
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      serialized_json_validator =
+        validators.record.validator {
+          fields_validator =
+            validators.record.has_only_fields [
+              "left_ctrl",
+              "left_shift",
+              "left_alt",
+              "left_gui",
+              "right_ctrl",
+              "right_shift",
+              "right_alt",
+              "right_gui",
+            ],
+          field_validators = {
+            left_ctrl = validators.is_bool,
+            left_shift = validators.is_bool,
+            left_alt = validators.is_bool,
+            left_gui = validators.is_bool,
+            right_ctrl = validators.is_bool,
+            right_shift = validators.is_bool,
+            right_alt = validators.is_bool,
+            right_gui = validators.is_bool,
+          },
+        },
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      expr = match {
+        {} => "crate::key::KeyboardModifiers::new()",
+        { left_ctrl, ..modifiers } if left_ctrl =>
+          "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
+        { left_alt, ..modifiers } if left_alt =>
+          "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
+        { left_shift, ..modifiers } if left_shift =>
+          "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
+        { left_gui, ..modifiers } if left_gui =>
+          "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
+        { right_ctrl, ..modifiers } if right_ctrl =>
+          "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
+        { right_alt, ..modifiers } if right_alt =>
+          "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
+        { right_shift, ..modifiers } if right_shift =>
+          "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
+        { right_gui, ..modifiers } if right_gui =>
+          "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
+      },
+    },
+
   checks.check_keyboard = {
     # Use a serialized value to check the "is" predicate.
     check_serialized_is =
@@ -51,30 +103,7 @@ let validators = import "validators.ncl" in
             ],
           field_validators = {
             key_code = validators.is_number,
-            modifiers =
-              validators.record.validator {
-                fields_validator =
-                  validators.record.has_only_fields [
-                    "left_ctrl",
-                    "left_shift",
-                    "left_alt",
-                    "left_gui",
-                    "right_ctrl",
-                    "right_shift",
-                    "right_alt",
-                    "right_gui",
-                  ],
-                field_validators = {
-                  left_ctrl = validators.is_bool,
-                  left_shift = validators.is_bool,
-                  left_alt = validators.is_bool,
-                  left_gui = validators.is_bool,
-                  right_ctrl = validators.is_bool,
-                  right_shift = validators.is_bool,
-                  right_alt = validators.is_bool,
-                  right_gui = validators.is_bool,
-                },
-              },
+            modifiers = keyboard_modifiers.serialized_json_validator,
           },
         },
 
@@ -87,37 +116,13 @@ let validators = import "validators.ncl" in
         }
         in
 
-        let expr =
-          let rec modifiers_expr = fun m =>
-            m
-            |> match {
-              {} => "crate::key::KeyboardModifiers::new()",
-              { left_ctrl, ..modifiers } if left_ctrl =>
-                "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{modifiers_expr modifiers})",
-              { left_alt, ..modifiers } if left_alt =>
-                "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{modifiers_expr modifiers})",
-              { left_shift, ..modifiers } if left_shift =>
-                "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{modifiers_expr modifiers})",
-              { left_gui, ..modifiers } if left_gui =>
-                "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{modifiers_expr modifiers})",
-              { right_ctrl, ..modifiers } if right_ctrl =>
-                "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{modifiers_expr modifiers})",
-              { right_alt, ..modifiers } if right_alt =>
-                "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{modifiers_expr modifiers})",
-              { right_shift, ..modifiers } if right_shift =>
-                "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{modifiers_expr modifiers})",
-              { right_gui, ..modifiers } if right_gui =>
-                "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{modifiers_expr modifiers})",
-            }
-          in
-          k
-          |> match {
+        let expr = k |> match {
             { key_code } =>
               "crate::key::keyboard::Key::new(%{std.to_string key_code})",
             { modifiers } =>
-              "crate::key::keyboard::Key::from_modifiers(%{modifiers_expr modifiers})",
+              "crate::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
             { key_code, modifiers } =>
-              "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{modifiers_expr modifiers})",
+              "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
           }
         in
 
