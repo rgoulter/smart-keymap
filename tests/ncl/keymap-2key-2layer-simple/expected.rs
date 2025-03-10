@@ -54,7 +54,7 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::layered::ModifierKey::Hold(0)),
         )),
-        crate::key::composite::Chorded(crate::key::composite::LayeredKey::layered(
+        crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(4)),
                 [Some(crate::key::composite::TapHold(
