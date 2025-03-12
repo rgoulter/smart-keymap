@@ -23,6 +23,7 @@ keymap_key_features=(
 keymap_ncl_features=(
     "layers"
     "layer_string"
+    "chords"
 )
 
 KEYMAP_KEY_FEATURES_DIR="${KEYMAP_FEATURES_DIR}/key"
