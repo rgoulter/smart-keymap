@@ -327,7 +327,7 @@ where
         keymap_index: u16,
     ) -> (
         input::PressedKey<Self, PressedKeyState<K>>,
-        key::ScheduledEvent<Event>,
+        key::PressedKeyEvents<K::Event>,
     ) {
         let mut pk = input::PressedKey {
             keymap_index,
@@ -339,11 +339,15 @@ where
             context.into().config.timeout,
             key::Event::key_event(keymap_index, timeout_ev),
         );
-        // TODO: return resolved PKE
-        let _pke = pk
+
+        let mut pke = key::PressedKeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+
+        let n_pke = pk
             .pressed_key_state
             .check_resolution(context, keymap_index, self);
-        (pk, sch_ev)
+        pke.extend(n_pke);
+
+        (pk, pke)
     }
 
     /// Maps the Key of the Key into a new type.
