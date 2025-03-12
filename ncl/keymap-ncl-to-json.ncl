@@ -417,28 +417,33 @@ let validators = import "validators.ncl" in
           )
           (std.array.length base_keys),
 
-  chorded_keys
-    = std.array.map_with_index
-        (fun key_index k =>
-          std.array.filter (fun { indices = [chord_index, ..], .. } => chord_index == key_index) chords |> match {
-            [{ key, .. }] =>
-                { chord = key, passthrough = k },
-            [] =>
-              if std.array.any (fun { indices, .. } => std.array.elem key_index indices) chords then
-                { passthrough = k }
-              else
-                k,
-            _ => std.fail_with "chorded_keys: multiple chords for key",
-          })
-        layered_keys,
+  chorded_keys =
+    std.array.map_with_index
+      (fun key_index k =>
+        std.array.filter (fun { indices = [chord_index, ..], .. } => chord_index == key_index) chords
+        |> match {
+          [{ key, .. }] =>
+            { chord = key, passthrough = k },
+          [] =>
+            if std.array.any (fun { indices, .. } => std.array.elem key_index indices) chords then
+              { passthrough = k }
+            else
+              k,
+          _ => std.fail_with "chorded_keys: multiple chords for key",
+        }
+      )
+      layered_keys,
 
   serialized_json_keymap
     | default
     | doc "The keymap.json output value."
     =
-      let config_ = config & {
-        chorded.chords = chords |> std.array.map (fun { key, indices, .. } => indices),
-      } in
+      let config_ =
+        config
+        & {
+          chorded.chords = chords |> std.array.map (fun { key, indices, .. } => indices),
+        }
+      in
       {
         keys = chorded_keys |> std.array.map key.to_json_serialized,
         config = config_,
