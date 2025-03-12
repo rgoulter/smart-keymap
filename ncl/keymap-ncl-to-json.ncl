@@ -33,6 +33,33 @@ let validators = import "validators.ncl" in
     | doc "Key extension which gets applied when using whitespace-delimited string keymap layers"
     = fun K => {},
 
+  keyboard_modifiers = {
+    validator =
+      validators.record.validator {
+        fields_validator =
+          validators.record.has_only_fields [
+            "left_ctrl",
+            "left_shift",
+            "left_alt",
+            "left_gui",
+            "right_ctrl",
+            "right_shift",
+            "right_alt",
+            "right_gui",
+          ],
+        field_validators = {
+          left_ctrl = validators.is_bool,
+          left_shift = validators.is_bool,
+          left_alt = validators.is_bool,
+          left_gui = validators.is_bool,
+          right_ctrl = validators.is_bool,
+          right_shift = validators.is_bool,
+          right_alt = validators.is_bool,
+          right_gui = validators.is_bool,
+        },
+      },
+  },
+
   checks.keyboard =
     let K = import "keys.ncl" in
     {
@@ -61,30 +88,7 @@ let validators = import "validators.ncl" in
             ],
           field_validators = {
             key_code = validators.is_number,
-            modifiers =
-              validators.record.validator {
-                fields_validator =
-                  validators.record.has_only_fields [
-                    "left_ctrl",
-                    "left_shift",
-                    "left_alt",
-                    "left_gui",
-                    "right_ctrl",
-                    "right_shift",
-                    "right_alt",
-                    "right_gui",
-                  ],
-                field_validators = {
-                  left_ctrl = validators.is_bool,
-                  left_shift = validators.is_bool,
-                  left_alt = validators.is_bool,
-                  left_gui = validators.is_bool,
-                  right_ctrl = validators.is_bool,
-                  right_shift = validators.is_bool,
-                  right_alt = validators.is_bool,
-                  right_gui = validators.is_bool,
-                },
-              },
+            modifiers = keyboard_modifiers.validator,
           },
         },
 
