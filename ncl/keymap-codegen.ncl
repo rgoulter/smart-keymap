@@ -11,17 +11,20 @@ let validators = import "validators.ncl" in
   # - unified_ [kbd::Key, kbd::Key] => { base = kbd::Key },
   # - unified_ [kbd::Key, layered::ModKey] => { base = comp::BaseKey },
   unified_key_impl_for_codegen_values = fun codegen_values =>
-      let key_impls = std.array.map (fun { key_impl, .. } => key_impl) codegen_values in
-      let impls_for = fun field =>
-        key_impls
-          |> std.array.map (fun ki => if std.record.has_field field ki then ki."%{field}" else false)
-          |> std.array.filter ((!=) false) in
-      let base_impls = impls_for "base" in
-      let tap_hold_impls = impls_for "tap_hold" in
-      let layered_impls = impls_for "layered" in
-      let chorded_impls = impls_for "chorded" in
-      let impl_for = fun field aggr impls =>
-        (impls |> match {
+    let key_impls = std.array.map (fun { key_impl, .. } => key_impl) codegen_values in
+    let impls_for = fun field =>
+      key_impls
+      |> std.array.map (fun ki => if std.record.has_field field ki then ki."%{field}" else false)
+      |> std.array.filter ((!=) false)
+    in
+    let base_impls = impls_for "base" in
+    let tap_hold_impls = impls_for "tap_hold" in
+    let layered_impls = impls_for "layered" in
+    let chorded_impls = impls_for "chorded" in
+    let impl_for = fun field aggr impls =>
+      (
+        impls
+        |> match {
           [] => {},
           [x, ..xs] =>
             {
@@ -34,63 +37,64 @@ let validators = import "validators.ncl" in
                   # Otherwise, use the aggregating type. (e.g. composite::BaseKey)
                   aggr,
             },
-        }) in
-      (impl_for "base" "crate::key::composite::BaseKey" base_impls) &
-      (impl_for "tap_hold" "crate::key::composite::TapHoldKey" tap_hold_impls) &
-      (impl_for "layered" "crate::key::composite::LayeredKey" layered_impls) &
-      (impl_for "chorded" "crate::key::composite::ChordedKey" chorded_impls),
+        }
+      )
+    in
+    (impl_for "base" "crate::key::composite::BaseKey" base_impls)
+    & (impl_for "tap_hold" "crate::key::composite::TapHoldKey" tap_hold_impls)
+    & (impl_for "layered" "crate::key::composite::LayeredKey" layered_impls)
+    & (impl_for "chorded" "crate::key::composite::ChordedKey" chorded_impls),
 
-  keyboard_modifiers
-    = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+  keyboard_modifiers = {
+    SerializedJson = std.contract.from_validator serialized_json_validator,
 
-      serialized_json_validator =
-        validators.record.validator {
-          fields_validator =
-            validators.record.has_only_fields [
-              "left_ctrl",
-              "left_shift",
-              "left_alt",
-              "left_gui",
-              "right_ctrl",
-              "right_shift",
-              "right_alt",
-              "right_gui",
-            ],
-          field_validators = {
-            left_ctrl = validators.is_bool,
-            left_shift = validators.is_bool,
-            left_alt = validators.is_bool,
-            left_gui = validators.is_bool,
-            right_ctrl = validators.is_bool,
-            right_shift = validators.is_bool,
-            right_alt = validators.is_bool,
-            right_gui = validators.is_bool,
-          },
+    serialized_json_validator =
+      validators.record.validator {
+        fields_validator =
+          validators.record.has_only_fields [
+            "left_ctrl",
+            "left_shift",
+            "left_alt",
+            "left_gui",
+            "right_ctrl",
+            "right_shift",
+            "right_alt",
+            "right_gui",
+          ],
+        field_validators = {
+          left_ctrl = validators.is_bool,
+          left_shift = validators.is_bool,
+          left_alt = validators.is_bool,
+          left_gui = validators.is_bool,
+          right_ctrl = validators.is_bool,
+          right_shift = validators.is_bool,
+          right_alt = validators.is_bool,
+          right_gui = validators.is_bool,
         },
-
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
-
-      expr = match {
-        {} => "crate::key::KeyboardModifiers::new()",
-        { left_ctrl, ..modifiers } if left_ctrl =>
-          "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
-        { left_alt, ..modifiers } if left_alt =>
-          "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
-        { left_shift, ..modifiers } if left_shift =>
-          "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
-        { left_gui, ..modifiers } if left_gui =>
-          "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
-        { right_ctrl, ..modifiers } if right_ctrl =>
-          "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
-        { right_alt, ..modifiers } if right_alt =>
-          "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
-        { right_shift, ..modifiers } if right_shift =>
-          "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
-        { right_gui, ..modifiers } if right_gui =>
-          "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
       },
+
+    is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+    expr = match {
+      {} => "crate::key::KeyboardModifiers::new()",
+      { left_ctrl, ..modifiers } if left_ctrl =>
+        "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
+      { left_alt, ..modifiers } if left_alt =>
+        "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
+      { left_shift, ..modifiers } if left_shift =>
+        "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
+      { left_gui, ..modifiers } if left_gui =>
+        "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
+      { right_ctrl, ..modifiers } if right_ctrl =>
+        "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
+      { right_alt, ..modifiers } if right_alt =>
+        "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
+      { right_shift, ..modifiers } if right_shift =>
+        "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
+      { right_gui, ..modifiers } if right_gui =>
+        "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
     },
+  },
 
   checks.check_keyboard = {
     # Use a serialized value to check the "is" predicate.
@@ -154,14 +158,16 @@ let validators = import "validators.ncl" in
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = k |> match {
-            { key_code } =>
-              "crate::key::keyboard::Key::new(%{std.to_string key_code})",
-            { modifiers } =>
-              "crate::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
-            { key_code, modifiers } =>
-              "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
-          },
+          rust_expr =
+            k
+            |> match {
+              { key_code } =>
+                "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+              { modifiers } =>
+                "crate::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
+              { key_code, modifiers } =>
+                "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
+            },
           serialized_json = k,
         },
 
@@ -217,24 +223,22 @@ let validators = import "validators.ncl" in
     },
 
   # Related to key::composite::TapHoldNestable trait.
-  tap_hold_nestable
-    = {
-      # Constructs the codegen values for
-      #   - key::keyboard::Key
-      #   - key::layered::ModifierKey
-      #
-      # In particular, the returned value is a codegen values record
-      #  for an item which implements key::Key with associated
-      #  PressedKey = key::composite::BasePressedKey.
-      codegen_values =
-        match {
-          k if keyboard.is_serialized_json k =>
-            keyboard.codegen_values k,
-          k if layer_modifier.is_serialized_json k =>
-            layer_modifier.codegen_values k,
-          k => std.fail_with "bad codegen_values for tap_hold_nestable: %{k |> std.serialize 'Json}",
-        },
+  tap_hold_nestable = {
+    # Constructs the codegen values for
+    #   - key::keyboard::Key
+    #   - key::layered::ModifierKey
+    #
+    # In particular, the returned value is a codegen values record
+    #  for an item which implements key::Key with associated
+    #  PressedKey = key::composite::BasePressedKey.
+    codegen_values = match {
+      k if keyboard.is_serialized_json k =>
+        keyboard.codegen_values k,
+      k if layer_modifier.is_serialized_json k =>
+        layer_modifier.codegen_values k,
+      k => std.fail_with "bad codegen_values for tap_hold_nestable: %{k |> std.serialize 'Json}",
     },
+  },
 
   checks.check_tap_hold = {
     # Use a serialized value to check the "is" predicate.
@@ -297,12 +301,11 @@ let validators = import "validators.ncl" in
             tap = tap_cv |> key.lift_to target_type,
             hold = hold_cv |> key.lift_to target_type,
           },
-          key_type =
-            {
-              key_type = "crate::key::tap_hold::Key",
-              nested_key_type = nested.tap.key_type,
-              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
-            },
+          key_type = {
+            key_type = "crate::key::tap_hold::Key",
+            nested_key_type = nested.tap.key_type,
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+          },
           key_impl = {} & nested.tap.key_impl,
           rust_expr =
             let hold_expr = nested.hold.rust_expr in
@@ -322,24 +325,22 @@ let validators = import "validators.ncl" in
     },
 
   # Related to key::composite::LayeredNestable trait.
-  layered_nestable
-    = {
-      # Constructs the codegen values for
-      #   - key::tap_hold::Key.
-      #   - TapHoldNestable impls.
-      #     - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
-      #
-      # In particular, the returned value is a codegen values record
-      #  for an item which implements key::Key with associated
-      #  PressedKey = key::composite::TapHoldPressedKey.
-      codegen_values =
-        match {
-          k if tap_hold.is_serialized_json k =>
-            tap_hold.codegen_values k |>  composite.tap_hold_key.tap_hold_,
-          k =>
-            k |> tap_hold_nestable.codegen_values |> composite.tap_hold_.codegen_values,
-        },
+  layered_nestable = {
+    # Constructs the codegen values for
+    #   - key::tap_hold::Key.
+    #   - TapHoldNestable impls.
+    #     - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
+    #
+    # In particular, the returned value is a codegen values record
+    #  for an item which implements key::Key with associated
+    #  PressedKey = key::composite::TapHoldPressedKey.
+    codegen_values = match {
+      k if tap_hold.is_serialized_json k =>
+        tap_hold.codegen_values k |> composite.tap_hold_key.tap_hold_,
+      k =>
+        k |> tap_hold_nestable.codegen_values |> composite.tap_hold_.codegen_values,
     },
+  },
 
   checks.check_layered = {
     # Use a serialized value to check the "is" predicate.
@@ -396,7 +397,7 @@ let validators = import "validators.ncl" in
         {
           check_key_type = {
             actual = cv.key_type.as_rust_type_path,
-            expected = "crate::key::layered::LayeredKey<crate::key::composite::TapHoldKey<crate::key::keyboard::Key>>" ,
+            expected = "crate::key::layered::LayeredKey<crate::key::composite::TapHoldKey<crate::key::keyboard::Key>>",
           },
           check_rust_expr = {
             actual = cv.rust_expr,
@@ -484,26 +485,24 @@ let validators = import "validators.ncl" in
     },
 
   # Related to key::composite::ChordedNestable trait.
-  chorded_nestable
-    = {
-      # Constructs the codegen values for
-      #   - key::layered::LayeredKey.
-      #   - LayeredNestable impls.
-      #     - e.g. key::tap_hold::Key,
-      #     - TapHoldNestable impls.
-      #       - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
-      #
-      # In particular, the returned value is a codegen values record
-      #  for an item which implements key::Key with associated
-      #  PressedKey = key::composite::LayeredPressedKey.
-      codegen_values =
-        match {
-          k if layered.is_serialized_json k =>
-            layered.codegen_values k |>  composite.layered_key.layered_,
-          k =>
-            k |> layered_nestable.codegen_values |> composite.layered_.codegen_values,
-        },
+  chorded_nestable = {
+    # Constructs the codegen values for
+    #   - key::layered::LayeredKey.
+    #   - LayeredNestable impls.
+    #     - e.g. key::tap_hold::Key,
+    #     - TapHoldNestable impls.
+    #       - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
+    #
+    # In particular, the returned value is a codegen values record
+    #  for an item which implements key::Key with associated
+    #  PressedKey = key::composite::LayeredPressedKey.
+    codegen_values = match {
+      k if layered.is_serialized_json k =>
+        layered.codegen_values k |> composite.layered_key.layered_,
+      k =>
+        k |> layered_nestable.codegen_values |> composite.layered_.codegen_values,
     },
+  },
 
   chorded
     | doc "for key::chorded::Key."
@@ -533,15 +532,16 @@ let validators = import "validators.ncl" in
             chord = chord_cv |> key.lift_to target_type,
             passthrough = passthrough_cv |> key.lift_to target_type,
           },
-          key_type =
-            {
-              key_type = "crate::key::chorded::Key",
-              nested_key_type = nested.chord.key_type,
-              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
-            },
-          key_impl = nested.passthrough.key_impl & {
-            chorded = key_type.key_type,
+          key_type = {
+            key_type = "crate::key::chorded::Key",
+            nested_key_type = nested.chord.key_type,
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
+          key_impl =
+            nested.passthrough.key_impl
+            & {
+              chorded = key_type.key_type,
+            },
           rust_expr =
             let chord_expr = nested.chord.rust_expr in
             let passthrough_expr = nested.passthrough.rust_expr in
@@ -587,15 +587,16 @@ let validators = import "validators.ncl" in
           nested = {
             passthrough = passthrough_codegen_values,
           },
-          key_type =
-            {
-              key_type = "crate::key::chorded::AuxiliaryKey",
-              nested_key_type = nested.passthrough.key_type,
-              as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
-            },
-          key_impl = nested.passthrough.key_impl & {
-            chorded = key_type.key_type,
+          key_type = {
+            key_type = "crate::key::chorded::AuxiliaryKey",
+            nested_key_type = nested.passthrough.key_type,
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
+          key_impl =
+            nested.passthrough.key_impl
+            & {
+              chorded = key_type.key_type,
+            },
           rust_expr =
             let passthrough_expr = nested.passthrough.rust_expr in
             "crate::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
@@ -699,9 +700,11 @@ let validators = import "validators.ncl" in
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "TapHold",
           },
-          key_impl = nested.key_impl & {
-            tap_hold = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              tap_hold = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::TapHoldKey::TapHold(%{nested.rust_expr})",
         },
 
@@ -714,14 +717,17 @@ let validators = import "validators.ncl" in
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Pass",
           },
-          key_impl = nested.key_impl & {
-            tap_hold = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              tap_hold = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::TapHoldKey::Pass(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
-        cv.key_type.variant |> match {
+        cv.key_type.variant
+        |> match {
           "TapHold" => cv & { nested = tap_hold.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
           "Pass" => cv & { nested = key.lift_to key_impl nested_ },
         },
@@ -736,9 +742,11 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
           },
-          key_impl = nested.key_impl & {
-            tap_hold = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              tap_hold = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::TapHold(%{nested.rust_expr})",
         },
 
@@ -761,9 +769,11 @@ let validators = import "validators.ncl" in
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Layered",
           },
-          key_impl = nested.key_impl & {
-            layered = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              layered = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::LayeredKey::Layered(%{nested.rust_expr})",
         },
 
@@ -776,14 +786,17 @@ let validators = import "validators.ncl" in
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Pass",
           },
-          key_impl = nested.key_impl & {
-            layered = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              layered = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::LayeredKey::Pass(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
-        cv.key_type.variant |> match {
+        cv.key_type.variant
+        |> match {
           "Layered" => cv & { nested = layered.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
           "Pass" => cv & { nested = key.lift_to key_impl nested_ },
         },
@@ -798,9 +811,11 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
           },
-          key_impl = nested.key_impl & {
-            layered = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              layered = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::Layered(%{nested.rust_expr})",
         },
 
@@ -822,9 +837,11 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
           },
-          key_impl = nested.key_impl & {
-            chorded = key_type.key_type,
-          },
+          key_impl =
+            nested.key_impl
+            & {
+              chorded = key_type.key_type,
+            },
           rust_expr = "crate::key::composite::Chorded(%{nested.rust_expr})",
         },
 
@@ -846,8 +863,9 @@ let validators = import "validators.ncl" in
     #  must impl. `key::Key` with those associated types.
     # e.g. `key::keyboard::Key` implements `key::Key` with `PressedKey=BasePressedKey`;
     #  so it needs to be lifted to `Chorded(Layered(TapHold(keyboard::Key)))`.
-    lift_to_key = fun cv @ { key_type = { key_type, .. }, .. } => key_type |>
-      match {
+    lift_to_key = fun cv @ { key_type = { key_type, .. }, .. } =>
+      key_type
+      |> match {
         "crate::key::layered::ModifierKey" =>
           cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
         "crate::key::keyboard::Key" =>
@@ -891,18 +909,21 @@ let validators = import "validators.ncl" in
     },
 
     lift_to = fun key_impl cv @ { key_type = { key_type, .. }, .. } =>
-      let impl = key_type |> match {
-        "crate::key::keyboard::Key" => keyboard,
-        "crate::key::layered::ModifierKey" => layer_modifier,
-        "crate::key::chorded::Key" => chorded,
-        "crate::key::chorded::AuxiliaryKey" => chorded_aux,
-        "crate::key::composite::BaseKey" => composite.base_key,
-        "crate::key::composite::TapHoldKey" => composite.tap_hold_key,
-        "crate::key::composite::TapHold" => composite.tap_hold_,
-        "crate::key::composite::LayeredKey" => composite.layered_key,
-        "crate::key::composite::Layered" => composite.layered_,
-        cv => std.fail_with "bad codegen_values for key.lift_to: %{cv |> std.serialize 'Json}",
-      } in
+      let impl =
+        key_type
+        |> match {
+          "crate::key::keyboard::Key" => keyboard,
+          "crate::key::layered::ModifierKey" => layer_modifier,
+          "crate::key::chorded::Key" => chorded,
+          "crate::key::chorded::AuxiliaryKey" => chorded_aux,
+          "crate::key::composite::BaseKey" => composite.base_key,
+          "crate::key::composite::TapHoldKey" => composite.tap_hold_key,
+          "crate::key::composite::TapHold" => composite.tap_hold_,
+          "crate::key::composite::LayeredKey" => composite.layered_key,
+          "crate::key::composite::Layered" => composite.layered_,
+          cv => std.fail_with "bad codegen_values for key.lift_to: %{cv |> std.serialize 'Json}",
+        }
+      in
       impl.lift_to key_impl cv,
   },
 
@@ -924,19 +945,22 @@ let validators = import "validators.ncl" in
           },
         }
       in
-      let chorded_config_expr = let
-        chords_fragment =
-          config.chorded.chords |>
-          std.array.map (match {
+      let chorded_config_expr =
+        let chords_fragment =
+          config.chorded.chords
+          |> std.array.map (match {
             [i, j] => "Some(crate::key::chorded::ChordIndices::Chord2(%{std.to_string i}, %{std.to_string j}))"
-          })
+          }
+          )
           |> std.string.join ","
-        in m%"
+        in
+        m%"
         crate::key::chorded::Config {
             timeout: %{std.to_string config.chorded.timeout},
             chords: [%{chords_fragment}],
         }
-      "% in
+      "%
+      in
       let tap_hold_config_expr = m%"
         crate::key::tap_hold::Config {
             timeout: %{std.to_string config.tap_hold.timeout},
