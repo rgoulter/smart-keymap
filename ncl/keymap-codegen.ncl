@@ -224,19 +224,17 @@ let validators = import "validators.ncl" in
 
   # Related to key::composite::TapHoldNestable trait.
   tap_hold_nestable = {
-    # Constructs the codegen values for
+    # Wraps the codegen values for
     #   - key::keyboard::Key
     #   - key::layered::ModifierKey
     #
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
     #  PressedKey = key::composite::BasePressedKey.
-    codegen_values = match {
-      k if keyboard.is_serialized_json k =>
-        keyboard.codegen_values k,
-      k if layer_modifier.is_serialized_json k =>
-        layer_modifier.codegen_values k,
-      k => std.fail_with "bad codegen_values for tap_hold_nestable: %{k |> std.serialize 'Json}",
+    wrap = fun cv @ { key_type = { key_type, .. }, .. } => key_type |> match {
+      "crate::key::keyboard::Key" => cv,
+      "crate::key::layered::ModifierKey" => cv,
+      cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
     },
   },
 
@@ -291,8 +289,8 @@ let validators = import "validators.ncl" in
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
       codegen_values = fun k @ { hold, tap } =>
-        let hold_cv = tap_hold_nestable.codegen_values hold in
-        let tap_cv = tap_hold_nestable.codegen_values tap in
+        let hold_cv = hold |> key.codegen_values |> tap_hold_nestable.wrap in
+        let tap_cv = tap |> key.codegen_values |> tap_hold_nestable.wrap in
 
         let target_type = unified_key_impl_for_codegen_values [hold_cv, tap_cv] in
 
@@ -326,7 +324,7 @@ let validators = import "validators.ncl" in
 
   # Related to key::composite::LayeredNestable trait.
   layered_nestable = {
-    # Constructs the codegen values for
+    # Wraps the codegen values for
     #   - key::tap_hold::Key.
     #   - TapHoldNestable impls.
     #     - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
@@ -334,11 +332,11 @@ let validators = import "validators.ncl" in
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
     #  PressedKey = key::composite::TapHoldPressedKey.
-    codegen_values = match {
-      k if tap_hold.is_serialized_json k =>
-        tap_hold.codegen_values k |> composite.tap_hold_key.tap_hold_,
-      k =>
-        k |> tap_hold_nestable.codegen_values |> composite.tap_hold_.codegen_values,
+    wrap = fun cv @ { key_type = { key_type, .. }, .. } => key_type |> match {
+      "crate::key::tap_hold::Key" =>
+        cv |> composite.tap_hold_key.tap_hold_,
+      _ =>
+        cv |> tap_hold_nestable.wrap |> composite.tap_hold_.wrap,
     },
   },
 
@@ -439,10 +437,10 @@ let validators = import "validators.ncl" in
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
       codegen_values = fun k @ { base, layered } =>
-        let base_cv = layered_nestable.codegen_values base in
+        let base_cv = base |> key.codegen_values |> layered_nestable.wrap in
         let non_null_layered = std.array.filter ((!=) null) layered in
         let layered_cvs =
-          std.array.map (fun k => if k != null then layered_nestable.codegen_values k else null) layered
+          std.array.map (fun k => if k != null then k |> key.codegen_values |> layered_nestable.wrap else null) layered
         in
         let nn_layered_cvs =
           std.array.filter ((!=) null) layered_cvs
@@ -486,7 +484,7 @@ let validators = import "validators.ncl" in
 
   # Related to key::composite::ChordedNestable trait.
   chorded_nestable = {
-    # Constructs the codegen values for
+    # Wraps the codegen values for
     #   - key::layered::LayeredKey.
     #   - LayeredNestable impls.
     #     - e.g. key::tap_hold::Key,
@@ -495,12 +493,12 @@ let validators = import "validators.ncl" in
     #
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
-    #  PressedKey = key::composite::LayeredPressedKey.
-    codegen_values = match {
-      k if layered.is_serialized_json k =>
-        layered.codegen_values k |> composite.layered_key.layered_,
-      k =>
-        k |> layered_nestable.codegen_values |> composite.layered_.codegen_values,
+    #  PressedKey = key::composite::ChordedPressedKey.
+    wrap = fun cv @ { key_type = { key_type, .. }, .. } => key_type |> match {
+      "crate::key::layered::LayeredKey" =>
+        cv |> composite.layered_key.layered_,
+      _ =>
+        cv |> layered_nestable.wrap |> composite.layered_.wrap,
     },
   },
 
@@ -522,8 +520,8 @@ let validators = import "validators.ncl" in
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
       codegen_values = fun k @ { chord, passthrough } =>
-        let chord_cv = chorded_nestable.codegen_values chord in
-        let passthrough_cv = chorded_nestable.codegen_values passthrough in
+        let chord_cv = chord |> key.codegen_values |> chorded_nestable.wrap in
+        let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
 
         let target_type = unified_key_impl_for_codegen_values [chord_cv, passthrough_cv] in
 
@@ -581,11 +579,11 @@ let validators = import "validators.ncl" in
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
       codegen_values = fun k @ { passthrough } =>
-        let passthrough_codegen_values = chorded_nestable.codegen_values passthrough in
+        let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
 
         {
           nested = {
-            passthrough = passthrough_codegen_values,
+            passthrough = passthrough_cv,
           },
           key_type = {
             key_type = "crate::key::chorded::AuxiliaryKey",
@@ -734,7 +732,7 @@ let validators = import "validators.ncl" in
     },
 
     tap_hold_ = {
-      codegen_values = fun cv =>
+      wrap = fun cv =>
         {
           nested = cv,
           key_type = {
@@ -803,7 +801,7 @@ let validators = import "validators.ncl" in
     },
 
     layered_ = {
-      codegen_values = fun cv =>
+      wrap = fun cv =>
         {
           nested = cv,
           key_type = {
@@ -829,7 +827,7 @@ let validators = import "validators.ncl" in
     },
 
     chorded_ = {
-      codegen_values = fun cv =>
+      wrap = fun cv =>
         {
           nested = cv,
           key_type = {
@@ -866,20 +864,12 @@ let validators = import "validators.ncl" in
     lift_to_key = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
-        "crate::key::layered::ModifierKey" =>
-          cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
-        "crate::key::keyboard::Key" =>
-          cv |> tap_hold_.codegen_values |> layered_.codegen_values |> chorded_.codegen_values,
-        "crate::key::tap_hold::Key" =>
-          cv |> tap_hold_key.tap_hold_ |> layered_.codegen_values |> chorded_.codegen_values,
-        "crate::key::layered::LayeredKey" =>
-          cv |> layered_key.layered_ |> chorded_.codegen_values,
         "crate::key::chorded::Key" =>
           cv,
         "crate::key::chorded::AuxiliaryKey" =>
           cv,
-        cv =>
-          cv |> chorded_nestable.codegen_values |> chorded_.codegen_values,
+        _ =>
+          cv |> chorded_nestable.wrap |> chorded_.wrap,
       }
   },
 
