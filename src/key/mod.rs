@@ -110,6 +110,7 @@ pub trait Key: Debug {
     ///  and any active [PressedKey]s.
     type Event: Copy + Debug + PartialEq;
 
+    // TODO: want to change this to assoc Pending and Resolved
     /// The associated [PressedKeyState] implements functionality
     ///  for the pressed key.
     /// (e.g. [tap_hold::PressedKeyState] implements behaviour resolving
