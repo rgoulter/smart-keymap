@@ -1,3 +1,5 @@
+mod tap_hold;
+
 use smart_keymap::input;
 use smart_keymap::key;
 use smart_keymap::keymap;
