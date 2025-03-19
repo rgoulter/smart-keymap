@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use core::ops::IndexMut;
+use core::ops::Index;
 
 use crate::input;
 use crate::key;
@@ -291,7 +291,7 @@ impl<
                 Event = composite::Event,
                 PressedKey = composite::PressedKey,
             > + ?Sized,
-        I: IndexMut<usize, Output = K>,
+        I: Index<usize, Output = K>,
     > core::fmt::Debug for Keymap<I>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -313,7 +313,7 @@ impl<
                 Event = composite::Event,
                 PressedKey = composite::PressedKey,
             > + ?Sized,
-        I: IndexMut<usize, Output = K>,
+        I: Index<usize, Output = K>,
     > Keymap<I>
 {
     /// Constructs a new keymap with the given key definitions and context.
@@ -428,7 +428,7 @@ impl<
 
                 match ev {
                     input::Event::Press { keymap_index } => {
-                        let key = &mut self.key_definitions[keymap_index as usize];
+                        let key = &self.key_definitions[keymap_index as usize];
 
                         let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
 
