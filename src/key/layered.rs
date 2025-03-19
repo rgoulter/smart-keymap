@@ -137,16 +137,16 @@ impl core::fmt::Display for LayersError {
 /// Trait for layers of [LayeredKey].
 pub trait Layers<K: key::Key>: Copy + Debug {
     /// Get the highest active key, if any, for the given [LayerState].
-    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K>;
+    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<&K>;
     /// Constructs layers; return Err if the iterable has more keys than Layers can store.
     fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError>;
 }
 
 impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
-    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<K> {
+    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<&K> {
         for layer in layer_state.active_layers() {
-            if let Some(key) = self[layer] {
-                return Some(key);
+            if self[layer].is_some() {
+                return self[layer].as_ref();
             }
         }
 
@@ -248,7 +248,7 @@ where
         let passthrough_key = self
             .layered
             .highest_active_key(layer_context.layer_state())
-            .unwrap_or(self.base);
+            .unwrap_or(&self.base);
 
         passthrough_key.new_pressed_key(context, keymap_index)
     }
