@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use core::ops::{Index, IndexMut};
+use core::ops::Index;
 
 use crate::key;
 
@@ -40,22 +40,6 @@ impl<
     fn index(&self, idx: usize) -> &Self::Output {
         match idx {
             0 => &self.0,
-            _ => panic!("Index out of bounds"),
-        }
-    }
-}
-
-impl<
-        K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
-        Ctx,
-        Ev,
-        PK,
-        const M: usize,
-    > IndexMut<usize> for Keys1<K0, Ctx, Ev, PK, M>
-{
-    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-        match idx {
-            0 => &mut self.0,
             _ => panic!("Index out of bounds"),
         }
     }
@@ -129,29 +113,6 @@ macro_rules! define_keys {
                         match idx {
                             #(
                                 I => &self.I,
-                            )*
-                            _ => panic!("Index out of bounds"),
-                        }
-                    }
-                }
-
-                impl<
-                    #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
-                    )*
-                Ctx,
-                Ev,
-                PK,
-                const M: usize,
-                > core::ops::IndexMut<usize> for [<Keys $n>]<
-                    #(K~I,)*
-                Ctx, Ev, PK, M
-                    >
-                {
-                    fn index_mut(&mut self, idx: usize) -> &mut Self::Output {
-                        match idx {
-                            #(
-                                I => &mut self.I,
                             )*
                             _ => panic!("Index out of bounds"),
                         }
