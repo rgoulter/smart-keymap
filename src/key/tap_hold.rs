@@ -311,14 +311,10 @@ where
 
         // Check for interrupting taps
         // (track other key press, if this PKS has not resolved)
-        match self.state {
-            TapHoldState::Pending => match event {
-                key::Event::Input(input::Event::Press { keymap_index: ki }) => {
-                    self.other_pressed_keymap_index = Some(ki);
-                }
-                _ => {}
-            },
-            _ => {}
+        if self.state == TapHoldState::Pending {
+            if let key::Event::Input(input::Event::Press { keymap_index: ki }) = event {
+                self.other_pressed_keymap_index = Some(ki);
+            }
         }
 
         // Resolve tap-hold state per the event.

@@ -141,10 +141,10 @@ impl Context {
 
         chords.iter().for_each(|ch| match ch {
             ChordIndices::Chord2(i0, i1) => {
-                if let Err(pos) = res.binary_search(&i0) {
+                if let Err(pos) = res.binary_search(i0) {
                     res.insert(pos, *i0).unwrap();
                 }
-                if let Err(pos) = res.binary_search(&i1) {
+                if let Err(pos) = res.binary_search(i1) {
                     res.insert(pos, *i1).unwrap();
                 }
             }
@@ -192,12 +192,11 @@ impl Context {
     }
 
     fn release_index(&mut self, index: u16) {
-        match self
+        if let Ok(pos) = self
             .pressed_indices
             .binary_search_by_key(&index, |&k| k.unwrap_or(u16::MAX))
         {
-            Ok(pos) => self.remove_pressed_index(pos),
-            Err(_) => {}
+            self.remove_pressed_index(pos)
         }
     }
 
@@ -216,14 +215,8 @@ impl Context {
             }
             key::Event::Key {
                 keymap_index,
-                key_event,
-            } => match key_event {
-                // Release the index if resolved as passthrough
-                Event::ChordResolved(false) => {
-                    self.release_index(keymap_index);
-                }
-                _ => {}
-            },
+                key_event: Event::ChordResolved(false),
+            } => self.release_index(keymap_index),
             _ => {}
         }
     }
@@ -482,7 +475,7 @@ where
                 let ctx: Context = context.into();
                 let chords = ctx.chords_for_indices(pressed_indices.as_slice());
                 match chords.as_slice() {
-                    [ch] if ch.is_satisfied_by(&pressed_indices) => {
+                    [ch] if ch.is_satisfied_by(pressed_indices) => {
                         // Only one chord is satisfied by pressed indices.
                         //
                         // This resolves the aux key.
@@ -563,15 +556,11 @@ where
                         key_event,
                     } => {
                         if let Ok(ev) = key_event.try_into() {
-                            match ev {
-                                Event::Timeout => {
-                                    // Timed out before chord unambiguously resolved.
-                                    //  So, the key behaves as the passthrough key.
-                                    let n_pke =
-                                        self.resolve_as_passthrough(context, keymap_index, key);
-                                    pke.extend(n_pke);
-                                }
-                                _ => {}
+                            if ev == Event::Timeout {
+                                // Timed out before chord unambiguously resolved.
+                                //  So, the key behaves as the passthrough key.
+                                let n_pke = self.resolve_as_passthrough(context, keymap_index, key);
+                                pke.extend(n_pke);
                             }
                         }
                     }

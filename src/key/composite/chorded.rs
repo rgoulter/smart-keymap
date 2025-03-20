@@ -59,12 +59,9 @@ impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let fat_key = (*self).map_key(|k| k.as_fat_key());
-        let (pk, pke) = fat_key.new_pressed_key(context.into(), keymap_index);
+        let (pk, pke) = fat_key.new_pressed_key(context, keymap_index);
         (
-            pk.map_pressed_key(
-                |k| ChordedKey::Chorded(k),
-                |pks| ChordedPressedKeyState::Chorded(pks),
-            ),
+            pk.map_pressed_key(ChordedKey::Chorded, ChordedPressedKeyState::Chorded),
             pke,
         )
     }
@@ -81,12 +78,9 @@ impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
         keymap_index: u16,
     ) -> (Self::PressedKey, key::PressedKeyEvents<Self::Event>) {
         let fat_key = (*self).map_key(|k| k.as_fat_key());
-        let (pk, pke) = fat_key.new_pressed_key(context.into(), keymap_index);
+        let (pk, pke) = fat_key.new_pressed_key(context, keymap_index);
         (
-            pk.map_pressed_key(
-                |k| ChordedKey::Auxiliary(k),
-                |pks| ChordedPressedKeyState::Auxiliary(pks),
-            ),
+            pk.map_pressed_key(ChordedKey::Auxiliary, ChordedPressedKeyState::Auxiliary),
             pke,
         )
     }
@@ -108,7 +102,7 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
                 key::Key::new_pressed_key(chorded, context, keymap_index)
             }
             ChordedKey::Pass(key) => {
-                let (passthrough_pk, pke) = key.new_pressed_key(context.into(), keymap_index);
+                let (passthrough_pk, pke) = key.new_pressed_key(context, keymap_index);
                 let pk = input::PressedKey {
                     key: ChordedKey::Pass(passthrough_pk.key),
                     keymap_index,
@@ -151,7 +145,7 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
         (
             pk.map_pressed_key(
                 |k| ChordedKey::Pass(k.as_fat_key()),
-                |pks| ChordedPressedKeyState::Pass(pks),
+                ChordedPressedKeyState::Pass,
             ),
             pke,
         )
@@ -219,13 +213,9 @@ impl<K: Copy + Into<ChordedKey<NK>>, NK: ChordedNestable> key::PressedKeyState<K
                 pks.handle_event_for(context, keymap_index, &chorded, event)
             }
             (ChordedKey::Pass(key), ChordedPressedKeyState::Pass(pks)) => {
-                if let Ok(ev) = event.try_into_key_event(|event| event.try_into()) {
-                    let k: LayeredKey<TapHoldKey<BaseKey>> = key.as_fat_key();
-                    let events = pks.handle_event_for(context.into(), keymap_index, &k, ev);
-                    events.into_events()
-                } else {
-                    key::PressedKeyEvents::no_events()
-                }
+                let k: LayeredKey<TapHoldKey<BaseKey>> = key.as_fat_key();
+                let events = pks.handle_event_for(context, keymap_index, &k, event);
+                events.into_events()
             }
             _ => key::PressedKeyEvents::no_events(),
         }

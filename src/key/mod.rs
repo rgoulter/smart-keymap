@@ -278,10 +278,7 @@ impl KeyboardModifiers {
 
     /// Predicate for whether the key code is a modifier key code.
     pub const fn is_modifier_key_code(key_code: u8) -> bool {
-        match key_code {
-            0xE0..=0xE7 => true,
-            _ => false,
-        }
+        matches!(key_code, 0xE0..=0xE7)
     }
 
     /// Constructs a Vec of key codes from the modifiers.

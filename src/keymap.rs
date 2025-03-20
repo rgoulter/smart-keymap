@@ -171,6 +171,12 @@ pub struct HIDKeyboardReporter {
     num_reportable_keys: u8,
 }
 
+impl Default for HIDKeyboardReporter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl HIDKeyboardReporter {
     /// Constructs a new HIDKeyboardReporter.
     pub const fn new() -> Self {
@@ -196,10 +202,10 @@ impl HIDKeyboardReporter {
         //  NOW: A   C D
         //   -> released B, pressed D
         let mut prev_iter = self.pressed_key_outputs.iter();
-        let mut new_iter = pressed_key_outputs.iter();
+        let new_iter = pressed_key_outputs.iter();
 
-        while let Some(new_key_output) = new_iter.next() {
-            while let Some(prev_key_output) = prev_iter.next() {
+        for new_key_output in new_iter {
+            for prev_key_output in prev_iter.by_ref() {
                 if prev_key_output == new_key_output {
                     // Same key output in both
                     break;
@@ -213,7 +219,7 @@ impl HIDKeyboardReporter {
             }
         }
 
-        while let Some(_) = prev_iter.next() {
+        for _ in prev_iter {
             // The key in the previous report, but not in new report.
             //  hence, it has been released.
             if self.num_reportable_keys > 1 {
@@ -245,6 +251,13 @@ impl HIDKeyboardReporter {
 #[cfg(feature = "std")]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct DistinctReports(Vec<[u8; 8]>);
+
+#[cfg(feature = "std")]
+impl Default for DistinctReports {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 #[cfg(feature = "std")]
 impl DistinctReports {
@@ -371,7 +384,7 @@ impl<
             for ev in queued_events {
                 match ev {
                     key::Event::Input(ie) => {
-                        self.input_queue.enqueue(ie.into()).unwrap();
+                        self.input_queue.enqueue(ie).unwrap();
                     }
                     _ => {
                         self.event_scheduler.schedule_after(i, ev);
@@ -517,7 +530,7 @@ impl<
             }
         }
 
-        self.handle_resolved_pending_key_state(ev.into());
+        self.handle_resolved_pending_key_state(ev);
 
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
@@ -577,8 +590,8 @@ impl<
     pub fn report_output(&mut self) -> KeymapOutput {
         self.hid_reporter.update(self.pressed_keys());
         self.hid_reporter.report_sent();
-        let output = KeymapOutput::new(self.hid_reporter.reportable_key_outputs());
-        output
+
+        KeymapOutput::new(self.hid_reporter.reportable_key_outputs())
     }
 
     /// Returns the current HID keyboard report.
@@ -589,9 +602,9 @@ impl<
 
     #[doc(hidden)]
     pub fn has_scheduled_events(&self) -> bool {
-        self.event_scheduler.pending_events.len() > 0
-            || self.event_scheduler.scheduled_events.len() > 0
-            || self.input_queue.len() > 0
+        !self.event_scheduler.pending_events.is_empty()
+            || !self.event_scheduler.scheduled_events.is_empty()
+            || !self.input_queue.is_empty()
     }
 }
 

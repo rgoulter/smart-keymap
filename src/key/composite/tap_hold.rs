@@ -183,7 +183,7 @@ impl<K: TapHoldNestable> TapHoldPressedKeyState<K> {
             TapHoldPressedKeyState::TapHold(pks) => {
                 TapHoldPressedKeyState::TapHold(pks.into_pressed_key())
             }
-            TapHoldPressedKeyState::Pass(pks) => TapHoldPressedKeyState::Pass(pks.into()),
+            TapHoldPressedKeyState::Pass(pks) => TapHoldPressedKeyState::Pass(pks),
         }
     }
 }
@@ -208,21 +208,13 @@ impl<K: Copy + Into<TapHoldKey<NK>>, NK: TapHoldNestable> key::PressedKeyState<K
 
         match (k, self) {
             (TapHoldKey::TapHold(key), TapHoldPressedKeyState::TapHold(pks)) => {
-                if let Ok(ev) = event.try_into_key_event(|event| event.try_into()) {
-                    let events = pks.handle_event_for(context.into(), keymap_index, &key, ev);
-                    events.into_events()
-                } else {
-                    key::PressedKeyEvents::no_events()
-                }
+                let events = pks.handle_event_for(context, keymap_index, &key, event);
+                events.into_events()
             }
             (TapHoldKey::Pass(key), TapHoldPressedKeyState::Pass(pks)) => {
-                if let Ok(ev) = event.try_into_key_event(|event| event.try_into()) {
-                    let k: BaseKey = key.into();
-                    let events = pks.handle_event_for(context.into(), keymap_index, &k, ev);
-                    events.into_events()
-                } else {
-                    key::PressedKeyEvents::no_events()
-                }
+                let k: BaseKey = key.into();
+                let events = pks.handle_event_for(context, keymap_index, &k, event);
+                events.into_events()
             }
             _ => key::PressedKeyEvents::no_events(),
         }
