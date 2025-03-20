@@ -102,10 +102,12 @@ impl key::Context for Context {
             self.chorded_context.handle_event(e);
         }
 
-        if let key::Event::Key { key_event, .. } = event {
-            if let Event::LayerModification(ev) = key_event {
-                self.layer_context.handle_event(ev);
-            }
+        if let key::Event::Key {
+            key_event: Event::LayerModification(ev),
+            ..
+        } = event
+        {
+            self.layer_context.handle_event(ev);
         }
     }
 }
