@@ -50,6 +50,14 @@
       }
   "%,
 
+  keyboard_init
+    | doc "C fragment with the keyboard_init function."
+    = m%"
+  void keyboard_init(void) {
+      keyboard_matrix_init();
+  }
+  "%,
+
   keyboard_matrix_init
     | doc "Generates C fragment with the keyboard_matrix_init function, for the given cols/rows."
     = fun { cols, rows, .. } =>
@@ -157,6 +165,8 @@
   #include "smart_keymap.h"
 
   %{keyboard_matrix_init board}
+
+  %{keyboard_init}
 
   void key_state_changed(uint32_t index, bool new_state) {
       if (new_state) {
