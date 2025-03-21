@@ -15,16 +15,10 @@ mod chorded;
 mod layered;
 mod tap_hold;
 
-pub use base::{BaseKey, BasePressedKey, BasePressedKeyState};
-pub use chorded::{
-    Chorded, ChordedKey, ChordedNestable, ChordedPressedKey, ChordedPressedKeyState,
-};
-pub use layered::{
-    Layered, LayeredKey, LayeredNestable, LayeredPressedKey, LayeredPressedKeyState,
-};
-pub use tap_hold::{
-    TapHold, TapHoldKey, TapHoldNestable, TapHoldPressedKey, TapHoldPressedKeyState,
-};
+pub use base::BaseKey;
+pub use chorded::{Chorded, ChordedKey, ChordedNestable};
+pub use layered::{Layered, LayeredKey, LayeredNestable};
+pub use tap_hold::{TapHold, TapHoldKey, TapHoldNestable};
 
 /// Type alias for composite key types.
 ///
@@ -40,6 +34,9 @@ pub use tap_hold::{
 ///   Chorded := Chorded<Layered> | AuxChorded<Layered> | Layered
 ///   ```
 pub type Key = ChordedKey<LayeredKey<TapHoldKey<BaseKey>>>;
+
+/// Type alias for result from new_pressed_key.
+pub type PressedKeyResult = key::PressedKeyResult<PendingKeyState, KeyState>;
 
 /// Config used for constructing initial context
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -135,9 +132,6 @@ impl From<Context> for key::tap_hold::Context {
     }
 }
 
-/// Convenience type alias for the 'highest' composite key.
-pub type PressedKey = ChordedPressedKey<LayeredKey<TapHoldKey<BaseKey>>>;
-
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
@@ -200,6 +194,76 @@ impl TryFrom<Event> for key::tap_hold::Event {
     }
 }
 
+/// Aggregate enum for key state. (i.e. pressed key data).
+#[derive(Debug, Clone, PartialEq)]
+pub enum PendingKeyState {
+    /// Pending key state for [key::tap_hold::PendingKeyState].
+    TapHold(key::tap_hold::PendingKeyState),
+    /// Pending key state for [key::chorded::PendingKeyState].
+    Chorded(key::chorded::PendingKeyState),
+}
+
+/// Aggregate enum for key state. (i.e. pressed key data).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum KeyState {
+    /// No-op key state.
+    NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
+    /// Key state for [key::keyboard::KeyState].
+    Keyboard(key::keyboard::KeyState),
+    /// Key state for [key::layered::ModifierKeyState].
+    LayerModifier(key::layered::ModifierKeyState),
+}
+
+impl From<key::keyboard::KeyState> for KeyState {
+    fn from(ks: key::keyboard::KeyState) -> Self {
+        KeyState::Keyboard(ks)
+    }
+}
+
+impl From<key::layered::ModifierKeyState> for KeyState {
+    fn from(ks: key::layered::ModifierKeyState) -> Self {
+        KeyState::LayerModifier(ks)
+    }
+}
+
+impl key::KeyState for KeyState {
+    type Context = Context;
+    type Event = Event;
+
+    fn handle_event(
+        &mut self,
+        _context: Self::Context,
+        keymap_index: u16,
+        event: key::Event<Self::Event>,
+    ) -> key::PressedKeyEvents<Self::Event> {
+        match self {
+            KeyState::Keyboard(_) => key::PressedKeyEvents::no_events(),
+            KeyState::LayerModifier(ks) => {
+                if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+                    let l_ev = ks.handle_event(keymap_index, ev);
+                    if let Some(l_ev) = l_ev {
+                        let c_ev = Event::LayerModification(l_ev);
+                        key::PressedKeyEvents::event(key::Event::key_event(keymap_index, c_ev))
+                    } else {
+                        key::PressedKeyEvents::no_events()
+                    }
+                } else {
+                    key::PressedKeyEvents::no_events()
+                }
+            }
+            KeyState::NoOp => key::PressedKeyEvents::no_events(),
+        }
+    }
+
+    fn key_output(&self) -> Option<key::KeyOutput> {
+        match self {
+            KeyState::Keyboard(ks) => Some(ks.key_output()),
+            KeyState::LayerModifier(_) => None,
+            KeyState::NoOp => None,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -207,19 +271,21 @@ mod tests {
     #[test]
     fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
         use crate::input;
-        use key::{composite, Key, PressedKey};
+        use key::{composite, Key, KeyState};
 
         // Assemble
         type Ctx = composite::Context;
         type K = composite::Key;
         let keymap_index: u16 = 0;
+        let key_path = key::key_path(keymap_index);
         let key = K::layer_modifier(key::layered::ModifierKey::Hold(0));
         let context: Ctx = DEFAULT_CONTEXT;
-        let (mut pressed_lmod_key, _) = key.new_pressed_key(context, keymap_index);
+        let (pressed_lmod_key, _) = key.new_pressed_key(context, key_path);
 
         // Act
-        let events = pressed_lmod_key.handle_event(
+        let events = pressed_lmod_key.unwrap_resolved().handle_event(
             context,
+            keymap_index,
             key::Event::Input(input::Event::Release { keymap_index }),
         );
 
@@ -251,7 +317,10 @@ mod tests {
             )),
         ];
         let mut context: Ctx = DEFAULT_CONTEXT;
-        let (_pressed_key, pressed_key_events) = keys[0].new_pressed_key(context, 0);
+        let keymap_index: u16 = 0;
+        let key_path = key::key_path(keymap_index);
+        let (_pressed_key, pressed_key_events) =
+            keys[keymap_index as usize].new_pressed_key(context, key_path);
         let maybe_ev = pressed_key_events.into_iter().next();
 
         // Act
@@ -270,7 +339,7 @@ mod tests {
     #[test]
     fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
         use crate::input;
-        use key::{composite, Context, Key, PressedKey};
+        use key::{composite, Context, Key, KeyState};
 
         // Assemble
         type Ctx = composite::Context;
@@ -283,10 +352,13 @@ mod tests {
             )),
         ];
         let mut context: Ctx = DEFAULT_CONTEXT;
-        let (mut pressed_lmod_key, _) = keys[0].new_pressed_key(context, 0);
+        let keymap_index: u16 = 0;
+        let key_path = key::key_path(keymap_index);
+        let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
         context.layer_context.activate_layer(0);
-        let events = pressed_lmod_key.handle_event(
+        let events = pressed_lmod_key.unwrap_resolved().handle_event(
             context,
+            0,
             key::Event::Input(input::Event::Release { keymap_index: 0 }),
         );
         let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
@@ -305,7 +377,7 @@ mod tests {
 
     #[test]
     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
-        use key::{composite, Key, PressedKey};
+        use key::{composite, Key, KeyState};
 
         // Assemble
         type Ctx = composite::Context;
@@ -322,17 +394,18 @@ mod tests {
 
         // Act
         let keymap_index: u16 = 2;
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, keymap_index);
-        let actual_keycode = pressed_key.key_output();
+        let key_path = key::key_path(keymap_index);
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
+        let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
         // Assert
         let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
-        assert_eq!(expected_keycode, actual_keycode.to_option());
+        assert_eq!(expected_keycode, actual_keycode);
     }
 
     #[test]
     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
-        use key::{composite, Key, PressedKey};
+        use key::{composite, Key, KeyState};
 
         // Assemble
         type Ctx = composite::Context;
@@ -349,11 +422,12 @@ mod tests {
 
         // Act
         let keymap_index: u16 = 1;
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, keymap_index);
-        let actual_keycode = pressed_key.key_output();
+        let key_path = key::key_path(keymap_index);
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
+        let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
         // Assert
         let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
-        assert_eq!(expected_keycode, actual_keycode.to_option());
+        assert_eq!(expected_keycode, actual_keycode);
     }
 }
