@@ -68,19 +68,37 @@ impl Key {
     }
 
     /// Constructs a pressed key state
-    pub fn new_pressed_key(&self) -> PressedKeyState {
-        PressedKeyState
+    pub fn new_pressed_key(&self) -> KeyState {
+        KeyState(*self)
     }
 }
 
-/// Unit-like struct for [crate::key::PressedKeyState]. (crate::key::keyboard pressed keys don't have state).
+/// Unit-like struct for [crate::key::KeyState]. (crate::key::keyboard pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedKeyState;
+pub struct KeyState(Key);
 
-impl PressedKeyState {
+impl KeyState {
     /// Keyboard key always has a key_output.
-    pub fn key_output(&self, key: &Key) -> key::KeyOutputState {
-        let key_output = key::KeyOutput::from_key_code_with_modifiers(key.key_code, key.modifiers);
-        key::KeyOutputState::resolved(key_output)
+    pub fn key_output(&self) -> key::KeyOutput {
+        let KeyState(key) = self;
+        key::KeyOutput::from_key_code_with_modifiers(key.key_code, key.modifiers)
+    }
+}
+
+impl key::KeyState for KeyState {
+    type Context = key::composite::Context;
+    type Event = key::composite::Event;
+
+    fn handle_event(
+        &mut self,
+        _context: Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::PressedKeyEvents<Self::Event> {
+        key::PressedKeyEvents::no_events()
+    }
+
+    fn key_output(&self) -> Option<key::KeyOutput> {
+        Some(self.key_output())
     }
 }
