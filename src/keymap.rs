@@ -4,7 +4,7 @@ use core::ops::Index;
 use crate::input;
 use crate::key;
 
-use key::{composite, Context, Event, PressedKey};
+use key::{composite, Context, Event};
 
 const MAX_PENDING_EVENTS: usize = 32;
 const MAX_SCHEDULED_EVENTS: usize = 32;
@@ -282,7 +282,8 @@ impl DistinctReports {
 
 #[derive(Debug)]
 struct PendingState {
-    pressed_key: composite::PressedKey,
+    key_path: key::KeyPath,
+    pending_key_state: composite::PendingKeyState,
     queued_events: heapless::Vec<key::Event<composite::Event>, { MAX_PRESSED_KEYS }>,
 }
 
@@ -290,7 +291,7 @@ struct PendingState {
 pub struct Keymap<I> {
     key_definitions: I,
     context: composite::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput<composite::PressedKey>, { MAX_PRESSED_KEYS }>,
+    pressed_inputs: heapless::Vec<input::PressedInput<composite::KeyState>, { MAX_PRESSED_KEYS }>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState>,
@@ -302,7 +303,8 @@ impl<
         K: key::Key<
                 Context = composite::Context,
                 Event = composite::Event,
-                PressedKey = composite::PressedKey,
+                PendingKeyState = composite::PendingKeyState,
+                KeyState = composite::KeyState,
             > + ?Sized,
         I: Index<usize, Output = K>,
     > core::fmt::Debug for Keymap<I>
@@ -324,7 +326,8 @@ impl<
         K: key::Key<
                 Context = composite::Context,
                 Event = composite::Event,
-                PressedKey = composite::PressedKey,
+                PendingKeyState = composite::PendingKeyState,
+                KeyState = composite::KeyState,
             > + ?Sized,
         I: Index<usize, Output = K>,
     > Keymap<I>
@@ -357,22 +360,24 @@ impl<
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
-    fn handle_resolved_pending_key_state(&mut self, _ev: key::Event<composite::Event>) {
+    fn resolve_pending_key_state(&mut self, key_state: composite::KeyState) {
         if let Some(PendingState {
-            pressed_key,
+            key_path,
             queued_events,
             ..
-        }) = self
-            .pending_key_state
-            .take_if(|PendingState { pressed_key, .. }| pressed_key.key_output().is_resolved())
+        }) = self.pending_key_state.take()
         {
             // Cancel events which were scheduled for the (pending) key.
+            let keymap_index = key_path[0];
             self.event_scheduler
-                .cancel_events_for_keymap_index(pressed_key.keymap_index);
+                .cancel_events_for_keymap_index(keymap_index);
 
             // Add the pending state's pressed key to pressed inputs
             self.pressed_inputs
-                .push(input::PressedInput::new_pressed_key(pressed_key))
+                .push(input::PressedInput::new_pressed_key(
+                    key_state,
+                    keymap_index,
+                ))
                 .unwrap();
 
             // Schedule each of the queued events,
@@ -413,106 +418,120 @@ impl<
     }
 
     fn process_input(&mut self, ev: input::Event) {
-        match &mut self.pending_key_state {
-            Some(PendingState {
-                queued_events,
-                pressed_key,
-                ..
-            }) if !pressed_key.key_output().is_resolved() => {
-                pressed_key
-                    .handle_event(self.context, ev.into())
-                    .into_iter()
-                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+        if let Some(PendingState {
+            key_path,
+            pending_key_state,
+            queued_events,
+            ..
+        }) = &mut self.pending_key_state
+        {
+            queued_events.push(ev.into()).unwrap();
 
-                queued_events.push(ev.into()).unwrap();
+            let pending_key = &self.key_definitions[key_path[0] as usize];
+            let pending_key = pending_key.lookup(&key_path[1..]);
+            let (ks, pke) = pending_key.handle_event(
+                pending_key_state,
+                self.context,
+                key_path.clone(),
+                ev.into(),
+            );
+
+            pke.into_iter()
+                .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+
+            if let Some(ks) = ks {
+                self.resolve_pending_key_state(ks);
             }
-            _ => {
-                // Update each of the pressed keys with the event.
-                self.pressed_inputs.iter_mut().for_each(|pi| {
-                    if let input::PressedInput::Key { pressed_key, .. } = pi {
-                        pressed_key
-                            .handle_event(self.context, ev.into())
-                            .into_iter()
-                            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-                    }
-                });
+        } else {
+            // Update each of the pressed keys with the event.
+            self.pressed_inputs.iter_mut().for_each(|pi| {
+                if let input::PressedInput::Key(pressed_key) = pi {
+                    pressed_key
+                        .handle_event(self.context, ev.into())
+                        .into_iter()
+                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                }
+            });
 
-                self.context.handle_event(ev.into());
+            self.context.handle_event(ev.into());
 
-                match ev {
-                    input::Event::Press { keymap_index } => {
-                        let key = &self.key_definitions[keymap_index as usize];
+            match ev {
+                input::Event::Press { keymap_index } => {
+                    let key = &self.key_definitions[keymap_index as usize];
 
-                        let (pk, pke) = key.new_pressed_key(self.context, keymap_index);
+                    let mut key_path = key::KeyPath::new();
+                    key_path.push(keymap_index).unwrap();
+                    let (pk, pke) = key.new_pressed_key(self.context, key_path);
 
-                        pke.into_iter()
-                            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                    pke.into_iter()
+                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
-                        if pk.key_output().is_resolved() {
+                    match pk {
+                        key::PressedKeyResult::Resolved(key_state) => {
                             self.pressed_inputs
-                                .push(input::PressedInput::new_pressed_key(pk))
+                                .push(input::PressedInput::new_pressed_key(
+                                    key_state,
+                                    keymap_index,
+                                ))
                                 .unwrap();
-                        } else {
+                        }
+                        key::PressedKeyResult::Pending(key_path, pending_key_state) => {
                             self.pending_key_state = Some(PendingState {
-                                pressed_key: pk,
+                                key_path,
+                                pending_key_state,
                                 queued_events: heapless::Vec::new(),
                             });
                         }
                     }
-                    input::Event::Release { keymap_index } => {
-                        self.pressed_inputs
-                            .iter()
-                            .position(|pi| match pi {
-                                input::PressedInput::Key {
-                                    pressed_key:
-                                        input::PressedKey {
-                                            keymap_index: ki, ..
-                                        },
-                                    ..
-                                } => keymap_index == *ki,
-                                _ => false,
-                            })
-                            .map(|i| self.pressed_inputs.remove(i));
-
-                        self.event_scheduler
-                            .cancel_events_for_keymap_index(keymap_index);
-                    }
-
-                    input::Event::VirtualKeyPress {
-                        key_code,
-                        pressed_keymap_index,
-                    } => {
-                        // Insert into pressed_keys before the pressed key with the
-                        //  given keymap index.
-                        let pressed_key = input::PressedInput::Virtual { key_code };
-                        let pos = self
-                            .pressed_inputs
-                            .iter()
-                            .position(|k| match k {
-                                input::PressedInput::Key { pressed_key, .. } => {
-                                    pressed_key.keymap_index == pressed_keymap_index
-                                }
-                                _ => false,
-                            })
-                            .unwrap_or(self.pressed_inputs.len());
-                        self.pressed_inputs.insert(pos, pressed_key).unwrap();
-                    }
-                    input::Event::VirtualKeyRelease { key_code } => {
-                        // Remove from pressed keys.
-                        self.pressed_inputs
-                            .iter()
-                            .position(|k| match k {
-                                input::PressedInput::Virtual { key_code: kc } => key_code == *kc,
-                                _ => false,
-                            })
-                            .map(|i| self.pressed_inputs.remove(i));
-                    }
-                    _ => {}
                 }
+                input::Event::Release { keymap_index } => {
+                    self.pressed_inputs
+                        .iter()
+                        .position(|pi| match pi {
+                            input::PressedInput::Key(input::PressedKey {
+                                keymap_index: ki,
+                                ..
+                            }) => keymap_index == *ki,
+                            _ => false,
+                        })
+                        .map(|i| self.pressed_inputs.remove(i));
+
+                    self.event_scheduler
+                        .cancel_events_for_keymap_index(keymap_index);
+                }
+
+                input::Event::VirtualKeyPress {
+                    key_code,
+                    pressed_keymap_index,
+                } => {
+                    // Insert into pressed_keys before the pressed key with the
+                    //  given keymap index.
+                    let pressed_key = input::PressedInput::Virtual(key_code);
+                    let pos = self
+                        .pressed_inputs
+                        .iter()
+                        .position(|k| match k {
+                            input::PressedInput::Key(pressed_key) => {
+                                pressed_key.keymap_index == pressed_keymap_index
+                            }
+                            _ => false,
+                        })
+                        .unwrap_or(self.pressed_inputs.len());
+                    self.pressed_inputs.insert(pos, pressed_key).unwrap();
+                }
+                input::Event::VirtualKeyRelease { key_code } => {
+                    // Remove from pressed keys.
+                    self.pressed_inputs
+                        .iter()
+                        .position(|k| match k {
+                            input::PressedInput::Virtual(kc) => key_code == *kc,
+                            _ => false,
+                        })
+                        .map(|i| self.pressed_inputs.remove(i));
+                }
+                _ => {}
             }
         }
-
-        self.handle_resolved_pending_key_state(ev.into());
 
         self.handle_pending_events();
     }
@@ -521,22 +540,36 @@ impl<
     //  and for handling the (resolving) queue of events from pending key state.
     fn handle_event(&mut self, ev: key::Event<composite::Event>) {
         // pending state needs to handle events
-        if let Some(PendingState { pressed_key, .. }) = &mut self.pending_key_state {
-            if !pressed_key.key_output().is_resolved() {
-                pressed_key
-                    .handle_event(self.context, ev)
-                    .into_iter()
-                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+        if let Some(PendingState {
+            key_path,
+            pending_key_state,
+            ..
+        }) = &mut self.pending_key_state
+        {
+            let pending_key = &self.key_definitions[key_path[0] as usize];
+            let pending_key = pending_key.lookup(&key_path[1..]);
+            let (ks, pke) =
+                pending_key.handle_event(pending_key_state, self.context, key_path.clone(), ev);
+
+            pke.into_iter()
+                .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+
+            if let Some(ks) = ks {
+                self.resolve_pending_key_state(ks);
             }
         }
 
-        self.handle_resolved_pending_key_state(ev);
-
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
-            if let input::PressedInput::Key { pressed_key, .. } = pi {
-                pressed_key
-                    .handle_event(self.context, ev)
+            use key::KeyState as _;
+
+            if let input::PressedInput::Key(input::PressedKey {
+                key_state,
+                keymap_index,
+            }) = pi
+            {
+                key_state
+                    .handle_event(self.context, *keymap_index, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
@@ -577,8 +610,8 @@ impl<
     /// Returns the the pressed key outputs.
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key { pressed_key, .. } => pressed_key.key_output().to_option(),
-            input::PressedInput::Virtual { key_code } => {
+            input::PressedInput::Key(pressed_key) => pressed_key.key_output(),
+            input::PressedInput::Virtual(key_code) => {
                 Some(key::KeyOutput::from_key_code(*key_code))
             }
         });
@@ -755,16 +788,19 @@ mod tests {
 
     #[test]
     fn test_keymap_with_keyboard_key_with_composite_context() {
-        use key::composite::{Context, Event, PressedKey};
+        use key::composite;
         use key::keyboard;
         use tuples::Keys1;
+
+        use composite::{Context, Event, KeyState, PendingKeyState};
 
         // Assemble
         type Ctx = Context;
         type K = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
-        let keys: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Chorded(
-            composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
-        ),));
+        let keys: Keys1<K, Context, Event, PendingKeyState, KeyState> =
+            Keys1::new((composite::Chorded(composite::Layered(composite::TapHold(
+                keyboard::Key::new(0x04),
+            ))),));
         let context: Ctx = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
 
@@ -782,10 +818,10 @@ mod tests {
         use key::{composite, keyboard};
         use tuples::Keys1;
 
-        use composite::{Context, Event, PressedKey};
+        use composite::{Context, Event, KeyState, PendingKeyState};
 
         // Assemble
-        let keys: Keys1<composite::Key, Context, Event, PressedKey> =
+        let keys: Keys1<composite::Key, Context, Event, PendingKeyState, KeyState> =
             Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
         let context: Context = composite::DEFAULT_CONTEXT;
         let mut keymap = Keymap::new(keys, context);
