@@ -71,23 +71,21 @@ pub mod init {
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = 4;
 
-    /// Alias for Context type; i.e. [composite::Context].
-    pub type Context = composite::Context;
+    pub use composite::Context;
 
-    /// Alias for Event type; i.e. [composite::Event].
-    pub type Event = composite::Event;
+    pub use composite::Event;
 
-    /// Alias for PressedKey type; i.e. [composite::PressedKey].
-    pub type PressedKey = composite::PressedKey;
+    pub use composite::PendingKeyState;
 
-    /// Alias for keys.
-    pub type Key = composite::Key;
+    pub use composite::KeyState;
+
+    pub use composite::Key;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = composite::Context::from_config(CONFIG);
 
     /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
-    pub type KeyDefinitionsType = Keys1<Key, Context, Event, PressedKey>;
+    pub type KeyDefinitionsType = Keys1<Key, Context, Event, PendingKeyState, KeyState>;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: KeyDefinitionsType =
