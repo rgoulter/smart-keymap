@@ -132,7 +132,7 @@ void TIM3_IRQHandler(void) {
  * @return  none
  */
 void KB_Scan_Init(void) {
-  keyboard_matrix_init();
+  keyboard_init();
 
   GPIO_ResetBits(GPIOB, GPIO_Pin_1); // col0
   Delay_Us(5);
