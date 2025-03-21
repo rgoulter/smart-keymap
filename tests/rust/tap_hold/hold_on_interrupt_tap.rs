@@ -11,12 +11,13 @@ use tuples::{Keys2, Keys4};
 
 type Ctx = composite::Context;
 type Ev = composite::Event;
-type PK = composite::PressedKey;
+type PKS = composite::PendingKeyState;
+type KS = composite::KeyState;
 
 type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
 type K1 = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
 
-const KEYS: Keys2<K0, K1, Ctx, Ev, PK> = tuples::Keys2::new((
+const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
         tap_hold::Key {
             tap: keyboard::Key::new(0x04),
@@ -118,7 +119,7 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
     // - Release C
 
     // Assemble
-    let keys: Keys4<K0, K0, K1, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+    let keys: Keys4<K0, K0, K1, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
         composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
             tap_hold::Key {
                 tap: keyboard::Key::new(0x04),
@@ -193,7 +194,7 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
     // - Release TH(C)
 
     // Assemble
-    let keys: Keys4<K0, K0, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+    let keys: Keys4<K0, K0, K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
         composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
             tap_hold::Key {
                 tap: keyboard::Key::new(0x04),
@@ -269,7 +270,7 @@ fn tap_th_after_rolling_th_kbd() {
     // - Release TH(C)
 
     // Assemble
-    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
         composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
             tap_hold::Key {
                 tap: keyboard::Key::new(0x04),
@@ -340,7 +341,7 @@ fn tap_th_then_tap_th() {
     // - Release TH(C)
 
     // Assemble
-    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PK> = tuples::Keys4::new((
+    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
         composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
             tap_hold::Key {
                 tap: keyboard::Key::new(0x04),

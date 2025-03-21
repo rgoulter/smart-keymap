@@ -11,11 +11,12 @@ use tuples::Keys2;
 
 type Ctx = composite::Context;
 type Ev = composite::Event;
-type PK = composite::PressedKey;
+type PKS = composite::PendingKeyState;
+type KS = composite::KeyState;
 type CK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
 type AK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
 
-const KEYS: Keys2<CK, AK, Ctx, Ev, PK> = tuples::Keys2::new((
+const KEYS: Keys2<CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::ChordedKey::Chorded(chorded::Key::new(
         composite::Layered(composite::TapHold(keyboard::Key::new(0x06))),
         composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
