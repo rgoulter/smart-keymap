@@ -4,7 +4,7 @@ Demonstration of using the C interface for `libsmart_keymap` with
 The USB HID firmware comes from the CH32X035 EVT examples.
 
 The firmware has been modified to scan its matrix for
-one of these boards, depending on how `generate/matrix.c`
+one of these boards, depending on how `generate/keyboard.c`
 is generated:
 
 - WeAct Studio CH32X035 development board. (PB0, PB1, PB3, PB11).
