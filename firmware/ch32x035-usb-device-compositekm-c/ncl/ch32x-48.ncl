@@ -35,4 +35,8 @@
         let physical_row_index = columnwise_index % 4 in
         let rowwise_index = physical_row_index * 12 + physical_column_index in
         'Ok rowwise_index,
+
+  # CH32X-48 uses CH32X033F8P6's PC18/PC19 (DIO/DCK) for matrix rows.
+  # Hence, disable SWD to avoid conflict.
+  disable_swd = true,
 }

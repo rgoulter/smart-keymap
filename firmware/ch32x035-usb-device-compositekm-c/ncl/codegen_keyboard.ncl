@@ -22,6 +22,11 @@
   keymap_index_for_key
     | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
 
+  disable_swd
+    | doc "Whether to disable SWD."
+    | default
+    = false,
+
   init_col_fragment
     | doc "Generates C fragment for initializing the given column pin, for keyboard_matrix_init."
     = fun { port, pin, .. } =>
@@ -50,11 +55,22 @@
       }
   "%,
 
+  disable_swd_fragment
+    = if disable_swd then
+        m%"
+        // Disable SWD
+        GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
+        "%
+      else
+        "",
+
   keyboard_init
     | doc "C fragment with the keyboard_init function."
     = m%"
   void keyboard_init(void) {
       keyboard_matrix_init();
+
+      %{disable_swd_fragment}
   }
   "%,
 
