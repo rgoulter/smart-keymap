@@ -6,20 +6,22 @@ use crate::key;
 /// A tuple struct for 1 key.
 #[derive(Debug)]
 pub struct Keys1<
-    K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK>,
+    K0: key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
     Ctx,
     Ev,
-    PK,
+    PKS,
+    KS,
     const M: usize = { crate::key::MAX_KEY_EVENTS },
 >(K0);
 
 impl<
-        K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + Copy,
+        K0: key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + Copy,
         Ctx,
         Ev,
-        PK,
+        PKS,
+        KS,
         const M: usize,
-    > Keys1<K0, Ctx, Ev, PK, M>
+    > Keys1<K0, Ctx, Ev, PKS, KS, M>
 {
     /// Constructs a KeysN for the given tuple.
     pub const fn new((k0,): (K0,)) -> Self {
@@ -28,14 +30,15 @@ impl<
 }
 
 impl<
-        K0: key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
+        K0: key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + 'static,
         Ctx,
         Ev,
-        PK,
+        PKS,
+        KS,
         const M: usize,
-    > Index<usize> for Keys1<K0, Ctx, Ev, PK, M>
+    > Index<usize> for Keys1<K0, Ctx, Ev, PKS, KS, M>
 {
-    type Output = dyn key::Key<Context = Ctx, Event = Ev, PressedKey = PK>;
+    type Output = dyn key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>;
 
     fn index(&self, idx: usize) -> &Self::Output {
         match idx {
@@ -55,12 +58,13 @@ macro_rules! define_keys {
                 #[derive(core::fmt::Debug)]
                 pub struct [<Keys $n>]<
                     #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK>,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
                     )*
-                Ctx,
-                Ev,
-                PK,
-                const M: usize = { crate::key::MAX_KEY_EVENTS },
+                    Ctx,
+                    Ev,
+                    PKS,
+                    KS,
+                    const M: usize = { crate::key::MAX_KEY_EVENTS },
                 >(
                     #(
                         K~I,
@@ -69,16 +73,17 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + Copy,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + Copy,
                     )*
-                Ctx,
-                Ev,
-                PK,
-                const M: usize,
+                    Ctx,
+                    Ev,
+                    PKS,
+                    KS,
+                    const M: usize,
                 > [<Keys $n>]<
                     #(K~I,)*
-                Ctx, Ev, PK, M
-                    >
+                    Ctx, Ev, PKS, KS, M
+                >
                 {
                     /// Constructs a KeysN tuple struct with the given tuple.
                     pub const fn new((
@@ -96,18 +101,19 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK> + 'static,
+                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + 'static,
                     )*
-                Ctx,
-                Ev,
-                PK,
-                const M: usize,
+                    Ctx,
+                    Ev,
+                    PKS,
+                    KS,
+                    const M: usize,
                 > core::ops::Index<usize> for [<Keys $n>]<
                     #(K~I,)*
-                Ctx, Ev, PK, M
+                    Ctx, Ev, PKS, KS, M
                     >
                 {
-                    type Output = dyn crate::key::Key<Context = Ctx, Event = Ev, PressedKey = PK>;
+                    type Output = dyn crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>;
 
                     fn index(&self, idx: usize) -> &Self::Output {
                         match idx {
