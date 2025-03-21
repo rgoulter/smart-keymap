@@ -55,6 +55,25 @@
       }
   "%,
 
+  # row-to-col diodes (write col low, check if pulled-up row is low)
+  bootloader_is_sw_1_1_pressed
+    = let col = std.array.at 0 board.cols in
+      let row = std.array.at 0 board.rows in
+    m%"
+    GPIO_ResetBits(GPIO%{col.port}, GPIO_Pin_%{std.to_string col.pin}); // col 0
+    Delay_Us(5);
+    bool sw_1_1_is_pressed = GPIO_ReadInputDataBit(GPIO%{row.port}, GPIO_Pin_%{std.to_string row.pin}) != 1; // row0
+    "%,
+
+  enter_bootloader_check
+    = m%"
+    %{bootloader_is_sw_1_1_pressed}
+    if (sw_1_1_is_pressed) {
+        SystemReset_StartMode(Start_Mode_BOOT);
+        NVIC_SystemReset();
+    }
+    "%,
+
   disable_swd_fragment
     = if disable_swd then
         m%"
@@ -69,6 +88,8 @@
     = m%"
   void keyboard_init(void) {
       keyboard_matrix_init();
+
+      %{enter_bootloader_check}
 
       %{disable_swd_fragment}
   }
@@ -175,6 +196,7 @@
 
   #include "debug.h"
 
+  #include "ch32x035_flash.h"
   #include "ch32x035_gpio.h"
   #include "ch32x035_rcc.h"
 
