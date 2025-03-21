@@ -28,7 +28,7 @@
 #include "ch32x035_usbfs_device.h"
 #include "system_ch32x035.h"
 
-#include "keyboard_ch32x_48.h"
+#include "keyboard_ch32x.h"
 #include "smart_keymap.h"
 
 /*******************************************************************************/
