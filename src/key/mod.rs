@@ -16,8 +16,14 @@ pub mod tap_hold;
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
 
-/// The maximum number of key events that are emitted [Key] or [PressedKeyState].
+/// The maximum number of key events that are emitted [Key] or [KeyState].
 pub const MAX_KEY_EVENTS: usize = 3;
+
+/// The maximum length of a key path.
+pub const MAX_KEY_PATH_LEN: usize = 4;
+
+/// Sequence of indices into a key map.
+pub type KeyPath = heapless::Vec<u16, MAX_KEY_PATH_LEN>;
 
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
@@ -91,9 +97,46 @@ impl<E: Debug, const M: usize> IntoIterator for PressedKeyEvents<E, M> {
     }
 }
 
+/// Pressed Key which may be pending, or a resolved key state.
+pub enum PressedKeyResult<PKS, KS> {
+    /// Unresolved key state. (e.g. tap-hold or chorded keys when first pressed).
+    Pending(KeyPath, PKS),
+    /// Resolved key state.
+    Resolved(KS),
+}
+
+/// Constructs key path with the given keymap index.
+pub fn key_path(keymap_index: u16) -> KeyPath {
+    let mut key_path = KeyPath::new();
+    key_path.push(keymap_index).unwrap();
+    key_path
+}
+
+impl<PKS, KS> PressedKeyResult<PKS, KS> {
+    /// Returns the Resolved variant, or else panics.
+    #[cfg(feature = "std")]
+    pub fn unwrap_resolved(self) -> KS {
+        match self {
+            PressedKeyResult::Resolved(r) => r,
+            _ => panic!("PressedKeyResult::unwrap_resolved: not Resolved"),
+        }
+    }
+
+    /// Adds an item to the KeyPath if the pressed key result is pending.
+    pub fn add_path_item(self, item: u16) -> Self {
+        match self {
+            PressedKeyResult::Pending(mut key_path, pks) => {
+                key_path.push(item).unwrap();
+                PressedKeyResult::Pending(key_path, pks)
+            }
+            pkr => pkr,
+        }
+    }
+}
+
 /// The interface for `Key` behaviour.
 ///
-/// A `Key` has an associated [Context], `Event`, and [PressedKeyState].
+/// A `Key` has an associated [Context], `Event`, and [KeyState].
 ///
 /// The generic `PK` is used as the type of the `PressedKey` that the `Key`
 ///  produces.
@@ -110,11 +153,11 @@ pub trait Key: Debug {
     ///  and any active [PressedKey]s.
     type Event: Copy + Debug + PartialEq;
 
-    /// The associated [PressedKeyState] implements functionality
-    ///  for the pressed key.
-    /// (e.g. [tap_hold::PressedKeyState] implements behaviour resolving
-    ///  the pressed tap hold key as either 'tap' or 'hold').
-    type PressedKey: PressedKey<Context = Self::Context, Event = Self::Event>;
+    /// Associated pending key state.
+    type PendingKeyState;
+
+    /// Associated key state type.
+    type KeyState;
 
     /// [Key::new_pressed_key] produces a pressed key value, and may
     ///  yield some [ScheduledEvent]s.
@@ -123,8 +166,31 @@ pub trait Key: Debug {
     fn new_pressed_key(
         &self,
         context: Self::Context,
-        keymap_index: u16,
-    ) -> (Self::PressedKey, PressedKeyEvents<Self::Event>);
+        key_path: KeyPath,
+    ) -> (
+        PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        PressedKeyEvents<Self::Event>,
+    );
+
+    /// Update the given pending key state with the given impl.
+    fn handle_event(
+        &self,
+        pending_state: &mut Self::PendingKeyState,
+        context: Self::Context,
+        key_path: KeyPath,
+        event: Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, PressedKeyEvents<Self::Event>);
+
+    /// Return a reference to the key for the given path.
+    fn lookup(
+        &self,
+        path: &[u16],
+    ) -> &dyn Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    >;
 }
 
 /// Used to provide state that may affect behaviour when pressing the key.
@@ -389,84 +455,26 @@ impl KeyOutput {
     }
 }
 
-/// Whether the key output is pending or resolved.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum KeyOutputState {
-    /// The key state is pending.
-    Pending,
-    /// The key has output.
-    Resolved(Option<KeyOutput>),
-}
-
-impl KeyOutputState {
-    /// Constructs a [KeyOutputState] with a resolved key output.
-    pub fn resolved(key_output: KeyOutput) -> Self {
-        KeyOutputState::Resolved(Some(key_output))
-    }
-
-    /// Constructs a [KeyOutputState] indicating the key is resolved with no output.
-    pub fn no_output() -> Self {
-        KeyOutputState::Resolved(None)
-    }
-
-    /// Constructs a [KeyOutputState] indicating the key state is pending.
-    pub fn pending() -> Self {
-        KeyOutputState::Pending
-    }
-
-    /// Predicate for whether the key output is resolved.
-    pub fn is_resolved(&self) -> bool {
-        matches!(self, KeyOutputState::Resolved(_))
-    }
-
-    /// Returns the key output as an Option.
-    pub fn to_option(&self) -> Option<KeyOutput> {
-        match self {
-            KeyOutputState::Resolved(key_output) => *key_output,
-            _ => None,
-        }
-    }
-}
-
-/// [PressedKeyState] for a stateful pressed key value.
-pub trait PressedKey: Debug {
-    /// The type of `Context` the pressed key handles.
-    type Context;
-    /// The type of `Event` the pressed key handles.
-    type Event;
-
-    /// Used to update the [PressedKey]'s state, and possibly yield event(s).
-    fn handle_event(
-        &mut self,
-        context: Self::Context,
-        event: Event<Self::Event>,
-    ) -> PressedKeyEvents<Self::Event>;
-
-    /// Output for the pressed key.
-    fn key_output(&self) -> KeyOutputState;
-}
-
 /// Implements functionality for the pressed key.
 ///
-/// e.g. [tap_hold::PressedKeyState] implements behaviour resolving
+/// e.g. [tap_hold::KeyState] implements behaviour resolving
 ///  the pressed tap hold key as either 'tap' or 'hold'.
-pub trait PressedKeyState<K>: Debug {
+pub trait KeyState: Debug {
     /// The type of `Context` the pressed key state handles.
     type Context;
     /// The type of `Event` the pressed key state handles.
     type Event;
 
-    /// Used to update the [PressedKeyState]'s state, and possibly yield event(s).
-    fn handle_event_for(
+    /// Used to update the [KeyState]'s state, and possibly yield event(s).
+    fn handle_event(
         &mut self,
         context: Self::Context,
         keymap_index: u16,
-        key: &K,
         event: Event<Self::Event>,
     ) -> PressedKeyEvents<Self::Event>;
 
     /// Output for the pressed key state.
-    fn key_output(&self, key: &K) -> KeyOutputState;
+    fn key_output(&self) -> Option<KeyOutput>;
 }
 
 /// Errors for [TryFrom] implementations.
