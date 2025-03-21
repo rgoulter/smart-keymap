@@ -62,8 +62,6 @@ int main(void) {
 
   static uint8_t sending = 0;
 
-  GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
-
   /* Usb Init */
   USBFS_RCC_Init();
   USBFS_Device_Init(ENABLE, PWR_VDD_SupplyVoltage());
