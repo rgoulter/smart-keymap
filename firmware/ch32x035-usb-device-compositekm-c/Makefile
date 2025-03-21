@@ -1,11 +1,11 @@
 BOARD=ncl/weact-ch32x-core-board.ncl
 
 .PHONY: all
-all: generated/matrix.c libsmartkeymap
+all: generated/keyboard.c libsmartkeymap
 
 .PHONY: clean
 clean:
-	rm generated/matrix.c
+	rm generated/keyboard.c
 
 .PHONY: test
 test:
@@ -20,18 +20,18 @@ test:
 format:
 	find User -name '*.c' -or -name '*.h' | xargs clang-format -i
 
-.PHONY: generated/matrix.c
-generated/matrix.c:
+.PHONY: generated/keyboard.c
+generated/keyboard.c:
 	nickel export \
 	  --format=raw \
 	  --field=output \
 	  $(BOARD) \
 	  ncl/matrix_scan.ncl \
-	  > generated/matrix.c
+	  > generated/keyboard.c
 
 .PHONY: generated-ch32x-48
 generated-ch32x-48: BOARD=ncl/ch32x-48.ncl
-generated-ch32x-48: generated/matrix.c
+generated-ch32x-48: generated/keyboard.c
 
 .PHONY: libsmartkeymap
 libsmartkeymap: libsmartkeymap/smart_keymap.h libsmartkeymap/libsmart_keymap.a;

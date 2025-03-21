@@ -5,7 +5,7 @@ project(usb-device-compositekm)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(usb-device-compositekm
-  generated/matrix.c
+  generated/keyboard.c
   User/ch32x035_it.c
   User/ch32x035_usbfs_device.c
   User/main.c
