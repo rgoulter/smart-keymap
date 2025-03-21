@@ -24,11 +24,12 @@ impl ModifierKey {
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
-    pub fn new_pressed_key(&self) -> (PressedModifierKeyState, LayerEvent) {
+    pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
         match self {
             ModifierKey::Hold(layer) => {
+                let pks = ModifierKeyState(*self);
                 let event = LayerEvent::LayerActivated(*layer);
-                (PressedModifierKeyState, event)
+                (pks, event)
             }
         }
     }
@@ -137,16 +138,16 @@ impl core::fmt::Display for LayersError {
 /// Trait for layers of [LayeredKey].
 pub trait Layers<K: key::Key>: Copy + Debug {
     /// Get the highest active key, if any, for the given [LayerState].
-    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<&K>;
+    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<(LayerIndex, &K)>;
     /// Constructs layers; return Err if the iterable has more keys than Layers can store.
     fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError>;
 }
 
 impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
-    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<&K> {
+    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<(LayerIndex, &K)> {
         for layer in layer_state.active_layers() {
             if self[layer].is_some() {
-                return self[layer].as_ref();
+                return self[layer].as_ref().map(|k| (layer, k));
             }
         }
 
@@ -242,15 +243,21 @@ where
     pub fn new_pressed_key(
         &self,
         context: K::Context,
-        keymap_index: u16,
-    ) -> (K::PressedKey, key::PressedKeyEvents<K::Event>) {
+        key_path: key::KeyPath,
+    ) -> (
+        key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
+        key::PressedKeyEvents<K::Event>,
+    ) {
         let layer_context: Context = context.into();
-        let passthrough_key = self
+        let (layer, passthrough_key) = self
             .layered
             .highest_active_key(layer_context.layer_state())
-            .unwrap_or(&self.base);
+            .map(|(layer, key)| (layer + 1, key))
+            .unwrap_or((0, &self.base));
 
-        passthrough_key.new_pressed_key(context, keymap_index)
+        // PRESSED KEY PATH: add Layer (0 = base, n = layer + 1)
+        let (pkr, pke) = passthrough_key.new_pressed_key(context, key_path);
+        (pkr.add_path_item(layer as u16), pke)
     }
 }
 
@@ -265,16 +272,16 @@ pub enum LayerEvent {
 
 /// Unit-like struct, for [crate::key::PressedKeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedModifierKeyState;
+pub struct ModifierKeyState(ModifierKey);
 
-impl PressedModifierKeyState {
+impl ModifierKeyState {
     /// Handle the given event for the given key.
-    pub fn handle_event_for(
+    pub fn handle_event(
         &mut self,
         keymap_index: u16,
-        key: &ModifierKey,
         event: key::Event<LayerEvent>,
     ) -> Option<LayerEvent> {
+        let ModifierKeyState(key) = self;
         match key {
             ModifierKey::Hold(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
@@ -298,7 +305,7 @@ mod tests {
 
     use key::KeyOutput;
 
-    use key::composite::BasePressedKey;
+    use key::composite::KeyState;
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
@@ -320,9 +327,8 @@ mod tests {
 
         // Act: the modifier key handles "release key" input event
         let actual_events = pressed_key_state
-            .handle_event_for(
+            .handle_event(
                 keymap_index,
-                &key,
                 key::Event::Input(input::Event::Release { keymap_index }),
             )
             .into_iter()
@@ -352,7 +358,7 @@ mod tests {
             keymap_index: different_keymap_index,
         });
         let actual_events = pressed_key_state
-            .handle_event_for(keymap_index, &key, different_key_released_ev)
+            .handle_event(keymap_index, different_key_released_ev)
             .into_iter()
             .next();
 
@@ -388,21 +394,17 @@ mod tests {
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, _actual_event) =
-            layered_key.new_pressed_key(context, keymap_index);
+        let key_path = key::key_path(keymap_index);
+        let (actual_key_state, _actual_event) = layered_key.new_pressed_key(context, key_path);
 
         // Assert
-        let expected_pressed_key: BasePressedKey = input::PressedKey {
-            keymap_index,
-            key: expected_key.into(),
-            pressed_key_state: expected_key.new_pressed_key().into(),
-        };
-        assert_eq!(expected_pressed_key, actual_pressed_key,);
+        let expected_key_state: KeyState = KeyState::Keyboard(expected_key.new_pressed_key());
+        assert_eq!(expected_key_state, actual_key_state.unwrap_resolved(),);
     }
 
     #[test]
     fn test_pressing_layered_key_when_no_layers_active_has_key_code() {
-        use key::PressedKey as _;
+        use key::KeyState as _;
 
         // Assemble
         let context = key::composite::Context::default();
@@ -418,18 +420,16 @@ mod tests {
 
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, _event) = layered_key.new_pressed_key(context, keymap_index);
+        let key_path = key::key_path(keymap_index);
+        let (actual_pressed_key, _event) = layered_key.new_pressed_key(context, key_path);
 
-        let actual_key_output = actual_pressed_key.key_output();
+        let actual_key_output = actual_pressed_key.unwrap_resolved().key_output();
 
         // Assert
         let expected_pressed_key_state = expected_key.new_pressed_key();
-        let expected_key_output = expected_pressed_key_state.key_output(&expected_key);
+        let expected_key_output = Some(expected_pressed_key_state.key_output());
         assert_eq!(expected_key_output, actual_key_output);
-        assert_eq!(
-            Some(KeyOutput::from_key_code(0x04)),
-            actual_key_output.to_option(),
-        );
+        assert_eq!(Some(KeyOutput::from_key_code(0x04)), actual_key_output,);
     }
 
     // Terminology:
@@ -459,16 +459,12 @@ mod tests {
             LayerEvent::LayerActivated(2).into(),
         ));
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, _actual_event) =
-            layered_key.new_pressed_key(context, keymap_index);
+        let key_path = key::key_path(keymap_index);
+        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(context, key_path);
 
         // Assert
-        let expected_pressed_key: BasePressedKey = input::PressedKey {
-            keymap_index,
-            key: expected_key.into(),
-            pressed_key_state: expected_key.new_pressed_key().into(),
-        };
-        assert_eq!(expected_pressed_key, actual_pressed_key,);
+        let expected_pressed_key = KeyState::Keyboard(expected_key.new_pressed_key());
+        assert_eq!(expected_pressed_key, actual_pressed_key.unwrap_resolved(),);
     }
 
     #[test]
@@ -501,16 +497,12 @@ mod tests {
             LayerEvent::LayerActivated(2).into(),
         ));
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, _actual_event) =
-            layered_key.new_pressed_key(context, keymap_index);
+        let key_path = key::key_path(keymap_index);
+        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(context, key_path);
 
         // Assert
-        let expected_pressed_key: BasePressedKey = input::PressedKey {
-            keymap_index,
-            key: expected_key.into(),
-            pressed_key_state: expected_key.new_pressed_key().into(),
-        };
-        assert_eq!(expected_pressed_key, actual_pressed_key,);
+        let expected_pressed_key = KeyState::Keyboard(expected_key.new_pressed_key());
+        assert_eq!(expected_pressed_key, actual_pressed_key.unwrap_resolved(),);
     }
 
     #[test]
@@ -535,16 +527,12 @@ mod tests {
             LayerEvent::LayerActivated(2).into(),
         ));
         let keymap_index = 9; // arbitrary
-        let (actual_pressed_key, _actual_event) =
-            layered_key.new_pressed_key(context, keymap_index);
+        let key_path = key::key_path(keymap_index);
+        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(context, key_path);
 
         // Assert
-        let expected_pressed_key: BasePressedKey = input::PressedKey {
-            keymap_index,
-            key: expected_key.into(),
-            pressed_key_state: expected_key.new_pressed_key().into(),
-        };
-        assert_eq!(expected_pressed_key, actual_pressed_key,);
+        let expected_pressed_key = KeyState::Keyboard(expected_key.new_pressed_key());
+        assert_eq!(expected_pressed_key, actual_pressed_key.unwrap_resolved(),);
     }
 
     #[test]
