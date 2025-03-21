@@ -13,7 +13,7 @@
  * @Note
  * Composite Keyboard and Mouse Example:
  *
- * The matrix scan code is generated from ncl/matrix_scan.ncl, using whatever
+ * The code for matrix scanning is generated from ncl/codegen_keyboard.ncl, using whatever
  *  board.ncl file it was applied with.
  * e.g. by default, with the WeAct CH32X core board: cols: B0, B1, rows: B3,
  * B11.
