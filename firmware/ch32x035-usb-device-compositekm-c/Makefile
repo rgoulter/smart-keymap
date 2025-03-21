@@ -26,7 +26,7 @@ generated/keyboard.c:
 	  --format=raw \
 	  --field=output \
 	  $(BOARD) \
-	  ncl/matrix_scan.ncl \
+	  ncl/codegen_keyboard.ncl \
 	  > generated/keyboard.c
 
 .PHONY: generated-ch32x-48
