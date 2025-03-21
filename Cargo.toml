@@ -6,7 +6,7 @@ members = [ "rp2040-rtic-smart-keyboard",
 
 [package]
 name = "smart-keymap"
-version = "0.1.0"
+version = "0.4.0"
 edition = "2021"
 
 [features]
