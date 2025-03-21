@@ -33,58 +33,27 @@ pub enum Event {
 
 /// A struct for associating a [crate::key::Key] with a [crate::key::PressedKeyState].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedKey<K, S> {
+pub struct PressedKey<S> {
     /// The index of the pressed key in some keymap.
     pub keymap_index: u16,
-    /// The pressed key.
-    pub key: K,
     /// The pressed key state.
-    pub pressed_key_state: S,
+    pub key_state: S,
 }
 
-impl<K, S> PressedKey<K, S> {
-    /// Maps the key and pressed key state of the PressedKey to a new type.
-    pub fn map_pressed_key<IK, IS>(self, f_k: fn(K) -> IK, f_s: fn(S) -> IS) -> PressedKey<IK, IS> {
-        PressedKey {
-            keymap_index: self.keymap_index,
-            key: f_k(self.key),
-            pressed_key_state: f_s(self.pressed_key_state),
-        }
-    }
-
-    /// Transforms the PressedKey to a new type.
-    pub fn into_pressed_key<IK, IS>(self) -> PressedKey<IK, IS>
-    where
-        K: Into<IK>,
-        S: Into<IS>,
-    {
-        PressedKey {
-            keymap_index: self.keymap_index,
-            key: self.key.into(),
-            pressed_key_state: self.pressed_key_state.into(),
-        }
-    }
-}
-
-impl<
-        K: crate::key::Key,
-        S: crate::key::PressedKeyState<K, Context = K::Context, Event = K::Event>,
-    > crate::key::PressedKey for PressedKey<K, S>
-{
-    type Context = K::Context;
-    type Event = K::Event;
-
-    fn handle_event(
+impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> {
+    /// Convenience passthrough to key_state handle_event.
+    pub fn handle_event(
         &mut self,
-        context: Self::Context,
-        event: crate::key::Event<Self::Event>,
-    ) -> crate::key::PressedKeyEvents<Self::Event> {
-        self.pressed_key_state
-            .handle_event_for(context, self.keymap_index, &self.key, event)
+        context: Ctx,
+        event: crate::key::Event<Ev>,
+    ) -> crate::key::PressedKeyEvents<Ev> {
+        self.key_state
+            .handle_event(context, self.keymap_index, event)
     }
 
-    fn key_output(&self) -> key::KeyOutputState {
-        self.pressed_key_state.key_output(&self.key)
+    /// Convenience passthrough to key_state key_output.
+    pub fn key_output(&self) -> Option<key::KeyOutput> {
+        self.key_state.key_output()
     }
 }
 
@@ -92,20 +61,17 @@ impl<
 #[derive(Debug, Clone, Copy)]
 pub enum PressedInput<PK> {
     /// Physically pressed key.
-    Key {
-        /// The pressed key.
-        pressed_key: PK,
-    },
-    /// Virtually pressed key.
-    Virtual {
-        /// The pressed key code.
-        key_code: u8,
-    },
+    Key(PressedKey<PK>),
+    /// Virtually pressed key, and its keycode.
+    Virtual(u8),
 }
 
 impl<PK> PressedInput<PK> {
     /// Constructor for a [PressedInput::Key].
-    pub fn new_pressed_key(pressed_key: PK) -> Self {
-        Self::Key { pressed_key }
+    pub fn new_pressed_key(key_state: PK, keymap_index: u16) -> Self {
+        Self::Key(PressedKey {
+            keymap_index,
+            key_state,
+        })
     }
 }
