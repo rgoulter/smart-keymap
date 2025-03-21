@@ -27,6 +27,17 @@
     | default
     = false,
 
+  led = {
+    enabled
+      | doc "Whether to enable the LED."
+      | default
+      = false,
+
+    pin
+      | doc "The pin to use for the LED."
+      | { port | String, pin | Number },
+  },
+
   init_col_fragment
     | doc "Generates C fragment for initializing the given column pin, for keyboard_matrix_init."
     = fun { port, pin, .. } =>
@@ -83,6 +94,21 @@
       else
         "",
 
+  led_init_fragment
+    = if led.enabled then
+        m%"
+        // Init LED
+        {
+          GPIO_InitTypeDef GPIO_InitStructure = {0};
+          GPIO_InitStructure.GPIO_Pin = GPIO_Pin_%{std.to_string led.pin.pin};
+          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+          GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+          GPIO_Init(GPIO%{led.pin.port}, &GPIO_InitStructure);
+        }
+        "%
+      else
+        "",
+
   keyboard_init
     | doc "C fragment with the keyboard_init function."
     = m%"
@@ -92,6 +118,8 @@
       %{enter_bootloader_check}
 
       %{disable_swd_fragment}
+
+      %{led_init_fragment}
   }
   "%,
 
@@ -189,6 +217,27 @@
   }
   "%,
 
+  # Function which blinks the LED
+  keyboard_led_tick
+    = if led.enabled then
+        m%"
+        static uint16_t keyboard_led_timer = 0;
+        static uint8_t keyboard_led_state = 0;
+
+        void keyboard_led_tick(void) {
+            // Toggle the LED every 1000 ticks
+            keyboard_led_timer++;
+            if (keyboard_led_timer > 1000) {
+                keyboard_led_timer = 0;
+                keyboard_led_state = 1 - keyboard_led_state;
+
+                GPIO_WriteBit(GPIO%{led.pin.port}, GPIO_Pin_%{std.to_string led.pin.pin}, keyboard_led_state);
+            }
+        }
+        "%
+      else
+        "",
+
   output
     | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
     = m%"
@@ -216,5 +265,6 @@
 
   %{keyboard_matrix_scan board}
 
+  %{keyboard_led_tick}
   "%
 }

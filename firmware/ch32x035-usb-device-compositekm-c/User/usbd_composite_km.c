@@ -92,9 +92,6 @@ void TIM3_Init(uint16_t arr, uint16_t psc) {
  * @return  none
  */
 void TIM3_IRQHandler(void) {
-  static uint16_t led_timer = 0;
-  static uint8_t led_state = 0;
-
   if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
 
     /* Handle keyboard scan */
@@ -103,16 +100,7 @@ void TIM3_IRQHandler(void) {
     /* Handle keyboard scan data */
     KB_Scan_Handle();
 
-    // Toggle the LED every 1000 ticks
-    // (should be 1s)
-    led_timer++;
-    if (led_timer > 1000) {
-      led_timer = 0;
-      led_state = 1 - led_state;
-
-      // LED = A5
-      GPIO_WriteBit(GPIOA, GPIO_Pin_5, led_state);
-    }
+    keyboard_led_tick();
 
     if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0) {
       keymap_tick(KB_Data_Pack);
@@ -134,16 +122,6 @@ void KB_Scan_Init(void) {
   keyboard_init();
 
   keymap_init();
-
-  // Init LED
-  // LED, A5
-  {
-    GPIO_InitTypeDef GPIO_InitStructure = {0};
-    GPIO_InitStructure.GPIO_Pin = GPIO_Pin_5;
-    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-    GPIO_Init(GPIOA, &GPIO_InitStructure);
-  }
 }
 
 /*********************************************************************

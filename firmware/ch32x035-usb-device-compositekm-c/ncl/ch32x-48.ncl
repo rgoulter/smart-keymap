@@ -39,4 +39,9 @@
   # CH32X-48 uses CH32X033F8P6's PC18/PC19 (DIO/DCK) for matrix rows.
   # Hence, disable SWD to avoid conflict.
   disable_swd = true,
+
+  led = {
+    enabled = true,
+    pin = gpio_pins.A5,
+  },
 }
