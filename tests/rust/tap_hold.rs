@@ -11,12 +11,12 @@ use smart_keymap::tuples;
 use keymap::DistinctReports;
 use keymap::Keymap;
 
-use key::composite::{Context, Event, PressedKey};
+use key::composite::{Context, Event, KeyState, PendingKeyState};
 use key::{composite, keyboard, tap_hold};
 use tuples::Keys1;
 
 type K = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
-const KEYS: Keys1<K, Context, Event, PressedKey> = Keys1::new((composite::Chorded(
+const KEYS: Keys1<K, Context, Event, PendingKeyState, KeyState> = Keys1::new((composite::Chorded(
     composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
         tap: keyboard::Key::new(0x04),
         hold: keyboard::Key::new(0xE0),
