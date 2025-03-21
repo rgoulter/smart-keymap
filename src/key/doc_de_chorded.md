@@ -12,7 +12,7 @@ In this module,
     the behaviour of the key when the chord
     didn't succeed.
     (e.g. 'q' or 'w' for the chord 'qw').
-- [PressedKeyState] manages chord resolution.
+- [KeyState] manages chord resolution.
   - If a timeout event is received for the key:
     - if the PKS does not have a satisfied chord,
       the PKS resolves to "Timed out",
