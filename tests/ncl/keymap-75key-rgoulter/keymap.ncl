@@ -5,6 +5,15 @@ let LOWER_  = RAISE_ + 1 in
 let ADJUST_ = RAISE_ + 2 in
 
 {
+  chords =
+    let K = import "keys.ncl" in
+    [
+        { indices = [48, 49], key = K.LeftGUI & K.PageUp, },
+        { indices = [55, 56], key = K.LeftGUI & K.PageDown, },
+    ],
+
+  config.tap_hold.interrupt_response = "HoldOnKeyTap",
+
   custom_keys = fun K =>
     let HoldLayerMod = fun layer_index => K.hold (K.layer_mod.hold layer_index) in
     {
@@ -18,7 +27,7 @@ let ADJUST_ = RAISE_ + 2 in
       S_U = K.U & K.H_LShift,
 
       S_H = K.H & K.H_RShift,
-      C_T = K.T & K.H_RCtrl,
+      C_T = K.T & K.H_LCtrl,
       G_N = K.N & K.H_RGUI,
       A_S = K.S & K.H_LAlt,
     },
