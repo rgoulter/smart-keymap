@@ -8,6 +8,7 @@
         cols = [p.B1, p.A6, p.A9, p.A0, p.C3, p.A10, p.A11],
         rows = [p.A4, p.C19, p.A3, p.A2, p.A1, p.C18, p.A7],
         key_count = 48,
+        implementation = "row_to_col",
       },
 
     # The CH32X-48 uses a digital matrix of 7x7 rows and columns,
