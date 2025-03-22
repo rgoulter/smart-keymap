@@ -67,17 +67,16 @@
   "%,
 
   # row-to-col diodes (write col low, check if pulled-up row is low)
-  bootloader_is_sw_1_1_pressed
-    = let col = std.array.at 0 board.cols in
-      let row = std.array.at 0 board.rows in
+  bootloader_is_sw_1_1_pressed =
+    let col = std.array.at 0 board.cols in
+    let row = std.array.at 0 board.rows in
     m%"
     GPIO_ResetBits(GPIO%{col.port}, GPIO_Pin_%{std.to_string col.pin}); // col 0
     Delay_Us(5);
     bool sw_1_1_is_pressed = GPIO_ReadInputDataBit(GPIO%{row.port}, GPIO_Pin_%{std.to_string row.pin}) != 1; // row0
     "%,
 
-  enter_bootloader_check
-    = m%"
+  enter_bootloader_check = m%"
     %{bootloader_is_sw_1_1_pressed}
     if (sw_1_1_is_pressed) {
         SystemReset_StartMode(Start_Mode_BOOT);
@@ -85,18 +84,18 @@
     }
     "%,
 
-  disable_swd_fragment
-    = if disable_swd then
-        m%"
+  disable_swd_fragment =
+    if disable_swd then
+      m%"
         // Disable SWD
         GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
         "%
-      else
-        "",
+    else
+      "",
 
-  led_init_fragment
-    = if led.enabled then
-        m%"
+  led_init_fragment =
+    if led.enabled then
+      m%"
         // Init LED
         {
           GPIO_InitTypeDef GPIO_InitStructure = {0};
@@ -106,8 +105,8 @@
           GPIO_Init(GPIO%{led.pin.port}, &GPIO_InitStructure);
         }
         "%
-      else
-        "",
+    else
+      "",
 
   keyboard_init
     | doc "C fragment with the keyboard_init function."
@@ -149,7 +148,8 @@
     | doc "Generates C fragment for reading a row, as part of COL2ROW scanning."
     = fun args @ { column_index, row_index, col, row, .. } =>
       let maybe_idx = keymap_index_for_key args in
-      maybe_idx |> match {
+      maybe_idx
+      |> match {
         'Error err => "",
         'Ok idx_num =>
           let idx = std.to_string idx_num in
@@ -157,7 +157,8 @@
           // Read row %{std.to_string row_index} = %{row.port}%{std.to_string row.pin}
           // SW_r_c = SW_%{std.to_string (1 + row_index)}_%{std.to_string (1 + column_index)}
           scan_buf[%{idx}] = GPIO_ReadInputDataBit(GPIO%{row.port}, GPIO_Pin_%{std.to_string row.pin}) != 1;
-  "%},
+  "%
+      },
 
   matrix_scan_column
     | doc "Generates C fragment for reading a column, as part of COL2ROW scanning."
@@ -184,7 +185,7 @@
 
   keyboard_matrix_scan
     | doc "Generates C fragment with the keyboard_matrix_scan function, for the given cols/rows."
-    = fun args@{ cols, rows, .. } =>
+    = fun args @ { cols, rows, .. } =>
       m%"
   %{keyboard_matrix_scan_raw args}
 
@@ -218,9 +219,9 @@
   "%,
 
   # Function which blinks the LED
-  keyboard_led_tick
-    = if led.enabled then
-        m%"
+  keyboard_led_tick =
+    if led.enabled then
+      m%"
         static uint16_t keyboard_led_timer = 0;
         static uint8_t keyboard_led_state = 0;
 
@@ -235,8 +236,8 @@
             }
         }
         "%
-      else
-        "",
+    else
+      "",
 
   output
     | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
