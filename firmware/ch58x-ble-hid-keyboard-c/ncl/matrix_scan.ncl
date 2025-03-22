@@ -58,7 +58,8 @@
     | doc "Generates C fragment for reading a row, as part of COL2ROW scanning."
     = fun args @ { column_index, row_index, col, row, .. } =>
       let maybe_idx = keymap_index_for_key args in
-      maybe_idx |> match {
+      maybe_idx
+      |> match {
         'Error err => "",
         'Ok idx_num =>
           let idx = std.to_string idx_num in
@@ -69,7 +70,8 @@
           // Register presses/events based on changes
           handle_index(%{idx});
 
-  "%},
+  "%
+      },
 
   matrix_scan_column
     | doc "Generates C fragment for reading a column, as part of COL2ROW scanning."
