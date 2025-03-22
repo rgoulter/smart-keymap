@@ -35,7 +35,7 @@ pub enum LayeredKey<K: LayeredNestable> {
     Pass(K),
 }
 
-/// Newtype for [LayeredNestable] keys so they can implement [key::Key] for [LayeredPressedKey].
+/// Newtype for [LayeredNestable] keys so they can implement [key::Key].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Layered<K: LayeredNestable>(pub K);
 
@@ -130,24 +130,24 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
 }
 
 impl LayeredKey<TapHoldKey<BaseKey>> {
-    /// Constructs a [Key] from the given [key::keyboard::Key].
+    /// Constructs a [LayeredKey] from the given [key::keyboard::Key].
     pub const fn keyboard(key: key::keyboard::Key) -> Self {
         Self::Pass(TapHoldKey::keyboard(key))
     }
 
-    /// Constructs a [Key] from the given [key::tap_hold::Key].
+    /// Constructs a [LayeredKey] from the given [key::tap_hold::Key].
     pub const fn tap_hold(key: key::tap_hold::Key<BaseKey>) -> Self {
         Self::Pass(TapHoldKey::tap_hold(key))
     }
 
-    /// Constructs a [Key] from the given [key::layered::ModifierKey].
+    /// Constructs a [LayeredKey] from the given [key::layered::ModifierKey].
     pub const fn layer_modifier(key: key::layered::ModifierKey) -> Self {
         Self::Pass(TapHoldKey::layer_modifier(key))
     }
 }
 
 impl<K: LayeredNestable> LayeredKey<K> {
-    /// Constructs a [Key] from the given [key::layered::LayeredKey].
+    /// Constructs a [LayeredKey] from the given [key::layered::LayeredKey].
     pub const fn layered(key: key::layered::LayeredKey<K>) -> Self {
         Self::Layered(key)
     }
@@ -161,7 +161,7 @@ impl Layered<TapHold<key::keyboard::Key>> {
 }
 
 impl Layered<TapHoldKey<key::keyboard::Key>> {
-    /// Constructs a [Key] from the given [key::tap_hold::Key].
+    /// Constructs a [Layered] newtype from the given [key::tap_hold::Key].
     pub const fn tap_hold(key: key::tap_hold::Key<key::keyboard::Key>) -> Self {
         Self(TapHoldKey::TapHold(key))
     }

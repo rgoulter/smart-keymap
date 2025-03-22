@@ -31,7 +31,7 @@ pub enum Event {
     InputResolved,
 }
 
-/// A struct for associating a [crate::key::Key] with a [crate::key::PressedKeyState].
+/// A struct for associating a [crate::key::Key] with a [crate::key::KeyState].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKey<S> {
     /// The index of the pressed key in some keymap.

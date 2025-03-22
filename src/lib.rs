@@ -36,7 +36,7 @@
 //! # Implementation Overview
 //!
 //! The heart of the library is the [key] module, and its
-//! [key::Key], [key::Context], [key::PressedKey] traits.
+//! [key::Key], [key::Context], [key::KeyState] traits.
 //!
 //! These provide the interface with which 'smart keys' are implemented.
 
@@ -47,7 +47,7 @@ pub mod input;
 /// Smart key interface and implementations.
 ///
 /// The core interface for the smart keymap library is [key::Key],
-///  and its associated [key::Context] and [key::PressedKeyState] types.
+///  and its associated [key::Context], `PendingKeyState`, and [key::KeyState] types.
 /// Together, these are used to define smart key behaviour.
 pub mod key;
 /// Keymap implementation.
