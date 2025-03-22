@@ -1,4 +1,5 @@
 (import "codegen-matrix-row_to_col.ncl")
+& (import "codegen-matrix-col_to_row.ncl")
 & {
   gpio_pins
     : { _ : { port : String, pin : Number } }
@@ -18,12 +19,17 @@
     is_sw_1_1_pressed,
   },
 
+  matrix_scan_impl,
+
+  matrix_scan = std.record.get board.matrix.implementation matrix_scan_impl,
+
   board = {
     matrix
       | {
         cols | Array { port | String, pin | Number },
         rows | Array { port | String, pin | Number },
         key_count | Number,
+        implementation | String,
       }
       | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
 

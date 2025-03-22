@@ -3,17 +3,12 @@
 # impl.: pull-up rows
 {
   board = {
-    matrix
-      | {
-        cols | Array { port | String, pin | Number },
-        rows | Array { port | String, pin | Number },
-        key_count | Number,
-      },
+    matrix,
 
     keymap_index_for_key,
   },
 
-  matrix_scan = {
+  matrix_scan_impl.row_to_col = {
     init_col_fragment = fun { port, pin, .. } =>
       m%"
       // %{port}%{std.to_string pin}
