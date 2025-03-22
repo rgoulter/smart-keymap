@@ -5,14 +5,14 @@ simultaneously pressing multiple keys results in the behaviour of another
 key. e.g. pressing 'qw' keys together might send "Backspace"
 
 In this module,
-- [Context] stores the [Chord]s of the keymap.
-  - [Chord] is defined in terms of keymap indices.
-- [Key] describes a key which is part of a chord
+- [chorded::Context] stores the chords of the keymap.
+  - Chord is defined in terms of keymap indices. (See: [chorded::ChordIndices]).
+- [chorded::Key] and [chorded::AuxiliaryKey] describe keys which are part of a chord
   - This includes its 'passthrough key';
     the behaviour of the key when the chord
     didn't succeed.
     (e.g. 'q' or 'w' for the chord 'qw').
-- [KeyState] manages chord resolution.
+- [chorded::PendingKeyState] manages chord resolution.
   - If a timeout event is received for the key:
     - if the PKS does not have a satisfied chord,
       the PKS resolves to "Timed out",

@@ -150,7 +150,7 @@ pub trait Key: Debug {
     type Context: Copy;
 
     /// The associated `Event` is to be handled by the associated [Context],
-    ///  and any active [PressedKey]s.
+    ///  pending key states, and key states.
     type Event: Copy + Debug + PartialEq;
 
     /// Associated pending key state.
@@ -401,7 +401,7 @@ impl KeyboardModifiers {
     }
 }
 
-/// Struct for the output from [PressedKey].
+/// Struct for the output from [KeyState].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyOutput {
     key_code: u8,
@@ -456,9 +456,6 @@ impl KeyOutput {
 }
 
 /// Implements functionality for the pressed key.
-///
-/// e.g. [tap_hold::KeyState] implements behaviour resolving
-///  the pressed tap hold key as either 'tap' or 'hold'.
 pub trait KeyState: Debug {
     /// The type of `Context` the pressed key state handles.
     type Context;

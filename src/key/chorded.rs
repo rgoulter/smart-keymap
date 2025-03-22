@@ -443,7 +443,7 @@ pub struct PendingKeyState {
 }
 
 impl PendingKeyState {
-    /// Constructs a new [PressedKeyState].
+    /// Constructs a new [PendingKeyState].
     pub fn new(context: Context, keymap_index: u16) -> Self {
         let sibling_indices = context.sibling_indices(keymap_index);
         let pressed_indices: heapless::Vec<u16, MAX_CHORD_SIZE> = context

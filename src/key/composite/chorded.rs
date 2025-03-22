@@ -38,7 +38,7 @@ pub enum ChordedKey<K: ChordedNestable> {
     Pass(K),
 }
 
-/// Newtype for [ChordedNestable] keys so they can implement [key::Key] for [ChordedPressedKey].
+/// Newtype for [ChordedNestable] keys so they can implement [key::Key].
 #[derive(Debug, Clone, Copy)]
 pub struct Chorded<K: ChordedNestable>(pub K);
 
@@ -294,24 +294,24 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
 }
 
 impl ChordedKey<LayeredKey<TapHoldKey<BaseKey>>> {
-    /// Constructs a [Key] from the given [key::keyboard::Key].
+    /// Constructs a [ChordedKey] from the given [key::keyboard::Key].
     pub const fn keyboard(key: key::keyboard::Key) -> Self {
         ChordedKey::Pass(LayeredKey::Pass(TapHoldKey::keyboard(key)))
     }
 
-    /// Constructs a [Key] from the given [key::tap_hold::Key].
+    /// Constructs a [ChordedKey] from the given [key::tap_hold::Key].
     pub const fn tap_hold(key: key::tap_hold::Key<BaseKey>) -> Self {
         ChordedKey::Pass(LayeredKey::Pass(TapHoldKey::tap_hold(key)))
     }
 
-    /// Constructs a [Key] from the given [key::layered::ModifierKey].
+    /// Constructs a [ChordedKey] from the given [key::layered::ModifierKey].
     pub const fn layer_modifier(key: key::layered::ModifierKey) -> Self {
         ChordedKey::Pass(LayeredKey::Pass(TapHoldKey::layer_modifier(key)))
     }
 }
 
 impl<K: LayeredNestable> ChordedKey<LayeredKey<K>> {
-    /// Constructs a [Key] from the given [key::layered::LayeredKey].
+    /// Constructs a [ChordedKey] from the given [key::layered::LayeredKey].
     pub const fn layered(key: key::layered::LayeredKey<K>) -> Self {
         ChordedKey::Pass(LayeredKey::Layered(key))
     }

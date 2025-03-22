@@ -36,7 +36,7 @@ pub enum TapHoldKey<K: TapHoldNestable> {
     Pass(K),
 }
 
-/// Newtype for [TapHoldNestable] keys so they can implement [key::Key] for [TapHoldPressedKey].
+/// Newtype for [TapHoldNestable] keys so they can implement [key::Key].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TapHold<K: TapHoldNestable>(pub K);
 
