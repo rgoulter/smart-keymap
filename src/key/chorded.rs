@@ -398,35 +398,6 @@ where
     }
 }
 
-/// Trait for [PressedKeyState].
-pub trait ChordedKey<K: key::Key> {
-    /// The chorded key's "passthrough" key.
-    fn passthrough_key(&self) -> &K;
-
-    /// The chorded key's "chorded" key.
-    fn chorded_key(&self) -> Option<&K>;
-}
-
-impl<K: key::Key> ChordedKey<K> for Key<K> {
-    fn passthrough_key(&self) -> &K {
-        &self.passthrough
-    }
-
-    fn chorded_key(&self) -> Option<&K> {
-        Some(&self.chord)
-    }
-}
-
-impl<K: key::Key> ChordedKey<K> for AuxiliaryKey<K> {
-    fn passthrough_key(&self) -> &K {
-        &self.passthrough
-    }
-
-    fn chorded_key(&self) -> Option<&K> {
-        None
-    }
-}
-
 /// Events for chorded keys.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
