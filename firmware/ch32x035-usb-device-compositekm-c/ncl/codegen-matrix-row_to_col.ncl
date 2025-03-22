@@ -2,14 +2,16 @@
 # diode direction: current from row to column.
 # impl.: pull-up rows
 {
-  board
-    | {
-      cols | Array { port | String, pin | Number },
-      rows | Array { port | String, pin | Number },
-      key_count | Number,
-    },
+  board = {
+    matrix
+      | {
+        cols | Array { port | String, pin | Number },
+        rows | Array { port | String, pin | Number },
+        key_count | Number,
+      },
 
-  keymap_index_for_key,
+    keymap_index_for_key,
+  },
 
   matrix_scan = {
     init_col_fragment = fun { port, pin, .. } =>
@@ -59,7 +61,7 @@
   "%,
 
     matrix_scan_row_for_column = fun args @ { column_index, row_index, col, row, .. } =>
-      let maybe_idx = keymap_index_for_key args in
+      let maybe_idx = board.keymap_index_for_key args in
       maybe_idx
       |> match {
         'Error err => "",
@@ -88,14 +90,14 @@
       | doc "Generates C fragment with the keyboard_matrix_scan function, for the given cols/rows."
       = fun { cols, rows, .. } =>
         m%"
-  void keyboard_matrix_scan_raw(bool scan_buf[%{std.to_string board.key_count}]) {
-      %{board.cols |> std.array.map_with_index (fun idx c => matrix_scan_column ({ col = c, column_index = idx, rows = board.rows })) |> std.string.join "\n"}
+  void keyboard_matrix_scan_raw(bool scan_buf[%{std.to_string board.matrix.key_count}]) {
+      %{board.matrix.cols |> std.array.map_with_index (fun idx c => matrix_scan_column ({ col = c, column_index = idx, rows = board.matrix.rows })) |> std.string.join "\n"}
   }
   "%,
 
     is_sw_1_1_pressed =
-      let col = std.array.at 0 board.cols in
-      let row = std.array.at 0 board.rows in
+      let col = std.array.at 0 board.matrix.cols in
+      let row = std.array.at 0 board.matrix.rows in
       m%"
     GPIO_ResetBits(GPIO%{col.port}, GPIO_Pin_%{std.to_string col.pin}); // col 0
     Delay_Us(5);

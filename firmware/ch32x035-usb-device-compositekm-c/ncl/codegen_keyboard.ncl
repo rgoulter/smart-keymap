@@ -12,37 +12,36 @@
         ports
       |> (std.array.fold_left (&) {}) | { _ : { port : String, pin : Number } },
 
-  board
-    | {
-      cols | Array { port | String, pin | Number },
-      rows | Array { port | String, pin | Number },
-      key_count | Number,
-    }
-    | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
-
   matrix_scan = {
     keyboard_matrix_init,
     keyboard_matrix_scan_raw,
     is_sw_1_1_pressed,
   },
 
-  keymap_index_for_key
-    | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
+  board = {
+    matrix
+      | {
+        cols | Array { port | String, pin | Number },
+        rows | Array { port | String, pin | Number },
+        key_count | Number,
+      }
+      | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
 
-  disable_swd
-    | doc "Whether to disable SWD."
-    | default
-    = false,
-
-  led = {
-    enabled
-      | doc "Whether to enable the LED."
+    disable_swd
+      | doc "Whether to disable SWD."
       | default
       = false,
 
-    pin
-      | doc "The pin to use for the LED."
-      | { port | String, pin | Number },
+    led = {
+      enabled
+        | doc "Whether to enable the LED."
+        | default
+        = false,
+
+      pin
+        | doc "The pin to use for the LED."
+        | { port | String, pin | Number },
+    },
   },
 
   enter_bootloader_check = m%"
@@ -54,7 +53,7 @@
     "%,
 
   disable_swd_fragment =
-    if disable_swd then
+    if board.disable_swd then
       m%"
         // Disable SWD
         GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
@@ -63,15 +62,15 @@
       "",
 
   led_init_fragment =
-    if led.enabled then
+    if board.led.enabled then
       m%"
         // Init LED
         {
           GPIO_InitTypeDef GPIO_InitStructure = {0};
-          GPIO_InitStructure.GPIO_Pin = GPIO_Pin_%{std.to_string led.pin.pin};
+          GPIO_InitStructure.GPIO_Pin = GPIO_Pin_%{std.to_string board.led.pin.pin};
           GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
           GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-          GPIO_Init(GPIO%{led.pin.port}, &GPIO_InitStructure);
+          GPIO_Init(GPIO%{board.led.pin.port}, &GPIO_InitStructure);
         }
         "%
     else
@@ -98,14 +97,14 @@
   %{matrix_scan.keyboard_matrix_scan_raw args}
 
   void keyboard_matrix_scan(void) {
-      static bool debounced_state[%{std.to_string board.key_count}] = { false };
-      static bool previous_raw_scan[%{std.to_string board.key_count}] = { false };
-      static bool current_raw_scan[%{std.to_string board.key_count}] = { false };
-      static uint8_t debounce_counter[%{std.to_string board.key_count}] = { 0 };
+      static bool debounced_state[%{std.to_string board.matrix.key_count}] = { false };
+      static bool previous_raw_scan[%{std.to_string board.matrix.key_count}] = { false };
+      static bool current_raw_scan[%{std.to_string board.matrix.key_count}] = { false };
+      static uint8_t debounce_counter[%{std.to_string board.matrix.key_count}] = { 0 };
 
       keyboard_matrix_scan_raw(current_raw_scan);
 
-      for (uint32_t i = 0; i < %{std.to_string board.key_count}; i++) {
+      for (uint32_t i = 0; i < %{std.to_string board.matrix.key_count}; i++) {
           if (current_raw_scan[i] == debounced_state[i]) {
               debounce_counter[i] = 0;
           } else {
@@ -128,7 +127,7 @@
 
   # Function which blinks the LED
   keyboard_led_tick =
-    if led.enabled then
+    if board.led.enabled then
       m%"
         static uint16_t keyboard_led_timer = 0;
         static uint8_t keyboard_led_state = 0;
@@ -140,7 +139,7 @@
                 keyboard_led_timer = 0;
                 keyboard_led_state = 1 - keyboard_led_state;
 
-                GPIO_WriteBit(GPIO%{led.pin.port}, GPIO_Pin_%{std.to_string led.pin.pin}, keyboard_led_state);
+                GPIO_WriteBit(GPIO%{board.led.pin.port}, GPIO_Pin_%{std.to_string board.led.pin.pin}, keyboard_led_state);
             }
         }
         "%
@@ -160,7 +159,7 @@
 
   #include "smart_keymap.h"
 
-  %{matrix_scan.keyboard_matrix_init board}
+  %{matrix_scan.keyboard_matrix_init board.matrix}
 
   %{keyboard_init}
 
@@ -172,7 +171,7 @@
       }
   }
 
-  %{keyboard_matrix_scan board}
+  %{keyboard_matrix_scan board.matrix}
 
   %{keyboard_led_tick}
   "%

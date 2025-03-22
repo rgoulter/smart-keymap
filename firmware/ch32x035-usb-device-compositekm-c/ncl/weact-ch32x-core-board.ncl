@@ -1,14 +1,8 @@
 {
   gpio_pins,
 
-  board
-    | {
-      cols | Array { port | String, pin | Number },
-      rows | Array { port | String, pin | Number },
-      key_count | Number,
-    }
-    | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
-    =
+  board = {
+    matrix =
       let p = gpio_pins in
       {
         cols = [p.B0, p.B1],
@@ -16,8 +10,7 @@
         key_count = 4,
       },
 
-  keymap_index_for_key
-    | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index."
-    = fun { column_index | Number, row_index | Number, .. } =>
+    keymap_index_for_key = fun { column_index | Number, row_index | Number, .. } =>
       'Ok (column_index + row_index * (std.array.length board.cols)),
+  },
 }
