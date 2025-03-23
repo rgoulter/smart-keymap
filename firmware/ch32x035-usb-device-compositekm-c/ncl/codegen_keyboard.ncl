@@ -172,6 +172,8 @@
 
   %{keyboard_init}
 
+  int keyboard_split_write(KeymapInputEvent ev); // DEMO
+
   void key_state_changed(uint32_t index, bool new_state) {
       KeymapInputEvent ev = { .event_type = 0, .value = index };
       if (new_state) {
@@ -180,6 +182,8 @@
           ev.event_type = KeymapEventRelease;
       }
       keymap_register_input_event(ev);
+
+      keyboard_split_write(ev);
   }
 
   %{keyboard_matrix_scan board.matrix}
