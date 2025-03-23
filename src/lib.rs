@@ -55,6 +55,9 @@ pub mod keymap;
 /// Keys1, Keys2, etc. tuple structs for defining keymaps.
 pub mod tuples;
 
+/// Split keyboard support.
+pub mod split;
+
 /// Types and initial data used for constructing a [keymap::Keymap].
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
