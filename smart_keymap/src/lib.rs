@@ -35,7 +35,10 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use smart_keymap::{init, input, keymap};
+use smart_keymap::{init, input, keymap, split};
+
+/// Length of a buffer for serializing/deserializing split keyboard events.
+pub const MESSAGE_BUFFER_LEN: usize = 4;
 
 /// Input event type.
 #[repr(C)]
@@ -65,6 +68,25 @@ impl From<KeymapInputEvent> for input::Event {
         match event_type {
             KeymapInputEventType::KeymapEventPress => input::Event::Press { keymap_index },
             KeymapInputEventType::KeymapEventRelease => input::Event::Release { keymap_index },
+        }
+    }
+}
+
+impl From<input::Event> for KeymapInputEvent {
+    fn from(ev: input::Event) -> Self {
+        match ev {
+            input::Event::Press {
+                keymap_index: value,
+            } => KeymapInputEvent {
+                event_type: KeymapInputEventType::KeymapEventPress,
+                value,
+            },
+            input::Event::Release {
+                keymap_index: value,
+            } => KeymapInputEvent {
+                event_type: KeymapInputEventType::KeymapEventRelease,
+                value,
+            },
         }
     }
 }
@@ -154,6 +176,34 @@ pub unsafe extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
     unsafe {
         let report = keymap::KeymapOutput::new(KEYMAP.pressed_keys()).as_hid_boot_keyboard_report();
         core::ptr::copy_nonoverlapping(report.as_ptr(), buf, report.len());
+    }
+}
+
+/// Serializes the given event into the given buffer.
+#[no_mangle]
+pub unsafe extern "C" fn keymap_serialize_event(buf: *mut u8, event: KeymapInputEvent) {
+    unsafe {
+        let message = split::Message::new(event.into());
+        let message_bytes = message.serialize();
+        core::ptr::copy_nonoverlapping(message_bytes.as_ptr(), buf, message_bytes.len());
+    }
+}
+
+/// Deserializes the given bytes into the given pointer;
+/// returns true if successful, false if fails.
+#[no_mangle]
+pub unsafe extern "C" fn keymap_message_buffer_receive_byte(
+    buf: &mut [u8; MESSAGE_BUFFER_LEN],
+    recv_byte: u8,
+    event: *mut KeymapInputEvent,
+) -> bool {
+    let res = split::receive_byte(buf, recv_byte);
+    match res {
+        Ok(message) => {
+            *event = message.input_event.into();
+            true
+        }
+        Err(_) => false,
     }
 }
 
