@@ -34,6 +34,7 @@ harness = false
 heapless = { version = "0.8", features = ["serde"] }
 libc = "0.2"
 paste = "1.0"
+postcard = "1.1"
 seq-macro = "0.3"
 serde = { version = "1.0", features = ["derive"], default-features = false }
 
