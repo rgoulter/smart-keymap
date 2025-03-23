@@ -37,6 +37,38 @@
 
 use smart_keymap::{init, input, keymap};
 
+/// Input event type.
+#[repr(C)]
+pub enum KeymapInputEventType {
+    /// Key Press event.
+    KeymapEventPress = 0,
+    /// Key Release event.
+    KeymapEventRelease = 1,
+}
+
+/// Input event.
+#[repr(C)]
+pub struct KeymapInputEvent {
+    /// Whether the event is a press or a release.
+    pub event_type: KeymapInputEventType,
+    /// The keymap index of the event.
+    pub value: u16,
+}
+
+impl From<KeymapInputEvent> for input::Event {
+    fn from(
+        KeymapInputEvent {
+            event_type,
+            value: keymap_index,
+        }: KeymapInputEvent,
+    ) -> Self {
+        match event_type {
+            KeymapInputEventType::KeymapEventPress => input::Event::Press { keymap_index },
+            KeymapInputEventType::KeymapEventRelease => input::Event::Release { keymap_index },
+        }
+    }
+}
+
 static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType> =
     keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
 
@@ -49,22 +81,33 @@ pub extern "C" fn keymap_init() {
     }
 }
 
+/// Register an input event to the global keymap instance.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub extern "C" fn keymap_register_input_event(event: KeymapInputEvent) {
+    unsafe {
+        KEYMAP.handle_input(event.into());
+    }
+}
+
 /// Register a keypress event to the global keymap instance.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub extern "C" fn keymap_register_input_keypress(keymap_index: u16) {
-    unsafe {
-        KEYMAP.handle_input(input::Event::Press { keymap_index });
-    }
+    keymap_register_input_event(KeymapInputEvent {
+        event_type: KeymapInputEventType::KeymapEventPress,
+        value: keymap_index,
+    });
 }
 
 /// Register a keyrelease event to the global keymap instance.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
-    unsafe {
-        KEYMAP.handle_input(input::Event::Release { keymap_index });
-    }
+    keymap_register_input_event(KeymapInputEvent {
+        event_type: KeymapInputEventType::KeymapEventRelease,
+        value: keymap_index,
+    });
 }
 
 /// Run Keymap processing.
