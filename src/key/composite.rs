@@ -311,10 +311,10 @@ mod tests {
         type K = composite::Key;
         let keys: [K; 2] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
+            K::layered(key::layered::LayeredKey::new([
+                Some(key::keyboard::Key::new(0x04).into()),
+                Some(key::keyboard::Key::new(0x05).into()),
+            ])),
         ];
         let mut context: Ctx = DEFAULT_CONTEXT;
         let keymap_index: u16 = 0;
@@ -346,10 +346,10 @@ mod tests {
         type K = composite::Key;
         let keys: [K; 2] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
+            K::layered(key::layered::LayeredKey::new([
+                Some(key::keyboard::Key::new(0x04).into()),
+                Some(key::keyboard::Key::new(0x05).into()),
+            ])),
         ];
         let mut context: Ctx = DEFAULT_CONTEXT;
         let keymap_index: u16 = 0;
@@ -384,10 +384,10 @@ mod tests {
         type K = composite::Key;
         let keys: [K; 3] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
+            K::layered(key::layered::LayeredKey::new([
+                Some(key::keyboard::Key::new(0x04).into()),
+                Some(key::keyboard::Key::new(0x05).into()),
+            ])),
             K::keyboard(key::keyboard::Key::new(0x06)),
         ];
         let context: Ctx = DEFAULT_CONTEXT;
@@ -412,10 +412,10 @@ mod tests {
         type K = composite::Key;
         let keys: [K; 3] = [
             K::layer_modifier(key::layered::ModifierKey::Hold(0)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
+            K::layered(key::layered::LayeredKey::new([
+                Some(key::keyboard::Key::new(0x04).into()),
+                Some(key::keyboard::Key::new(0x05).into()),
+            ])),
             K::keyboard(key::keyboard::Key::new(0x06)),
         ];
         let context: Ctx = DEFAULT_CONTEXT;

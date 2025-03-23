@@ -18,20 +18,20 @@ type K0 = composite::Chorded<composite::LayeredKey<composite::TapHoldKey<keyboar
 type K1 = composite::Chorded<composite::LayeredKey<composite::TapHoldKey<keyboard::Key>>>;
 
 const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHoldKey::TapHold(tap_hold::Key {
+    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new([
+        Some(composite::TapHoldKey::TapHold(tap_hold::Key {
             tap: keyboard::Key::new(0x04),
             hold: keyboard::Key::new(0x05),
-        }),
-        [None; 1],
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHoldKey::TapHold(tap_hold::Key {
+        })),
+        None,
+    ]))),
+    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new([
+        Some(composite::TapHoldKey::TapHold(tap_hold::Key {
             tap: keyboard::Key::new(0x06),
             hold: keyboard::Key::new(0x07),
-        }),
-        [None; 1],
-    ))),
+        })),
+        None,
+    ]))),
 ));
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 

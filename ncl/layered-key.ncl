@@ -23,8 +23,8 @@
   update_active_layers_for_input = fun input active_layers =>
     input
     |> match {
-      'Press { layer_modifier = { hold }, .. } => activate_layer active_layers hold,
-      'Release { layer_modifier = { hold }, .. } => deactivate_layer active_layers hold,
+      'Press { layer_modifier = { hold }, .. } => activate_layer active_layers (hold - 1),
+      'Release { layer_modifier = { hold }, .. } => deactivate_layer active_layers (hold - 1),
       _ => active_layers,
     },
 

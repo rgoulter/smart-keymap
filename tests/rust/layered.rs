@@ -21,10 +21,10 @@ const KEYS: Keys2<MK, LK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::Chorded(composite::Layered(composite::TapHold(
         layered::ModifierKey::Hold(0),
     ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHold(keyboard::Key::new(0x04)),
-        [Some(composite::TapHold(keyboard::Key::new(0x05)))],
-    ))),
+    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new([
+        Some(composite::TapHold(keyboard::Key::new(0x04))),
+        Some(composite::TapHold(keyboard::Key::new(0x05))),
+    ]))),
 ));
 
 const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;

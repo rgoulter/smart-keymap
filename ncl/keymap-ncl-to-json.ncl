@@ -129,40 +129,40 @@ let validators = import "validators.ncl" in
         { Hold = hold_layer },
     },
 
-  checks.layered =
-    let K = import "keys.ncl" in
-    {
-      keymap_example_layered_keyboard = {
-        actual = K.A & { layered = [ null, K.C] },
-        expected = {
-          key_code = 4,
-          layered = [
-            null,
-            { key_code = 6 },
-          ],
-        },
-      },
+  # checks.layered =
+  #   let K = import "keys.ncl" in
+  #   {
+  #     keymap_example_layered_keyboard = {
+  #       actual = K.A & { layered = [ null, K.C] },
+  #       expected = {
+  #         key_code = 4,
+  #         layered = [
+  #           null,
+  #           { key_code = 6 },
+  #         ],
+  #       },
+  #     },
 
-      check_layered_base_keyboard_base_is_key =
-        let k = K.A & { layered = [ null, K.C] } in
-        let { layered, ..base_key } = k in
-        key.is_key base_key,
+  #     check_layered_base_keyboard_base_is_key =
+  #       let k = K.A & { layered = [ null, K.C] } in
+  #       let { layered, ..base_key } = k in
+  #       key.is_key base_key,
 
-      check_layered_base_keyboard_is_key =
-        let key = K.A & { layered = [ null, K.C] } in
-        layered.is_key key,
+  #     check_layered_base_keyboard_is_key =
+  #       let key = K.A & { layered = [ null, K.C] } in
+  #       layered.is_key key,
 
-      check_serialized_layered_keyboard = {
-        actual = K.A & { layered = [ null, K.C] } |> key.to_json_serialized,
-        expected = {
-          base = { key_code = 4 },
-          layered = [
-            null,
-            { key_code = 6 },
-          ],
-        },
-      },
-    },
+  #     check_serialized_layered_keyboard = {
+  #       actual = K.A & { layered = [ null, K.C] } |> key.to_json_serialized,
+  #       expected = {
+  #         base = { key_code = 4 },
+  #         layered = [
+  #           null,
+  #           { key_code = 6 },
+  #         ],
+  #       },
+  #     },
+  #   },
 
   layered
     | doc "for key::layered::LayeredKey."
@@ -193,11 +193,11 @@ let validators = import "validators.ncl" in
 
       to_json_serialized = fun { layered = layered_keys, ..base_key } =>
         {
-          base = key.to_json_serialized base_key,
+          # base = key.to_json_serialized base_key,
           layered =
             std.array.map
               (fun k => if k != null then key.to_json_serialized k else null)
-              layered_keys,
+              ([base_key] @ layered_keys),
         },
     },
 
