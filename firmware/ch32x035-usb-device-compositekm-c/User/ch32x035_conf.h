@@ -10,4 +10,8 @@
 #ifndef __CH32X035_CONF_H
 #define __CH32X035_CONF_H
 
+#undef DEBUG
+#define DEBUG DEBUG_UART4
+#define DEBUG_AF 1
+
 #endif
