@@ -23,6 +23,7 @@
 #include "ch32x035_misc.h"
 #include "ch32x035_rcc.h"
 #include "ch32x035_tim.h"
+#include "ch32x035_usart.h"
 
 #include "ch32x035_usbfs_device.h"
 #include "system_ch32x035.h"
@@ -52,6 +53,9 @@ volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 /*******************************************************************************/
 /* Interrupt Function Declaration */
 void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+
+// DEMO
+void USART2_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
 /*********************************************************************
  * @fn      TIM3_Init
@@ -119,6 +123,75 @@ void TIM3_IRQHandler(void) {
   }
 }
 
+// DEMO
+void USART2_IRQHandler(void) {
+  static uint8_t buf[MESSAGE_BUFFER_LEN];
+  KeymapInputEvent ev;
+
+  if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
+    uint8_t recv_byte = USART_ReceiveData(USART2);
+    bool received_event =
+        keymap_message_buffer_receive_byte(&buf, recv_byte, &ev);
+
+    if (received_event) {
+      keymap_register_input_event(ev);
+    }
+  }
+}
+
+// DEMO
+void keyboard_split_init(void) {
+  GPIO_InitTypeDef GPIO_InitStructure = {0};
+  USART_InitTypeDef USART_InitStructure = {0};
+  NVIC_InitTypeDef NVIC_InitStructure = {0};
+
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+
+  /* USART2 TX-->A.2   RX-->A.3 */
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  USART_InitStructure.USART_BaudRate = 115200;
+  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+  USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  USART_InitStructure.USART_Parity = USART_Parity_No;
+  USART_InitStructure.USART_HardwareFlowControl =
+      USART_HardwareFlowControl_None;
+  USART_InitStructure.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+
+  USART_Init(USART2, &USART_InitStructure);
+  USART_ITConfig(USART2, USART_IT_RXNE, ENABLE);
+
+  NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+
+  USART_Cmd(USART2, ENABLE);
+}
+
+// DEMO
+int keyboard_split_write(KeymapInputEvent ev) {
+  uint8_t buf[MESSAGE_BUFFER_LEN];
+  keymap_serialize_event((uint8_t *)buf, ev);
+
+  for (uint8_t i = 0; i < MESSAGE_BUFFER_LEN; i++) {
+    while (USART_GetFlagStatus(USART2, USART_FLAG_TC) == RESET)
+      ;
+    USART_SendData(USART2, buf[i]);
+  }
+
+  return MESSAGE_BUFFER_LEN;
+}
+
 /*********************************************************************
  * @fn      KB_Scan_Init
  *
@@ -127,6 +200,8 @@ void TIM3_IRQHandler(void) {
  * @return  none
  */
 void KB_Scan_Init(void) {
+  keyboard_split_init(); // DEMO split
+
   keyboard_init();
 
   keymap_init();
