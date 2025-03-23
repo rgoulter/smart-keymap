@@ -150,7 +150,10 @@
         }
         "%
     else
-      "",
+      m%"
+        void keyboard_led_tick(void) {
+        }
+        "%,
 
   output
     | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
