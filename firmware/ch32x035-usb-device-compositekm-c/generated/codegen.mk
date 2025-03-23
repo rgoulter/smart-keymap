@@ -4,7 +4,8 @@ CODEGEN_DEPS = \
   ncl/codegen/gpio.ncl \
   ncl/codegen/keyboard.ncl \
   ncl/codegen/keyboard_led.ncl \
-  ncl/codegen/keyboard_matrix.ncl
+  ncl/codegen/keyboard_matrix.ncl \
+  ncl/codegen/keyboard_split.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
   nickel export \
@@ -51,6 +52,7 @@ CODEGEN_TARGETS := \
 	rm -f generated/keyboard_led.h
 	rm -f generated/keyboard_matrix.c
 	rm -f generated/keyboard_matrix.h
+	rm -f generated/keyboard_split.h
 
 .PHONY: FORCE_STAMP
 
