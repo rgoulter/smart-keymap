@@ -14,8 +14,10 @@
 /* Header Files */
 #include "usbd_composite_km.h"
 
+#include <stdbool.h>
 #include <string.h>
 
+#include "ch32x035.h"
 #include "debug.h"
 
 #include "ch32x035_exti.h"

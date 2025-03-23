@@ -33,5 +33,10 @@ let C = import "codegen/contracts.ncl" in
       tx = 4,
       usart_af = 1,
     },
+
+    split = {
+      enabled = true,
+      usart = 2,
+    },
   },
 }

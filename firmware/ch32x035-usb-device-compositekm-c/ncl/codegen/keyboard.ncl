@@ -37,6 +37,12 @@ let C = import "contracts.ncl" in
     else
       "",
 
+  split_init_fragment =
+    if std.record.has_field "keyboard_split" init_fragments then
+      init_fragments.keyboard_split
+    else
+      "",
+
   cmakelists.keyboard = m%"
     target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
     "%,
@@ -52,6 +58,13 @@ let C = import "contracts.ncl" in
   #include "smart_keymap.h"
 
   #include "keyboard_matrix.h"
+
+  #ifdef KEYBOARD_LED_ENABLED
+  #include "keyboard_led.h"
+  #endif
+  #ifdef KEYBOARD_SPLIT
+  #include "keyboard_split.h"
+  #endif
 
   void keyboard_reset_to_bootloader(void) {
       SystemReset_StartMode(Start_Mode_BOOT);
@@ -71,6 +84,8 @@ let C = import "contracts.ncl" in
       %{disable_swd_fragment}
 
       %{led_init_fragment}
+
+      %{split_init_fragment}
   }
   "%,
 }
