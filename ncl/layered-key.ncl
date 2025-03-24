@@ -1,6 +1,7 @@
 # Functions emulating layers & layered keys.
 {
-  set_layer = fun b active_layers idx =>
+  set_layer = fun b active_layers layer_idx =>
+    let idx = layer_idx - 1 in
     let len = std.array.length active_layers in
     if idx < len then
       (std.array.slice 0 idx active_layers)
