@@ -1,6 +1,6 @@
 let K = import "keys.ncl" in
 
-let RAISE_  = 1 in
+let RAISE_  = 2 in
 let LOWER_  = RAISE_ + 1 in
 let ADJUST_ = RAISE_ + 2 in
 

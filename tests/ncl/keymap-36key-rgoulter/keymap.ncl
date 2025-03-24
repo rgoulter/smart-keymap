@@ -4,13 +4,13 @@
 # - https://github.com/rgoulter/fak-config/blob/master/shared/lib/keymaps/split_3x5_3/rgoulter.ncl
 # - https://github.com/rgoulter/qmk_userspace/tree/master/layouts/split_3x5_3/rgoulter
 
-let NUM_L = 0 in
-let SYM_L = 1 in
-let FUN_L = 2 in
+let NUM_L = 1 in
+let SYM_L = 2 in
+let FUN_L = 3 in
 
-let NAV_R = 3 in
-let MOU_R = 4 in
-let MED_R = 5 in
+let NAV_R = 4 in
+let MOU_R = 5 in
+let MED_R = 6 in
 
 {
   config.tap_hold.interrupt_response = "HoldOnKeyTap",

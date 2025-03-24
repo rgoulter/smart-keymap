@@ -9,9 +9,9 @@ let C_T = K.T & K.hold K.LeftCtrl in
 let G_N = K.N & K.hold K.RightGUI in
 let A_S = K.S & K.hold K.LeftAlt in
 
-let RAISE = K.layer_mod.hold 0 in
-let LOWER = K.layer_mod.hold 1 in
-let ADJUST = K.layer_mod.hold 2 in
+let RAISE = K.layer_mod.hold 1 in
+let LOWER = K.layer_mod.hold 2 in
+let ADJUST = K.layer_mod.hold 3 in
 
 let LW_ES = K.ESC & K.hold LOWER in
 let RS_EN = K.ENT & K.hold RAISE in
