@@ -1,5 +1,7 @@
 let K = import "keys.ncl" in
 
+let DVORAK_  = 0 in
+let GAMING_  = 1 in
 let RAISE_  = 2 in
 let LOWER_  = RAISE_ + 1 in
 let ADJUST_ = RAISE_ + 2 in
@@ -17,6 +19,9 @@ let ADJUST_ = RAISE_ + 2 in
   custom_keys = fun K =>
     let HoldLayerMod = fun layer_index => K.hold (K.layer_mod.hold layer_index) in
     {
+      DVOR = K.layer_mod.set_default DVORAK_,
+      GAME = K.layer_mod.set_default GAMING_,
+
       ENT_R = K.Return & HoldLayerMod RAISE_,
       ESC_L = K.Escape & HoldLayerMod LOWER_,
       ADJ   = K.layer_mod.hold ADJUST_,
@@ -67,7 +72,7 @@ let ADJUST_ = RAISE_ + 2 in
     "%,
     # Adjust
     m%"
-      TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT
+      DVOR GAME TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT
       TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT PSCR SCRL PAUS TTTT TTTT
       CAPS TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT
       TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT TTTT
