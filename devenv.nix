@@ -17,7 +17,7 @@
     rust = {
       channel = "stable";
       enable = true;
-      targets = ["riscv32imac-unknown-none-elf" "thumbv6m-none-eabi"];
+      targets = ["riscv32imac-unknown-none-elf" "thumbv6m-none-eabi" "thumbv7em-none-eabihf"];
     };
     shell.enable = true;
   };
