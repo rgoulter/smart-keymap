@@ -191,10 +191,14 @@ let validators = import "validators.ncl" in
       SerializedJson = std.contract.from_validator serialized_json_validator,
 
       # c.f. doc_de_layered.md.
-      # JSON serialization of key::layered::ModifierKey has variants: Hold(layer).
+      # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer).
       serialized_json_validator =
         validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["Hold"],
+          fields_validator =
+            validators.all_of [
+              validators.record.has_any_field_of ["Default", "Hold"],
+              validators.record.has_only_fields ["Default", "Hold"],
+            ],
           field_validators = {
             Hold = validators.is_number,
           },
@@ -202,17 +206,33 @@ let validators = import "validators.ncl" in
 
       is_serialized_json = fun k => 'Ok == serialized_json_validator k,
 
-      codegen_values = fun k @ { Hold = layer_index } =>
-        {
-          key_type = {
-            key_type = "crate::key::layered::ModifierKey",
-            as_rust_type_path = key_type,
-          },
-          key_impl = {
-            base = key_type.key_type,
-          },
-          rust_expr = "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
-          serialized_json = k,
+      codegen_values = fun k =>
+        k
+        |> match {
+          { Default = layer_index } =>
+            {
+              key_type = {
+                key_type = "crate::key::layered::ModifierKey",
+                as_rust_type_path = key_type,
+              },
+              key_impl = {
+                base = key_type.key_type,
+              },
+              rust_expr = "crate::key::layered::ModifierKey::Default(%{std.to_string layer_index})",
+              serialized_json = k,
+            },
+          { Hold = layer_index } =>
+            {
+              key_type = {
+                key_type = "crate::key::layered::ModifierKey",
+                as_rust_type_path = key_type,
+              },
+              key_impl = {
+                base = key_type.key_type,
+              },
+              rust_expr = "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
+              serialized_json = k,
+            },
         },
 
       lift_to = fun key_impl cv =>
