@@ -1,7 +1,10 @@
 [workspace]
 
-members = [ "rp2040-rtic-smart-keyboard",
-    "smart-keymap-nickel-helper", "smart_keymap", "usbd-smart-keyboard",
+members = [
+    "rp2040-rtic-smart-keyboard",
+    "smart-keymap-nickel-helper",
+    "smart_keymap",
+    "usbd-smart-keyboard",
 ]
 
 [package]
