@@ -13,7 +13,7 @@ Feature: Layered Keys
       let K = import "keys.ncl" in
       {
         keys = [
-          K.layer_mod.hold 0,
+          K.layer_mod.hold 1,
           K.A & { layered = [ K.B ] },
         ],
       }
@@ -40,7 +40,7 @@ Feature: Layered Keys
     When the keymap registers the following input
       """
       [
-        press (K.layer_mod.hold 0),
+        press (K.layer_mod.hold 1),
         press (K.A & { layered = [ K.B ] }),
       ]
       """

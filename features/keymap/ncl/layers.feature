@@ -57,7 +57,7 @@ Feature: Layers
     When the keymap registers the following input
       """
       [
-        press (K.layer_mod.hold 0),
+        press (K.layer_mod.hold 1),
         press (K.B),
       ]
       """
