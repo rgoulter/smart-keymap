@@ -1,8 +1,8 @@
 let K = import "keys.ncl" in
 
-let RAISE = K.layer_mod.hold 0 in
-let LOWER = K.layer_mod.hold 1 in
-let ADJUST = K.layer_mod.hold 2 in
+let RAISE = K.layer_mod.hold 1 in
+let LOWER = K.layer_mod.hold 2 in
+let ADJUST = K.layer_mod.hold 3 in
 
 let TTTTTT = K.TTTT in
 
