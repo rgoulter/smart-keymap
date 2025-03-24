@@ -21,7 +21,7 @@ const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
         tap_hold::Key {
             tap: composite::BaseKey::Keyboard(keyboard::Key::new(0x09)),
-            hold: composite::BaseKey::LayerModifier(layered::ModifierKey::Hold(0)),
+            hold: composite::BaseKey::LayerModifier(layered::ModifierKey::Hold(1)),
         },
     ))),
     composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
