@@ -231,11 +231,13 @@ let validators = import "validators.ncl" in
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
     #  PressedKey = key::composite::BasePressedKey.
-    wrap = fun cv @ { key_type = { key_type, .. }, .. } => key_type |> match {
-      "crate::key::keyboard::Key" => cv,
-      "crate::key::layered::ModifierKey" => cv,
-      cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
-    },
+    wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
+      key_type
+      |> match {
+        "crate::key::keyboard::Key" => cv,
+        "crate::key::layered::ModifierKey" => cv,
+        cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
+      },
   },
 
   checks.check_tap_hold = {
@@ -332,12 +334,14 @@ let validators = import "validators.ncl" in
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
     #  PressedKey = key::composite::TapHoldPressedKey.
-    wrap = fun cv @ { key_type = { key_type, .. }, .. } => key_type |> match {
-      "crate::key::tap_hold::Key" =>
-        cv |> composite.tap_hold_key.tap_hold_,
-      _ =>
-        cv |> tap_hold_nestable.wrap |> composite.tap_hold_.wrap,
-    },
+    wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
+      key_type
+      |> match {
+        "crate::key::tap_hold::Key" =>
+          cv |> composite.tap_hold_key.tap_hold_,
+        _ =>
+          cv |> tap_hold_nestable.wrap |> composite.tap_hold_.wrap,
+      },
   },
 
   checks.check_layered = {
@@ -494,12 +498,14 @@ let validators = import "validators.ncl" in
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
     #  PressedKey = key::composite::ChordedPressedKey.
-    wrap = fun cv @ { key_type = { key_type, .. }, .. } => key_type |> match {
-      "crate::key::layered::LayeredKey" =>
-        cv |> composite.layered_key.layered_,
-      _ =>
-        cv |> layered_nestable.wrap |> composite.layered_.wrap,
-    },
+    wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
+      key_type
+      |> match {
+        "crate::key::layered::LayeredKey" =>
+          cv |> composite.layered_key.layered_,
+        _ =>
+          cv |> layered_nestable.wrap |> composite.layered_.wrap,
+      },
   },
 
   chorded
