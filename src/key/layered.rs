@@ -18,6 +18,8 @@ pub type LayerIndex = usize;
 pub enum ModifierKey {
     /// Activates the given layer when the held.
     Hold(LayerIndex),
+    /// Sets the default layer.
+    Default(LayerIndex),
 }
 
 impl ModifierKey {
@@ -29,6 +31,11 @@ impl ModifierKey {
             ModifierKey::Hold(layer) => {
                 let pks = ModifierKeyState(*self);
                 let event = LayerEvent::LayerActivated(*layer);
+                (pks, event)
+            }
+            ModifierKey::Default(layer) => {
+                let pks = ModifierKeyState(*self);
+                let event = LayerEvent::DefaultLayerSet(*layer);
                 (pks, event)
             }
         }
@@ -79,29 +86,28 @@ impl<const L: usize> LayerState for [bool; L] {
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
+    /// The default layer.
+    pub default_layer: Option<LayerIndex>,
     /// The active layers.
     pub active_layers: [bool; LAYER_COUNT],
 }
 
 /// The default [Context] with no active layers.
 pub const DEFAULT_CONTEXT: Context = Context {
+    default_layer: None,
     active_layers: [false; LAYER_COUNT],
 };
 
 impl Context {
     /// Create a new [Context].
     pub const fn new() -> Self {
-        Self {
-            active_layers: [false; LAYER_COUNT],
-        }
+        DEFAULT_CONTEXT
     }
 }
 
 impl Default for Context {
     fn default() -> Self {
-        Self {
-            active_layers: [false; LAYER_COUNT],
-        }
+        DEFAULT_CONTEXT
     }
 }
 
@@ -125,6 +131,8 @@ impl Context {
             LayerEvent::LayerDeactivated(layer) => {
                 self.active_layers.deactivate(layer);
             }
+            LayerEvent::DefaultLayerSet(0) => self.default_layer = None,
+            LayerEvent::DefaultLayerSet(layer) => self.default_layer = Some(layer),
         }
     }
 }
@@ -146,20 +154,33 @@ impl core::fmt::Display for LayersError {
 /// Trait for layers of [LayeredKey].
 pub trait Layers<K: key::Key>: Copy + Debug {
     /// Get the highest active key, if any, for the given [LayerState].
-    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<(LayerIndex, &K)>;
+    fn highest_active_key<LS: LayerState>(
+        &self,
+        layer_state: &LS,
+        default_layer: Option<LayerIndex>,
+    ) -> Option<(LayerIndex, &K)>;
     /// Constructs layers; return Err if the iterable has more keys than Layers can store.
     fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError>;
 }
 
 impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
-    fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<(LayerIndex, &K)> {
+    fn highest_active_key<LS: LayerState>(
+        &self,
+        layer_state: &LS,
+        default_layer: Option<LayerIndex>,
+    ) -> Option<(LayerIndex, &K)> {
         for layer_index in layer_state.active_layers() {
             if self[layer_index - 1].is_some() {
                 return self[layer_index - 1].as_ref().map(|k| (layer_index, k));
             }
         }
 
-        None
+        match default_layer {
+            Some(layer_index) if self[layer_index - 1].is_some() => {
+                self[layer_index - 1].as_ref().map(|k| (layer_index, k))
+            }
+            _ => None,
+        }
     }
 
     fn from_iterable<I: IntoIterator<Item = Option<K>>>(keys: I) -> Result<Self, LayersError> {
@@ -259,7 +280,7 @@ where
         let layer_context: Context = context.into();
         let (layer, passthrough_key) = self
             .layered
-            .highest_active_key(layer_context.layer_state())
+            .highest_active_key(layer_context.layer_state(), layer_context.default_layer)
             .map(|(layer_index, key)| (layer_index, key))
             .unwrap_or((0, &self.base));
 
@@ -276,6 +297,8 @@ pub enum LayerEvent {
     LayerActivated(LayerIndex),
     /// Deactivates the given layer.
     LayerDeactivated(LayerIndex),
+    /// Changes the default layer.
+    DefaultLayerSet(LayerIndex),
 }
 
 /// Unit-like struct, for [crate::key::KeyState] of [ModifierKey].
@@ -295,6 +318,16 @@ impl ModifierKeyState {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
                         Some(LayerEvent::LayerDeactivated(*layer))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
+            ModifierKey::Default(layer) => match event {
+                key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                    if keymap_index == ki {
+                        Some(LayerEvent::DefaultLayerSet(*layer))
                     } else {
                         None
                     }
