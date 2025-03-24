@@ -119,14 +119,22 @@ let validators = import "validators.ncl" in
       key_validator = fun k =>
         k
         |> match {
+          { layer_modifier = { default_ } } => validators.is_number default_,
           { layer_modifier = { hold } } => validators.is_number hold,
-          _ => 'Error { message = "expected { layer_modifier = { hold } }" },
+          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } }" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { layer_modifier = { hold = hold_layer } } =>
-        { Hold = hold_layer },
+      to_json_serialized = fun layer_modifier_key =>
+        layer_modifier_key
+        |> match {
+          { layer_modifier = { default_ = default_layer } } =>
+            { Default = default_layer },
+          { layer_modifier = { hold = hold_layer } } =>
+            { Hold = hold_layer },
+          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } }" },
+        }
     },
 
   checks.layered =
