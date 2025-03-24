@@ -19,7 +19,7 @@ type LK = composite::Chorded<composite::LayeredKey<composite::TapHold<keyboard::
 
 const KEYS: Keys2<MK, LK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::Chorded(composite::Layered(composite::TapHold(
-        layered::ModifierKey::Hold(0),
+        layered::ModifierKey::Hold(1),
     ))),
     composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
         composite::TapHold(keyboard::Key::new(0x04)),
