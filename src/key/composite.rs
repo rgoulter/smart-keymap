@@ -278,7 +278,7 @@ mod tests {
         type K = composite::Key;
         let keymap_index: u16 = 0;
         let key_path = key::key_path(keymap_index);
-        let key = K::layer_modifier(key::layered::ModifierKey::Hold(0));
+        let key = K::layer_modifier(key::layered::ModifierKey::Hold(1));
         let context: Ctx = DEFAULT_CONTEXT;
         let (pressed_lmod_key, _) = key.new_pressed_key(context, key_path);
 
@@ -293,10 +293,10 @@ mod tests {
         let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
             Some(key::Event::Key {
                 key_event:
-                    Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer)),
+                    Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer_index)),
                 ..
             }) => {
-                assert_eq!(0, layer);
+                assert_eq!(1, layer_index);
             }
             _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
         };
@@ -310,7 +310,7 @@ mod tests {
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 2] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
             K::layered(key::layered::LayeredKey::new(
                 key::keyboard::Key::new(0x04).into(),
                 [Some(key::keyboard::Key::new(0x05).into())],
@@ -345,7 +345,7 @@ mod tests {
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 2] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
             K::layered(key::layered::LayeredKey::new(
                 key::keyboard::Key::new(0x04).into(),
                 [Some(key::keyboard::Key::new(0x05).into())],
@@ -355,7 +355,7 @@ mod tests {
         let keymap_index: u16 = 0;
         let key_path = key::key_path(keymap_index);
         let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
-        context.layer_context.activate_layer(0);
+        context.layer_context.activate_layer(1);
         let events = pressed_lmod_key.unwrap_resolved().handle_event(
             context,
             0,
@@ -383,7 +383,7 @@ mod tests {
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 3] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
             K::layered(key::layered::LayeredKey::new(
                 key::keyboard::Key::new(0x04).into(),
                 [Some(key::keyboard::Key::new(0x05).into())],
@@ -411,7 +411,7 @@ mod tests {
         type Ctx = composite::Context;
         type K = composite::Key;
         let keys: [K; 3] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(0)),
+            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
             K::layered(key::layered::LayeredKey::new(
                 key::keyboard::Key::new(0x04).into(),
                 [Some(key::keyboard::Key::new(0x05).into())],

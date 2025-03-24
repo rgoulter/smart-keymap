@@ -50,21 +50,29 @@ pub trait LayerState: Copy + Debug {
 }
 
 impl<const L: usize> LayerState for [bool; L] {
-    fn activate(&mut self, layer: LayerIndex) {
-        debug_assert!(layer < L, "layer must be less than array length of {}", L);
-        self[layer] = true;
+    fn activate(&mut self, layer_index: LayerIndex) {
+        debug_assert!(
+            layer_index < L,
+            "layer must be less than array length of {}",
+            L
+        );
+        self[layer_index - 1] = true;
     }
 
-    fn deactivate(&mut self, layer: LayerIndex) {
-        debug_assert!(layer < L, "layer must be less than array length of {}", L);
-        self[layer] = false;
+    fn deactivate(&mut self, layer_index: LayerIndex) {
+        debug_assert!(
+            layer_index < L,
+            "layer must be less than array length of {}",
+            L
+        );
+        self[layer_index - 1] = false;
     }
 
     fn active_layers(&self) -> impl Iterator<Item = LayerIndex> {
         self.iter()
             .enumerate()
             .rev()
-            .filter_map(|(i, &active)| if active { Some(i) } else { None })
+            .filter_map(|(i, &active)| if active { Some(i + 1) } else { None })
     }
 }
 
@@ -145,9 +153,9 @@ pub trait Layers<K: key::Key>: Copy + Debug {
 
 impl<K: key::Key + Copy, const L: usize> Layers<K> for [Option<K>; L] {
     fn highest_active_key<LS: LayerState>(&self, layer_state: &LS) -> Option<(LayerIndex, &K)> {
-        for layer in layer_state.active_layers() {
-            if self[layer].is_some() {
-                return self[layer].as_ref().map(|k| (layer, k));
+        for layer_index in layer_state.active_layers() {
+            if self[layer_index - 1].is_some() {
+                return self[layer_index - 1].as_ref().map(|k| (layer_index, k));
             }
         }
 
@@ -252,10 +260,10 @@ where
         let (layer, passthrough_key) = self
             .layered
             .highest_active_key(layer_context.layer_state())
-            .map(|(layer, key)| (layer + 1, key))
+            .map(|(layer_index, key)| (layer_index, key))
             .unwrap_or((0, &self.base));
 
-        // PRESSED KEY PATH: add Layer (0 = base, n = layer + 1)
+        // PRESSED KEY PATH: add Layer (0 = base, n = layer_index)
         let (pkr, pke) = passthrough_key.new_pressed_key(context, key_path);
         (pkr.add_path_item(layer as u16), pke)
     }
@@ -309,7 +317,7 @@ mod tests {
 
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
-        let layer = 0;
+        let layer = 1;
         let key = ModifierKey::Hold(layer);
 
         let (_pressed_key, layer_event) = key.new_pressed_key();
@@ -320,7 +328,7 @@ mod tests {
     #[test]
     fn test_releasing_hold_modifier_key_emits_event_deactivate_layer() {
         // Assemble: press a Hold layer modifier key
-        let layer = 0;
+        let layer = 1;
         let key = ModifierKey::Hold(layer);
         let keymap_index = 9; // arbitrary
         let (mut pressed_key_state, _) = key.new_pressed_key();
@@ -347,7 +355,7 @@ mod tests {
     #[test]
     fn test_releasing_different_hold_modifier_key_does_not_emit_event() {
         // Assemble: press a Hold layer modifier key
-        let layer = 0;
+        let layer = 1;
         let key = ModifierKey::Hold(layer);
         let keymap_index = 9; // arbitrary
         let (mut pressed_key_state, _) = key.new_pressed_key();
@@ -372,7 +380,7 @@ mod tests {
     fn test_context_handling_event_adjusts_active_layers() {
         let mut context: Context = Context::default();
 
-        context.handle_event(LayerEvent::LayerActivated(1));
+        context.handle_event(LayerEvent::LayerActivated(2));
 
         let actual_active_layers = &context.active_layers[0..3];
         assert_eq!(&[false, true, false], actual_active_layers);
@@ -448,15 +456,15 @@ mod tests {
         // Act: activate all layers, press layered key
         context.handle_event(key::Event::key_event(
             0,
-            LayerEvent::LayerActivated(0).into(),
-        ));
-        context.handle_event(key::Event::key_event(
-            0,
             LayerEvent::LayerActivated(1).into(),
         ));
         context.handle_event(key::Event::key_event(
             0,
             LayerEvent::LayerActivated(2).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(3).into(),
         ));
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
@@ -486,15 +494,15 @@ mod tests {
         // Act: activate all layers, press layered key
         context.handle_event(key::Event::key_event(
             0,
-            LayerEvent::LayerActivated(0).into(),
-        ));
-        context.handle_event(key::Event::key_event(
-            0,
             LayerEvent::LayerActivated(1).into(),
         ));
         context.handle_event(key::Event::key_event(
             0,
             LayerEvent::LayerActivated(2).into(),
+        ));
+        context.handle_event(key::Event::key_event(
+            0,
+            LayerEvent::LayerActivated(3).into(),
         ));
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
@@ -520,11 +528,11 @@ mod tests {
         // Act: activate all layers, press layered key
         context.handle_event(key::Event::key_event(
             0,
-            LayerEvent::LayerActivated(0).into(),
+            LayerEvent::LayerActivated(1).into(),
         ));
         context.handle_event(key::Event::key_event(
             0,
-            LayerEvent::LayerActivated(2).into(),
+            LayerEvent::LayerActivated(3).into(),
         ));
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
@@ -624,11 +632,11 @@ mod tests {
     #[test]
     fn test_layer_state_array_active_layers() {
         let mut layer_state: [bool; 5] = [false; 5];
-        layer_state.activate(0);
         layer_state.activate(1);
-        layer_state.activate(3);
+        layer_state.activate(2);
+        layer_state.activate(4);
         let actual_active_layers: Vec<LayerIndex> = layer_state.active_layers().collect();
-        let expected_active_layers: Vec<LayerIndex> = vec![3, 1, 0];
+        let expected_active_layers: Vec<LayerIndex> = vec![4, 2, 1];
 
         assert_eq!(expected_active_layers, actual_active_layers);
     }

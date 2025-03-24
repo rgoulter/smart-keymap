@@ -82,7 +82,10 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
             LayeredKey::Layered(key) => match path {
                 [] => panic!(),
                 [0, path @ ..] => key.base.lookup(path),
-                [n, path @ ..] => key.layered[(n - 1) as usize].as_ref().unwrap().lookup(path),
+                [layer_index, path @ ..] => key.layered[(layer_index - 1) as usize]
+                    .as_ref()
+                    .unwrap()
+                    .lookup(path),
             },
             LayeredKey::Pass(key) => key.lookup(path),
         }
