@@ -4,6 +4,7 @@ members = [
     "rp2040-rtic-smart-keyboard",
     "smart-keymap-nickel-helper",
     "smart_keymap",
+    "stm32f4-rtic-smart-keyboard",
     "usbd-smart-keyboard",
 ]
 
