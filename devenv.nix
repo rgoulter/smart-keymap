@@ -16,6 +16,7 @@
     ruby.enable = true;
     rust = {
       channel = "stable";
+      components = [ "rustc" "cargo" "clippy" "llvm-tools-preview" "rustfmt" "rust-analyzer" ];
       enable = true;
       targets = ["riscv32imac-unknown-none-elf" "thumbv6m-none-eabi" "thumbv7em-none-eabihf"];
     };
