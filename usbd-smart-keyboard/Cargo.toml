@@ -4,6 +4,9 @@ version = "0.1.0"
 authors = ["Richard Goulter <richard.goulter@gmail.com>"]
 edition = "2018"
 
+[features]
+usbd-serial = []
+
 [dependencies]
 cortex-m = "0.7"
 cortex-m-rt = { version = "0.7", features = ["device"] }
