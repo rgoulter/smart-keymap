@@ -28,3 +28,6 @@ usbd-serial = "0.2"
 # smart-keymap = { git = "https://github.com/rgoulter/smart-keymap.git" }
 smart-keymap = { path = "..", default-features = false }
 usbd-smart-keyboard = { path = "../usbd-smart-keyboard" }
+
+[build-dependencies]
+smart-keymap-nickel-helper = { path = "../smart-keymap-nickel-helper" }
