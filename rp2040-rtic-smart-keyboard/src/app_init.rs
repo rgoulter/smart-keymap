@@ -51,7 +51,7 @@ pub fn init_timer(
     resets: &mut pac::RESETS,
     clocks: &ClocksManager,
 ) -> (timer::Timer, timer::Alarm0) {
-    let mut timer = timer::Timer::new(pac_timer, resets, &clocks);
+    let mut timer = timer::Timer::new(pac_timer, resets, clocks);
     let mut alarm = timer.alarm_0().unwrap();
     alarm.enable_interrupt();
     alarm.schedule(1.millis()).unwrap();
@@ -73,7 +73,7 @@ pub fn init_usb_device(
         .add_device(usbd_human_interface_device::device::consumer::ConsumerControlConfig::default())
         .build(usb_bus);
 
-    let serial = SerialPort::new(&usb_bus);
+    let serial = SerialPort::new(usb_bus);
 
     let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
         .strings(&[StringDescriptors::new(LangID::EN_US)

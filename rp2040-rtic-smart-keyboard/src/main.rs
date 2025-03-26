@@ -178,8 +178,7 @@ mod app {
             usb_serial,
             usb_class,
         } = c.shared;
-        (usb_dev, usb_serial, usb_class)
-            .lock(|mut ud, mut us, mut uc| usb_poll(&mut ud, &mut us, &mut uc));
+        (usb_dev, usb_serial, usb_class).lock(usb_poll);
     }
 
     #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class, usb_serial], local = [keyboard, backend, alarm, report_success])]
