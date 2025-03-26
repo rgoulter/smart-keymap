@@ -281,7 +281,6 @@ where
         let (layer, passthrough_key) = self
             .layered
             .highest_active_key(layer_context.layer_state(), layer_context.default_layer)
-            .map(|(layer_index, key)| (layer_index, key))
             .unwrap_or((0, &self.base));
 
         // PRESSED KEY PATH: add Layer (0 = base, n = layer_index)
