@@ -122,10 +122,12 @@ void USART2_IRQHandler(void) {
 
   if (USART_GetITStatus(USART2, USART_IT_RXNE) != RESET) {
     uint8_t recv_byte = USART_ReceiveData(USART2);
+    printf("RX: %04x\r\n", recv_byte);
     bool received_event =
         keymap_message_buffer_receive_byte(&buf, recv_byte, &ev);
 
     if (received_event) {
+      printf("RX EV: { t=%d, v=%d }\r\n", ev.event_type, ev.value);
       keymap_register_input_event(ev);
     }
   }
