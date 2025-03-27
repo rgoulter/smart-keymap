@@ -6,6 +6,7 @@ edition = "2018"
 
 [dependencies]
 embedded-hal = "1.0"
+embedded-hal-nb = "1.0"
 stm32f4xx-hal = { version = "0.22", features = ["rtic1", "stm32f401", "usb_fs"] }
 systick-monotonic = "1.0.0"
 

@@ -1666,6 +1666,7 @@ dependencies = [
  "cortex-m-rt",
  "cortex-m-rtic",
  "embedded-hal 1.0.0",
+ "embedded-hal-nb",
  "frunk",
  "fugit",
  "generic-array",
