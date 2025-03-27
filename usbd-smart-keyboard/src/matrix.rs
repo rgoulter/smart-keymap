@@ -5,6 +5,38 @@ use core::fmt::Debug;
 use embedded_hal::delay::DelayNs;
 use embedded_hal::digital::{InputPin, OutputPin};
 
+/// Newtype wrapper around [keyberon::matrix::DirectPinMatrix]
+///  to implement [crate::input::MatrixScanner] for it.
+pub struct DirectPinMatrix<P: InputPin, const CS: usize, const RS: usize>(
+    pub keyberon::matrix::DirectPinMatrix<P, CS, RS>,
+);
+
+impl<P, const CS: usize, const RS: usize, E: Debug> DirectPinMatrix<P, CS, RS>
+where
+    P: InputPin<Error = E>,
+{
+    pub fn new(pins: [[Option<P>; CS]; RS]) -> Self
+    where
+        P: InputPin<Error = E>,
+    {
+        Self(keyberon::matrix::DirectPinMatrix::new(pins).unwrap())
+    }
+}
+
+impl<P, const CS: usize, const RS: usize> crate::input::MatrixScanner<CS, RS>
+    for DirectPinMatrix<P, CS, RS>
+where
+    P: InputPin<Error = core::convert::Infallible>,
+{
+    fn is_boot_key_pressed(&mut self) -> bool {
+        self.0.get().unwrap()[0][0]
+    }
+
+    fn get(&mut self) -> Result<[[bool; CS]; RS], core::convert::Infallible> {
+        self.0.get()
+    }
+}
+
 /// Describes the hardware-level matrix of switches.
 ///
 /// Generic parameters are in order: The type of column pins,
