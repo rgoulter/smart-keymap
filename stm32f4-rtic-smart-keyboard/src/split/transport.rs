@@ -10,10 +10,10 @@ use hal::{
 
 use smart_keymap::input::Event;
 
-use usbd_smart_keyboard::split::transport::{receive_byte, ser, BUFFER_LENGTH};
+use smart_keymap::split::{receive_byte, Message, BUFFER_SIZE};
 
 pub struct TransportReader {
-    pub buf: &'static mut [u8; BUFFER_LENGTH],
+    pub buf: &'static mut [u8; BUFFER_SIZE],
     pub rx: Rx<USART1>,
 }
 
@@ -26,13 +26,15 @@ impl TransportReader {
         self.rx
             .read()
             .ok()
-            .and_then(|b: u8| receive_byte(&mut self.buf, b))
+            .and_then(|b: u8| receive_byte(&mut self.buf, b).ok())
+            .map(|Message { input_event }: Message| input_event)
     }
 }
 
 impl TransportWriter {
-    pub fn write(&mut self, event: Event) {
-        for &b in &ser(event) {
+    pub fn write(&mut self, input_event: Event) {
+        let message = Message { input_event };
+        for b in message.serialize() {
             block!(self.tx.write(b)).unwrap();
         }
         block!(self.tx.flush()).unwrap();
