@@ -17,5 +17,4 @@ pub use usbd_smart_keyboard::input::Keyboard;
 pub use usbd_smart_keyboard::split::transport::LayoutMessage;
 
 pub use crate::split::app_init as split_app_init;
-pub use crate::split::transport::{split_read_event, split_write_event};
 pub use crate::split::transport::{TransportReader, TransportWriter};
