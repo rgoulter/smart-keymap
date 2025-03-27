@@ -82,9 +82,9 @@ mod app {
     use usb_device::bus::UsbBusAllocator;
     use usbd_human_interface_device::UsbHidError;
 
+    use smart_keymap::split::BUFFER_SIZE;
     use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
     use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
-    use usbd_smart_keyboard::split::transport::BUFFER_LENGTH;
 
     use stm32f4_rtic_smart_keyboard::split::app_prelude::*;
 
@@ -111,7 +111,7 @@ mod app {
 
     #[init(local = [
         ep_memory: [u32; 1024] = [0; 1024],
-        rx_buf: [u8; BUFFER_LENGTH] = [0; BUFFER_LENGTH],
+        rx_buf: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE],
         usb_bus: Option<UsbBusAllocator<UsbBusType>> = None
     ])]
     fn init(c: init::Context) -> (SharedResources, LocalResources, init::Monotonics) {
