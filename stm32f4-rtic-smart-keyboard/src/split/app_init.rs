@@ -10,7 +10,7 @@ use hal::{
     Listen,
 };
 
-use usbd_smart_keyboard::split::transport::BUFFER_LENGTH;
+use smart_keymap::split::BUFFER_SIZE;
 
 use crate::split::transport::{TransportReader, TransportWriter};
 
@@ -18,7 +18,7 @@ pub fn init_serial(
     clocks: &Clocks,
     (pb6, pb7): (gpiob::PB6, gpiob::PB7),
     usart1: USART1,
-    buf: &'static mut [u8; BUFFER_LENGTH],
+    buf: &'static mut [u8; BUFFER_SIZE],
 ) -> (TransportWriter, TransportReader) {
     let pins = (pb6.into_alternate(), pb7.into_alternate());
     let mut serial = Serial::new(
