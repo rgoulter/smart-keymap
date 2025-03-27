@@ -38,14 +38,3 @@ impl TransportWriter {
         block!(self.tx.flush()).unwrap();
     }
 }
-
-pub fn split_read_event(buf: &mut [u8; BUFFER_LENGTH], rx: &mut Rx<USART1>) -> Option<Event> {
-    rx.read().ok().and_then(|b: u8| receive_byte(buf, b))
-}
-
-pub fn split_write_event(event: Event, tx: &mut Tx<USART1>) {
-    for &b in &ser(event) {
-        block!(tx.write(b)).unwrap();
-    }
-    block!(tx.flush()).unwrap();
-}
