@@ -803,4 +803,27 @@ mod tests {
         let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
         assert_eq!(expected_report, actual_report);
     }
+
+    #[test]
+    fn test_keymap_many_input_events_without_tick_or_report() {
+        use key::{composite, keyboard};
+        use tuples::Keys1;
+
+        use composite::{Context, Event, KeyState, PendingKeyState};
+
+        // Assemble
+        let keys: Keys1<composite::Key, Context, Event, PendingKeyState, KeyState> =
+            Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
+        let context: Context = composite::DEFAULT_CONTEXT;
+        let mut keymap = Keymap::new(keys, context);
+
+        // Act
+        for _ in 0..100 {
+            keymap.handle_input(input::Event::Press { keymap_index: 0 });
+            keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        }
+
+        // Assert
+        // (expect no panics)
+    }
 }
