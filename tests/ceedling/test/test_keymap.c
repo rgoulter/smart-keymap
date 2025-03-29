@@ -117,3 +117,20 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
     copy_hid_boot_keyboard_report(actual_report);
     TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
+
+void test_keyboard_keypress_after_keyrelease(void) {
+    uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
+    uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+    keymap_init();
+
+    keymap_register_input_keyrelease(2);
+    keymap_tick(actual_report);
+    keymap_register_input_keyrelease(2);
+    keymap_tick(actual_report);
+    keymap_register_input_keypress(2); // Third key in the keymap is A
+
+    copy_hid_boot_keyboard_report(actual_report);
+
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
+}
