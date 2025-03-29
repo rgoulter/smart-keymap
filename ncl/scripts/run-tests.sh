@@ -17,6 +17,7 @@ SCRIPTS_DIR="$(dirname "$0")"
 ncl_tests=(
     "keymap-1key-simple"
     "keymap-1key-tap_hold"
+    "keymap-1key-2layer-th-lmod"
     "keymap-2key-2layer-simple"
     "keymap-2key-2layer-composite"
     "keymap-2key-chorded"
