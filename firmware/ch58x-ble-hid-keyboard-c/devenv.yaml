@@ -1,0 +1,5 @@
+inputs:
+  rgoulter-ch32:
+    url: github:rgoulter/ch32
+  nixpkgs:
+    url: github:cachix/devenv-nixpkgs/rolling
