@@ -48,7 +48,7 @@ volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
 volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
 static uint32_t transmit_buffer[1]; // DEMO
-#define RX_BUFFER_SIZE 16
+#define RX_BUFFER_SIZE 64
 static uint8_t msg_buffer[MESSAGE_BUFFER_LEN];
 
 static struct {
