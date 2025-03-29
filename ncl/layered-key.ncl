@@ -21,34 +21,38 @@
 
   deactivate_layer = set_layer false,
 
-  update_active_layers_for_input = fun input active_layers =>
+  update_layer_state_for_input = fun input layer_state @ { active_layers, .. } =>
     input
     |> match {
-      'Press { layer_modifier = { hold }, .. } => activate_layer active_layers hold,
-      'Release { layer_modifier = { hold }, .. } => deactivate_layer active_layers hold,
-      _ => active_layers,
+      'Press { layer_modifier = { hold }, .. } =>
+        let { active_layers = al, ..layer_state } = layer_state in
+        { active_layers = activate_layer al hold } & layer_state,
+      'Release { layer_modifier = { hold }, .. } =>
+        let { active_layers = al, ..layer_state } = layer_state in
+        { active_layers = deactivate_layer al hold } & layer_state,
+      _ => layer_state,
     },
 
   checks.check_active_key = {
     base = {
       expected = { key_code = "A" },
-      actual = active_key { key_code = "A", layered = ["B", "C", "D"], } [ false, false, false ],
+      actual = active_key { key_code = "A", layered = ["B", "C", "D"], } { active_layers = [ false, false, false ] },
     },
     base_none = {
       expected = { key_code = "A" },
-      actual = active_key { key_code = "A", layered = ["B", "C", "D"], } [],
+      actual = active_key { key_code = "A", layered = ["B", "C", "D"], } { active_layers = [], }
     },
     layered = {
       expected = "C",
-      actual = active_key { key_code = "A", layered = ["B", "C", "D"], } [ true, true, false ],
+      actual = active_key { key_code = "A", layered = ["B", "C", "D"], } { active_layers = [ true, true, false ] },
     },
   },
 
-  active_key = fun lk active_layers =>
+  active_key = fun lk layer_state @ { active_layers, .. } =>
     lk
     |> match {
       { passthrough, .. } =>
-        active_key passthrough active_layers,
+        active_key passthrough layer_state,
       { layered, ..base_key } =>
         let zipped_layered_keys =
           std.array.zip_with
