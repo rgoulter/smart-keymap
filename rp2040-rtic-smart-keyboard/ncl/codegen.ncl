@@ -1,6 +1,5 @@
 {
-  GpioPin
-    = { id | String, type | String, },
+  GpioPin = { id | String, type | String, },
 
   gpio_pins
     : { _ | GpioPin }
@@ -13,15 +12,16 @@
         (fun port_name => # GP
           std.array.map
             (fun pin_num => # 0, 1, .. 29
-               {
-                 # GP0 = ...
-                 "%{port_name}%{std.to_string pin_num}" =
-                   {
-                     "id" = "gpio%{std.to_string pin_num}",
-                     "type" = "bank0::Gpio%{std.to_string pin_num}",
-                   },
-               })
-            pins)
+              {
+                # GP0 = ...
+                "%{port_name}%{std.to_string pin_num}" = {
+                  "id" = "gpio%{std.to_string pin_num}",
+                  "type" = "bank0::Gpio%{std.to_string pin_num}",
+                },
+              }
+            )
+            pins
+        )
         ports
       |> (std.array.fold_left (&) {}) | { _ : GpioPin },
 
@@ -37,12 +37,12 @@
     | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
 
   usb
-   | {
-       vid | Number,
-       pid | Number,
-       manufacturer | String,
-       product | String,
-     },
+    | {
+      vid | Number,
+      pid | Number,
+      manufacturer | String,
+      product | String,
+    },
 
   board_rs =
     let col_count = matrix.cols |> std.array.length in
@@ -50,37 +50,44 @@
     let row_count = matrix.rows |> std.array.length in
     let const_rows_expr = row_count |> std.to_string in
     let keymap_indices_expr =
-      let keymap_index_expr =
-        match {
-          'Key idx => "Some(%{std.to_string idx})",
-          'NoKey   => "None",
-        } in
+      let keymap_index_expr = match {
+        'Key idx => "Some(%{std.to_string idx})",
+        'NoKey => "None",
+      }
+      in
       let cols_expr = fun row_idx =>
         std.array.generate
           (fun col_idx =>
-             keymap_index_for_key
-               {
-                 row_index = row_idx,
-                 column_index = col_idx,
-               } |>
-             keymap_index_expr)
-          col_count in
+            keymap_index_for_key {
+              row_index = row_idx,
+              column_index = col_idx,
+            }
+            |> keymap_index_expr
+          )
+          col_count
+      in
       let row_expr = fun row_idx =>
-        "[ %{std.string.join ", " (cols_expr row_idx)} ]" in
+        "[ %{std.string.join ", " (cols_expr row_idx)} ]"
+      in
       let row_exprs = std.array.generate row_expr row_count in
-      "[ %{std.string.join ", " row_exprs} ]" in
+      "[ %{std.string.join ", " row_exprs} ]"
+    in
     let macro_cols_expr =
       let macro_col_expr = fun col_idx =>
         let { id, .. } = std.array.at col_idx matrix.cols in
-        "$gpio_pins.%{id}.into_pull_up_input().into_dyn_pin()" in
+        "$gpio_pins.%{id}.into_pull_up_input().into_dyn_pin()"
+      in
       let macro_col_exprs = std.array.generate macro_col_expr col_count in
-      "[%{std.string.join "," macro_col_exprs}]" in
+      "[%{std.string.join "," macro_col_exprs}]"
+    in
     let macro_rows_expr =
       let macro_row_expr = fun row_idx =>
         let { id, .. } = std.array.at row_idx matrix.rows in
-        "$gpio_pins.%{id}.into_push_pull_output().into_dyn_pin()" in
+        "$gpio_pins.%{id}.into_push_pull_output().into_dyn_pin()"
+      in
       let macro_row_exprs = std.array.generate macro_row_expr row_count in
-      "[%{std.string.join "," macro_row_exprs}]" in
+      "[%{std.string.join "," macro_row_exprs}]"
+    in
 
     let vid_expr = usb.vid |> std.to_string in
     let pid_expr = usb.pid |> std.to_string in
