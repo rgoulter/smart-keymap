@@ -37,7 +37,7 @@ pub mod init {
     pub type KeyDefinitionsType = Keys1<
         crate::key::composite::Chorded<
             crate::key::composite::LayeredKey<
-                crate::key::composite::TapHoldKey<crate::key::keyboard::Key>,
+                crate::key::composite::TapHoldKey<crate::key::composite::BaseKey>,
             >,
         >,
         Context,
