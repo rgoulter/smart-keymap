@@ -53,7 +53,7 @@
           _ => [],
         }
       in
-      { active_layers = initial_active_layers }
+      { default_layer = 0, active_layers = initial_active_layers }
     in
     let { serialized_json, .. } =
       std.array.fold_left

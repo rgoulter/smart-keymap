@@ -21,7 +21,7 @@
 
   deactivate_layer = set_layer false,
 
-  update_layer_state_for_input = fun input layer_state @ { active_layers, .. } =>
+  update_layer_state_for_input = fun input layer_state @ { default_layer, active_layers } =>
     input
     |> match {
       'Press { layer_modifier = { hold }, .. } =>
@@ -30,6 +30,9 @@
       'Release { layer_modifier = { hold }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = deactivate_layer al hold } & layer_state,
+      'Release { layer_modifier = { default_ }, .. } =>
+        let { default_layer, ..layer_state } = layer_state in
+        { default_layer = default_ } & layer_state,
       _ => layer_state,
     },
 
@@ -48,7 +51,13 @@
     },
   },
 
-  active_key = fun lk layer_state @ { active_layers, .. } =>
+  active_key = fun lk layer_state @ { default_layer, active_layers, .. } =>
+    let active_layers =
+      if default_layer > 0 then
+        activate_layer active_layers default_layer
+      else
+        active_layers
+    in
     lk
     |> match {
       { passthrough, .. } =>
