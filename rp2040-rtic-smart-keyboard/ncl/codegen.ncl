@@ -25,29 +25,31 @@
         ports
       |> (std.array.fold_left (&) {}) | { _ : GpioPin },
 
-  matrix
-    | {
-      cols | Array GpioPin,
-      rows | Array GpioPin,
-      key_count | Number,
-    }
-    | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
+  board = {
+    usb
+      | {
+        vid | Number,
+        pid | Number,
+        manufacturer | String,
+        product | String,
+      },
 
-  keymap_index_for_key
-    | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
+    matrix
+      | {
+        cols | Array GpioPin,
+        rows | Array GpioPin,
+        key_count | Number,
+      }
+      | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
 
-  usb
-    | {
-      vid | Number,
-      pid | Number,
-      manufacturer | String,
-      product | String,
-    },
+    keymap_index_for_key
+      | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
+  },
 
   board_rs =
-    let col_count = matrix.cols |> std.array.length in
+    let col_count = board.matrix.cols |> std.array.length in
     let const_cols_expr = col_count |> std.to_string in
-    let row_count = matrix.rows |> std.array.length in
+    let row_count = board.matrix.rows |> std.array.length in
     let const_rows_expr = row_count |> std.to_string in
     let keymap_indices_expr =
       let keymap_index_expr = match {
@@ -58,7 +60,7 @@
       let cols_expr = fun row_idx =>
         std.array.generate
           (fun col_idx =>
-            keymap_index_for_key {
+            board.keymap_index_for_key {
               row_index = row_idx,
               column_index = col_idx,
             }
@@ -74,7 +76,7 @@
     in
     let macro_cols_expr =
       let macro_col_expr = fun col_idx =>
-        let { id, .. } = std.array.at col_idx matrix.cols in
+        let { id, .. } = std.array.at col_idx board.matrix.cols in
         "$gpio_pins.%{id}.into_pull_up_input().into_dyn_pin()"
       in
       let macro_col_exprs = std.array.generate macro_col_expr col_count in
@@ -82,17 +84,17 @@
     in
     let macro_rows_expr =
       let macro_row_expr = fun row_idx =>
-        let { id, .. } = std.array.at row_idx matrix.rows in
+        let { id, .. } = std.array.at row_idx board.matrix.rows in
         "$gpio_pins.%{id}.into_push_pull_output().into_dyn_pin()"
       in
       let macro_row_exprs = std.array.generate macro_row_expr row_count in
       "[%{std.string.join "," macro_row_exprs}]"
     in
 
-    let vid_expr = usb.vid |> std.to_string in
-    let pid_expr = usb.pid |> std.to_string in
-    let manufacturer_expr = "\"%{usb.manufacturer}\"" in
-    let product_expr = "\"%{usb.product}\"" in
+    let vid_expr = board.usb.vid |> std.to_string in
+    let pid_expr = board.usb.pid |> std.to_string in
+    let manufacturer_expr = "\"%{board.usb.manufacturer}\"" in
+    let product_expr = "\"%{board.usb.product}\"" in
     m%"
 mod board {
     use rp2040_hal as hal;
