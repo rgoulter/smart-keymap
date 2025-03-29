@@ -408,6 +408,10 @@ impl<
 
     /// Handles input events.
     pub fn handle_input(&mut self, ev: input::Event) {
+        if self.input_queue.is_full() {
+            return;
+        }
+
         self.input_queue.enqueue(ev).unwrap();
 
         if self.input_queue_delay_counter == 0 {
