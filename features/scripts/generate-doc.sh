@@ -22,6 +22,7 @@ keymap_key_features=(
 
 keymap_ncl_features=(
     "layers"
+    "layers-default"
     "layer_string"
     "chords"
 )
