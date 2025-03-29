@@ -737,7 +737,7 @@ let validators = import "validators.ncl" in
           nested = cv,
           key_type = {
             key_type = "crate::key::composite::TapHoldKey",
-            nested_key_type = cv.key_type,
+            nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Pass",
           },
@@ -789,7 +789,7 @@ let validators = import "validators.ncl" in
           nested = cv,
           key_type = {
             key_type = "crate::key::composite::LayeredKey",
-            nested_key_type = cv.key_type.nested_key_type,
+            nested_key_type = nested.key_type.nested_key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Layered",
           },
@@ -806,7 +806,7 @@ let validators = import "validators.ncl" in
           nested = cv,
           key_type = {
             key_type = "crate::key::composite::LayeredKey",
-            nested_key_type = cv.key_type,
+            nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Pass",
           },
