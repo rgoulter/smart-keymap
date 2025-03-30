@@ -102,8 +102,8 @@ mod tests {
         let mut actual_messages: Vec<Message> = Vec::new();
         for msg in input_messages {
             let ser = msg.serialize();
-            for byte in ser.iter() {
-                if let Ok(msg) = receive_byte(&mut buf, *byte) {
+            for &byte in ser.iter() {
+                if let Ok(msg) = receive_byte(&mut buf, byte) {
                     actual_messages.push(msg);
                 }
             }
