@@ -492,22 +492,22 @@ impl<T: Copy> Event<T> {
     }
 
     /// Maps the Event into a new type.
-    pub fn map_key_event<U>(&self, f: fn(T) -> U) -> Event<U> {
+    pub fn map_key_event<U>(self, f: fn(T) -> U) -> Event<U> {
         match self {
-            Event::Input(event) => Event::Input(*event),
+            Event::Input(event) => Event::Input(event),
             Event::Key {
                 key_event,
                 keymap_index,
             } => Event::Key {
-                key_event: f(*key_event),
-                keymap_index: *keymap_index,
+                key_event: f(key_event),
+                keymap_index,
             },
-            Event::KeymapCallback(cb) => Event::KeymapCallback(*cb),
+            Event::KeymapCallback(cb) => Event::KeymapCallback(cb),
         }
     }
 
     /// Maps the Event into a new type.
-    pub fn into_key_event<U>(&self) -> Event<U>
+    pub fn into_key_event<U>(self) -> Event<U>
     where
         T: Into<U>,
     {
@@ -515,19 +515,19 @@ impl<T: Copy> Event<T> {
     }
 
     /// Maps the Event into a new type.
-    pub fn try_into_key_event<U, E>(&self, f: fn(T) -> Result<U, E>) -> EventResult<Event<U>> {
+    pub fn try_into_key_event<U, E>(self, f: fn(T) -> Result<U, E>) -> EventResult<Event<U>> {
         match self {
-            Event::Input(event) => Ok(Event::Input(*event)),
+            Event::Input(event) => Ok(Event::Input(event)),
             Event::Key {
                 key_event,
                 keymap_index,
-            } => f(*key_event)
+            } => f(key_event)
                 .map(|key_event| Event::Key {
                     key_event,
-                    keymap_index: *keymap_index,
+                    keymap_index,
                 })
                 .map_err(|_| EventError::UnmappableEvent),
-            Event::KeymapCallback(cb) => Ok(Event::KeymapCallback(*cb)),
+            Event::KeymapCallback(cb) => Ok(Event::KeymapCallback(cb)),
         }
     }
 }
