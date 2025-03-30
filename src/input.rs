@@ -48,8 +48,6 @@ impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> 
 pub enum PressedInput<PK> {
     /// Physically pressed key.
     Key(PressedKey<PK>),
-    /// Virtually pressed key, and its keycode.
-    Virtual(u8),
 }
 
 impl<PK> PressedInput<PK> {
