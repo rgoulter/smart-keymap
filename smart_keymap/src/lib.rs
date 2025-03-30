@@ -91,6 +91,13 @@ impl From<input::Event> for KeymapInputEvent {
     }
 }
 
+/// HID report.
+#[repr(C)]
+pub struct KeymapHidReport {
+    /// HID Boot keyboard report.
+    pub keyboard: [u8; 8],
+}
+
 static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType> =
     keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
 
@@ -145,16 +152,16 @@ pub extern "C" fn keymap_register_input_keyrelease(keymap_index: u16) {
 /// `buf` must be a valid pointer to a buffer of at least 8 bytes.
 #[allow(static_mut_refs)]
 #[no_mangle]
-pub unsafe extern "C" fn keymap_tick(buf: *mut u8) {
-    if buf.is_null() {
-        return;
-    }
-
+pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
     unsafe {
         KEYMAP.tick();
 
-        let report = KEYMAP.report_output().as_hid_boot_keyboard_report();
-        core::ptr::copy_nonoverlapping(report.as_ptr(), buf, report.len());
+        let keyboard_report = KEYMAP.report_output().as_hid_boot_keyboard_report();
+        core::ptr::copy_nonoverlapping(
+            keyboard_report.as_ptr(),
+            report.keyboard.as_mut_ptr(),
+            keyboard_report.len(),
+        );
     }
 }
 
