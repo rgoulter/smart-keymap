@@ -8,6 +8,8 @@ use crate::key;
 
 use key::{composite, Context, Event};
 
+use key::KeyState as _;
+
 const MAX_PENDING_EVENTS: usize = 32;
 const MAX_SCHEDULED_EVENTS: usize = 32;
 
@@ -589,8 +591,6 @@ impl<
                  key_state,
                  keymap_index,
              }| {
-                use key::KeyState as _;
-
                 key_state
                     .handle_event(self.context, *keymap_index, ev)
                     .into_iter()
