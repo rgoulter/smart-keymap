@@ -3,6 +3,14 @@ use usbd_human_interface_device::UsbHidError;
 
 use crate::input::HIDReporter;
 
+/// Callbacks for the keymap.
+pub struct KeymapCallbacks {
+    /// Callback for resetting keyboard state.
+    pub reset: Option<fn() -> ()>,
+    /// Callback for entering the bootloader.
+    pub reset_to_bootloader: Option<fn() -> ()>,
+}
+
 /// The keyboard "backend", manages the keyboard from the events received
 /// (presses/releases of coordinates on a keyboard layout).
 /// through to listing HID scancodes to report using HIDs.
@@ -20,6 +28,18 @@ impl KeyboardBackend {
         Self {
             keymap,
             pressed_key_codes: heapless::Vec::new(),
+        }
+    }
+
+    /// Set the keymap callbacks.
+    pub fn set_callbacks(&mut self, callbacks: KeymapCallbacks) {
+        use smart_keymap::keymap::KeymapCallback;
+        if let Some(callback_fn) = callbacks.reset {
+            self.keymap.set_callback(KeymapCallback::Reset, callback_fn);
+        }
+        if let Some(callback_fn) = callbacks.reset_to_bootloader {
+            self.keymap
+                .set_callback(KeymapCallback::ResetToBootloader, callback_fn);
         }
     }
 
