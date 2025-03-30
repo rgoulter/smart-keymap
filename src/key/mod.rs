@@ -576,7 +576,7 @@ impl<T: Copy> ScheduledEvent<T> {
     }
 
     /// Maps the Event of the ScheduledEvent into a new type.
-    pub fn map_scheduled_event<U>(&self, f: fn(T) -> U) -> ScheduledEvent<U> {
+    pub fn map_scheduled_event<U>(self, f: fn(T) -> U) -> ScheduledEvent<U> {
         ScheduledEvent {
             event: self.event.map_key_event(f),
             schedule: self.schedule,
@@ -584,7 +584,7 @@ impl<T: Copy> ScheduledEvent<T> {
     }
 
     /// Maps the ScheduledEvent into a new type.
-    pub fn into_scheduled_event<U>(&self) -> ScheduledEvent<U>
+    pub fn into_scheduled_event<U>(self) -> ScheduledEvent<U>
     where
         T: Into<U>,
     {
