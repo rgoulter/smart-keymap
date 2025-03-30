@@ -503,8 +503,20 @@ impl<
 
             self.context.handle_event(ev.into());
 
-            match ev {
-                input::Event::Press { keymap_index } => {
+            let ev_kmi = match ev {
+                input::Event::Press { keymap_index } => keymap_index,
+                input::Event::Release { keymap_index } => keymap_index,
+            };
+
+            let maybe_pk = self
+                .pressed_inputs
+                .iter_mut()
+                .find(|&&mut input::PressedKey { keymap_index, .. }| ev_kmi == keymap_index);
+
+            match (maybe_pk, ev) {
+                // Handle the key press by pushing a new_pressed_key to pressed_inputs,
+                //  unless some pressed key state exists with the same keymap index.
+                (None, input::Event::Press { keymap_index }) => {
                     let key = &self.key_definitions[keymap_index as usize];
 
                     let mut key_path = key::KeyPath::new();
@@ -533,20 +545,24 @@ impl<
                         }
                     }
                 }
-                input::Event::Release { keymap_index } => {
-                    self.pressed_inputs
-                        .iter()
-                        .position(
-                            |&input::PressedKey {
-                                 keymap_index: ki, ..
-                             }| keymap_index == ki,
-                        )
-                        .map(|i| self.pressed_inputs.remove(i));
-
-                    self.event_scheduler
-                        .cancel_events_for_keymap_index(keymap_index);
+                (Some(pk), input::Event::Press { .. }) => {
+                    pk.key_pressed = true;
                 }
+                (Some(pk), input::Event::Release { keymap_index }) => {
+                    pk.key_pressed = false;
+
+                    if !pk.key_state.is_persistent() {
+                        self.event_scheduler
+                            .cancel_events_for_keymap_index(keymap_index);
+                    };
+                }
+                _ => {}
             }
+
+            // Remove pressed inputs where the key is not pressed
+            //  and the key state is not persistent.
+            self.pressed_inputs
+                .retain(|&pk| pk.key_pressed || pk.key_state.is_persistent());
         }
 
         self.handle_pending_events();
