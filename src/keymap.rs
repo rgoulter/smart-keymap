@@ -1,6 +1,8 @@
 use core::fmt::Debug;
 use core::ops::Index;
 
+use serde::Deserialize;
+
 use crate::input;
 use crate::key;
 
@@ -287,6 +289,23 @@ struct PendingState {
     queued_events: heapless::Vec<key::Event<composite::Event>, { MAX_PRESSED_KEYS }>,
 }
 
+/// Callbacks for effect keys in the keymap.
+#[derive(Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
+pub enum KeymapCallback {
+    /// Reset the keyboard
+    Reset,
+    /// Reset the keyboard to bootloader
+    ResetToBootloader,
+}
+
+#[derive(Debug)]
+enum CallbackFunction {
+    /// C callback
+    ExternC(extern "C" fn() -> ()),
+    /// Rust callback
+    Rust(fn() -> ()),
+}
+
 /// State for a keymap that handles input, and outputs HID keyboard reports.
 pub struct Keymap<I> {
     key_definitions: I,
@@ -297,6 +316,7 @@ pub struct Keymap<I> {
     pending_key_state: Option<PendingState>,
     input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
     input_queue_delay_counter: u8,
+    callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
 }
 
 impl<
@@ -343,6 +363,7 @@ impl<
             pending_key_state: None,
             input_queue: heapless::spsc::Queue::new(),
             input_queue_delay_counter: 0,
+            callbacks: heapless::LinearMap::new(),
         }
     }
 
@@ -356,6 +377,15 @@ impl<
             self.input_queue.dequeue().unwrap();
         }
         self.input_queue_delay_counter = 0;
+    }
+
+    /// Registers the given callback to the keymap.
+    ///
+    /// Only one callback is set for each callback id.
+    pub fn set_callback(&mut self, callback_id: KeymapCallback, callback_fn: fn() -> ()) {
+        self.callbacks
+            .insert(callback_id, CallbackFunction::Rust(callback_fn))
+            .unwrap();
     }
 
     // If the pending key state is resolved,
