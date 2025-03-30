@@ -212,7 +212,7 @@ pub mod init {
         >,
         crate::key::composite::Chorded<
             crate::key::composite::LayeredKey<
-                crate::key::composite::TapHold<crate::key::keyboard::Key>,
+                crate::key::composite::TapHold<crate::key::composite::BaseKey>,
             >,
         >,
         crate::key::composite::Chorded<
@@ -1144,19 +1144,25 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
-                crate::key::composite::TapHold(crate::key::keyboard::Key::new(29)),
+                crate::key::composite::TapHold(crate::key::composite::BaseKey::keyboard(
+                    crate::key::keyboard::Key::new(29),
+                )),
                 [
                     None,
                     None,
                     None,
                     Some(crate::key::composite::TapHold(
-                        crate::key::keyboard::Key::new(73),
+                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(
+                            73,
+                        )),
                     )),
                     Some(crate::key::composite::TapHold(
-                        crate::key::keyboard::Key::new(0),
+                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHold(
-                        crate::key::keyboard::Key::new(0),
+                        crate::key::composite::BaseKey::Callback(crate::key::callback::Key::new(
+                            crate::keymap::KeymapCallback::ResetToBootloader,
+                        )),
                     )),
                 ],
             ),
