@@ -259,7 +259,7 @@ void HidEmu_Init() {
   tmos_set_event(hidEmuTaskId, START_DEVICE_EVT);
 
   // SmartKeymap
-  keyboard_matrix_init();
+  keyboard_init();
   keymap_init();
 }
 
