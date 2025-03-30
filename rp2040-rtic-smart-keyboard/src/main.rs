@@ -68,6 +68,8 @@ mod app {
     use usbd_smart_keyboard::input::MatrixScanner;
     use usbd_smart_keyboard::matrix::Matrix as DelayedMatrix;
 
+    use rp2040_rtic_smart_keyboard::common::keyboard_reset_to_bootloader;
+
     use super::board;
 
     use board::Keyboard;
@@ -140,7 +142,7 @@ mod app {
 
         // Check if bootloader pressed
         if matrix.is_boot_key_pressed() {
-            rp2040_hal::rom_data::reset_to_usb_boot(0, 0);
+            keyboard_reset_to_bootloader();
         }
 
         let keyboard = Keyboard {
@@ -148,12 +150,17 @@ mod app {
             debouncer: Debouncer::new(PressedKeys::default(), PressedKeys::default(), 25),
         };
 
-        let backend = {
+        let mut backend = {
             use smart_keymap::init;
             use smart_keymap::keymap::Keymap;
             let keymap = Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
             KeyboardBackend::new(keymap)
         };
+
+        backend.set_callbacks(usbd_smart_keyboard::input::smart_keymap::KeymapCallbacks {
+            reset: None,
+            reset_to_bootloader: Some(keyboard_reset_to_bootloader),
+        });
 
         (
             Shared {
