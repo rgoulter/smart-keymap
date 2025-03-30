@@ -122,7 +122,7 @@ impl Context {
             .chords
             .iter()
             .filter_map(|&c| c)
-            .filter(|c| indices.iter().all(|i| c.has_index(*i)))
+            .filter(|c| indices.iter().all(|&i| c.has_index(i)))
             .collect()
     }
 
@@ -137,13 +137,13 @@ impl Context {
 
         let chords = self.chords_for_indices(&[index]);
 
-        chords.iter().for_each(|ch| match ch {
+        chords.iter().for_each(|&ch| match ch {
             ChordIndices::Chord2(i0, i1) => {
-                if let Err(pos) = res.binary_search(i0) {
-                    res.insert(pos, *i0).unwrap();
+                if let Err(pos) = res.binary_search(&i0) {
+                    res.insert(pos, i0).unwrap();
                 }
-                if let Err(pos) = res.binary_search(i1) {
-                    res.insert(pos, *i1).unwrap();
+                if let Err(pos) = res.binary_search(&i1) {
+                    res.insert(pos, i1).unwrap();
                 }
             }
         });
