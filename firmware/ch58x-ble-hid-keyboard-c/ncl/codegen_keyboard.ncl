@@ -36,6 +36,14 @@
       GPIO%{port}_ModeCfg(GPIO_Pin_%{std.to_string pin}, GPIO_ModeIN_PD); // %{port}%{std.to_string pin}
   "%,
 
+  keyboard_init
+    | doc "C fragment with the keyboard_init function."
+    = m%"
+  void keyboard_init(void) {
+      keyboard_matrix_init();
+  }
+  "%,
+
   keyboard_matrix_init
     | doc "Generates C fragment with the keyboard_matrix_init function, for the given cols/rows."
     = fun { cols, rows, .. } =>
@@ -109,6 +117,8 @@
   bool currentScan[%{std.to_string board.key_count}] = { false };
 
   %{keyboard_matrix_init board}
+
+  %{keyboard_init}
 
   void handle_index(uint32_t index) {
       if (previousScan[index] != currentScan[index]) {
