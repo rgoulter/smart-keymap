@@ -67,23 +67,6 @@ impl<K: key::Key> Key<K> {
     pub const fn new(tap: K, hold: K) -> Key<K> {
         Key { tap, hold }
     }
-
-    /// Maps the Key of the Key into a new type.
-    pub fn map_key<T: key::Key>(self, f: fn(K) -> T) -> Key<T> {
-        let Key { tap, hold } = self;
-        Key {
-            tap: f(tap),
-            hold: f(hold),
-        }
-    }
-
-    /// Maps the Key of the Key into a new type.
-    pub fn into_key<T: key::Key>(self) -> Key<T>
-    where
-        K: Into<T>,
-    {
-        self.map_key(|k| k.into())
-    }
 }
 
 impl<K: key::Key> Key<K> {
