@@ -39,6 +39,7 @@ volatile uint16_t KB_Scan_Result =
     (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11); // Keyboard Keys Current Scan Result
 volatile uint16_t KB_Scan_Last_Result =
     (1 << 0 | 1 << 1 | 1 << 3 | 1 << 11);   // Keyboard Keys Last Scan Result
+KeymapHidReport hid_report = {0};           // Keyboard HID report
 uint8_t KB_Data_Pack[8] = {0x00};           // Keyboard IN Data Packet
 uint8_t PREV_KB_Data_Pack[8] = {0x00};      // Keyboard IN Data Packet
 volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
@@ -103,7 +104,8 @@ void TIM3_IRQHandler(void) {
     keyboard_led_tick();
 
     if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0) {
-      keymap_tick(KB_Data_Pack);
+      keymap_tick(&hid_report);
+      memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
     }
 
     /* Clear interrupt flag */
