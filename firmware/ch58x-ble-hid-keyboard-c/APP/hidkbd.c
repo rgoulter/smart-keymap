@@ -279,7 +279,7 @@ void HidEmu_Init() {
 uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
   static uint8_t send_char = 0;
   static uint8_t report_status = SUCCESS;
-  static uint8_t buf[HID_KEYBOARD_IN_RPT_LEN] = {0};
+  static KeymapHidReport hid_report = {0};
 
   if (events & SYS_EVENT_MSG) {
     uint8_t *pMsg;
@@ -323,10 +323,10 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
 
     keyboard_matrix_scan();
 
-    keymap_tick(buf);
+    keymap_tick(&hid_report);
 
     report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
-                                  HID_KEYBOARD_IN_RPT_LEN, buf);
+                                  HID_KEYBOARD_IN_RPT_LEN, (unsigned char *)&hid_report.keyboard);
 
     // 13 * 625 microseconds = 8.125ms, approx 125Hz
     tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 13);
