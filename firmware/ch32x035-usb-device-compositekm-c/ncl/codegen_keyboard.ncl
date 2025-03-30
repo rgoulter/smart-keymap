@@ -150,7 +150,10 @@
         }
         "%
     else
-      "",
+      m%"
+        void keyboard_led_tick(void) {
+        }
+        "%,
 
   output
     | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
@@ -169,12 +172,18 @@
 
   %{keyboard_init}
 
+  int keyboard_split_write(KeymapInputEvent ev); // DEMO
+
   void key_state_changed(uint32_t index, bool new_state) {
+      KeymapInputEvent ev = { .event_type = 0, .value = index };
       if (new_state) {
-          keymap_register_input_keypress(index);
+          ev.event_type = KeymapEventPress;
       } else {
-          keymap_register_input_keyrelease(index);
+          ev.event_type = KeymapEventRelease;
       }
+      keymap_register_input_event(ev);
+
+      keyboard_split_write(ev);
   }
 
   %{keyboard_matrix_scan board.matrix}
