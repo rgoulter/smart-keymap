@@ -79,9 +79,9 @@ impl<E: Debug> EventScheduler<E> {
     pub fn cancel_events_for_keymap_index(&mut self, keymap_index: u16) {
         self.scheduled_events
             .retain(|ScheduledEvent { event, .. }| match event {
-                Event::Key {
+                &Event::Key {
                     keymap_index: ki, ..
-                } => *ki != keymap_index,
+                } => ki != keymap_index,
                 _ => true,
             });
     }
@@ -89,8 +89,8 @@ impl<E: Debug> EventScheduler<E> {
     pub fn tick(&mut self) {
         self.schedule_counter += 1;
         let scheduled_ready =
-            if let Some(ScheduledEvent { time, .. }) = self.scheduled_events.last() {
-                *time <= self.schedule_counter
+            if let Some(&ScheduledEvent { time, .. }) = self.scheduled_events.last() {
+                time <= self.schedule_counter
             } else {
                 false
             };
@@ -535,10 +535,10 @@ impl<
                     self.pressed_inputs
                         .iter()
                         .position(|pi| match pi {
-                            input::PressedInput::Key(input::PressedKey {
+                            &input::PressedInput::Key(input::PressedKey {
                                 keymap_index: ki,
                                 ..
-                            }) => keymap_index == *ki,
+                            }) => keymap_index == ki,
                             _ => false,
                         })
                         .map(|i| self.pressed_inputs.remove(i));
@@ -639,8 +639,8 @@ impl<
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key(pressed_key) => pressed_key.key_output(),
-            input::PressedInput::Virtual(key_code) => {
-                Some(key::KeyOutput::from_key_code(*key_code))
+            &input::PressedInput::Virtual(key_code) => {
+                Some(key::KeyOutput::from_key_code(key_code))
             }
         });
 
@@ -721,7 +721,7 @@ mod tests {
         // Assert
         let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
         assert_eq!(expected_outputs, actual_outputs);
     }
@@ -731,7 +731,7 @@ mod tests {
         // Assemble
         let input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
 
         let mut reporter = HIDKeyboardReporter::new();
@@ -743,7 +743,7 @@ mod tests {
         // Assert
         let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
         assert_eq!(expected_outputs, actual_outputs);
     }
@@ -753,7 +753,7 @@ mod tests {
         // Assemble
         let input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
 
         let mut reporter = HIDKeyboardReporter::new();
@@ -766,7 +766,7 @@ mod tests {
         // Assert
         let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
         assert_eq!(expected_outputs, actual_outputs);
     }
@@ -776,16 +776,16 @@ mod tests {
         // Assemble
         let input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x04, 0x05]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
         let input_after_key_released: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x05]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
         let input_after_more_keys_pressed: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> =
             [0x05, 0x06, 0x07]
                 .iter()
-                .map(|kc| key::KeyOutput::from_key_code(*kc))
+                .map(|&kc| key::KeyOutput::from_key_code(kc))
                 .collect();
 
         let mut reporter = HIDKeyboardReporter::new();
@@ -806,7 +806,7 @@ mod tests {
         // Assert
         let expected_outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = [0x05, 0x06]
             .iter()
-            .map(|kc| key::KeyOutput::from_key_code(*kc))
+            .map(|&kc| key::KeyOutput::from_key_code(kc))
             .collect();
         assert_eq!(
             KeymapOutput::new(expected_outputs).as_hid_boot_keyboard_report(),
