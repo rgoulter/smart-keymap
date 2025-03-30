@@ -9,6 +9,7 @@ std.array.fold_left
     key_extensions.layered,
     key_extensions.shifted,
     key_extensions.aliases,
+    key_extensions.keymap_callbacks,
     key_extensions.abbreviations,
     key_extensions.literals,
   ]

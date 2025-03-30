@@ -57,6 +57,12 @@
       TTTT = null,
     },
 
+  keymap_callbacks = fun K =>
+    {
+      reset = { keymap_callback = "Reset" },
+      reset_to_bootloader = { keymap_callback = "ResetToBootloader" },
+    },
+
   shifted = fun K =>
     {
       Exclaim = K.N1,
@@ -194,6 +200,9 @@
 
       NUSH = K.NonUSHash,
       NUSB = K.NonUSBackslash,
+
+      RST  = K.reset,
+      BOOT = K.reset_to_bootloader,
     },
 
   literals = fun K =>
