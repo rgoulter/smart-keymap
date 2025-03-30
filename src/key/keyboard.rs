@@ -101,4 +101,8 @@ impl key::KeyState for KeyState {
     fn key_output(&self) -> Option<key::KeyOutput> {
         Some(self.key_output())
     }
+
+    fn is_persistent(&self) -> bool {
+        false
+    }
 }

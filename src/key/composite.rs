@@ -262,6 +262,10 @@ impl key::KeyState for KeyState {
             KeyState::NoOp => None,
         }
     }
+
+    fn is_persistent(&self) -> bool {
+        false
+    }
 }
 
 #[cfg(test)]

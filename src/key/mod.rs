@@ -447,6 +447,12 @@ pub trait KeyState: Debug {
         event: Event<Self::Event>,
     ) -> PressedKeyEvents<Self::Event>;
 
+    /// Whether the key state should remain pressed after the key has been released.
+    ///
+    /// If this is true when the key is released, the key state will persist,
+    ///  and any subsequent key presses will be handled by the key state.
+    fn is_persistent(&self) -> bool;
+
     /// Output for the pressed key state.
     fn key_output(&self) -> Option<KeyOutput>;
 }
