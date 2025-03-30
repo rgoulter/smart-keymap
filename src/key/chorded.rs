@@ -290,23 +290,6 @@ where
     pub const fn new(chord: K, passthrough: K) -> Self {
         Key { chord, passthrough }
     }
-
-    /// Maps the Key of the Key into a new type.
-    pub fn map_key<T: key::Key + Copy>(self, f: fn(K) -> T) -> Key<T> {
-        let Key { chord, passthrough } = self;
-        Key {
-            chord: f(chord),
-            passthrough: f(passthrough),
-        }
-    }
-
-    /// Maps the Key of the Key into a new type.
-    pub fn into_key<T: key::Key + Copy>(self) -> Key<T>
-    where
-        K: Into<T>,
-    {
-        self.map_key(|k| k.into())
-    }
 }
 
 /// Auxiliary chorded key (with a passthrough key).
@@ -380,21 +363,6 @@ where
     /// Constructs new auxiliary chorded key.
     pub const fn new(passthrough: K) -> Self {
         AuxiliaryKey { passthrough }
-    }
-    /// Maps the Key of the Key into a new type.
-    pub fn map_key<T: key::Key + Copy>(self, f: fn(K) -> T) -> AuxiliaryKey<T> {
-        let AuxiliaryKey { passthrough } = self;
-        AuxiliaryKey {
-            passthrough: f(passthrough),
-        }
-    }
-
-    /// Maps the Key of the Key into a new type.
-    pub fn into_key<T: key::Key + Copy>(self) -> AuxiliaryKey<T>
-    where
-        K: Into<T>,
-    {
-        self.map_key(|k| k.into())
     }
 }
 
