@@ -40,6 +40,11 @@ use smart_keymap::{init, input, keymap, split};
 /// Length of a buffer for serializing/deserializing split keyboard events.
 pub const MESSAGE_BUFFER_LEN: usize = 4;
 
+/// Callback ID for "reset keyboard"
+pub const KEYMAP_CALLBACK_RESET: u8 = 0;
+/// Callback ID for "enter bootloader mode"
+pub const KEYMAP_CALLBACK_BOOTLOADER: u8 = 1;
+
 /// Input event type.
 #[repr(C)]
 pub enum KeymapInputEventType {
@@ -162,6 +167,30 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
             report.keyboard.as_mut_ptr(),
             keyboard_report.len(),
         );
+    }
+}
+
+/// Registers a callback with the keymap.
+///
+/// callback_id should be one of:
+/// - KEYMAP_CALLBACK_RESET
+/// - KEYMAP_CALLBACK_BOOTLOADER
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_register_callback(
+    callback_id: u8,
+    callback_fn: extern "C" fn() -> (),
+) {
+    if let Some(callback_id) = match callback_id {
+        _ if callback_id == KEYMAP_CALLBACK_RESET => Some(keymap::KeymapCallback::Reset),
+        _ if callback_id == KEYMAP_CALLBACK_BOOTLOADER => {
+            Some(keymap::KeymapCallback::ResetToBootloader)
+        }
+        _ => None,
+    } {
+        unsafe {
+            KEYMAP.set_callback_extern(callback_id, callback_fn);
+        }
     }
 }
 

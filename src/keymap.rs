@@ -388,6 +388,19 @@ impl<
             .unwrap();
     }
 
+    /// Registers the given callback to the keymap.
+    ///
+    /// Only one callback is set for each callback id.
+    pub fn set_callback_extern(
+        &mut self,
+        callback_id: KeymapCallback,
+        callback_fn: extern "C" fn() -> (),
+    ) {
+        self.callbacks
+            .insert(callback_id, CallbackFunction::ExternC(callback_fn))
+            .unwrap();
+    }
+
     // If the pending key state is resolved,
     //  then clear the pending key state.
     fn resolve_pending_key_state(&mut self, key_state: composite::KeyState) {
