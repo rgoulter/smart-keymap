@@ -8,7 +8,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(HID_Keyboard
     APP/hidkbd.c
     APP/hidkbd_main.c
-    generated/matrix.c
+    generated/keyboard.c
     Profile/battservice.c
     Profile/devinfoservice.c
     Profile/hiddev.c
