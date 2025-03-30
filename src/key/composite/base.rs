@@ -4,6 +4,8 @@ use core::fmt::Debug;
 use serde::Deserialize;
 
 use crate::key;
+
+use key::callback;
 use key::keyboard;
 use key::layered;
 
@@ -16,6 +18,8 @@ use super::{Context, Event, KeyState, PendingKeyState, PressedKeyResult};
 pub enum BaseKey {
     /// A layer modifier key.
     LayerModifier(layered::ModifierKey),
+    /// A callback key.
+    Callback(callback::Key),
     /// A keyboard key.
     Keyboard(keyboard::Key),
 }
@@ -38,6 +42,46 @@ impl key::Key for layered::ModifierKey {
             keymap_index,
             Event::LayerModification(lmod_ev),
         ));
+        (pks, pke)
+    }
+
+    fn handle_event(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn lookup(
+        &self,
+        _path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        self
+    }
+}
+
+impl key::Key for callback::Key {
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+        let &callback::Key { keymap_callback } = self;
+        let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
+        let pke = key::PressedKeyEvents::event(key::Event::KeymapCallback(keymap_callback));
         (pks, pke)
     }
 
@@ -118,6 +162,7 @@ impl key::Key for BaseKey {
         match self {
             BaseKey::Keyboard(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::LayerModifier(key) => key::Key::new_pressed_key(key, context, key_path),
+            BaseKey::Callback(key) => key::Key::new_pressed_key(key, context, key_path),
         }
     }
 
