@@ -501,6 +501,8 @@ pub enum Event<T> {
         /// A [Key::Event] event.
         key_event: T,
     },
+    /// Invoke a keymap callback
+    KeymapCallback(crate::keymap::KeymapCallback),
 }
 
 impl<T: Copy> Event<T> {
@@ -523,6 +525,7 @@ impl<T: Copy> Event<T> {
                 key_event: f(*key_event),
                 keymap_index: *keymap_index,
             },
+            Event::KeymapCallback(cb) => Event::KeymapCallback(*cb),
         }
     }
 
@@ -547,6 +550,7 @@ impl<T: Copy> Event<T> {
                     keymap_index: *keymap_index,
                 })
                 .map_err(|_| EventError::UnmappableEvent),
+            Event::KeymapCallback(cb) => Ok(Event::KeymapCallback(*cb)),
         }
     }
 }

@@ -182,6 +182,7 @@ impl PendingKeyState {
                         // Key held long enough to resolve as hold.
                         Some(TapHoldState::Hold)
                     }
+                    _ => None,
                 }
             }
             InterruptResponse::HoldOnKeyTap => {

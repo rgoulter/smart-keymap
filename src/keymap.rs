@@ -542,6 +542,18 @@ impl<
     // Called from handle_all_pending_events,
     //  and for handling the (resolving) queue of events from pending key state.
     fn handle_event(&mut self, ev: key::Event<composite::Event>) {
+        if let key::Event::KeymapCallback(callback_id) = ev {
+            match self.callbacks.get(&callback_id) {
+                Some(CallbackFunction::Rust(callback_fn)) => {
+                    callback_fn();
+                }
+                Some(CallbackFunction::ExternC(callback_fn)) => {
+                    callback_fn();
+                }
+                None => {}
+            }
+        }
+
         // pending state needs to handle events
         if let Some(PendingState {
             key_path,
