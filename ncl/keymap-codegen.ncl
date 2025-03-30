@@ -242,11 +242,47 @@ let validators = import "validators.ncl" in
           cv,
     },
 
+  keymap_callback
+    | doc "for key::callback::Key."
+    = {
+      SerializedJson = std.contract.from_validator serialized_json_validator,
+
+      serialized_json_validator =
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["keymap_callback"],
+          field_validators = {
+            keymap_callback = validators.is_string,
+          },
+        },
+
+      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+
+      codegen_values = fun k @ { keymap_callback } =>
+        {
+          key_type = {
+            key_type = "crate::key::callback::Key",
+            as_rust_type_path = key_type,
+          },
+          key_impl = {
+            base = key_type.key_type,
+          },
+          rust_expr = "crate::key::callback::Key::new(crate::keymap::KeymapCallback::%{keymap_callback})",
+          serialized_json = k,
+        },
+
+      lift_to = fun key_impl cv =>
+        if key_impl.base == "crate::key::composite::BaseKey" then
+          cv |> composite.base_key.keymap_callback
+        else
+          cv,
+    },
+
   # Related to key::composite::TapHoldNestable trait.
   tap_hold_nestable = {
     # Wraps the codegen values for
     #   - key::keyboard::Key
     #   - key::layered::ModifierKey
+    #   - key::callback::Key
     #
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
@@ -256,6 +292,7 @@ let validators = import "validators.ncl" in
       |> match {
         "crate::key::keyboard::Key" => cv,
         "crate::key::layered::ModifierKey" => cv,
+        "crate::key::callback::Key" => cv,
         cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
       },
   },
@@ -696,6 +733,20 @@ let validators = import "validators.ncl" in
           rust_expr = "crate::key::composite::BaseKey::layer_modifier(%{nested.rust_expr})",
         },
 
+      keymap_callback = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::BaseKey",
+            as_rust_type_path = key_type,
+            variant = "Callback",
+          },
+          key_impl = {
+            base = key_type.key_type,
+          },
+          rust_expr = "crate::key::composite::BaseKey::Callback(%{nested.rust_expr})",
+        },
+
       keyboard = fun cv =>
         {
           nested = cv,
@@ -906,6 +957,7 @@ let validators = import "validators.ncl" in
       validators.any_of [
         keyboard.serialized_json_validator,
         layer_modifier.serialized_json_validator,
+        keymap_callback.serialized_json_validator,
         layered.serialized_json_validator,
         tap_hold.serialized_json_validator,
         chorded.serialized_json_validator,
@@ -917,6 +969,7 @@ let validators = import "validators.ncl" in
     codegen_values = match {
       k if keyboard.is_serialized_json k => keyboard.codegen_values k,
       k if layer_modifier.is_serialized_json k => layer_modifier.codegen_values k,
+      k if keymap_callback.is_serialized_json k => keymap_callback.codegen_values k,
       k if layered.is_serialized_json k => layered.codegen_values k,
       k if tap_hold.is_serialized_json k => tap_hold.codegen_values k,
       k if chorded.is_serialized_json k => chorded.codegen_values k,
@@ -930,6 +983,7 @@ let validators = import "validators.ncl" in
         |> match {
           "crate::key::keyboard::Key" => keyboard,
           "crate::key::layered::ModifierKey" => layer_modifier,
+          "crate::key::callback::Key" => keymap_callback,
           "crate::key::chorded::Key" => chorded,
           "crate::key::chorded::AuxiliaryKey" => chorded_aux,
           "crate::key::composite::BaseKey" => composite.base_key,
