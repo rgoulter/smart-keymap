@@ -639,9 +639,6 @@ impl<
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key(pressed_key) => pressed_key.key_output(),
-            &input::PressedInput::Virtual(key_code) => {
-                Some(key::KeyOutput::from_key_code(key_code))
-            }
         });
 
         pressed_key_codes.collect()
