@@ -19,7 +19,8 @@ void test_taphold_dth_uth_is_tap(void) {
   // (Check the tap key gets pressed).
 
   uint8_t expected_report[8] = {0, 0, KC_C, 0, 0, 0, 0, 0};
-  uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  KeymapHidReport report;
+  KeymapHidReport* actual_report = &report;
 
   keymap_init();
 
@@ -31,7 +32,7 @@ void test_taphold_dth_uth_is_tap(void) {
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 0});
 
   keymap_tick(actual_report);
-  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
 void test_taphold_dth_uth_eventually_clears(void) {
@@ -39,7 +40,8 @@ void test_taphold_dth_uth_eventually_clears(void) {
   // (Check the tap key releases).
 
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-  uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  KeymapHidReport report;
+  KeymapHidReport* actual_report = &report;
 
   keymap_init();
 
@@ -58,14 +60,15 @@ void test_taphold_dth_uth_eventually_clears(void) {
     keymap_tick(actual_report);
   }
 
-  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
 void test_taphold_dth_eventually_holds(void) {
   // Pressing T.H., is eventually the same as holding the hold key.
 
   uint8_t expected_report[8] = {MOD_LCTL, 0, 0, 0, 0, 0, 0, 0};
-  uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+  KeymapHidReport report;
+  KeymapHidReport* actual_report = &report;
 
   keymap_init();
 
@@ -78,5 +81,5 @@ void test_taphold_dth_eventually_holds(void) {
     keymap_tick(actual_report);
   }
 
-  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
