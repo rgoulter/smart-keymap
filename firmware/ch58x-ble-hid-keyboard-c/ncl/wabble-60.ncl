@@ -7,6 +7,7 @@
         cols | Array { port | String, pin | Number },
         rows | Array { port | String, pin | Number },
         key_count | Number,
+        implementation | String,
       }
       | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
       =
@@ -15,6 +16,7 @@
           cols = [gp.A4, gp.A5, gp.A15, gp.A14, gp.A13, gp.A12, gp.A11, gp.A10],
           rows = [gp.A8, gp.A9, gp.B15, gp.B14, gp.B13, gp.B12, gp.B7, gp.B4],
           key_count = 60,
+          implementation = "col_to_row",
         },
 
     # The WABBLE-60 uses a digital matrix of 8x8 rows and columns,
