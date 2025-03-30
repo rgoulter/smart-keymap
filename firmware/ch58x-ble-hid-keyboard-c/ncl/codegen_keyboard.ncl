@@ -11,16 +11,18 @@
         ports
       |> (std.array.fold_left (&) {}) | { _ : { port : String, pin : Number } },
 
-  board
-    | {
-      cols | Array { port | String, pin | Number },
-      rows | Array { port | String, pin | Number },
-      key_count | Number,
-    }
-    | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
+  board = {
+    matrix
+      | {
+        cols | Array { port | String, pin | Number },
+        rows | Array { port | String, pin | Number },
+        key_count | Number,
+      }
+      | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
 
-  keymap_index_for_key
-    | doc "Returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
+    keymap_index_for_key
+      | doc "returns the keymap index for the key corresponding to the (0-based) digital column_index and row_index.",
+  },
 
   init_col_fragment
     | doc "Generates C fragment for initializing the given column pin, for keyboard_matrix_init."
@@ -65,7 +67,7 @@
   matrix_scan_row_for_column
     | doc "Generates C fragment for reading a row, as part of COL2ROW scanning."
     = fun args @ { column_index, row_index, col, row, .. } =>
-      let maybe_idx = keymap_index_for_key args in
+      let maybe_idx = board.keymap_index_for_key args in
       maybe_idx
       |> match {
         'Error err => "",
@@ -100,7 +102,7 @@
     = fun { cols, rows, .. } =>
       m%"
   void keyboard_matrix_scan(void) {
-      %{board.cols |> std.array.map_with_index (fun idx c => matrix_scan_column ({ col = c, column_index = idx, rows = board.rows })) |> std.string.join "\n"}
+      %{board.matrix.cols |> std.array.map_with_index (fun idx c => matrix_scan_column ({ col = c, column_index = idx, rows = board.matrix.rows })) |> std.string.join "\n"}
   }
   "%,
 
@@ -113,10 +115,10 @@
 
   #include "smart_keymap.h"
 
-  bool previousScan[%{std.to_string board.key_count}] = { false };
-  bool currentScan[%{std.to_string board.key_count}] = { false };
+  bool previousScan[%{std.to_string board.matrix.key_count}] = { false };
+  bool currentScan[%{std.to_string board.matrix.key_count}] = { false };
 
-  %{keyboard_matrix_init board}
+  %{keyboard_matrix_init board.matrix}
 
   %{keyboard_init}
 
@@ -132,7 +134,7 @@
       }
   }
 
-  %{keyboard_matrix_scan board}
+  %{keyboard_matrix_scan board.matrix}
 
   "%
 }

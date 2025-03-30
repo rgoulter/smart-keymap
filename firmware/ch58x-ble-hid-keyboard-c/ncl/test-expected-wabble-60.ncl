@@ -1,5 +1,4 @@
 {
-  keymap_index_for_key,
   # = fun { column_index | Number, row_index | Number, .. } =>
   keymap_indices = {
     sw_1_1 = 'Ok 0,
