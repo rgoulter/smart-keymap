@@ -4,6 +4,8 @@ use serde::Deserialize;
 
 use crate::input;
 
+/// Keymap Callback keys
+pub mod callback;
 /// Chorded keys. (Chording functionality).
 pub mod chorded;
 /// HID Keyboard keys.
