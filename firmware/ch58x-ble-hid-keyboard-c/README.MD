@@ -26,7 +26,7 @@ files should be copied into the `libsmartkeymap/` directory.
 
 Matrix key scanning is generated from files under `ncl/`.
 
-To generate the `generated/matrix.c` for the WABBLE-60, run:
+To generate the `generated/keyboard.c` for the WABBLE-60, run:
 
 ```
 make

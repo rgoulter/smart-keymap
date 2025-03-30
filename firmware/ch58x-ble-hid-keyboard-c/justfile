@@ -5,10 +5,10 @@ default: build
 _libsmartkeymap:
   make libsmartkeymap
 
-generate-matrix:
-  make generated/matrix.c BOARD={{board}}
+generate-keyboard:
+  make generated/keyboard.c BOARD={{board}}
 
-cmake-generate: _libsmartkeymap generate-matrix
+cmake-generate: _libsmartkeymap generate-keyboard
   mkdir -p build
   cd build && \
     cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
