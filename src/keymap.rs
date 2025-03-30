@@ -310,7 +310,7 @@ enum CallbackFunction {
 pub struct Keymap<I> {
     key_definitions: I,
     context: composite::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput<composite::KeyState>, { MAX_PRESSED_KEYS }>,
+    pressed_inputs: heapless::Vec<input::PressedKey<composite::KeyState>, { MAX_PRESSED_KEYS }>,
     event_scheduler: EventScheduler<composite::Event>,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState>,
@@ -417,10 +417,10 @@ impl<
 
             // Add the pending state's pressed key to pressed inputs
             self.pressed_inputs
-                .push(input::PressedInput::new_pressed_key(
+                .push(input::PressedKey {
                     key_state,
                     keymap_index,
-                ))
+                })
                 .unwrap();
 
             // Schedule each of the queued events,
@@ -491,13 +491,11 @@ impl<
             }
         } else {
             // Update each of the pressed keys with the event.
-            self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key(pressed_key) = pi {
-                    pressed_key
-                        .handle_event(self.context, ev.into())
-                        .into_iter()
-                        .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-                }
+            self.pressed_inputs.iter_mut().for_each(|pressed_key| {
+                pressed_key
+                    .handle_event(self.context, ev.into())
+                    .into_iter()
+                    .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             });
 
             self.context.handle_event(ev.into());
@@ -516,10 +514,10 @@ impl<
                     match pk {
                         key::PressedKeyResult::Resolved(key_state) => {
                             self.pressed_inputs
-                                .push(input::PressedInput::new_pressed_key(
+                                .push(input::PressedKey {
                                     key_state,
                                     keymap_index,
-                                ))
+                                })
                                 .unwrap();
                         }
                         key::PressedKeyResult::Pending(key_path, pending_key_state) => {
@@ -534,13 +532,11 @@ impl<
                 input::Event::Release { keymap_index } => {
                     self.pressed_inputs
                         .iter()
-                        .position(|pi| match pi {
-                            &input::PressedInput::Key(input::PressedKey {
-                                keymap_index: ki,
-                                ..
-                            }) => keymap_index == ki,
-                            _ => false,
-                        })
+                        .position(
+                            |&input::PressedKey {
+                                 keymap_index: ki, ..
+                             }| keymap_index == ki,
+                        )
                         .map(|i| self.pressed_inputs.remove(i));
 
                     self.event_scheduler
@@ -588,20 +584,19 @@ impl<
         }
 
         // Update each of the pressed keys with the event.
-        self.pressed_inputs.iter_mut().for_each(|pi| {
-            use key::KeyState as _;
+        self.pressed_inputs.iter_mut().for_each(
+            |input::PressedKey {
+                 key_state,
+                 keymap_index,
+             }| {
+                use key::KeyState as _;
 
-            if let input::PressedInput::Key(input::PressedKey {
-                key_state,
-                keymap_index,
-            }) = pi
-            {
                 key_state
                     .handle_event(self.context, *keymap_index, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-            }
-        });
+            },
+        );
 
         // Update context with the event
         self.context.handle_event(ev);
@@ -637,9 +632,10 @@ impl<
 
     /// Returns the the pressed key outputs.
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
-        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key(pressed_key) => pressed_key.key_output(),
-        });
+        let pressed_key_codes = self
+            .pressed_inputs
+            .iter()
+            .filter_map(|pressed_key| pressed_key.key_output());
 
         pressed_key_codes.collect()
     }
