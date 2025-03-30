@@ -53,8 +53,7 @@
   enter_bootloader_check = m%"
     %{matrix_scan.is_sw_1_1_pressed}
     if (sw_1_1_is_pressed) {
-        SystemReset_StartMode(Start_Mode_BOOT);
-        NVIC_SystemReset();
+        keyboard_reset_to_bootloader();
     }
     "%,
 
@@ -85,10 +84,17 @@
   keyboard_init
     | doc "C fragment with the keyboard_init function."
     = m%"
+  void keyboard_reset_to_bootloader(void) {
+      SystemReset_StartMode(Start_Mode_BOOT);
+      NVIC_SystemReset();
+  }
+
   void keyboard_init(void) {
       keyboard_matrix_init();
 
       %{enter_bootloader_check}
+
+      keymap_register_callback(KEYMAP_CALLBACK_BOOTLOADER, keyboard_reset_to_bootloader);
 
       %{disable_swd_fragment}
 
