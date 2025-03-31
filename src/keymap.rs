@@ -305,6 +305,8 @@ pub enum KeymapCallback {
 pub enum KeymapEvent {
     /// Callback event (emitted by callback key).
     Callback(KeymapCallback),
+    /// A pressed key resolved to a state with this key output.
+    ResolvedKeyOutput(key::KeyOutput),
 }
 
 #[derive(Debug)]
@@ -542,6 +544,12 @@ impl<
                                     key_pressed: true,
                                 })
                                 .unwrap();
+
+                            // The resolved key state has output. Emit this as an event.
+                            if let Some(ko) = key_state.key_output() {
+                                let km_ev = KeymapEvent::ResolvedKeyOutput(ko);
+                                self.handle_event(key::Event::Keymap(km_ev));
+                            }
                         }
                         key::PressedKeyResult::Pending(key_path, pending_key_state) => {
                             self.pending_key_state = Some(PendingState {
