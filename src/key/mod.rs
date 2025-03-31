@@ -485,7 +485,7 @@ pub enum Event<T> {
         key_event: T,
     },
     /// Invoke a keymap callback
-    Keymap(crate::keymap::KeymapCallback),
+    Keymap(crate::keymap::KeymapEvent),
 }
 
 impl<T: Copy> Event<T> {
