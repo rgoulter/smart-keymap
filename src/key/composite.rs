@@ -212,6 +212,8 @@ pub enum KeyState {
     Keyboard(key::keyboard::KeyState),
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(key::layered::ModifierKeyState),
+    /// Caps Word key state.
+    CapsWord(key::caps_word::KeyState),
 }
 
 impl From<key::keyboard::KeyState> for KeyState {
@@ -232,7 +234,7 @@ impl key::KeyState for KeyState {
 
     fn handle_event(
         &mut self,
-        _context: Self::Context,
+        context: Self::Context,
         keymap_index: u16,
         event: key::Event<Self::Event>,
     ) -> key::PressedKeyEvents<Self::Event> {
@@ -251,6 +253,7 @@ impl key::KeyState for KeyState {
                     key::PressedKeyEvents::no_events()
                 }
             }
+            KeyState::CapsWord(ks) => ks.handle_event(context, keymap_index, event),
             KeyState::NoOp => key::PressedKeyEvents::no_events(),
         }
     }
@@ -259,6 +262,7 @@ impl key::KeyState for KeyState {
         match self {
             KeyState::Keyboard(ks) => Some(ks.key_output()),
             KeyState::LayerModifier(_) => None,
+            KeyState::CapsWord(ks) => ks.key_output(),
             KeyState::NoOp => None,
         }
     }
