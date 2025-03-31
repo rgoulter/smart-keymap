@@ -6,7 +6,7 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
-use key::{composite, Context, Event};
+use key::{composite, Context, Event, KeyState as _};
 
 const MAX_PENDING_EVENTS: usize = 32;
 const MAX_SCHEDULED_EVENTS: usize = 32;
@@ -303,6 +303,8 @@ pub enum KeymapCallback {
 pub enum KeymapEvent {
     /// Callback event (emitted by callback key).
     Callback(KeymapCallback),
+    /// A pressed key resolved to a state with this key output.
+    ResolvedKeyOutput(key::KeyOutput),
 }
 
 #[derive(Debug)]
@@ -528,6 +530,12 @@ impl<
                                     keymap_index,
                                 ))
                                 .unwrap();
+
+                            // The resolved key state has output. Emit this as an event.
+                            if let Some(ko) = key_state.key_output() {
+                                let km_ev = KeymapEvent::ResolvedKeyOutput(ko);
+                                self.handle_event(key::Event::Keymap(km_ev));
+                            }
                         }
                         key::PressedKeyResult::Pending(key_path, pending_key_state) => {
                             self.pending_key_state = Some(PendingState {
@@ -596,8 +604,6 @@ impl<
 
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
-            use key::KeyState as _;
-
             if let input::PressedInput::Key(input::PressedKey {
                 key_state,
                 keymap_index,
