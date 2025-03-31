@@ -81,7 +81,7 @@ impl key::Key for callback::Key {
     ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
         let &callback::Key { keymap_callback } = self;
         let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
-        let pke = key::PressedKeyEvents::event(key::Event::KeymapCallback(keymap_callback));
+        let pke = key::PressedKeyEvents::event(key::Event::Keymap(keymap_callback));
         (pks, pke)
     }
 
