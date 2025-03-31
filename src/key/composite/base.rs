@@ -6,6 +6,7 @@ use serde::Deserialize;
 use crate::key;
 
 use key::callback;
+use key::caps_word;
 use key::keyboard;
 use key::layered;
 
@@ -20,6 +21,8 @@ pub enum BaseKey {
     LayerModifier(layered::ModifierKey),
     /// A callback key.
     Callback(callback::Key),
+    /// Caps Word key
+    CapsWord(caps_word::Key),
     /// A keyboard key.
     Keyboard(keyboard::Key),
 }
@@ -109,6 +112,47 @@ impl key::Key for callback::Key {
     }
 }
 
+impl key::Key for caps_word::Key {
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        context: Self::Context,
+        key_path: key::KeyPath,
+    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+        let caps_word_context = context.into();
+        let keymap_index: u16 = key_path[0];
+        let pke = self.new_pressed_key(caps_word_context, keymap_index);
+        let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
+        (pks, pke)
+    }
+
+    fn handle_event(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn lookup(
+        &self,
+        _path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        self
+    }
+}
+
 impl key::Key for keyboard::Key {
     type Context = Context;
     type Event = Event;
@@ -164,6 +208,7 @@ impl key::Key for BaseKey {
             BaseKey::Keyboard(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::LayerModifier(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::Callback(key) => key::Key::new_pressed_key(key, context, key_path),
+            BaseKey::CapsWord(key) => key::Key::new_pressed_key(key, context, key_path),
         }
     }
 
