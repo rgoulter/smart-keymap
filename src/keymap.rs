@@ -298,6 +298,13 @@ pub enum KeymapCallback {
     ResetToBootloader,
 }
 
+/// Events related to the keymap.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeymapEvent {
+    /// Callback event (emitted by callback key).
+    Callback(KeymapCallback),
+}
+
 #[derive(Debug)]
 enum CallbackFunction {
     /// C callback
@@ -555,7 +562,7 @@ impl<
     // Called from handle_all_pending_events,
     //  and for handling the (resolving) queue of events from pending key state.
     fn handle_event(&mut self, ev: key::Event<composite::Event>) {
-        if let key::Event::Keymap(callback_id) = ev {
+        if let key::Event::Keymap(KeymapEvent::Callback(callback_id)) = ev {
             match self.callbacks.get(&callback_id) {
                 Some(CallbackFunction::Rust(callback_fn)) => {
                     callback_fn();
