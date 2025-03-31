@@ -6,6 +6,8 @@ use crate::input;
 
 /// Keymap Callback keys
 pub mod callback;
+/// CapsWord key(s).
+pub mod caps_word;
 /// Chorded keys. (Chording functionality).
 pub mod chorded;
 /// HID Keyboard keys.
