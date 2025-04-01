@@ -268,7 +268,12 @@ impl key::KeyState for KeyState {
     }
 
     fn is_persistent(&self) -> bool {
-        false
+        match self {
+            KeyState::Keyboard(_) => false,
+            KeyState::LayerModifier(_) => false,
+            KeyState::CapsWord(ks) => ks.is_persistent(),
+            KeyState::NoOp => false,
+        }
     }
 }
 
