@@ -253,6 +253,12 @@ impl From<callback::Key> for BaseKey {
     }
 }
 
+impl From<caps_word::Key> for BaseKey {
+    fn from(key: caps_word::Key) -> Self {
+        BaseKey::CapsWord(key)
+    }
+}
+
 impl BaseKey {
     /// Constructs a [BaseKey::Keyboard] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
