@@ -201,6 +201,12 @@ impl From<layered::ModifierKey> for BaseKey {
     }
 }
 
+impl From<callback::Key> for BaseKey {
+    fn from(key: callback::Key) -> Self {
+        BaseKey::Callback(key)
+    }
+}
+
 impl BaseKey {
     /// Constructs a [BaseKey::Keyboard] from the given [keyboard::Key].
     pub const fn keyboard(key: keyboard::Key) -> Self {
