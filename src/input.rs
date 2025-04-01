@@ -24,6 +24,9 @@ pub struct PressedKey<S> {
     pub keymap_index: u16,
     /// The pressed key state.
     pub key_state: S,
+    /// Whether the key is currently pressed.
+    /// (Persistent key state can be retained even when key is not pressed).
+    pub key_pressed: bool,
 }
 
 impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> {

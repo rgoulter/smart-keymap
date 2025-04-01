@@ -422,6 +422,7 @@ impl<
                 .push(input::PressedKey {
                     key_state,
                     keymap_index,
+                    key_pressed: true,
                 })
                 .unwrap();
 
@@ -519,6 +520,7 @@ impl<
                                 .push(input::PressedKey {
                                     key_state,
                                     keymap_index,
+                                    key_pressed: true,
                                 })
                                 .unwrap();
                         }
@@ -590,6 +592,7 @@ impl<
             |input::PressedKey {
                  key_state,
                  keymap_index,
+                 ..
              }| {
                 key_state
                     .handle_event(self.context, *keymap_index, ev)
