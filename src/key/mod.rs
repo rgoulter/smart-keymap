@@ -179,7 +179,7 @@ pub trait Context: Clone + Copy {
     type Event;
 
     /// Used to update the [Context]'s state.
-    fn handle_event(&mut self, event: Event<Self::Event>);
+    fn handle_event(&mut self, event: Event<Self::Event>) -> PressedKeyEvents<Self::Event>;
 }
 
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
