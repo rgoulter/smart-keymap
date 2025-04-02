@@ -42,3 +42,20 @@ impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> 
         self.key_state.key_output()
     }
 }
+
+/// State resulting from [Event].
+#[derive(Debug, Clone, Copy)]
+pub enum PressedInput<PK> {
+    /// Physically pressed key.
+    Key(PressedKey<PK>),
+}
+
+impl<PK> PressedInput<PK> {
+    /// Constructor for a [PressedInput::Key].
+    pub fn new_pressed_key(key_state: PK, keymap_index: u16) -> Self {
+        Self::Key(PressedKey {
+            keymap_index,
+            key_state,
+        })
+    }
+}
