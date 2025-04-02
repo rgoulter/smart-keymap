@@ -182,11 +182,6 @@ pub trait Context: Clone + Copy {
     fn handle_event(&mut self, event: Event<Self::Event>);
 }
 
-impl Context for () {
-    type Event = ();
-    fn handle_event(&mut self, _event: Event<Self::Event>) {}
-}
-
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
 #[derive(Deserialize, Default, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardModifiers {
