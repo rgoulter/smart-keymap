@@ -63,6 +63,11 @@
       reset_to_bootloader = { keymap_callback = "ResetToBootloader" },
     },
 
+  caps_word = fun K =>
+    {
+      caps_word = { toggle = "ToggleCapsWord" },
+    },
+
   shifted = fun K =>
     {
       Exclaim = K.N1,
@@ -203,6 +208,8 @@
 
       RST  = K.reset,
       BOOT = K.reset_to_bootloader,
+
+      CWTG = K.caps_word.toggle,
     },
 
   literals = fun K =>
