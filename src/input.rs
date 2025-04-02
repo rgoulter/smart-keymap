@@ -19,8 +19,6 @@ pub enum Event {
     VirtualKeyPress {
         /// The virtual key code.
         key_code: u8,
-        /// Inserts the virtual key before the pressed key with this keymap index.
-        pressed_keymap_index: u16,
     },
     /// A virtual key release for a given `key_code`.
     VirtualKeyRelease {
