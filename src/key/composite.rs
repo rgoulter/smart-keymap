@@ -59,6 +59,8 @@ pub const DEFAULT_CONFIG: Config = Config {
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
+    /// The caps word context.
+    pub caps_word_context: key::caps_word::Context,
     /// The chorded key context.
     pub chorded_context: key::chorded::Context,
     /// The layered key context.
@@ -69,6 +71,7 @@ pub struct Context {
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
+    caps_word_context: key::caps_word::DEFAULT_CONTEXT,
     chorded_context: key::chorded::DEFAULT_CONTEXT,
     layer_context: key::layered::DEFAULT_CONTEXT,
     tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
@@ -78,6 +81,7 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
+            caps_word_context: key::caps_word::DEFAULT_CONTEXT,
             chorded_context: key::chorded::Context::from_config(config.chorded),
             layer_context: key::layered::DEFAULT_CONTEXT,
             tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
@@ -94,7 +98,15 @@ impl Default for Context {
 
 impl key::Context for Context {
     type Event = Event;
-    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::PressedKeyEvents<Self::Event> {
+    fn handle_event(
+        &mut self,
+        event: key::Event<Self::Event>,
+    ) -> key::PressedKeyEvents<Self::Event> {
+        let mut pke = key::PressedKeyEvents::no_events();
+
+        let caps_word_ev = self.caps_word_context.handle_event(event);
+        pke.extend(caps_word_ev);
+
         if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
             self.chorded_context.handle_event(e);
         }
@@ -107,13 +119,19 @@ impl key::Context for Context {
             self.layer_context.handle_event(ev);
         }
 
-        key::PressedKeyEvents::no_events()
+        pke
     }
 }
 
 /// keyboard::Context from composite::Context
 impl From<Context> for () {
     fn from(_: Context) -> Self {}
+}
+
+impl From<Context> for key::caps_word::Context {
+    fn from(ctx: Context) -> Self {
+        ctx.caps_word_context
+    }
 }
 
 impl From<Context> for key::chorded::Context {
