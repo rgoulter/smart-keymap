@@ -506,7 +506,10 @@ impl<
                 }
             });
 
-            self.context.handle_event(ev.into());
+            self.context
+                .handle_event(ev.into())
+                .into_iter()
+                .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
             match ev {
                 input::Event::Press { keymap_index } => {
@@ -626,7 +629,10 @@ impl<
         });
 
         // Update context with the event
-        self.context.handle_event(ev);
+        self.context
+            .handle_event(ev)
+            .into_iter()
+            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
         if let Event::Input(input_ev) = ev {
             self.process_input(input_ev);
