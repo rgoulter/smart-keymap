@@ -52,6 +52,10 @@ pub enum KeymapInputEventType {
     KeymapEventPress = 0,
     /// Key Release event.
     KeymapEventRelease = 1,
+    /// Virtual Key Press event.
+    KeymapEventVirtualPress = 2,
+    /// Virtual Key Release event.
+    KeymapEventVirtualRelease = 3,
 }
 
 /// Input event.
@@ -64,15 +68,20 @@ pub struct KeymapInputEvent {
 }
 
 impl From<KeymapInputEvent> for input::Event {
-    fn from(
-        KeymapInputEvent {
-            event_type,
-            value: keymap_index,
-        }: KeymapInputEvent,
-    ) -> Self {
+    fn from(KeymapInputEvent { event_type, value }: KeymapInputEvent) -> Self {
         match event_type {
-            KeymapInputEventType::KeymapEventPress => input::Event::Press { keymap_index },
-            KeymapInputEventType::KeymapEventRelease => input::Event::Release { keymap_index },
+            KeymapInputEventType::KeymapEventPress => input::Event::Press {
+                keymap_index: value,
+            },
+            KeymapInputEventType::KeymapEventRelease => input::Event::Release {
+                keymap_index: value,
+            },
+            KeymapInputEventType::KeymapEventVirtualPress => input::Event::VirtualKeyPress {
+                key_code: value as u8,
+            },
+            KeymapInputEventType::KeymapEventVirtualRelease => input::Event::VirtualKeyRelease {
+                key_code: value as u8,
+            },
         }
     }
 }
@@ -91,6 +100,14 @@ impl From<input::Event> for KeymapInputEvent {
             } => KeymapInputEvent {
                 event_type: KeymapInputEventType::KeymapEventRelease,
                 value,
+            },
+            input::Event::VirtualKeyPress { key_code } => KeymapInputEvent {
+                event_type: KeymapInputEventType::KeymapEventVirtualPress,
+                value: key_code as u16,
+            },
+            input::Event::VirtualKeyRelease { key_code } => KeymapInputEvent {
+                event_type: KeymapInputEventType::KeymapEventVirtualRelease,
+                value: key_code as u16,
             },
         }
     }
