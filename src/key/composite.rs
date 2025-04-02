@@ -137,12 +137,20 @@ impl From<Context> for key::tap_hold::Context {
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
+    /// A caps word event.
+    CapsWord(key::caps_word::Event),
     /// A chorded event.
     Chorded(key::chorded::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
     /// A layer modification event.
     LayerModification(key::layered::LayerEvent),
+}
+
+impl From<key::caps_word::Event> for Event {
+    fn from(ev: key::caps_word::Event) -> Self {
+        Event::CapsWord(ev)
+    }
 }
 
 impl From<key::chorded::Event> for Event {
@@ -160,6 +168,17 @@ impl From<key::layered::LayerEvent> for Event {
 impl From<key::tap_hold::Event> for Event {
     fn from(ev: key::tap_hold::Event) -> Self {
         Event::TapHold(ev)
+    }
+}
+
+impl TryFrom<Event> for key::caps_word::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::CapsWord(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
     }
 }
 
