@@ -27,8 +27,6 @@ pub enum Event {
         /// The virtual key code.
         key_code: u8,
     },
-    /// No-op
-    InputResolved,
 }
 
 /// A struct for associating a [crate::key::Key] with a [crate::key::KeyState].
