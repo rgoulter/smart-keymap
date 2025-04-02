@@ -5,6 +5,7 @@ let validators = import "validators.ncl" in
       keyboard.Key,
       layer_modifier.Key,
       keymap_callback.Key,
+      caps_word.Key,
       layered.Key,
       tap_hold.Key,
       chorded.Key,
@@ -148,6 +149,24 @@ let validators = import "validators.ncl" in
         |> match {
           { keymap_callback } => validators.is_string keymap_callback,
           _ => 'Error { message = "expected { keymap_callback = <KeymapCallback variant> }" },
+        },
+
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_serialized = fun key => key,
+    },
+
+  caps_word
+    | doc "for key::caps_word::Key."
+    = {
+      Key = std.contract.from_validator key_validator,
+
+      key_validator = fun k =>
+        k
+        |> match
+        {
+          "ToggleCapsWord" => 'Ok,
+          _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
@@ -342,6 +361,7 @@ let validators = import "validators.ncl" in
         keyboard.key_validator,
         layer_modifier.key_validator,
         keymap_callback.key_validator,
+        caps_word.key_validator,
         layered.key_validator,
         tap_hold.key_validator,
         chorded.key_validator,
@@ -362,6 +382,8 @@ let validators = import "validators.ncl" in
       k if tap_hold.is_key k => tap_hold.to_json_serialized k,
       # Make key::callback::Key
       k if keymap_callback.is_key k => keymap_callback.to_json_serialized k,
+      # Make key::caps_word::Key
+      k if caps_word.is_key k => caps_word.to_json_serialized k,
       # Otherwise, keys with just a base key_code are key::keyboard keys.
       k if keyboard.is_key k => keyboard.to_json_serialized k,
       # Make key::layered::ModifierKey
