@@ -426,10 +426,7 @@ impl<
 
             // Add the pending state's pressed key to pressed inputs
             self.pressed_inputs
-                .push(input::PressedInput::new_pressed_key(
-                    key_state,
-                    keymap_index,
-                ))
+                .push(input::PressedInput::pressed_key(key_state, keymap_index))
                 .unwrap();
 
             // Schedule each of the queued events,
@@ -525,10 +522,7 @@ impl<
                     match pk {
                         key::PressedKeyResult::Resolved(key_state) => {
                             self.pressed_inputs
-                                .push(input::PressedInput::new_pressed_key(
-                                    key_state,
-                                    keymap_index,
-                                ))
+                                .push(input::PressedInput::pressed_key(key_state, keymap_index))
                                 .unwrap();
 
                             // The resolved key state has output. Emit this as an event.

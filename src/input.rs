@@ -54,7 +54,7 @@ pub enum PressedInput<PK> {
 
 impl<PK> PressedInput<PK> {
     /// Constructor for a [PressedInput::Key].
-    pub fn new_pressed_key(key_state: PK, keymap_index: u16) -> Self {
+    pub fn pressed_key(key_state: PK, keymap_index: u16) -> Self {
         Self::Key(PressedKey {
             keymap_index,
             key_state,
