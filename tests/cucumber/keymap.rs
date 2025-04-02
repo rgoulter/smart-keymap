@@ -21,7 +21,7 @@ type Keymap = keymap::Keymap<Vec<Key>>;
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"
   let K = import "keys.ncl" in
-  { keys = [ K.A, K.B, K.C, K.LeftCtrl ] }
+  { keys = [ K.A, K.B, K.C, K.Space, K.Backspace, K.LeftShift, K.LeftCtrl ] }
 "#;
 
 #[derive(Debug)]
