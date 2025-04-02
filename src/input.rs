@@ -15,6 +15,20 @@ pub enum Event {
         /// The index of the key in the keymap.
         keymap_index: u16,
     },
+    /// A virtual key press for a given `key_code`.
+    VirtualKeyPress {
+        /// The virtual key code.
+        key_code: u8,
+        /// Inserts the virtual key before the pressed key with this keymap index.
+        pressed_keymap_index: u16,
+    },
+    /// A virtual key release for a given `key_code`.
+    VirtualKeyRelease {
+        /// The virtual key code.
+        key_code: u8,
+    },
+    /// No-op
+    InputResolved,
 }
 
 /// A struct for associating a [crate::key::Key] with a [crate::key::KeyState].
