@@ -35,6 +35,7 @@ impl Context {
                                 ..
                             },
                     },
+                ..
             }) => {
                 // CapsWord is deactivated for key presses other than:
                 //   - A-Z
