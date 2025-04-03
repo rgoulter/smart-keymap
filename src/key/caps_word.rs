@@ -30,6 +30,7 @@ impl Context {
                         key_code,
                         key_modifiers,
                     },
+                ..
             }) => {
                 // CapsWord is deactivated for key presses other than:
                 //   - A-Z
