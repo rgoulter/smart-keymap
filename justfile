@@ -1,5 +1,7 @@
 test_keymap := "keymap-4key-simple"
 
+keymap := "tests/ncl/" + test_keymap + "/keymap.ncl"
+
 dest_dir := "firmware/ch32x035-usb-device-compositekm-c/libsmartkeymap/"
 
 target := "riscv32imac-unknown-none-elf"
@@ -19,7 +21,7 @@ test:
 
 build-keymap:
     env \
-      SMART_KEYMAP_CUSTOM_KEYMAP={{env("SMART_KEYMAP_CUSTOM_KEYMAP", "tests/ncl/" + test_keymap + "/keymap.ncl")}} \
+      SMART_KEYMAP_CUSTOM_KEYMAP={{env("SMART_KEYMAP_CUSTOM_KEYMAP", keymap)}} \
         cargo build \
         --release \
         --package "smart_keymap" \
