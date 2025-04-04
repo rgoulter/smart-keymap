@@ -54,7 +54,10 @@ impl Context {
                 if exit_caps_word {
                     self.is_active = false;
 
-                    let vk_ev = input::Event::VirtualKeyRelease { key_code: 0xE1 };
+                    let key_code = 0xE1;
+                    let vk_ev = input::Event::VirtualKeyRelease {
+                        key_output: key::KeyOutput::from_key_code(key_code),
+                    };
                     key::PressedKeyEvents::event(key::Event::Input(vk_ev))
                 } else {
                     key::PressedKeyEvents::no_events()
@@ -66,13 +69,19 @@ impl Context {
                         Event::EnableCapsWord => {
                             self.is_active = true;
 
-                            let vk_ev = input::Event::VirtualKeyPress { key_code: 0xE1 };
+                            let key_code = 0xE1;
+                            let vk_ev = input::Event::VirtualKeyPress {
+                                key_output: key::KeyOutput::from_key_code(key_code),
+                            };
                             key::PressedKeyEvents::event(key::Event::Input(vk_ev))
                         }
                         Event::DisableCapsWord => {
                             self.is_active = false;
 
-                            let vk_ev = input::Event::VirtualKeyRelease { key_code: 0xE1 };
+                            let key_code = 0xE1;
+                            let vk_ev = input::Event::VirtualKeyRelease {
+                                key_output: key::KeyOutput::from_key_code(key_code),
+                            };
                             key::PressedKeyEvents::event(key::Event::Input(vk_ev))
                         }
                     }

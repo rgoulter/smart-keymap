@@ -596,16 +596,16 @@ impl<
                         .cancel_events_for_keymap_index(keymap_index);
                 }
 
-                input::Event::VirtualKeyPress { key_code } => {
-                    let pressed_key = input::PressedInput::Virtual(key_code);
+                input::Event::VirtualKeyPress { key_output } => {
+                    let pressed_key = input::PressedInput::Virtual(key_output);
                     self.pressed_inputs.push(pressed_key).unwrap();
                 }
-                input::Event::VirtualKeyRelease { key_code } => {
+                input::Event::VirtualKeyRelease { key_output } => {
                     // Remove from pressed keys.
                     self.pressed_inputs
                         .iter()
                         .position(|k| match k {
-                            input::PressedInput::Virtual(kc) => key_code == *kc,
+                            input::PressedInput::Virtual(ko) => key_output == *ko,
                             _ => false,
                         })
                         .map(|i| self.pressed_inputs.remove(i));
@@ -704,9 +704,7 @@ impl<
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
             input::PressedInput::Key(pressed_key) => pressed_key.key_output(),
-            &input::PressedInput::Virtual(key_code) => {
-                Some(key::KeyOutput::from_key_code(key_code))
-            }
+            &input::PressedInput::Virtual(key_output) => Some(key_output),
         });
 
         pressed_key_codes.collect()
