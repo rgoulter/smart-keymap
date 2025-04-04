@@ -35,7 +35,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use smart_keymap::{init, input, keymap, split};
+use smart_keymap::{init, input, key, keymap, split};
 
 /// Length of a buffer for serializing/deserializing split keyboard events.
 pub const MESSAGE_BUFFER_LEN: usize = 4;
@@ -59,6 +59,8 @@ pub enum KeymapInputEventType {
 }
 
 /// Input event.
+///
+/// LIMITATION: split transport for virtual keys only works for basic key codes.
 #[repr(C)]
 pub struct KeymapInputEvent {
     /// Whether the event is a press or a release.
@@ -76,12 +78,14 @@ impl From<KeymapInputEvent> for input::Event {
             KeymapInputEventType::KeymapEventRelease => input::Event::Release {
                 keymap_index: value,
             },
-            KeymapInputEventType::KeymapEventVirtualPress => input::Event::VirtualKeyPress {
-                key_code: value as u8,
-            },
-            KeymapInputEventType::KeymapEventVirtualRelease => input::Event::VirtualKeyRelease {
-                key_code: value as u8,
-            },
+            KeymapInputEventType::KeymapEventVirtualPress => {
+                let key_output = key::KeyOutput::from_key_code(value as u8);
+                input::Event::VirtualKeyPress { key_output }
+            }
+            KeymapInputEventType::KeymapEventVirtualRelease => {
+                let key_output = key::KeyOutput::from_key_code(value as u8);
+                input::Event::VirtualKeyRelease { key_output }
+            }
         }
     }
 }
@@ -101,13 +105,15 @@ impl From<input::Event> for KeymapInputEvent {
                 event_type: KeymapInputEventType::KeymapEventRelease,
                 value,
             },
-            input::Event::VirtualKeyPress { key_code } => KeymapInputEvent {
+            // LIMITATION: split transport for virtual keys only works for basic key codes.
+            input::Event::VirtualKeyPress { key_output } => KeymapInputEvent {
                 event_type: KeymapInputEventType::KeymapEventVirtualPress,
-                value: key_code as u16,
+                value: key_output.key_code() as u16,
             },
-            input::Event::VirtualKeyRelease { key_code } => KeymapInputEvent {
+            // LIMITATION: split transport for virtual keys only works for basic key codes.
+            input::Event::VirtualKeyRelease { key_output } => KeymapInputEvent {
                 event_type: KeymapInputEventType::KeymapEventVirtualRelease,
-                value: key_code as u16,
+                value: key_output.key_code() as u16,
             },
         }
     }
