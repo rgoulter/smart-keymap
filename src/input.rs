@@ -18,12 +18,12 @@ pub enum Event {
     /// A virtual key press for a given `key_code`.
     VirtualKeyPress {
         /// The virtual key code.
-        key_code: u8,
+        key_output: key::KeyOutput,
     },
     /// A virtual key release for a given `key_code`.
     VirtualKeyRelease {
         /// The virtual key code.
-        key_code: u8,
+        key_output: key::KeyOutput,
     },
 }
 
@@ -59,7 +59,7 @@ pub enum PressedInput<PK> {
     /// Physically pressed key.
     Key(PressedKey<PK>),
     /// Virtually pressed key, and its keycode.
-    Virtual(u8),
+    Virtual(key::KeyOutput),
 }
 
 impl<PK> PressedInput<PK> {

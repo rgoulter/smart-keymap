@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::input;
 
@@ -185,7 +185,7 @@ pub trait Context: Clone + Copy {
 }
 
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
-#[derive(Deserialize, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq)]
 pub struct KeyboardModifiers {
     #[serde(default)]
     left_ctrl: bool,
@@ -376,7 +376,7 @@ impl KeyboardModifiers {
 }
 
 /// Struct for the output from [KeyState].
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyOutput {
     key_code: u8,
     key_modifiers: KeyboardModifiers,
