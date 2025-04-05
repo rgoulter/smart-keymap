@@ -728,7 +728,7 @@ let validators = import "validators.ncl" in
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4))",
+            expected = "crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4))",
           },
         },
     },
@@ -747,7 +747,7 @@ let validators = import "validators.ncl" in
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::composite::TapHoldKey::Pass(crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)))",
+            expected = "crate::key::composite::TapHoldKey::Pass(crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4)))",
           },
         },
     },
@@ -766,7 +766,7 @@ let validators = import "validators.ncl" in
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::composite::BaseKey::layer_modifier(%{nested.rust_expr})",
+          rust_expr = "crate::key::composite::BaseKey::LayerModifier(%{nested.rust_expr})",
         },
 
       keymap_callback = fun cv =>
@@ -794,7 +794,7 @@ let validators = import "validators.ncl" in
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::composite::BaseKey::keyboard(%{nested.rust_expr})",
+          rust_expr = "crate::key::composite::BaseKey::Keyboard(%{nested.rust_expr})",
         },
 
       caps_word = fun cv =>
