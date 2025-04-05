@@ -13,7 +13,7 @@ type Key = composite::BaseKey;
 let json = r#"
   { "key_code": 4 }
 "#;
-let expected_key: Key = Key::keyboard(keyboard::Key::new(0x04));
+let expected_key: Key = Key::Keyboard(keyboard::Key::new(0x04));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(expected_key, actual_key);
 ```
@@ -56,7 +56,7 @@ type Key = composite::BaseKey;
 let json = r#"
   { "Hold": 2 }
 "#;
-let expected_key: Key = Key::layer_modifier(layered::ModifierKey::Hold(2));
+let expected_key: Key = Key::LayerModifier(layered::ModifierKey::Hold(2));
 let actual_key: Key = serde_json::from_str(json).unwrap();
 assert_eq!(expected_key, actual_key);
 ```
