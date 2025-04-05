@@ -13,7 +13,8 @@ void test_copy_hid_boot_keyboard_report(void) {
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 
   uint8_t actual_report[8] = {1, 2, 3, 4, 5, 6, 7, 8};
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_init();
+  keymap_tick(actual_report);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
@@ -30,7 +31,7 @@ void test_keyboard_keypress(void) {
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
 
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_tick(actual_report);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
@@ -47,7 +48,7 @@ void test_keyboard_keyrelease(void) {
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 2});
 
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_tick(actual_report);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
@@ -68,7 +69,7 @@ void test_keyboard_keypress_sequence_da_db(void) {
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 3}); // Fourth key in the keymap is B
 
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_tick(actual_report);
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
@@ -88,7 +89,7 @@ void test_keyboard_keypress_sequence_db_da(void) {
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
 
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_tick(actual_report);
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
@@ -111,7 +112,7 @@ void test_keyboard_keypress_sequence_da_db_ub(void) {
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 3});
 
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_tick(actual_report);
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
 
@@ -134,6 +135,6 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 2});
 
-  copy_hid_boot_keyboard_report(actual_report);
+  keymap_tick(actual_report);
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
