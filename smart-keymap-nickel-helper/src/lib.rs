@@ -175,7 +175,7 @@ pub fn nickel_json_serialization_for_keymap(
 }
 
 /// Evaluates the Nickel expr for inputs, with a given keymap ncl, returning the json serialization.
-pub fn nickel_json_serialization_for_inputs(
+pub fn nickel_json_value_for_inputs(
     ncl_import_path: String,
     keymap_ncl: &str,
     inputs_ncl: &str,
@@ -185,7 +185,7 @@ pub fn nickel_json_serialization_for_inputs(
             "export",
             "--format=json",
             format!("--import-path={}", ncl_import_path).as_ref(),
-            "--field=inputs_as_serialized_json_input_events",
+            "--field=inputs_as_json_value_input_events",
         ])
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())

@@ -7,7 +7,7 @@
   # from ['Press k | 'Release k],
   # where 'k is a keymap.ncl key def
   #  (either LK, or the K of active layer).
-  inputs_as_serialized_json_input_events =
+  inputs_as_json_value_input_events =
     let LK = import "layered-key.ncl" in
     let lookup_keymap_index = fun layer_state @ { active_layers, .. } k =>
       layered_keys
