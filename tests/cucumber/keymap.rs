@@ -10,7 +10,7 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 
 use smart_keymap_nickel_helper::{
-    nickel_json_serialization_for_inputs, nickel_json_serialization_for_keymap,
+    nickel_json_serialization_for_keymap, nickel_json_value_for_inputs,
     nickel_to_json_for_hid_report, NickelError,
 };
 
@@ -168,7 +168,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
 }
 
 fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<input::Event> {
-    match nickel_json_serialization_for_inputs(
+    match nickel_json_value_for_inputs(
         format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
         keymap_ncl,
         inputs_ncl,
