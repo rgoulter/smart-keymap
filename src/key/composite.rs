@@ -156,6 +156,8 @@ pub enum Event {
     CapsWord(key::caps_word::Event),
     /// A chorded event.
     Chorded(key::chorded::Event),
+    /// A sticky modifier event.
+    Sticky(key::sticky::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
     /// A layer modification event.
@@ -177,6 +179,12 @@ impl From<key::chorded::Event> for Event {
 impl From<key::layered::LayerEvent> for Event {
     fn from(ev: key::layered::LayerEvent) -> Self {
         Event::LayerModification(ev)
+    }
+}
+
+impl From<key::sticky::Event> for Event {
+    fn from(ev: key::sticky::Event) -> Self {
+        Event::Sticky(ev)
     }
 }
 
@@ -214,6 +222,17 @@ impl TryFrom<Event> for key::layered::LayerEvent {
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
         match ev {
             Event::LayerModification(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
+
+impl TryFrom<Event> for key::sticky::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Sticky(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
         }
     }
