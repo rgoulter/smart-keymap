@@ -1131,6 +1131,7 @@ pub mod init {
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         chorded: %{chorded_config_expr},
         tap_hold: %{tap_hold_config_expr},
+        ..crate::key::composite::DEFAULT_CONFIG
     };
 
     /// Number of layers supported by the [crate::key::layered] implementation.
