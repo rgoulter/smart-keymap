@@ -232,7 +232,14 @@ pub struct Key<K> {
     pub passthrough: K,
 }
 
-impl<K: key::composite::ChordedNestable> Key<K> {
+impl<K: key::Key> Key<K>
+where
+    K::Context: Into<Context>,
+    K::Event: TryInto<Event>,
+    K::Event: From<Event>,
+    K::PendingKeyState: From<PendingKeyState>,
+    K::KeyState: From<key::NoOpKeyState<K::Context, K::Event>>,
+{
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
@@ -257,10 +264,7 @@ impl<K: key::composite::ChordedNestable> Key<K> {
             // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
             (pkr.add_path_item(i), pke)
         } else {
-            let pk = key::PressedKeyResult::Pending(
-                key_path,
-                key::composite::PendingKeyState::Chorded(pks),
-            );
+            let pk = key::PressedKeyResult::Pending(key_path, pks.into());
 
             let timeout_ev = Event::Timeout;
             let ctx: Context = context.into();
