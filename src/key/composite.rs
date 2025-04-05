@@ -98,11 +98,8 @@ impl Default for Context {
 
 impl key::Context for Context {
     type Event = Event;
-    fn handle_event(
-        &mut self,
-        event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
-        let mut pke = key::PressedKeyEvents::no_events();
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        let mut pke = key::KeyEvents::no_events();
 
         let caps_word_ev = self.caps_word_context.handle_event(event);
         pke.extend(caps_word_ev);
@@ -274,23 +271,23 @@ impl key::KeyState for KeyState {
         _context: Self::Context,
         keymap_index: u16,
         event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
+    ) -> key::KeyEvents<Self::Event> {
         match self {
-            KeyState::Keyboard(_) => key::PressedKeyEvents::no_events(),
+            KeyState::Keyboard(_) => key::KeyEvents::no_events(),
             KeyState::LayerModifier(ks) => {
                 if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
                     let l_ev = ks.handle_event(keymap_index, ev);
                     if let Some(l_ev) = l_ev {
                         let c_ev = Event::LayerModification(l_ev);
-                        key::PressedKeyEvents::event(key::Event::key_event(keymap_index, c_ev))
+                        key::KeyEvents::event(key::Event::key_event(keymap_index, c_ev))
                     } else {
-                        key::PressedKeyEvents::no_events()
+                        key::KeyEvents::no_events()
                     }
                 } else {
-                    key::PressedKeyEvents::no_events()
+                    key::KeyEvents::no_events()
                 }
             }
-            KeyState::NoOp => key::PressedKeyEvents::no_events(),
+            KeyState::NoOp => key::KeyEvents::no_events(),
         }
     }
 

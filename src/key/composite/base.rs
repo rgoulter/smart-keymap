@@ -37,11 +37,11 @@ impl key::Key for layered::ModifierKey {
         &self,
         _context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let keymap_index: u16 = key_path[0];
         let (m_ks, lmod_ev) = self.new_pressed_key();
         let pks = key::PressedKeyResult::Resolved(KeyState::LayerModifier(m_ks));
-        let pke = key::PressedKeyEvents::event(key::Event::key_event(
+        let pke = key::KeyEvents::event(key::Event::key_event(
             keymap_index,
             Event::LayerModification(lmod_ev),
         ));
@@ -54,7 +54,7 @@ impl key::Key for layered::ModifierKey {
         _context: Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 
@@ -81,11 +81,11 @@ impl key::Key for callback::Key {
         &self,
         _context: Self::Context,
         _key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let &callback::Key { keymap_callback } = self;
         let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
         let km_ev = crate::keymap::KeymapEvent::Callback(keymap_callback);
-        let pke = key::PressedKeyEvents::event(key::Event::Keymap(km_ev));
+        let pke = key::KeyEvents::event(key::Event::Keymap(km_ev));
         (pks, pke)
     }
 
@@ -95,7 +95,7 @@ impl key::Key for callback::Key {
         _context: Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 
@@ -122,7 +122,7 @@ impl key::Key for caps_word::Key {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let caps_word_context = context.into();
         let keymap_index: u16 = key_path[0];
         let pke = self.new_pressed_key(caps_word_context, keymap_index);
@@ -136,7 +136,7 @@ impl key::Key for caps_word::Key {
         _context: Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 
@@ -163,10 +163,10 @@ impl key::Key for keyboard::Key {
         &self,
         _context: Self::Context,
         _key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let k_ks = self.new_pressed_key();
         let pks = key::PressedKeyResult::Resolved(KeyState::Keyboard(k_ks));
-        let pke = key::PressedKeyEvents::no_events();
+        let pke = key::KeyEvents::no_events();
         (pks, pke)
     }
 
@@ -176,7 +176,7 @@ impl key::Key for keyboard::Key {
         _context: Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 
@@ -203,7 +203,7 @@ impl key::Key for BaseKey {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
             BaseKey::Keyboard(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::LayerModifier(key) => key::Key::new_pressed_key(key, context, key_path),
@@ -218,7 +218,7 @@ impl key::Key for BaseKey {
         _context: Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 

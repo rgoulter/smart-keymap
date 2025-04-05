@@ -94,8 +94,8 @@ impl key::KeyState for KeyState {
         _context: Self::Context,
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
-    ) -> key::PressedKeyEvents<Self::Event> {
-        key::PressedKeyEvents::no_events()
+    ) -> key::KeyEvents<Self::Event> {
+        key::KeyEvents::no_events()
     }
 
     fn key_output(&self) -> Option<key::KeyOutput> {

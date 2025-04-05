@@ -31,43 +31,41 @@ pub type KeyPath = heapless::Vec<u16, MAX_KEY_PATH_LEN>;
 
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
-pub struct PressedKeyEvents<E, const M: usize = { MAX_KEY_EVENTS }>(
-    heapless::Vec<ScheduledEvent<E>, M>,
-);
+pub struct KeyEvents<E, const M: usize = { MAX_KEY_EVENTS }>(heapless::Vec<ScheduledEvent<E>, M>);
 
-impl<E: Copy + Debug> PressedKeyEvents<E> {
-    /// Constructs a [PressedKeyEvents] with no events scheduled.
+impl<E: Copy + Debug> KeyEvents<E> {
+    /// Constructs a [KeyEvents] with no events scheduled.
     pub fn no_events() -> Self {
-        PressedKeyEvents(None.into_iter().collect())
+        KeyEvents(None.into_iter().collect())
     }
 
-    /// Constructs a [PressedKeyEvents] with an immediate [Event].
+    /// Constructs a [KeyEvents] with an immediate [Event].
     pub fn event(event: Event<E>) -> Self {
-        PressedKeyEvents(Some(ScheduledEvent::immediate(event)).into_iter().collect())
+        KeyEvents(Some(ScheduledEvent::immediate(event)).into_iter().collect())
     }
 
-    /// Constructs a [PressedKeyEvents] with an [Event] scheduled after a delay.
+    /// Constructs a [KeyEvents] with an [Event] scheduled after a delay.
     pub fn scheduled_event(sch_event: ScheduledEvent<E>) -> Self {
-        PressedKeyEvents(Some(sch_event).into_iter().collect())
+        KeyEvents(Some(sch_event).into_iter().collect())
     }
 
-    /// Adds an event with the schedule to the [PressedKeyEvents].
+    /// Adds an event with the schedule to the [KeyEvents].
     pub fn schedule_event(&mut self, delay: u16, event: Event<E>) {
         self.0.push(ScheduledEvent::after(delay, event)).unwrap();
     }
 
-    /// Adds events from the other [PressedKeyEvents] to the [PressedKeyEvents].
-    pub fn extend(&mut self, other: PressedKeyEvents<E>) {
+    /// Adds events from the other [KeyEvents] to the [KeyEvents].
+    pub fn extend(&mut self, other: KeyEvents<E>) {
         other.0.into_iter().for_each(|ev| self.0.push(ev).unwrap());
     }
 
-    /// Adds an event from to the [PressedKeyEvents].
+    /// Adds an event from to the [KeyEvents].
     pub fn add_event(&mut self, ev: ScheduledEvent<E>) {
         self.0.push(ev).unwrap();
     }
 }
 
-impl<E: Debug, const M: usize> IntoIterator for PressedKeyEvents<E, M> {
+impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
     type Item = ScheduledEvent<E>;
     type IntoIter = <heapless::Vec<ScheduledEvent<E>, M> as IntoIterator>::IntoIter;
 
@@ -148,7 +146,7 @@ pub trait Key: Debug {
         key_path: KeyPath,
     ) -> (
         PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-        PressedKeyEvents<Self::Event>,
+        KeyEvents<Self::Event>,
     );
 
     /// Update the given pending key state with the given impl.
@@ -158,7 +156,7 @@ pub trait Key: Debug {
         context: Self::Context,
         key_path: KeyPath,
         event: Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, PressedKeyEvents<Self::Event>);
+    ) -> (Option<Self::KeyState>, KeyEvents<Self::Event>);
 
     /// Return a reference to the key for the given path.
     fn lookup(
@@ -181,7 +179,7 @@ pub trait Context: Clone + Copy {
     type Event;
 
     /// Used to update the [Context]'s state.
-    fn handle_event(&mut self, event: Event<Self::Event>) -> PressedKeyEvents<Self::Event>;
+    fn handle_event(&mut self, event: Event<Self::Event>) -> KeyEvents<Self::Event>;
 }
 
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
@@ -442,7 +440,7 @@ pub trait KeyState: Debug {
         context: Self::Context,
         keymap_index: u16,
         event: Event<Self::Event>,
-    ) -> PressedKeyEvents<Self::Event>;
+    ) -> KeyEvents<Self::Event>;
 
     /// Output for the pressed key state.
     fn key_output(&self) -> Option<KeyOutput>;

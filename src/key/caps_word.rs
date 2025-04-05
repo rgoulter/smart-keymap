@@ -18,7 +18,7 @@ pub const DEFAULT_CONTEXT: Context = Context { is_active: false };
 
 impl Context {
     /// Updates the context with the [LayerEvent].
-    pub fn handle_event<E>(&mut self, event: key::Event<E>) -> key::PressedKeyEvents<E>
+    pub fn handle_event<E>(&mut self, event: key::Event<E>) -> key::KeyEvents<E>
     where
         Event: TryFrom<E>,
         E: core::fmt::Debug + core::marker::Copy,
@@ -58,9 +58,9 @@ impl Context {
                     let vk_ev = input::Event::VirtualKeyRelease {
                         key_output: key::KeyOutput::from_key_code(key_code),
                     };
-                    key::PressedKeyEvents::event(key::Event::Input(vk_ev))
+                    key::KeyEvents::event(key::Event::Input(vk_ev))
                 } else {
-                    key::PressedKeyEvents::no_events()
+                    key::KeyEvents::no_events()
                 }
             }
             key::Event::Key { key_event, .. } => {
@@ -73,7 +73,7 @@ impl Context {
                             let vk_ev = input::Event::VirtualKeyPress {
                                 key_output: key::KeyOutput::from_key_code(key_code),
                             };
-                            key::PressedKeyEvents::event(key::Event::Input(vk_ev))
+                            key::KeyEvents::event(key::Event::Input(vk_ev))
                         }
                         Event::DisableCapsWord => {
                             self.is_active = false;
@@ -82,14 +82,14 @@ impl Context {
                             let vk_ev = input::Event::VirtualKeyRelease {
                                 key_output: key::KeyOutput::from_key_code(key_code),
                             };
-                            key::PressedKeyEvents::event(key::Event::Input(vk_ev))
+                            key::KeyEvents::event(key::Event::Input(vk_ev))
                         }
                     }
                 } else {
-                    key::PressedKeyEvents::no_events()
+                    key::KeyEvents::no_events()
                 }
             }
-            _ => key::PressedKeyEvents::no_events(),
+            _ => key::KeyEvents::no_events(),
         }
     }
 }
@@ -117,11 +117,7 @@ impl Key {
     }
 
     /// Constructs a pressed key state
-    pub fn new_pressed_key<E>(
-        &self,
-        context: Context,
-        keymap_index: u16,
-    ) -> key::PressedKeyEvents<E>
+    pub fn new_pressed_key<E>(&self, context: Context, keymap_index: u16) -> key::KeyEvents<E>
     where
         Event: Into<E>,
         E: core::fmt::Debug + core::marker::Copy,
@@ -135,8 +131,7 @@ impl Key {
                 }
             }
         };
-        let pke =
-            key::PressedKeyEvents::event(key::Event::key_event(keymap_index, key_event.into()));
+        let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, key_event.into()));
         pke
     }
 }
