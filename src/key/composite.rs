@@ -67,6 +67,7 @@ pub struct Context {
     chorded_context: key::chorded::Context,
     layer_context: key::layered::Context,
     tap_hold_context: key::tap_hold::Context,
+    sticky_context: key::sticky::Context,
 }
 
 /// The default context.
@@ -74,6 +75,7 @@ pub const DEFAULT_CONTEXT: Context = Context {
     caps_word_context: key::caps_word::DEFAULT_CONTEXT,
     chorded_context: key::chorded::DEFAULT_CONTEXT,
     layer_context: key::layered::DEFAULT_CONTEXT,
+    sticky_context: key::sticky::DEFAULT_CONTEXT,
     tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
 };
 
@@ -84,6 +86,7 @@ impl Context {
             caps_word_context: key::caps_word::DEFAULT_CONTEXT,
             chorded_context: key::chorded::Context::from_config(config.chorded),
             layer_context: key::layered::DEFAULT_CONTEXT,
+            sticky_context: key::sticky::Context::from_config(config.sticky),
             tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
         }
     }
@@ -103,6 +106,11 @@ impl key::Context for Context {
 
         let caps_word_ev = self.caps_word_context.handle_event(event);
         pke.extend(caps_word_ev);
+
+        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+            let sticky_ev = self.sticky_context.handle_event(e);
+            pke.extend(sticky_ev.into_events());
+        }
 
         if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
             self.chorded_context.handle_event(e);
@@ -140,6 +148,12 @@ impl From<Context> for key::chorded::Context {
 impl From<Context> for key::layered::Context {
     fn from(ctx: Context) -> Self {
         ctx.layer_context
+    }
+}
+
+impl From<Context> for key::sticky::Context {
+    fn from(ctx: Context) -> Self {
+        ctx.sticky_context
     }
 }
 
