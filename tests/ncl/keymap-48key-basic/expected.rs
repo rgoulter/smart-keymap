@@ -863,10 +863,10 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
-                crate::key::composite::TapHold(crate::key::layered::ModifierKey::Hold(2)),
+                crate::key::composite::TapHold(crate::key::layered::ModifierKey::hold(2)),
                 [
                     Some(crate::key::composite::TapHold(
-                        crate::key::layered::ModifierKey::Hold(3),
+                        crate::key::layered::ModifierKey::hold(3),
                     )),
                     None,
                     None,
@@ -881,11 +881,11 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
-                crate::key::composite::TapHold(crate::key::layered::ModifierKey::Hold(1)),
+                crate::key::composite::TapHold(crate::key::layered::ModifierKey::hold(1)),
                 [
                     None,
                     Some(crate::key::composite::TapHold(
-                        crate::key::layered::ModifierKey::Hold(3),
+                        crate::key::layered::ModifierKey::hold(3),
                     )),
                     None,
                 ],

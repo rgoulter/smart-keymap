@@ -1248,7 +1248,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(43)),
                     crate::key::composite::BaseKey::LayerModifier(
-                        crate::key::layered::ModifierKey::Hold(5),
+                        crate::key::layered::ModifierKey::hold(5),
                     ),
                 )),
                 [
@@ -1282,7 +1282,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(41)),
                     crate::key::composite::BaseKey::LayerModifier(
-                        crate::key::layered::ModifierKey::Hold(6),
+                        crate::key::layered::ModifierKey::hold(6),
                     ),
                 )),
                 [
@@ -1316,7 +1316,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(44)),
                     crate::key::composite::BaseKey::LayerModifier(
-                        crate::key::layered::ModifierKey::Hold(4),
+                        crate::key::layered::ModifierKey::hold(4),
                     ),
                 )),
                 [
@@ -1350,7 +1350,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(40)),
                     crate::key::composite::BaseKey::LayerModifier(
-                        crate::key::layered::ModifierKey::Hold(2),
+                        crate::key::layered::ModifierKey::hold(2),
                     ),
                 )),
                 [
@@ -1372,7 +1372,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(42)),
                     crate::key::composite::BaseKey::LayerModifier(
-                        crate::key::layered::ModifierKey::Hold(1),
+                        crate::key::layered::ModifierKey::hold(1),
                     ),
                 )),
                 [
@@ -1394,7 +1394,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(76)),
                     crate::key::composite::BaseKey::LayerModifier(
-                        crate::key::layered::ModifierKey::Hold(3),
+                        crate::key::layered::ModifierKey::hold(3),
                     ),
                 )),
                 [

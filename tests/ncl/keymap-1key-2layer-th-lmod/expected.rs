@@ -61,7 +61,7 @@ pub mod init {
             )),
             [Some(crate::key::composite::TapHoldKey::Pass(
                 crate::key::composite::BaseKey::LayerModifier(
-                    crate::key::layered::ModifierKey::Default(1),
+                    crate::key::layered::ModifierKey::default(1),
                 ),
             ))],
         )),
