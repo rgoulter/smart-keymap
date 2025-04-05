@@ -1,3 +1,3 @@
 {
-  serialized_json_keymap = import "keymap.json"
+  json_keymap = import "keymap.json"
 }

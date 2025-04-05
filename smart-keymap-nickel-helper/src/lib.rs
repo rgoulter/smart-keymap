@@ -134,7 +134,7 @@ pub fn nickel_json_serialization_for_keymap(
             "export",
             "--format=json",
             format!("--import-path={}", ncl_import_path).as_ref(),
-            "--field=serialized_json_keymap",
+            "--field=json_keymap",
         ])
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
