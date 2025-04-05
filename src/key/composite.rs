@@ -239,6 +239,12 @@ pub enum PendingKeyState {
     Chorded(key::chorded::PendingKeyState),
 }
 
+impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::tap_hold::PendingKeyState) -> Self {
+        PendingKeyState::TapHold(pks)
+    }
+}
+
 /// Aggregate enum for key state. (i.e. pressed key data).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum KeyState {
