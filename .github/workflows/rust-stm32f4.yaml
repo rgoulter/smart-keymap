@@ -63,3 +63,13 @@ jobs:
 
       - name: Run Cargo Build (stm32f4-rtic-smart-keyboard, bin=minif4_36-rev2021_4-rhs)
         run: cargo build --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard --bin=minif4_36-rev2021_4-rhs
+
+      - name: Run Cargo Doc
+        run: |
+          cargo doc \
+            --no-default-features \
+            --package=stm32f4-rtic-smart-keyboard \
+            --package=smart-keymap \
+            --package=usbd-smart-keyboard
+        env:
+          RUSTDOCFLAGS: --deny warnings
