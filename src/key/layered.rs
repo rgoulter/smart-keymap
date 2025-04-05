@@ -23,6 +23,16 @@ pub enum ModifierKey {
 }
 
 impl ModifierKey {
+    /// Create a new [ModifierKey] that activates the given layer when held.
+    pub const fn hold(layer: LayerIndex) -> Self {
+        ModifierKey::Hold(layer)
+    }
+
+    /// Create a new [ModifierKey] that sets the default layer.
+    pub const fn default(layer: LayerIndex) -> Self {
+        ModifierKey::Default(layer)
+    }
+
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
