@@ -70,8 +70,8 @@ let validators = import "validators.ncl" in
         expected = { key_code = 4 },
       },
 
-      check_serialized_key_code = {
-        actual = K.A |> key.to_json_serialized,
+      check_json_value_key_code = {
+        actual = K.A |> key.to_json_value,
         expected = { key_code = 4 },
       },
     },
@@ -96,7 +96,7 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun key => key,
+      to_json_value = fun key => key,
     },
 
   checks.layer_modifier =
@@ -107,8 +107,8 @@ let validators = import "validators.ncl" in
         expected = { layer_modifier.hold = 0 },
       },
 
-      check_serialized_hold = {
-        actual = K.layer_mod.hold 0 |> key.to_json_serialized,
+      check_json_value_hold = {
+        actual = K.layer_mod.hold 0 |> key.to_json_value,
         expected = { Hold = 0 },
       },
     },
@@ -128,7 +128,7 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun layer_modifier_key =>
+      to_json_value = fun layer_modifier_key =>
         layer_modifier_key
         |> match {
           { layer_modifier = { default_ = default_layer } } =>
@@ -153,7 +153,7 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun key => key,
+      to_json_value = fun key => key,
     },
 
   caps_word
@@ -170,7 +170,7 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun key => key,
+      to_json_value = fun key => key,
     },
 
   checks.layered =
@@ -196,8 +196,8 @@ let validators = import "validators.ncl" in
         let key = K.A & { layered = [ null, K.C] } in
         layered.is_key key,
 
-      check_serialized_layered_keyboard = {
-        actual = K.A & { layered = [ null, K.C] } |> key.to_json_serialized,
+      check_json_value_layered_keyboard = {
+        actual = K.A & { layered = [ null, K.C] } |> key.to_json_value,
         expected = {
           base = { key_code = 4 },
           layered = [
@@ -235,12 +235,12 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { layered = layered_keys, ..base_key } =>
+      to_json_value = fun { layered = layered_keys, ..base_key } =>
         {
-          base = key.to_json_serialized base_key,
+          base = key.to_json_value base_key,
           layered =
             std.array.map
-              (fun k => if k != null then key.to_json_serialized k else null)
+              (fun k => if k != null then key.to_json_value k else null)
               layered_keys,
         },
     },
@@ -262,13 +262,13 @@ let validators = import "validators.ncl" in
         let key = K.A & K.hold K.LeftCtrl in
         tap_hold.is_key key,
 
-      check_tap_keyboard_hold_keyboard_to_json_serialized_keyboard = {
-        actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_serialized,
+      check_tap_keyboard_hold_keyboard_to_json_json_value_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_value,
         expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
       },
 
-      check_serialized_tap_keyboard_hold_keyboard = {
-        actual = K.A & K.hold K.LeftCtrl |> key.to_json_serialized,
+      check_json_value_tap_keyboard_hold_keyboard = {
+        actual = K.A & K.hold K.LeftCtrl |> key.to_json_value,
         expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
       },
     },
@@ -295,10 +295,10 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { hold = hold_key, ..tap_key } =>
+      to_json_value = fun { hold = hold_key, ..tap_key } =>
         {
-          hold = key.to_json_serialized hold_key,
-          tap = key.to_json_serialized tap_key,
+          hold = key.to_json_value hold_key,
+          tap = key.to_json_value tap_key,
         },
     },
 
@@ -324,10 +324,10 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { chord = chord_key, passthrough = passthrough_key } =>
+      to_json_value = fun { chord = chord_key, passthrough = passthrough_key } =>
         {
-          chord = key.to_json_serialized chord_key,
-          passthrough = key.to_json_serialized passthrough_key,
+          chord = key.to_json_value chord_key,
+          passthrough = key.to_json_value passthrough_key,
         },
     },
 
@@ -345,9 +345,9 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_serialized = fun { passthrough = passthrough_key } =>
+      to_json_value = fun { passthrough = passthrough_key } =>
         {
-          passthrough = key.to_json_serialized passthrough_key,
+          passthrough = key.to_json_value passthrough_key,
         },
     },
 
@@ -369,24 +369,24 @@ let validators = import "validators.ncl" in
 
     is_key = fun k => 'Ok == key_validator k,
 
-    to_json_serialized = match {
+    to_json_value = match {
       # Make key::chorded::Key
-      k if chorded.is_key k => chorded.to_json_serialized k,
+      k if chorded.is_key k => chorded.to_json_value k,
       # Make key::chorded::AuxiliaryKey
-      k if chorded_aux.is_key k => chorded_aux.to_json_serialized k,
+      k if chorded_aux.is_key k => chorded_aux.to_json_value k,
       # Make key::tap_hold::Key from keys with a "hold" modifier.
       # Make key::layered::LayeredKey
-      k if layered.is_key k => layered.to_json_serialized k,
+      k if layered.is_key k => layered.to_json_value k,
       # Make key::tap_hold::Key from keys with a "hold" modifier.
-      k if tap_hold.is_key k => tap_hold.to_json_serialized k,
+      k if tap_hold.is_key k => tap_hold.to_json_value k,
       # Make key::callback::Key
-      k if keymap_callback.is_key k => keymap_callback.to_json_serialized k,
+      k if keymap_callback.is_key k => keymap_callback.to_json_value k,
       # Make key::caps_word::Key
-      k if caps_word.is_key k => caps_word.to_json_serialized k,
+      k if caps_word.is_key k => caps_word.to_json_value k,
       # Otherwise, keys with just a base key_code are key::keyboard keys.
-      k if keyboard.is_key k => keyboard.to_json_serialized k,
+      k if keyboard.is_key k => keyboard.to_json_value k,
       # Make key::layered::ModifierKey
-      k if layer_modifier.is_key k => layer_modifier.to_json_serialized k,
+      k if layer_modifier.is_key k => layer_modifier.to_json_value k,
       # Null values (None) stay null
       null => null,
       _ => std.fail_with "unsupported item in keymap.ncl",
@@ -499,7 +499,7 @@ let validators = import "validators.ncl" in
         }
       in
       {
-        keys = chorded_keys |> std.array.map key.to_json_serialized,
+        keys = chorded_keys |> std.array.map key.to_json_value,
         config = config_,
       },
 }
