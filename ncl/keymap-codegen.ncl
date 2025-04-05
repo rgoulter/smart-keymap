@@ -252,7 +252,7 @@ let validators = import "validators.ncl" in
               key_impl = {
                 base = key_type.key_type,
               },
-              rust_expr = "crate::key::layered::ModifierKey::Default(%{std.to_string layer_index})",
+              rust_expr = "crate::key::layered::ModifierKey::default(%{std.to_string layer_index})",
               json_value = k,
             },
           { Hold = layer_index } =>
@@ -264,7 +264,7 @@ let validators = import "validators.ncl" in
               key_impl = {
                 base = key_type.key_type,
               },
-              rust_expr = "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
+              rust_expr = "crate::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
               json_value = k,
             },
         },
