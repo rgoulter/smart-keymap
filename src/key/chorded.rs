@@ -275,17 +275,7 @@ impl<K: key::composite::ChordedNestable> Key<K> {
     }
 }
 
-impl<
-        K: key::Key<
-                PendingKeyState = key::composite::PendingKeyState,
-                KeyState = key::composite::KeyState,
-            > + Copy,
-    > Key<K>
-where
-    K::Context: Into<Context>,
-    K::Event: TryInto<Event>,
-    K::Event: From<Event>,
-{
+impl<K> Key<K> {
     /// Constructs new chorded key.
     pub const fn new(chord: K, passthrough: K) -> Self {
         Key { chord, passthrough }
