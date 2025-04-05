@@ -26,7 +26,7 @@ impl TransportReader {
         self.rx
             .read()
             .ok()
-            .and_then(|b: u8| receive_byte(&mut self.buf, b).ok())
+            .and_then(|b: u8| receive_byte(self.buf, b).ok())
             .map(|Message { input_event }: Message| input_event)
     }
 }

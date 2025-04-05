@@ -25,7 +25,7 @@ pub fn init_serial(
         usart1,
         pins,
         Config::default().baudrate(9_600.bps()),
-        &clocks,
+        clocks,
     )
     .unwrap();
     serial.listen(Event::RxNotEmpty);
