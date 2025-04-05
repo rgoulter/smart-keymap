@@ -55,18 +55,18 @@
       in
       { default_layer = 0, active_layers = initial_active_layers }
     in
-    let { serialized_json, .. } =
+    let { json_value, .. } =
       std.array.fold_left
-        (fun { layer_state = ls, serialized_json = sj } input =>
+        (fun { layer_state = ls, json_value = jv } input =>
           # Assumes all `press lmod` in input_enum is
           #  where lmod is not layered.
           # e.g. unhandled case ['Press LMod 0, 'Press { layered = [LMod 1] }, ..]
           {
             layer_state = LK.update_layer_state_for_input input ls,
-            serialized_json = sj @ [input_as_json ls input]
+            json_value = jv @ [input_as_json ls input]
           }
         )
-        { layer_state = initial_layer_state, serialized_json = [] }
+        { layer_state = initial_layer_state, json_value = [] }
         inputs
-    in serialized_json
+    in json_value
 }
