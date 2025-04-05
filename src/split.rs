@@ -29,9 +29,7 @@ impl Message {
     /// Serialize the message into a bytes.
     pub fn deserialize(bytes: &[u8]) -> postcard::Result<Message> {
         let mut buf = [0u8; BUFFER_SIZE];
-        for i in 0..BUFFER_SIZE {
-            buf[i] = bytes[i];
-        }
+        buf[..BUFFER_SIZE].copy_from_slice(&bytes[..BUFFER_SIZE]);
         postcard::from_bytes_cobs(&mut buf)
     }
 }
