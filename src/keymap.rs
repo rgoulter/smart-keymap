@@ -341,7 +341,12 @@ pub enum KeymapEvent {
     /// Callback event (emitted by callback key).
     Callback(KeymapCallback),
     /// A pressed key resolved to a state with this key output.
-    ResolvedKeyOutput(key::KeyOutput),
+    ResolvedKeyOutput {
+        /// The keymap index of the key which resolved to the output.
+        keymap_index: u16,
+        /// The resolved key output.
+        key_output: key::KeyOutput,
+    },
 }
 
 #[derive(Debug)]
@@ -566,8 +571,11 @@ impl<
                                 .unwrap();
 
                             // The resolved key state has output. Emit this as an event.
-                            if let Some(ko) = key_state.key_output() {
-                                let km_ev = KeymapEvent::ResolvedKeyOutput(ko);
+                            if let Some(key_output) = key_state.key_output() {
+                                let km_ev = KeymapEvent::ResolvedKeyOutput {
+                                    keymap_index,
+                                    key_output,
+                                };
                                 self.handle_event(key::Event::Keymap(km_ev));
                             }
                         }

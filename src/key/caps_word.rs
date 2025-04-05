@@ -24,15 +24,19 @@ impl Context {
         E: core::fmt::Debug + core::marker::Copy,
     {
         match event {
-            key::Event::Keymap(keymap::KeymapEvent::ResolvedKeyOutput(key::KeyOutput {
-                key_code,
-                key_modifiers:
-                    key::KeyboardModifiers {
-                        left_shift,
-                        right_shift,
-                        ..
+            key::Event::Keymap(keymap::KeymapEvent::ResolvedKeyOutput {
+                key_output:
+                    key::KeyOutput {
+                        key_code,
+                        key_modifiers:
+                            key::KeyboardModifiers {
+                                left_shift,
+                                right_shift,
+                                ..
+                            },
                     },
-            })) => {
+                ..
+            }) => {
                 // CapsWord is deactivated for key presses other than:
                 //   - A-Z
                 //   - 0-9

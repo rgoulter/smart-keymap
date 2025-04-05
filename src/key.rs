@@ -15,6 +15,8 @@ pub mod chorded;
 pub mod keyboard;
 /// Layered keys. (Layering functionality).
 pub mod layered;
+/// Sticky Modifier keys.
+pub mod sticky;
 /// Tap-Hold keys.
 pub mod tap_hold;
 
