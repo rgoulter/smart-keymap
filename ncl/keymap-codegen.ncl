@@ -201,7 +201,7 @@ let validators = import "validators.ncl" in
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::caps_word::Key::ToggleCapsWord",
+          rust_expr = "crate::key::caps_word::Key::new()",
           json_value = k,
         },
 
