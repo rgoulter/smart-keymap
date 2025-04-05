@@ -213,7 +213,7 @@ impl Context {
             }
             key::Event::Key {
                 keymap_index,
-                key_event: Event::ChordResolved(false),
+                key_event: Event::ChordResolved(ChordResolution::Passthrough),
             } => self.release_index(keymap_index),
             _ => {}
         }
@@ -369,8 +369,8 @@ where
 /// Events for chorded keys.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Event {
-    /// The chorded key was resolved. (true if chord, false if passthrough)
-    ChordResolved(bool),
+    /// The chorded key was resolved.
+    ChordResolved(ChordResolution),
 
     /// Timed out waiting for chord to be satisfied.
     Timeout,
@@ -393,7 +393,7 @@ pub enum ChordSatisfaction {
 }
 
 /// Whether the pressed key state has resolved to a chord or not.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ChordResolution {
     /// Resolved as chord.
     Chord,
