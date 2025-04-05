@@ -217,27 +217,6 @@ pub unsafe extern "C" fn keymap_register_callback(
     }
 }
 
-/// Copy the HID keyboard report to the given buffer.
-///
-/// It's better to use [keymap_tick] copy the report to the buffer,
-///  because the report won't change between [keymap_tick] calls.
-///
-/// # Safety
-///
-/// `buf` must be a valid pointer to a buffer of at least 8 bytes.
-#[allow(static_mut_refs)]
-#[no_mangle]
-pub unsafe extern "C" fn copy_hid_boot_keyboard_report(buf: *mut u8) {
-    if buf.is_null() {
-        return;
-    }
-
-    unsafe {
-        let report = keymap::KeymapOutput::new(KEYMAP.pressed_keys()).as_hid_boot_keyboard_report();
-        core::ptr::copy_nonoverlapping(report.as_ptr(), buf, report.len());
-    }
-}
-
 /// Serializes the given event into the given buffer.
 #[no_mangle]
 pub unsafe extern "C" fn keymap_serialize_event(buf: *mut u8, event: KeymapInputEvent) {
