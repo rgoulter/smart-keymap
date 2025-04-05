@@ -42,7 +42,7 @@ impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> 
         &mut self,
         context: Ctx,
         event: crate::key::Event<Ev>,
-    ) -> crate::key::PressedKeyEvents<Ev> {
+    ) -> crate::key::KeyEvents<Ev> {
         self.key_state
             .handle_event(context, self.keymap_index, event)
     }

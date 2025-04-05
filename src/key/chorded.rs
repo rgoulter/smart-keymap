@@ -240,7 +240,7 @@ impl<K: key::composite::ChordedNestable> Key<K> {
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
-        key::PressedKeyEvents<K::Event>,
+        key::KeyEvents<K::Event>,
     ) {
         let keymap_index: u16 = key_path[0];
         let pks = PendingKeyState::new(context.into(), keymap_index);
@@ -268,7 +268,7 @@ impl<K: key::composite::ChordedNestable> Key<K> {
                 ctx.config.timeout,
                 key::Event::key_event(keymap_index, timeout_ev),
             );
-            let pke = key::PressedKeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+            let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
 
             (pk, pke)
         }
@@ -312,7 +312,7 @@ impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
-        key::PressedKeyEvents<K::Event>,
+        key::KeyEvents<K::Event>,
     ) {
         let keymap_index: u16 = key_path[0];
         let pks = PendingKeyState::new(context.into(), keymap_index);
@@ -323,7 +323,7 @@ impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
             match resolution {
                 ChordResolution::Chord => {
                     let pk = key::PressedKeyResult::Resolved(key::composite::KeyState::NoOp);
-                    let pke = key::PressedKeyEvents::no_events();
+                    let pke = key::KeyEvents::no_events();
 
                     (pk, pke)
                 }
@@ -342,7 +342,7 @@ impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
                 ctx.config.timeout,
                 key::Event::key_event(keymap_index, timeout_ev),
             );
-            let pke = key::PressedKeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+            let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
 
             (pk, pke)
         }

@@ -52,7 +52,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         self.new_pressed_key(context, key_path)
     }
 
@@ -62,7 +62,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         let keymap_index: u16 = key_path[0];
         match pending_state {
             PendingKeyState::Chorded(ch_pks) => {
@@ -94,13 +94,13 @@ impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
 
                         (Some(ks), pke)
                     } else {
-                        (None, key::PressedKeyEvents::no_events())
+                        (None, key::KeyEvents::no_events())
                     }
                 } else {
-                    (None, key::PressedKeyEvents::no_events())
+                    (None, key::KeyEvents::no_events())
                 }
             }
-            _ => (None, key::PressedKeyEvents::no_events()),
+            _ => (None, key::KeyEvents::no_events()),
         }
     }
 
@@ -133,7 +133,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         self.new_pressed_key(context, key_path)
     }
 
@@ -143,7 +143,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         let keymap_index = key_path[0];
         match pending_state {
             PendingKeyState::Chorded(ch_pks) => {
@@ -171,20 +171,20 @@ impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
                         (Some(ks), pke)
                     } else if let Some(key::chorded::ChordResolution::Chord) = ch_state {
                         let ch_r_ev = key::chorded::Event::ChordResolved(true);
-                        let pke = key::PressedKeyEvents::event(key::Event::key_event(
+                        let pke = key::KeyEvents::event(key::Event::key_event(
                             keymap_index,
                             ch_r_ev.into(),
                         ));
 
                         (Some(KeyState::NoOp), pke)
                     } else {
-                        (None, key::PressedKeyEvents::no_events())
+                        (None, key::KeyEvents::no_events())
                     }
                 } else {
-                    (None, key::PressedKeyEvents::no_events())
+                    (None, key::KeyEvents::no_events())
                 }
             }
-            _ => (None, key::PressedKeyEvents::no_events()),
+            _ => (None, key::KeyEvents::no_events()),
         }
     }
 
@@ -214,7 +214,7 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
             ChordedKey::Chorded(key) => key.new_pressed_key(context, key_path),
             ChordedKey::Auxiliary(key) => key.new_pressed_key(context, key_path),
@@ -228,7 +228,7 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         match self {
             ChordedKey::Chorded(key) => key.handle_event(pending_state, context, key_path, event),
             ChordedKey::Auxiliary(key) => key.handle_event(pending_state, context, key_path, event),
@@ -263,7 +263,7 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let Chorded(key) = self;
         key.new_pressed_key(context, key_path)
     }
@@ -274,7 +274,7 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         let Chorded(key) = self;
         key.handle_event(pending_state, context, key_path, event)
     }

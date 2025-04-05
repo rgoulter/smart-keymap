@@ -49,7 +49,7 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
             LayeredKey::Layered(key) => key.new_pressed_key(context, key_path),
             LayeredKey::Pass(key) => key.new_pressed_key(context, key_path),
@@ -62,7 +62,7 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         match self {
             LayeredKey::Layered(_) => panic!(),
             LayeredKey::Pass(key) => key.handle_event(pending_state, context, key_path, event),
@@ -102,7 +102,7 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
         &self,
         context: Self::Context,
         key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::PressedKeyEvents<Self::Event>) {
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let Layered(key) = self;
         key.new_pressed_key(context, key_path)
     }
@@ -113,7 +113,7 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::PressedKeyEvents<Self::Event>) {
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
         let Layered(key) = self;
         key.handle_event(pending_state, context, key_path, event)
     }

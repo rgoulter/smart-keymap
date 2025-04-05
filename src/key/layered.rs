@@ -257,7 +257,7 @@ where
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
-        key::PressedKeyEvents<K::Event>,
+        key::KeyEvents<K::Event>,
     ) {
         let layer_context: Context = context.into();
         let (layer, passthrough_key) = self
