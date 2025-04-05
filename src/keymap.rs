@@ -294,7 +294,7 @@ impl core::cmp::PartialEq for DistinctReports {
             j += 1;
         }
 
-        return i == self_len && j == other_len;
+        i == self_len && j == other_len
     }
 }
 
