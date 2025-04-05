@@ -89,15 +89,6 @@ impl key::KeyState for KeyState {
     type Context = key::composite::Context;
     type Event = key::composite::Event;
 
-    fn handle_event(
-        &mut self,
-        _context: Self::Context,
-        _keymap_index: u16,
-        _event: key::Event<Self::Event>,
-    ) -> key::KeyEvents<Self::Event> {
-        key::KeyEvents::no_events()
-    }
-
     fn key_output(&self) -> Option<key::KeyOutput> {
         Some(self.key_output())
     }
