@@ -131,7 +131,6 @@ impl Key {
                 }
             }
         };
-        let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, key_event.into()));
-        pke
+        key::KeyEvents::event(key::Event::key_event(keymap_index, key_event.into()))
     }
 }
