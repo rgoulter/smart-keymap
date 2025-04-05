@@ -17,7 +17,7 @@ pub struct Context {
 pub const DEFAULT_CONTEXT: Context = Context { is_active: false };
 
 impl Context {
-    /// Updates the context with the [LayerEvent].
+    /// Updates the context with the given event.
     pub fn handle_event<E>(&mut self, event: key::Event<E>) -> key::KeyEvents<E>
     where
         Event: TryFrom<E>,

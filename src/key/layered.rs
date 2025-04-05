@@ -282,7 +282,7 @@ pub enum LayerEvent {
     DefaultLayerSet(LayerIndex),
 }
 
-/// Unit-like struct, for [crate::key::KeyState] of [ModifierKey].
+/// [crate::key::KeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ModifierKeyState(ModifierKey);
 

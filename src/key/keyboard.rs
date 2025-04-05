@@ -73,7 +73,7 @@ impl Key {
     }
 }
 
-/// Unit-like struct for [crate::key::KeyState]. (crate::key::keyboard pressed keys don't have state).
+/// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeyState(Key);
 
