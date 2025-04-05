@@ -432,18 +432,22 @@ pub trait KeyState: Debug {
     /// The type of `Context` the pressed key state handles.
     type Context;
     /// The type of `Event` the pressed key state handles.
-    type Event;
+    type Event: Copy + Debug;
 
     /// Used to update the [KeyState]'s state, and possibly yield event(s).
     fn handle_event(
         &mut self,
-        context: Self::Context,
-        keymap_index: u16,
-        event: Event<Self::Event>,
-    ) -> KeyEvents<Self::Event>;
+        _context: Self::Context,
+        _keymap_index: u16,
+        _event: Event<Self::Event>,
+    ) -> KeyEvents<Self::Event> {
+        KeyEvents::no_events()
+    }
 
     /// Output for the pressed key state.
-    fn key_output(&self) -> Option<KeyOutput>;
+    fn key_output(&self) -> Option<KeyOutput> {
+        None
+    }
 }
 
 /// Errors for [TryFrom] implementations.
