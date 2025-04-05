@@ -10,6 +10,7 @@ pub mod init {
             timeout: 200,
             interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
         },
+        ..crate::key::composite::DEFAULT_CONFIG
     };
 
     /// Number of layers supported by the [crate::key::layered] implementation.
