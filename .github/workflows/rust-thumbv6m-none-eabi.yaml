@@ -57,3 +57,6 @@ jobs:
 
       - name: Run Cargo Build (rp2040-rtic-smart-keyboard)
         run: cargo build --target=thumbv6m-none-eabi --package=rp2040-rtic-smart-keyboard
+
+      - name: Run Cargo Build (rp2040-rtic-smart-keyboard, example=pico42)
+        run: cargo build --target=thumbv6m-none-eabi --package=rp2040-rtic-smart-keyboard --example=pico42
