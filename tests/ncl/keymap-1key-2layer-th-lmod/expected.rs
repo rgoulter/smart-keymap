@@ -51,8 +51,8 @@ pub mod init {
     pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((crate::key::composite::Chorded(
         crate::key::composite::LayeredKey::Layered(crate::key::layered::LayeredKey::new(
             crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)),
-                crate::key::composite::BaseKey::keyboard(
+                crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4)),
+                crate::key::composite::BaseKey::Keyboard(
                     crate::key::keyboard::Key::from_modifiers(
                         crate::key::KeyboardModifiers::LEFT_CTRL
                             .union(&crate::key::KeyboardModifiers::new()),
@@ -60,7 +60,7 @@ pub mod init {
                 ),
             )),
             [Some(crate::key::composite::TapHoldKey::Pass(
-                crate::key::composite::BaseKey::layer_modifier(
+                crate::key::composite::BaseKey::LayerModifier(
                     crate::key::layered::ModifierKey::Default(1),
                 ),
             ))],

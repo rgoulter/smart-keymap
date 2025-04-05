@@ -1145,7 +1145,7 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
-                crate::key::composite::TapHold(crate::key::composite::BaseKey::keyboard(
+                crate::key::composite::TapHold(crate::key::composite::BaseKey::Keyboard(
                     crate::key::keyboard::Key::new(29),
                 )),
                 [
@@ -1153,12 +1153,12 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHold(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(
                             73,
                         )),
                     )),
                     Some(crate::key::composite::TapHold(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHold(
                         crate::key::composite::BaseKey::Callback(crate::key::callback::Key::new(
@@ -1246,19 +1246,19 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                    crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(43)),
-                    crate::key::composite::BaseKey::layer_modifier(
+                    crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(43)),
+                    crate::key::composite::BaseKey::LayerModifier(
                         crate::key::layered::ModifierKey::Hold(5),
                     ),
                 )),
                 [
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(
                             55,
                         )),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(
+                        crate::key::composite::BaseKey::Keyboard(
                             crate::key::keyboard::Key::new_with_modifiers(
                                 55,
                                 crate::key::KeyboardModifiers::LEFT_SHIFT
@@ -1269,10 +1269,10 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                 ],
             ),
@@ -1280,19 +1280,19 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                    crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(41)),
-                    crate::key::composite::BaseKey::layer_modifier(
+                    crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(41)),
+                    crate::key::composite::BaseKey::LayerModifier(
                         crate::key::layered::ModifierKey::Hold(6),
                     ),
                 )),
                 [
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(
                             39,
                         )),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(
+                        crate::key::composite::BaseKey::Keyboard(
                             crate::key::keyboard::Key::new_with_modifiers(
                                 39,
                                 crate::key::KeyboardModifiers::LEFT_SHIFT
@@ -1303,10 +1303,10 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                 ],
             ),
@@ -1314,19 +1314,19 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                    crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(44)),
-                    crate::key::composite::BaseKey::layer_modifier(
+                    crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(44)),
+                    crate::key::composite::BaseKey::LayerModifier(
                         crate::key::layered::ModifierKey::Hold(4),
                     ),
                 )),
                 [
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(
                             45,
                         )),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(
+                        crate::key::composite::BaseKey::Keyboard(
                             crate::key::keyboard::Key::new_with_modifiers(
                                 45,
                                 crate::key::KeyboardModifiers::LEFT_SHIFT
@@ -1337,10 +1337,10 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                 ],
             ),
@@ -1348,8 +1348,8 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                    crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(40)),
-                    crate::key::composite::BaseKey::layer_modifier(
+                    crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(40)),
+                    crate::key::composite::BaseKey::LayerModifier(
                         crate::key::layered::ModifierKey::Hold(2),
                     ),
                 )),
@@ -1359,10 +1359,10 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                 ],
             ),
@@ -1370,8 +1370,8 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                    crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(42)),
-                    crate::key::composite::BaseKey::layer_modifier(
+                    crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(42)),
+                    crate::key::composite::BaseKey::LayerModifier(
                         crate::key::layered::ModifierKey::Hold(1),
                     ),
                 )),
@@ -1381,10 +1381,10 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                 ],
             ),
@@ -1392,8 +1392,8 @@ pub mod init {
         crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                    crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(76)),
-                    crate::key::composite::BaseKey::layer_modifier(
+                    crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(76)),
+                    crate::key::composite::BaseKey::LayerModifier(
                         crate::key::layered::ModifierKey::Hold(3),
                     ),
                 )),
@@ -1403,10 +1403,10 @@ pub mod init {
                     None,
                     None,
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
-                        crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(0)),
+                        crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(0)),
                     )),
                 ],
             ),
