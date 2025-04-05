@@ -258,15 +258,3 @@ impl From<caps_word::Key> for BaseKey {
         BaseKey::CapsWord(key)
     }
 }
-
-impl BaseKey {
-    /// Constructs a [BaseKey::Keyboard] from the given [keyboard::Key].
-    pub const fn keyboard(key: keyboard::Key) -> Self {
-        Self::Keyboard(key)
-    }
-
-    /// Constructs a [BaseKey::LayerModifier] from the given [layered::ModifierKey].
-    pub const fn layer_modifier(key: layered::ModifierKey) -> Self {
-        Self::LayerModifier(key)
-    }
-}

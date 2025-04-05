@@ -220,7 +220,7 @@ impl<K: Into<BaseKey>> From<K> for TapHoldKey<BaseKey> {
 impl TapHoldKey<BaseKey> {
     /// Constructs a [TapHoldKey] from the given [key::keyboard::Key].
     pub const fn keyboard(key: key::keyboard::Key) -> Self {
-        Self::Pass(BaseKey::keyboard(key))
+        Self::Pass(BaseKey::Keyboard(key))
     }
 
     /// Constructs a [TapHoldKey] from the given [key::tap_hold::Key].
@@ -230,7 +230,7 @@ impl TapHoldKey<BaseKey> {
 
     /// Constructs a [TapHoldKey] from the given [key::layered::ModifierKey].
     pub const fn layer_modifier(key: key::layered::ModifierKey) -> Self {
-        Self::Pass(BaseKey::layer_modifier(key))
+        Self::Pass(BaseKey::LayerModifier(key))
     }
 }
 
