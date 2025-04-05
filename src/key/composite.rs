@@ -45,6 +45,9 @@ pub struct Config {
     /// The chorded configuration.
     #[cfg_attr(feature = "std", serde(default))]
     pub chorded: key::chorded::Config,
+    /// The sticky modifier configuration
+    #[cfg_attr(feature = "std", serde(default))]
+    pub sticky: key::sticky::Config,
     /// The tap hold configuration.
     #[cfg_attr(feature = "std", serde(default))]
     pub tap_hold: key::tap_hold::Config,
@@ -53,6 +56,7 @@ pub struct Config {
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
     chorded: key::chorded::DEFAULT_CONFIG,
+    sticky: key::sticky::DEFAULT_CONFIG,
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
