@@ -298,7 +298,14 @@ pub struct AuxiliaryKey<K> {
     pub passthrough: K,
 }
 
-impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
+impl<K: key::Key> AuxiliaryKey<K>
+where
+    K::Context: Into<Context>,
+    K::Event: TryInto<Event>,
+    K::Event: From<Event>,
+    K::PendingKeyState: From<PendingKeyState>,
+    K::KeyState: From<key::NoOpKeyState<K::Context, K::Event>>,
+{
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
@@ -316,7 +323,7 @@ impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
         if let Some(resolution) = chord_resolution {
             match resolution {
                 ChordResolution::Chord => {
-                    let pk = key::PressedKeyResult::Resolved(key::composite::KeyState::NoOp);
+                    let pk = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
                     let pke = key::KeyEvents::no_events();
 
                     (pk, pke)
@@ -325,10 +332,7 @@ impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
                 ChordResolution::Passthrough => self.passthrough.new_pressed_key(context, key_path),
             }
         } else {
-            let pk = key::PressedKeyResult::Pending(
-                key_path,
-                key::composite::PendingKeyState::Chorded(pks),
-            );
+            let pk = key::PressedKeyResult::Pending(key_path, pks.into());
 
             let timeout_ev = Event::Timeout;
             let ctx: Context = context.into();
