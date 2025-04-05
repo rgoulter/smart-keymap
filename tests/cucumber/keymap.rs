@@ -10,8 +10,8 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 
 use smart_keymap_nickel_helper::{
-    nickel_json_serialization_for_keymap, nickel_json_value_for_inputs,
-    nickel_to_json_for_hid_report, NickelError,
+    nickel_json_value_for_inputs, nickel_json_value_for_keymap, nickel_to_json_for_hid_report,
+    NickelError,
 };
 
 type Key = key::composite::Key;
@@ -129,10 +129,7 @@ struct DocstringKeymap {
 }
 
 fn load_keymap(keymap_ncl: &str) -> Keymap {
-    match nickel_json_serialization_for_keymap(
-        format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-        keymap_ncl,
-    ) {
+    match nickel_json_value_for_keymap(format!("{}/ncl", env!("CARGO_MANIFEST_DIR")), keymap_ncl) {
         Ok(json) => {
             let keymap_result: serde_json::Result<DocstringKeymap> = serde_json::from_str(&json);
             match keymap_result {

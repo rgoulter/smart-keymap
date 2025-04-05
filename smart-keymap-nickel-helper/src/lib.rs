@@ -125,10 +125,7 @@ pub fn rustfmt(rust_src: String) -> String {
 }
 
 /// Evaluates the Nickel expr for a keymap, returning the json serialization.
-pub fn nickel_json_serialization_for_keymap(
-    ncl_import_path: String,
-    keymap_ncl: &str,
-) -> NickelResult {
+pub fn nickel_json_value_for_keymap(ncl_import_path: String, keymap_ncl: &str) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
