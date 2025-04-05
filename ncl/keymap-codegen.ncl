@@ -1,6 +1,6 @@
 let validators = import "validators.ncl" in
 {
-  serialized_json_keymap
+  json_keymap
     | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json."
     | { keys | Array key.SerializedJson, .. },
 
@@ -1050,7 +1050,7 @@ let validators = import "validators.ncl" in
     | doc "Text contents of the keymap.rs generated from the keymap.json"
     =
       let { config, keys } =
-        serialized_json_keymap
+        json_keymap
         & {
           config = {
             chorded = {

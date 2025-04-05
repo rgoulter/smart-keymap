@@ -488,7 +488,7 @@ let validators = import "validators.ncl" in
       )
       layered_keys,
 
-  serialized_json_keymap
+  json_keymap
     | default
     | doc "The keymap.json output value."
     =
