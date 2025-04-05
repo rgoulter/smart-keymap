@@ -58,7 +58,7 @@ pub mod init {
             crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                 crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4)),
                 crate::key::composite::BaseKey::LayerModifier(
-                    crate::key::layered::ModifierKey::Hold(1),
+                    crate::key::layered::ModifierKey::hold(1),
                 ),
             )),
         )),
