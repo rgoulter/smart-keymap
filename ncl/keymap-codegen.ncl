@@ -1,8 +1,8 @@
 let validators = import "validators.ncl" in
 {
   json_keymap
-    | doc "The 'JSON serialized' value of the keymap. e.g. imported from keymap.json."
-    | { keys | Array key.SerializedJson, .. },
+    | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
+    | { keys | Array key.JsonValue, .. },
 
   # Given an array of codegen_values,
   #  return the 'wrapper type' that unifies all the values.
@@ -46,9 +46,9 @@ let validators = import "validators.ncl" in
     & (impl_for "chorded" "crate::key::composite::ChordedKey" chorded_impls),
 
   keyboard_modifiers = {
-    SerializedJson = std.contract.from_validator serialized_json_validator,
+    JsonValue = std.contract.from_validator json_value_validator,
 
-    serialized_json_validator =
+    json_value_validator =
       validators.record.validator {
         fields_validator =
           validators.record.has_only_fields [
@@ -73,7 +73,7 @@ let validators = import "validators.ncl" in
         },
       },
 
-    is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+    is_json_value = fun k => 'Ok == json_value_validator k,
 
     expr = match {
       {} => "crate::key::KeyboardModifiers::new()",
@@ -97,16 +97,16 @@ let validators = import "validators.ncl" in
   },
 
   checks.check_keyboard = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_is =
-      let serialized_value = { key_code = 4 } in
-      keyboard.is_serialized_json serialized_value,
-    check_serialized_with_modifier_is =
-      let serialized_value = { key_code = 4, modifiers = { left_ctrl = true } } in
-      keyboard.is_serialized_json serialized_value,
-    check_serialized_modifiers_is =
-      let serialized_value = { modifiers = { left_ctrl = true } } in
-      keyboard.is_serialized_json serialized_value,
+    # Use a JSON value to check the "is" predicate.
+    check_json_is =
+      let json_value = { key_code = 4 } in
+      keyboard.is_json_value json_value,
+    check_json_with_modifier_is =
+      let json_value = { key_code = 4, modifiers = { left_ctrl = true } } in
+      keyboard.is_json_value json_value,
+    check_json_modifiers_is =
+      let json_value = { modifiers = { left_ctrl = true } } in
+      keyboard.is_json_value json_value,
 
     check_keyboard_codegen_values = {
       check_basic =
@@ -131,10 +131,10 @@ let validators = import "validators.ncl" in
   keyboard
     | doc "for key::keyboard::Key."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
       # c.f. doc_de_keyboard.md.
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator =
             validators.all_of [
@@ -143,11 +143,11 @@ let validators = import "validators.ncl" in
             ],
           field_validators = {
             key_code = validators.is_number,
-            modifiers = keyboard_modifiers.serialized_json_validator,
+            modifiers = keyboard_modifiers.json_value_validator,
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k =>
         {
@@ -168,7 +168,7 @@ let validators = import "validators.ncl" in
               { key_code, modifiers } =>
                 "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
             },
-          serialized_json = k,
+          json_value = k,
         },
 
       lift_to = fun key_impl cv =>
@@ -181,16 +181,16 @@ let validators = import "validators.ncl" in
   caps_word
     | doc "for key::caps_word::Key."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
-      serialized_json_validator = fun k =>
+      json_value_validator = fun k =>
         k
         |> match {
           "ToggleCapsWord" => 'Ok,
           _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k =>
         {
@@ -202,7 +202,7 @@ let validators = import "validators.ncl" in
             base = key_type.key_type,
           },
           rust_expr = "crate::key::caps_word::Key::ToggleCapsWord",
-          serialized_json = k,
+          json_value = k,
         },
 
       lift_to = fun key_impl cv =>
@@ -213,20 +213,20 @@ let validators = import "validators.ncl" in
     },
 
   checks.layer_modifier_is = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_is =
-      let serialized_value = { Hold = 0 } in
-      layer_modifier.is_serialized_json serialized_value
+    # Use a json value to check the "is" predicate.
+    check_json_is =
+      let json_value = { Hold = 0 } in
+      layer_modifier.is_json_value json_value
   },
 
   layer_modifier
     | doc "for key::layered::ModifierKey."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
       # c.f. doc_de_layered.md.
       # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer).
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator =
             validators.all_of [
@@ -238,7 +238,7 @@ let validators = import "validators.ncl" in
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k =>
         k
@@ -253,7 +253,7 @@ let validators = import "validators.ncl" in
                 base = key_type.key_type,
               },
               rust_expr = "crate::key::layered::ModifierKey::Default(%{std.to_string layer_index})",
-              serialized_json = k,
+              json_value = k,
             },
           { Hold = layer_index } =>
             {
@@ -265,7 +265,7 @@ let validators = import "validators.ncl" in
                 base = key_type.key_type,
               },
               rust_expr = "crate::key::layered::ModifierKey::Hold(%{std.to_string layer_index})",
-              serialized_json = k,
+              json_value = k,
             },
         },
 
@@ -279,9 +279,9 @@ let validators = import "validators.ncl" in
   keymap_callback
     | doc "for key::callback::Key."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["keymap_callback"],
           field_validators = {
@@ -289,7 +289,7 @@ let validators = import "validators.ncl" in
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { keymap_callback } =>
         {
@@ -301,7 +301,7 @@ let validators = import "validators.ncl" in
             base = key_type.key_type,
           },
           rust_expr = "crate::key::callback::Key::new(crate::keymap::KeymapCallback::%{keymap_callback})",
-          serialized_json = k,
+          json_value = k,
         },
 
       lift_to = fun key_impl cv =>
@@ -334,14 +334,14 @@ let validators = import "validators.ncl" in
   },
 
   checks.check_tap_hold = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_tap_keyboard_hold_keyboard_is =
-      let serialized_value = {
+    # Use a json value to check the "is" predicate.
+    check_json_tap_keyboard_hold_keyboard_is =
+      let json_value = {
         hold = { key_code = 224 },
         tap = { key_code = 4 },
       }
       in
-      tap_hold.is_serialized_json serialized_value,
+      tap_hold.is_json_value json_value,
 
     check_taphold_codegen_values = {
       # Current impl: tap_hold::Key<keyboard::Key> is still th::Key<composite::Base>
@@ -368,20 +368,20 @@ let validators = import "validators.ncl" in
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
       # c.f. doc_de_tap_hold.md.
       # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["tap", "hold"],
           field_validators = {
-            tap = key.serialized_json_validator,
-            hold = key.serialized_json_validator,
+            tap = key.json_value_validator,
+            hold = key.json_value_validator,
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { hold, tap } =>
         let hold_cv = hold |> key.codegen_values |> tap_hold_nestable.wrap in
@@ -404,7 +404,7 @@ let validators = import "validators.ncl" in
             let hold_expr = nested.hold.rust_expr in
             let tap_expr = nested.tap.rust_expr in
             "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
-          serialized_json = k,
+          json_value = k,
         },
 
       map_nested = fun f cv @ { nested, ..rest } =>
@@ -438,9 +438,9 @@ let validators = import "validators.ncl" in
   },
 
   checks.check_layered = {
-    # Use a serialized value to check the "is" predicate.
-    check_serialized_base_keyboard_layered_keyboard_is =
-      let serialized_value = {
+    # Use a json value to check the "is" predicate.
+    check_json_base_keyboard_layered_keyboard_is =
+      let json_value = {
         base = { key_code = 4 },
         layered = [
           null,
@@ -448,7 +448,7 @@ let validators = import "validators.ncl" in
         ]
       }
       in
-      layered.is_serialized_json serialized_value,
+      layered.is_json_value json_value,
 
     check_layered_codegen_values = {
       # A layered::LayeredKey of keyboard::Key
@@ -505,7 +505,7 @@ let validators = import "validators.ncl" in
   layered
     | doc "for key::layered::LayeredKey."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
       # c.f. doc_de_layered.md.
       # e.g.:
@@ -516,22 +516,22 @@ let validators = import "validators.ncl" in
       #   }
       # ```
       # JSON serialization of key::layered::Layered has fields: { base, layered }
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["base", "layered"],
           field_validators = {
-            base = key.serialized_json_validator,
+            base = key.json_value_validator,
             layered =
               validators.array.validator (
                 validators.any_of [
                   validators.is_null,
-                  key.serialized_json_validator,
+                  key.json_value_validator,
                 ]
               ),
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { base, layered } =>
         let base_cv = base |> key.codegen_values |> layered_nestable.wrap in
@@ -566,7 +566,7 @@ let validators = import "validators.ncl" in
               |> std.string.join ","
             in
             "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
-          serialized_json = k,
+          json_value = k,
         },
 
       map_nested = fun f cv @ { nested, ..rest } =>
@@ -604,19 +604,19 @@ let validators = import "validators.ncl" in
   chorded
     | doc "for key::chorded::Key."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
       # JSON serialization of key::chorded::Key is { chord: key, passthrough: key }
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["chord", "passthrough"],
           field_validators = {
-            chord = key.serialized_json_validator,
-            passthrough = key.serialized_json_validator,
+            chord = key.json_value_validator,
+            passthrough = key.json_value_validator,
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { chord, passthrough } =>
         let chord_cv = chord |> key.codegen_values |> chorded_nestable.wrap in
@@ -643,7 +643,7 @@ let validators = import "validators.ncl" in
             let chord_expr = nested.chord.rust_expr in
             let passthrough_expr = nested.passthrough.rust_expr in
             "crate::key::chorded::Key::new(%{chord_expr}, %{passthrough_expr})",
-          serialized_json = k,
+          json_value = k,
         },
 
       map_nested = fun f cv @ { nested, ..rest } =>
@@ -664,18 +664,18 @@ let validators = import "validators.ncl" in
   chorded_aux
     | doc "for key::chorded::AuxiliaryKey."
     = {
-      SerializedJson = std.contract.from_validator serialized_json_validator,
+      JsonValue = std.contract.from_validator json_value_validator,
 
       # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
-      serialized_json_validator =
+      json_value_validator =
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["passthrough"],
           field_validators = {
-            passthrough = key.serialized_json_validator,
+            passthrough = key.json_value_validator,
           },
         },
 
-      is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+      is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { passthrough } =>
         let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
@@ -697,7 +697,7 @@ let validators = import "validators.ncl" in
           rust_expr =
             let passthrough_expr = nested.passthrough.rust_expr in
             "crate::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
-          serialized_json = k,
+          json_value = k,
         },
 
       map_nested = fun f cv @ { nested, ..rest } =>
@@ -997,32 +997,32 @@ let validators = import "validators.ncl" in
   },
 
   key = {
-    SerializedJson = std.contract.from_validator serialized_json_validator,
+    JsonValue = std.contract.from_validator json_value_validator,
 
-    serialized_json_validator =
+    json_value_validator =
       validators.any_of [
-        keyboard.serialized_json_validator,
-        caps_word.serialized_json_validator,
-        layer_modifier.serialized_json_validator,
-        keymap_callback.serialized_json_validator,
-        layered.serialized_json_validator,
-        tap_hold.serialized_json_validator,
-        chorded.serialized_json_validator,
-        chorded_aux.serialized_json_validator,
+        keyboard.json_value_validator,
+        caps_word.json_value_validator,
+        layer_modifier.json_value_validator,
+        keymap_callback.json_value_validator,
+        layered.json_value_validator,
+        tap_hold.json_value_validator,
+        chorded.json_value_validator,
+        chorded_aux.json_value_validator,
       ],
 
-    is_serialized_json = fun k => 'Ok == serialized_json_validator k,
+    is_json_value = fun k => 'Ok == json_value_validator k,
 
     codegen_values = match {
-      k if keyboard.is_serialized_json k => keyboard.codegen_values k,
-      k if caps_word.is_serialized_json k => caps_word.codegen_values k,
-      k if layer_modifier.is_serialized_json k => layer_modifier.codegen_values k,
-      k if keymap_callback.is_serialized_json k => keymap_callback.codegen_values k,
-      k if layered.is_serialized_json k => layered.codegen_values k,
-      k if tap_hold.is_serialized_json k => tap_hold.codegen_values k,
-      k if chorded.is_serialized_json k => chorded.codegen_values k,
-      k if chorded_aux.is_serialized_json k => chorded_aux.codegen_values k,
-      k => std.fail_with "bad serialized_json for key: %{k |> std.serialize 'Json}",
+      k if keyboard.is_json_value k => keyboard.codegen_values k,
+      k if caps_word.is_json_value k => caps_word.codegen_values k,
+      k if layer_modifier.is_json_value k => layer_modifier.codegen_values k,
+      k if keymap_callback.is_json_value k => keymap_callback.codegen_values k,
+      k if layered.is_json_value k => layered.codegen_values k,
+      k if tap_hold.is_json_value k => tap_hold.codegen_values k,
+      k if chorded.is_json_value k => chorded.codegen_values k,
+      k if chorded_aux.is_json_value k => chorded_aux.codegen_values k,
+      k => std.fail_with "bad json_value for key: %{k |> std.serialize 'Json}",
     },
 
     lift_to = fun key_impl cv @ { key_type = { key_type, .. }, .. } =>
