@@ -163,8 +163,7 @@ let validators = import "validators.ncl" in
 
       key_validator = fun k =>
         k
-        |> match
-        {
+        |> match {
           "ToggleCapsWord" => 'Ok,
           _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
         },

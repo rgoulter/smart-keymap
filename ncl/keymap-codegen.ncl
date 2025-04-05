@@ -185,8 +185,7 @@ let validators = import "validators.ncl" in
 
       serialized_json_validator = fun k =>
         k
-        |> match
-        {
+        |> match {
           "ToggleCapsWord" => 'Ok,
           _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
         },

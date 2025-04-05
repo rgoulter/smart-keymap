@@ -206,7 +206,7 @@
       NUSH = K.NonUSHash,
       NUSB = K.NonUSBackslash,
 
-      RST  = K.reset,
+      RST = K.reset,
       BOOT = K.reset_to_bootloader,
 
       CWTG = K.caps_word.toggle,
