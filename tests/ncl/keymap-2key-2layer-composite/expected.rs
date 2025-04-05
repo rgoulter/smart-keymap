@@ -56,8 +56,8 @@ pub mod init {
     pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys2::new((
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
-                crate::key::composite::BaseKey::keyboard(crate::key::keyboard::Key::new(4)),
-                crate::key::composite::BaseKey::layer_modifier(
+                crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4)),
+                crate::key::composite::BaseKey::LayerModifier(
                     crate::key::layered::ModifierKey::Hold(1),
                 ),
             )),
