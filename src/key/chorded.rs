@@ -339,17 +339,7 @@ impl<K: key::composite::ChordedNestable> AuxiliaryKey<K> {
     }
 }
 
-impl<
-        K: key::Key<
-                PendingKeyState = key::composite::PendingKeyState,
-                KeyState = key::composite::KeyState,
-            > + Copy,
-    > AuxiliaryKey<K>
-where
-    K::Context: Into<Context>,
-    K::Event: TryInto<Event>,
-    K::Event: From<Event>,
-{
+impl<K> AuxiliaryKey<K> {
     /// Constructs new auxiliary chorded key.
     pub const fn new(passthrough: K) -> Self {
         AuxiliaryKey { passthrough }
