@@ -250,6 +250,12 @@ pub enum KeyState {
     LayerModifier(key::layered::ModifierKeyState),
 }
 
+impl From<key::NoOpKeyState<Context, Event>> for KeyState {
+    fn from(_: key::NoOpKeyState<Context, Event>) -> Self {
+        KeyState::NoOp
+    }
+}
+
 impl From<key::keyboard::KeyState> for KeyState {
     fn from(ks: key::keyboard::KeyState) -> Self {
         KeyState::Keyboard(ks)
