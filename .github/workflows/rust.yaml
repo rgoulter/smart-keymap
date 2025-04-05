@@ -51,4 +51,9 @@ jobs:
         run: cargo test
 
       - name: Run Cargo Doc
-        run: cargo doc
+        run: |
+          cargo doc \
+            --package=smart-keymap \
+            --package=usbd-smart-keyboard
+        env:
+          RUSTDOCFLAGS: --deny warnings
