@@ -84,12 +84,3 @@ impl KeyState {
         key::KeyOutput::from_key_code_with_modifiers(key.key_code, key.modifiers)
     }
 }
-
-impl key::KeyState for KeyState {
-    type Context = key::composite::Context;
-    type Event = key::composite::Event;
-
-    fn key_output(&self) -> Option<key::KeyOutput> {
-        Some(self.key_output())
-    }
-}
