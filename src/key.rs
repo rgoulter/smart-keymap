@@ -75,6 +75,20 @@ impl<E: Copy + Debug> KeyEvents<E> {
                 .collect(),
         )
     }
+
+    /// Maps the PressedKeyEvents to a new type.
+    pub fn into_events<F>(&self) -> PressedKeyEvents<F>
+    where
+        E: Into<F>,
+    {
+        PressedKeyEvents(
+            self.0
+                .as_slice()
+                .iter()
+                .map(|sch_ev| sch_ev.map_scheduled_event(|ev| ev.into()))
+                .collect(),
+        )
+    }
 }
 
 impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
