@@ -65,9 +65,9 @@ impl<E: Copy + Debug> KeyEvents<E> {
         self.0.push(ev).unwrap();
     }
 
-    /// Maps over the PressedKeyEvents.
-    pub fn map_events<F>(&self, f: fn(E) -> F) -> PressedKeyEvents<F> {
-        PressedKeyEvents(
+    /// Maps over the KeyEvents.
+    pub fn map_events<F>(&self, f: fn(E) -> F) -> KeyEvents<F> {
+        KeyEvents(
             self.0
                 .as_slice()
                 .iter()
@@ -76,12 +76,12 @@ impl<E: Copy + Debug> KeyEvents<E> {
         )
     }
 
-    /// Maps the PressedKeyEvents to a new type.
-    pub fn into_events<F>(&self) -> PressedKeyEvents<F>
+    /// Maps the KeyEvents to a new type.
+    pub fn into_events<F>(&self) -> KeyEvents<F>
     where
         E: Into<F>,
     {
-        PressedKeyEvents(
+        KeyEvents(
             self.0
                 .as_slice()
                 .iter()
