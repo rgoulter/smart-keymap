@@ -64,6 +64,17 @@ impl<E: Copy + Debug> KeyEvents<E> {
     pub fn add_event(&mut self, ev: ScheduledEvent<E>) {
         self.0.push(ev).unwrap();
     }
+
+    /// Maps over the PressedKeyEvents.
+    pub fn map_events<F>(&self, f: fn(E) -> F) -> PressedKeyEvents<F> {
+        PressedKeyEvents(
+            self.0
+                .as_slice()
+                .iter()
+                .map(|sch_ev| sch_ev.map_scheduled_event(f))
+                .collect(),
+        )
+    }
 }
 
 impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
