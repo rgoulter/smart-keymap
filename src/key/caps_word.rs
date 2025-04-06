@@ -117,11 +117,7 @@ impl Key {
     }
 
     /// Constructs a pressed key state
-    pub fn new_pressed_key<E>(&self, context: Context, keymap_index: u16) -> key::KeyEvents<E>
-    where
-        Event: Into<E>,
-        E: core::fmt::Debug + core::marker::Copy,
-    {
+    pub fn new_pressed_key(&self, context: Context, keymap_index: u16) -> key::KeyEvents<Event> {
         let key_event = match self {
             Key::ToggleCapsWord => {
                 if context.is_active {
@@ -131,6 +127,6 @@ impl Key {
                 }
             }
         };
-        key::KeyEvents::event(key::Event::key_event(keymap_index, key_event.into()))
+        key::KeyEvents::event(key::Event::key_event(keymap_index, key_event))
     }
 }

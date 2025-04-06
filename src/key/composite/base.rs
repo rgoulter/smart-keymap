@@ -127,7 +127,7 @@ impl key::Key for caps_word::Key {
         let keymap_index: u16 = key_path[0];
         let pke = self.new_pressed_key(caps_word_context, keymap_index);
         let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
-        (pks, pke)
+        (pks, pke.into_events())
     }
 
     fn handle_event(
