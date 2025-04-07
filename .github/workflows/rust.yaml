@@ -57,3 +57,11 @@ jobs:
             --package=usbd-smart-keyboard
         env:
           RUSTDOCFLAGS: --deny warnings
+
+      - name: Run Sizes
+        run: |
+          cargo run --bin sizes | tee sizes.json
+          echo "# Sizes" >$GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >>$GITHUB_STEP_SUMMARY
+          cat sizes.json >>$GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >>$GITHUB_STEP_SUMMARY
