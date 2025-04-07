@@ -6,6 +6,7 @@ let validators = import "validators.ncl" in
       layer_modifier.Key,
       keymap_callback.Key,
       caps_word.Key,
+      sticky.Key,
       layered.Key,
       tap_hold.Key,
       chorded.Key,
@@ -166,6 +167,25 @@ let validators = import "validators.ncl" in
         |> match {
           "ToggleCapsWord" => 'Ok,
           _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
+        },
+
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_value = fun key => key,
+    },
+
+  sticky
+    | doc "for key::sticky::Key."
+    = {
+      Key = std.contract.from_validator key_validator,
+
+      key_validator =
+        validators.record.validator {
+          fields_validator =
+            validators.record.has_exact_fields ["sticky_modifiers"],
+          field_validators = {
+            sticky_modifiers = keyboard_modifiers.validator,
+          },
         },
 
       is_key = fun k => 'Ok == key_validator k,
@@ -361,6 +381,7 @@ let validators = import "validators.ncl" in
         layer_modifier.key_validator,
         keymap_callback.key_validator,
         caps_word.key_validator,
+        sticky.key_validator,
         layered.key_validator,
         tap_hold.key_validator,
         chorded.key_validator,
@@ -383,6 +404,8 @@ let validators = import "validators.ncl" in
       k if keymap_callback.is_key k => keymap_callback.to_json_value k,
       # Make key::caps_word::Key
       k if caps_word.is_key k => caps_word.to_json_value k,
+      # Make key::sticky::Key
+      k if sticky.is_key k => sticky.to_json_value k,
       # Otherwise, keys with just a base key_code are key::keyboard keys.
       k if keyboard.is_key k => keyboard.to_json_value k,
       # Make key::layered::ModifierKey
