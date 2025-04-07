@@ -12,6 +12,7 @@ members = [
 name = "smart-keymap"
 version = "0.6.0-dev"
 edition = "2021"
+autobins = false
 
 [features]
 default = ["std"]
@@ -20,6 +21,10 @@ std = ["serde/std", "dep:serde_json"]
 [lib]
 name = "smart_keymap"
 crate-type = ["lib"]
+
+[[bin]]
+name = "sizes"
+required-features = ["std"]
 
 [[test]]
 name = "rust-integration"
