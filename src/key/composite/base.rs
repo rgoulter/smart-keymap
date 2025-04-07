@@ -24,6 +24,8 @@ pub enum BaseKey {
     Callback(callback::Key),
     /// Caps Word key
     CapsWord(caps_word::Key),
+    /// Sticky Modifier key
+    Sticky(sticky::Key),
     /// A keyboard key.
     Keyboard(keyboard::Key),
 }
@@ -250,6 +252,7 @@ impl key::Key for BaseKey {
             BaseKey::LayerModifier(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::Callback(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::CapsWord(key) => key::Key::new_pressed_key(key, context, key_path),
+            BaseKey::Sticky(key) => key::Key::new_pressed_key(key, context, key_path),
         }
     }
 
@@ -297,5 +300,11 @@ impl From<callback::Key> for BaseKey {
 impl From<caps_word::Key> for BaseKey {
     fn from(key: caps_word::Key) -> Self {
         BaseKey::CapsWord(key)
+    }
+}
+
+impl From<sticky::Key> for BaseKey {
+    fn from(key: sticky::Key) -> Self {
+        BaseKey::Sticky(key)
     }
 }
