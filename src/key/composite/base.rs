@@ -9,6 +9,7 @@ use key::callback;
 use key::caps_word;
 use key::keyboard;
 use key::layered;
+use key::sticky;
 
 use super::{Context, Event, KeyState, PendingKeyState, PressedKeyResult};
 
@@ -128,6 +129,46 @@ impl key::Key for caps_word::Key {
         let pke = self.new_pressed_key(caps_word_context, keymap_index);
         let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
         (pks, pke.into_events())
+    }
+
+    fn handle_event(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn lookup(
+        &self,
+        _path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        self
+    }
+}
+
+impl key::Key for sticky::Key {
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
+        let ks = self.new_pressed_key();
+        let pks = key::PressedKeyResult::Resolved(ks.into());
+        let pke = key::KeyEvents::no_events();
+        (pks, pke)
     }
 
     fn handle_event(
