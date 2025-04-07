@@ -19,6 +19,7 @@ keymap_key_features=(
     "tap_hold-config-interrupt-tap"
     "layered"
     "caps_word"
+    "sticky_modifiers"
 )
 
 keymap_ncl_features=(
