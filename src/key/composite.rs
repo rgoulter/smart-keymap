@@ -293,6 +293,8 @@ pub enum KeyState {
     Keyboard(key::keyboard::KeyState),
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(key::layered::ModifierKeyState),
+    /// Key state for [key::sticky::KeyState].
+    Sticky(key::sticky::KeyState),
 }
 
 impl From<key::NoOpKeyState<Context, Event>> for KeyState {
@@ -313,13 +315,19 @@ impl From<key::layered::ModifierKeyState> for KeyState {
     }
 }
 
+impl From<key::sticky::KeyState> for KeyState {
+    fn from(ks: key::sticky::KeyState) -> Self {
+        KeyState::Sticky(ks)
+    }
+}
+
 impl key::KeyState for KeyState {
     type Context = Context;
     type Event = Event;
 
     fn handle_event(
         &mut self,
-        _context: Self::Context,
+        context: Self::Context,
         keymap_index: u16,
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
@@ -338,6 +346,15 @@ impl key::KeyState for KeyState {
                     key::KeyEvents::no_events()
                 }
             }
+            KeyState::Sticky(ks) => {
+                if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+                    let ctx = context.into();
+                    let ke = ks.handle_event(ctx, keymap_index, ev);
+                    ke.into_events()
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
             KeyState::NoOp => key::KeyEvents::no_events(),
         }
     }
@@ -346,6 +363,7 @@ impl key::KeyState for KeyState {
         match self {
             KeyState::Keyboard(ks) => Some(ks.key_output()),
             KeyState::LayerModifier(_) => None,
+            KeyState::Sticky(ks) => ks.key_output(),
             KeyState::NoOp => None,
         }
     }
