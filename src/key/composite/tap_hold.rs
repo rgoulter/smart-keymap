@@ -24,6 +24,7 @@ pub trait TapHoldNestable:
 impl TapHoldNestable for key::layered::ModifierKey {}
 impl TapHoldNestable for key::callback::Key {}
 impl TapHoldNestable for key::caps_word::Key {}
+impl TapHoldNestable for key::sticky::Key {}
 impl TapHoldNestable for key::keyboard::Key {}
 impl TapHoldNestable for BaseKey {}
 
