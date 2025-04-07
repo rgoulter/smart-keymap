@@ -311,6 +311,49 @@ let validators = import "validators.ncl" in
           cv,
     },
 
+  sticky
+    | doc "for key::sticky::Key."
+    = {
+      JsonValue = std.contract.from_validator json_value_validator,
+
+      json_value_validator =
+        validators.record.validator {
+          fields_validator =
+            validators.all_of [
+              validators.record.has_exact_fields ["sticky_modifiers"],
+            ],
+          field_validators = {
+            sticky_modifiers = keyboard_modifiers.json_value_validator,
+          },
+        },
+
+      is_json_value = fun k => 'Ok == json_value_validator k,
+
+      codegen_values = fun k =>
+        {
+          key_type = {
+            key_type = "crate::key::sticky::Key",
+            as_rust_type_path = key_type,
+          },
+          key_impl = {
+            base = key_type.key_type,
+          },
+          rust_expr =
+            k
+            |> match {
+              { sticky_modifiers } =>
+                "crate::key::sticky::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
+            },
+          json_value = k,
+        },
+
+      lift_to = fun key_impl cv =>
+        if key_impl.base == "crate::key::composite::BaseKey" then
+          cv |> composite.base_key.sticky
+        else
+          cv,
+    },
+
   # Related to key::composite::TapHoldNestable trait.
   tap_hold_nestable = {
     # Wraps the codegen values for
@@ -318,6 +361,7 @@ let validators = import "validators.ncl" in
     #   - key::layered::ModifierKey
     #   - key::caps_word::Key
     #   - key::callback::Key
+    #   - key::sticky::Key
     #
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
@@ -329,6 +373,7 @@ let validators = import "validators.ncl" in
         "crate::key::layered::ModifierKey" => cv,
         "crate::key::caps_word::Key" => cv,
         "crate::key::callback::Key" => cv,
+        "crate::key::sticky::Key" => cv,
         cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
       },
   },
@@ -807,6 +852,16 @@ let validators = import "validators.ncl" in
           rust_expr = "crate::key::composite::BaseKey::CapsWord(%{cv.rust_expr})",
         },
 
+      sticky = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            as_rust_type_path = "crate::key::composite::BaseKey",
+            key_type = "crate::key::composite::BaseKey",
+          },
+          rust_expr = "crate::key::composite::BaseKey::Sticky(%{cv.rust_expr})",
+        },
+
       lift_to = fun key_impl cv =>
         cv,
     },
@@ -1005,6 +1060,7 @@ let validators = import "validators.ncl" in
         caps_word.json_value_validator,
         layer_modifier.json_value_validator,
         keymap_callback.json_value_validator,
+        sticky.json_value_validator,
         layered.json_value_validator,
         tap_hold.json_value_validator,
         chorded.json_value_validator,
@@ -1018,6 +1074,7 @@ let validators = import "validators.ncl" in
       k if caps_word.is_json_value k => caps_word.codegen_values k,
       k if layer_modifier.is_json_value k => layer_modifier.codegen_values k,
       k if keymap_callback.is_json_value k => keymap_callback.codegen_values k,
+      k if sticky.is_json_value k => sticky.codegen_values k,
       k if layered.is_json_value k => layered.codegen_values k,
       k if tap_hold.is_json_value k => tap_hold.codegen_values k,
       k if chorded.is_json_value k => chorded.codegen_values k,
@@ -1033,6 +1090,7 @@ let validators = import "validators.ncl" in
           "crate::key::caps_word::Key" => caps_word,
           "crate::key::layered::ModifierKey" => layer_modifier,
           "crate::key::callback::Key" => keymap_callback,
+          "crate::key::sticky::Key" => sticky,
           "crate::key::chorded::Key" => chorded,
           "crate::key::chorded::AuxiliaryKey" => chorded_aux,
           "crate::key::composite::BaseKey" => composite.base_key,
