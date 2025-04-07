@@ -11,6 +11,7 @@ std.array.fold_left
     key_extensions.aliases,
     key_extensions.keymap_callbacks,
     key_extensions.caps_word,
+    key_extensions.sticky,
     key_extensions.abbreviations,
     key_extensions.literals,
   ]

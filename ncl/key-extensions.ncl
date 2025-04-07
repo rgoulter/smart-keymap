@@ -68,6 +68,14 @@
       caps_word = { toggle = "ToggleCapsWord" },
     },
 
+  sticky = fun K =>
+    {
+      sticky = fun m =>
+        {
+          sticky_modifiers = m.modifiers,
+        },
+    },
+
   shifted = fun K =>
     {
       Exclaim = K.N1,
