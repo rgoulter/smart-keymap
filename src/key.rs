@@ -24,7 +24,7 @@ pub mod tap_hold;
 pub mod composite;
 
 /// The maximum number of key events that are emitted [Key] or [KeyState].
-pub const MAX_KEY_EVENTS: usize = 3;
+pub const MAX_KEY_EVENTS: usize = 4;
 
 /// The maximum length of a key path.
 pub const MAX_KEY_PATH_LEN: usize = 4;
