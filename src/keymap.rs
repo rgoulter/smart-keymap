@@ -494,6 +494,15 @@ impl<
             }
 
             self.handle_pending_events();
+
+            // The resolved key state has output. Emit this as an event.
+            if let Some(key_state) = key_state.key_output() {
+                let km_ev = KeymapEvent::ResolvedKeyOutput {
+                    keymap_index,
+                    key_output: key_state,
+                };
+                self.handle_event(key::Event::Keymap(km_ev));
+            }
         }
     }
 
