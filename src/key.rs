@@ -215,50 +215,41 @@ pub trait Context: Clone + Copy {
 
 /// Bool flags for each of the modifier keys (left ctrl, etc.).
 #[derive(Deserialize, Serialize, Default, Clone, Copy, PartialEq, Eq)]
-pub struct KeyboardModifiers {
-    #[serde(default)]
-    left_ctrl: bool,
-    #[serde(default)]
-    left_shift: bool,
-    #[serde(default)]
-    left_alt: bool,
-    #[serde(default)]
-    left_gui: bool,
-    #[serde(default)]
-    right_ctrl: bool,
-    #[serde(default)]
-    right_shift: bool,
-    #[serde(default)]
-    right_alt: bool,
-    #[serde(default)]
-    right_gui: bool,
+pub struct KeyboardModifiers(u8);
+
+impl core::ops::Deref for KeyboardModifiers {
+    type Target = u8;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl core::fmt::Debug for KeyboardModifiers {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         let mut ds = f.debug_struct("KeyboardModifiers");
-        if self.left_ctrl {
+        if self.0 & Self::LEFT_CTRL_U8 != 0 {
             ds.field("left_ctrl", &true);
         }
-        if self.left_shift {
+        if self.0 & Self::LEFT_SHIFT_U8 != 0 {
             ds.field("left_shift", &true);
         }
-        if self.left_alt {
+        if self.0 & Self::LEFT_ALT_U8 != 0 {
             ds.field("left_alt", &true);
         }
-        if self.left_gui {
+        if self.0 & Self::LEFT_GUI_U8 != 0 {
             ds.field("left_gui", &true);
         }
-        if self.right_ctrl {
+        if self.0 & Self::RIGHT_CTRL_U8 != 0 {
             ds.field("right_ctrl", &true);
         }
-        if self.right_shift {
+        if self.0 & Self::RIGHT_SHIFT_U8 != 0 {
             ds.field("right_shift", &true);
         }
-        if self.right_alt {
+        if self.0 & Self::RIGHT_ALT_U8 != 0 {
             ds.field("right_alt", &true);
         }
-        if self.right_gui {
+        if self.0 & Self::RIGHT_GUI_U8 != 0 {
             ds.field("right_gui", &true);
         }
         ds.finish_non_exhaustive()
@@ -266,18 +257,26 @@ impl core::fmt::Debug for KeyboardModifiers {
 }
 
 impl KeyboardModifiers {
+    /// Byte value for left ctrl.
+    pub const LEFT_CTRL_U8: u8 = 0x01;
+    /// Byte value for left shift.
+    pub const LEFT_SHIFT_U8: u8 = 0x02;
+    /// Byte value for left alt.
+    pub const LEFT_ALT_U8: u8 = 0x04;
+    /// Byte value for left gui.
+    pub const LEFT_GUI_U8: u8 = 0x08;
+    /// Byte value for right ctrl.
+    pub const RIGHT_CTRL_U8: u8 = 0x10;
+    /// Byte value for right shift.
+    pub const RIGHT_SHIFT_U8: u8 = 0x20;
+    /// Byte value for right alt.
+    pub const RIGHT_ALT_U8: u8 = 0x40;
+    /// Byte value for right gui.
+    pub const RIGHT_GUI_U8: u8 = 0x80;
+
     /// Constructs with modifiers defaulting to false.
     pub const fn new() -> Self {
-        KeyboardModifiers {
-            left_ctrl: false,
-            left_shift: false,
-            left_alt: false,
-            left_gui: false,
-            right_ctrl: false,
-            right_shift: false,
-            right_alt: false,
-            right_gui: false,
-        }
+        KeyboardModifiers(0x00)
     }
 
     /// Constructs with the given key_code.
@@ -303,52 +302,28 @@ impl KeyboardModifiers {
     };
 
     /// Const for left ctrl.
-    pub const LEFT_CTRL: KeyboardModifiers = KeyboardModifiers {
-        left_ctrl: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const LEFT_CTRL: KeyboardModifiers = KeyboardModifiers(Self::LEFT_CTRL_U8);
 
     /// Const for left shift.
-    pub const LEFT_SHIFT: KeyboardModifiers = KeyboardModifiers {
-        left_shift: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const LEFT_SHIFT: KeyboardModifiers = KeyboardModifiers(Self::LEFT_SHIFT_U8);
 
     /// Const for left alt.
-    pub const LEFT_ALT: KeyboardModifiers = KeyboardModifiers {
-        left_alt: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const LEFT_ALT: KeyboardModifiers = KeyboardModifiers(Self::LEFT_ALT_U8);
 
     /// Const for left gui.
-    pub const LEFT_GUI: KeyboardModifiers = KeyboardModifiers {
-        left_gui: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const LEFT_GUI: KeyboardModifiers = KeyboardModifiers(Self::LEFT_GUI_U8);
 
     /// Const for right ctrl.
-    pub const RIGHT_CTRL: KeyboardModifiers = KeyboardModifiers {
-        right_ctrl: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const RIGHT_CTRL: KeyboardModifiers = KeyboardModifiers(Self::RIGHT_CTRL_U8);
 
     /// Const for right shift.
-    pub const RIGHT_SHIFT: KeyboardModifiers = KeyboardModifiers {
-        right_shift: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const RIGHT_SHIFT: KeyboardModifiers = KeyboardModifiers(Self::RIGHT_SHIFT_U8);
 
     /// Const for right alt.
-    pub const RIGHT_ALT: KeyboardModifiers = KeyboardModifiers {
-        right_alt: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const RIGHT_ALT: KeyboardModifiers = KeyboardModifiers(Self::RIGHT_ALT_U8);
 
     /// Const for right gui.
-    pub const RIGHT_GUI: KeyboardModifiers = KeyboardModifiers {
-        right_gui: true,
-        ..KeyboardModifiers::new()
-    };
+    pub const RIGHT_GUI: KeyboardModifiers = KeyboardModifiers(Self::RIGHT_GUI_U8);
 
     /// Predicate for whether the key code is a modifier key code.
     pub const fn is_modifier_key_code(key_code: u8) -> bool {
@@ -359,28 +334,28 @@ impl KeyboardModifiers {
     pub fn as_key_codes(&self) -> heapless::Vec<u8, 8> {
         let mut key_codes = heapless::Vec::new();
 
-        if self.left_ctrl {
+        if self.0 & Self::LEFT_CTRL_U8 != 0 {
             key_codes.push(0xE0).unwrap();
         }
-        if self.left_shift {
+        if self.0 & Self::LEFT_SHIFT_U8 != 0 {
             key_codes.push(0xE1).unwrap();
         }
-        if self.left_alt {
+        if self.0 & Self::LEFT_ALT_U8 != 0 {
             key_codes.push(0xE2).unwrap();
         }
-        if self.left_gui {
+        if self.0 & Self::LEFT_GUI_U8 != 0 {
             key_codes.push(0xE3).unwrap();
         }
-        if self.right_ctrl {
+        if self.0 & Self::RIGHT_CTRL_U8 != 0 {
             key_codes.push(0xE4).unwrap();
         }
-        if self.right_shift {
+        if self.0 & Self::RIGHT_SHIFT_U8 != 0 {
             key_codes.push(0xE5).unwrap();
         }
-        if self.right_alt {
+        if self.0 & Self::RIGHT_ALT_U8 != 0 {
             key_codes.push(0xE6).unwrap();
         }
-        if self.right_gui {
+        if self.0 & Self::RIGHT_GUI_U8 != 0 {
             key_codes.push(0xE7).unwrap();
         }
 
@@ -396,28 +371,12 @@ impl KeyboardModifiers {
 
     /// Union of two KeyboardModifiers, taking "or" of each modifier.
     pub const fn union(&self, other: &KeyboardModifiers) -> KeyboardModifiers {
-        KeyboardModifiers {
-            left_ctrl: self.left_ctrl || other.left_ctrl,
-            left_shift: self.left_shift || other.left_shift,
-            left_alt: self.left_alt || other.left_alt,
-            left_gui: self.left_gui || other.left_gui,
-            right_ctrl: self.right_ctrl || other.right_ctrl,
-            right_shift: self.right_shift || other.right_shift,
-            right_alt: self.right_alt || other.right_alt,
-            right_gui: self.right_gui || other.right_gui,
-        }
+        KeyboardModifiers(self.0 | other.0)
     }
 
     /// Whether this keyboard modifiers includes all the other modifiers.
     pub const fn has_modifiers(&self, other: &KeyboardModifiers) -> bool {
-        (!other.left_ctrl || self.left_ctrl)
-            && (!other.left_shift || self.left_shift)
-            && (!other.left_alt || self.left_alt)
-            && (!other.left_gui || self.left_gui)
-            && (!other.right_ctrl || self.right_ctrl)
-            && (!other.right_shift || self.right_shift)
-            && (!other.right_alt || self.right_alt)
-            && (!other.right_gui || self.right_gui)
+        self.0 & other.0 != 0
     }
 }
 
