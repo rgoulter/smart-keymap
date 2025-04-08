@@ -26,19 +26,16 @@ impl Context {
         match event {
             key::Event::Keymap(keymap::KeymapEvent::ResolvedKeyOutput(key::KeyOutput {
                 key_code,
-                key_modifiers:
-                    key::KeyboardModifiers {
-                        left_shift,
-                        right_shift,
-                        ..
-                    },
+                key_modifiers,
             })) => {
                 // CapsWord is deactivated for key presses other than:
                 //   - A-Z
                 //   - 0-9
                 //   - Backspace, Delete
                 //   - Minus, Underscore
-                let is_shifted = left_shift || right_shift;
+                let is_shifted = key_modifiers.has_modifiers(
+                    &key::KeyboardModifiers::LEFT_SHIFT.union(&key::KeyboardModifiers::RIGHT_SHIFT),
+                );
                 let exit_caps_word = match key_code {
                     0x04..=0x1D => false,                // A-Z
                     0x1E..=0x27 if !is_shifted => false, // 0-9

@@ -397,6 +397,18 @@ impl KeyboardModifiers {
             right_gui: self.right_gui || other.right_gui,
         }
     }
+
+    /// Whether this keyboard modifiers includes all the other modifiers.
+    pub const fn has_modifiers(&self, other: &KeyboardModifiers) -> bool {
+        (!other.left_ctrl || self.left_ctrl)
+            && (!other.left_shift || self.left_shift)
+            && (!other.left_alt || self.left_alt)
+            && (!other.left_gui || self.left_gui)
+            && (!other.right_ctrl || self.right_ctrl)
+            && (!other.right_shift || self.right_shift)
+            && (!other.right_alt || self.right_alt)
+            && (!other.right_gui || self.right_gui)
+    }
 }
 
 /// Struct for the output from [KeyState].
