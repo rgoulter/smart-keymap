@@ -92,8 +92,7 @@ impl Default for Config {
 /// Chord definitions.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context {
-    /// The config used by the context.
-    pub config: Config,
+    config: Config,
 
     pressed_indices: [Option<u16>; MAX_CHORD_SIZE * MAX_CHORDS],
 }
