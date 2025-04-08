@@ -678,7 +678,7 @@ impl<
 
     fn handle_pending_events(&mut self) {
         // take from pending
-        if let Some(ev) = self.event_scheduler.dequeue() {
+        while let Some(ev) = self.event_scheduler.dequeue() {
             self.handle_event(ev);
         }
     }
