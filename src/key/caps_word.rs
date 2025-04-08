@@ -31,7 +31,7 @@ impl Context {
                         key_modifiers,
                     },
                 ..
-            }) => {
+            }) if self.is_active => {
                 // CapsWord is deactivated for key presses other than:
                 //   - A-Z
                 //   - 0-9
