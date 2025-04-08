@@ -65,6 +65,37 @@ fn tap_sticky_mod_modifies_next_keyboard_key() {
 }
 
 #[test]
+fn tap_sticky_mod_acts_as_regular_mod_when_interrupted_by_key_slash() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    // Tap Sticky Modifier
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    // Press "/"
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0x02, 0, 0, 0, 0, 0, 0, 0],
+        [0x02, 0, 0x38, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
 fn tap_sticky_mod_modifies_only_next_keyboard_key() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
