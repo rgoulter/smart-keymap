@@ -294,6 +294,11 @@ impl KeyboardModifiers {
         }
     }
 
+    /// Const for no modifiers
+    pub const NONE: KeyboardModifiers = KeyboardModifiers {
+        ..KeyboardModifiers::new()
+    };
+
     /// Const for left ctrl.
     pub const LEFT_CTRL: KeyboardModifiers = KeyboardModifiers {
         left_ctrl: true,
