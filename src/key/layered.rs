@@ -96,10 +96,8 @@ impl<const L: usize> LayerState for [bool; L] {
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
-    /// The default layer.
-    pub default_layer: Option<LayerIndex>,
-    /// The active layers.
-    pub active_layers: [bool; LAYER_COUNT],
+    default_layer: Option<LayerIndex>,
+    active_layers: [bool; LAYER_COUNT],
 }
 
 /// The default [Context] with no active layers.
