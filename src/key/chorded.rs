@@ -551,13 +551,14 @@ mod tests {
     #[test]
     fn test_press_chorded_key_resolves_unambiguous_aux_state_as_chord() {
         // Assemble: an Auxilary chorded key, and its PKS, with chord 01.
-        let mut context = key::composite::Context {
-            chorded_context: Context::from_config(Config {
+        let mut context = key::composite::Context::from_config(composite::Config {
+            chorded: Config {
                 chords: [Some(ChordIndices::Chord2(0, 1)), None, None, None],
                 ..DEFAULT_CONFIG
-            }),
-            ..composite::DEFAULT_CONTEXT
-        };
+            },
+            ..composite::DEFAULT_CONFIG
+        });
+
         let passthrough = keyboard::Key::new(0x04);
         let _chorded_key = AuxiliaryKey { passthrough };
         let keymap_index: u16 = 0;

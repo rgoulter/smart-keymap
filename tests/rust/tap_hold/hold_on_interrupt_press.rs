@@ -29,13 +29,13 @@ const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     )))),
 ));
 
-const CONTEXT: Ctx = Ctx {
-    tap_hold_context: tap_hold::Context::from_config(tap_hold::Config {
+const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
+    tap_hold: tap_hold::Config {
         interrupt_response: tap_hold::InterruptResponse::HoldOnKeyPress,
         ..tap_hold::DEFAULT_CONFIG
-    }),
-    ..composite::DEFAULT_CONTEXT
-};
+    },
+    ..composite::DEFAULT_CONFIG
+});
 
 #[test]
 fn rolled_presses_resolves_hold() {
