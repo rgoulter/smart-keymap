@@ -12,7 +12,6 @@ members = [
 name = "smart-keymap"
 version = "0.6.0-dev"
 edition = "2021"
-autobins = false
 
 [features]
 default = ["std"]
