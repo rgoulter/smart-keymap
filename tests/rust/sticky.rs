@@ -24,7 +24,7 @@ const KEYS: Keys4<SK, K, K, SK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
         composite::Layered(composite::TapHold(keyboard::Key::new(0x04))), // A
     ),
     composite::Chorded(
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x05))), // B
+        composite::Layered(composite::TapHold(keyboard::Key::new(0x38))), // Slash
     ),
     composite::Chorded(composite::Layered(composite::TapHold(sticky::Key::new(
         key::KeyboardModifiers::LEFT_CTRL,
@@ -83,7 +83,7 @@ fn tap_sticky_mod_modifies_only_next_keyboard_key() {
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    // Press "B"
+    // Press "/"
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
@@ -98,7 +98,7 @@ fn tap_sticky_mod_modifies_only_next_keyboard_key() {
         [0x02, 0, 0, 0, 0, 0, 0, 0],
         [0x02, 0, 0x04, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, 0x38, 0, 0, 0, 0, 0],
     ];
     assert_eq!(expected_reports, actual_reports.reports());
 }
