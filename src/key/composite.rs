@@ -59,14 +59,10 @@ pub const DEFAULT_CONFIG: Config = Config {
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
-    /// The caps word context.
-    pub caps_word_context: key::caps_word::Context,
-    /// The chorded key context.
-    pub chorded_context: key::chorded::Context,
-    /// The layered key context.
-    pub layer_context: key::layered::Context,
-    /// The tap hold key context.
-    pub tap_hold_context: key::tap_hold::Context,
+    caps_word_context: key::caps_word::Context,
+    chorded_context: key::chorded::Context,
+    layer_context: key::layered::Context,
+    tap_hold_context: key::tap_hold::Context,
 }
 
 /// The default context.
