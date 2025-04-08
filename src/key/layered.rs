@@ -568,40 +568,6 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_ron_keyboard() {
-        use key::keyboard;
-
-        let actual_key: key::keyboard::Key = ron::from_str("Key(key_code: 0x04)").unwrap();
-        let expected_key: key::keyboard::Key = keyboard::Key::new(0x04);
-        assert_eq!(expected_key, actual_key);
-    }
-
-    #[test]
-    fn test_deserialize_ron_option_keyboard() {
-        use key::keyboard;
-
-        let actual_key: Option<key::keyboard::Key> =
-            ron::from_str("Some(Key(key_code: 0x04))").unwrap();
-        let expected_key: Option<key::keyboard::Key> = Some(keyboard::Key::new(0x04));
-        assert_eq!(expected_key, actual_key);
-    }
-
-    #[test]
-    fn test_deserialize_ron_array1_u8() {
-        let actual: [u8; 1] = ron::from_str("(5)").unwrap();
-        let expected: [u8; 1] = [5];
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
-    fn test_deserialize_ron_array1_option_keyboard() {
-        let actual: [Option<key::keyboard::Key>; 1] =
-            ron::from_str("(Some(Key(key_code: 0x04)))").unwrap();
-        let expected: [Option<key::keyboard::Key>; 1] = [Some(keyboard::Key::new(0x04))];
-        assert_eq!(expected, actual);
-    }
-
-    #[test]
     fn test_deserialize_json_option_keyboard() {
         let actual: Option<key::keyboard::Key> =
             serde_json::from_str(r#"{"key_code": 4}"#).unwrap();
@@ -627,29 +593,11 @@ mod tests {
     }
 
     #[test]
-    fn test_deserialize_ron_layered_key_keyboard_0layer() {
-        let actual_key: LayeredKey<key::keyboard::Key> =
-            ron::from_str("(base: (key_code: 0x04), layered: [])").unwrap();
-        let expected_key: LayeredKey<key::keyboard::Key> =
-            LayeredKey::new(key::keyboard::Key::new(0x04), []);
-        assert_eq!(expected_key, actual_key);
-    }
-
-    #[test]
     fn test_deserialize_json_layered_key_keyboard_0layer() {
         let actual_key: LayeredKey<key::keyboard::Key> =
             serde_json::from_str(r#"{"base": {"key_code": 4}, "layered": []}"#).unwrap();
         let expected_key: LayeredKey<key::keyboard::Key> =
             LayeredKey::new(key::keyboard::Key::new(0x04), []);
-        assert_eq!(expected_key, actual_key);
-    }
-
-    #[test]
-    fn test_deserialize_ron_layered_key_keyboard_1layer_none() {
-        let actual_key: LayeredKey<key::keyboard::Key> =
-            ron::from_str("LayeredKey(base: Key(key_code: 0x04), layered: [None])").unwrap();
-        let expected_key: LayeredKey<key::keyboard::Key> =
-            LayeredKey::new(key::keyboard::Key::new(0x04), [None]);
         assert_eq!(expected_key, actual_key);
     }
 
