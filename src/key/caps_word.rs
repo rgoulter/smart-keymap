@@ -9,8 +9,7 @@ use crate::keymap;
 /// Caps Word context.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
-    /// Whether caps word is active.
-    pub is_active: bool,
+    is_active: bool,
 }
 
 /// The default [Context].
