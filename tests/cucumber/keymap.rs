@@ -140,7 +140,7 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
                 }
                 Err(e) => {
                     panic!(
-                        "\n\nerror deserailizing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
+                        "\n\nerror deserializing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
                         e,
                         json,
                     )
@@ -176,7 +176,7 @@ fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<input::Event> {
                 Ok(inputs) => inputs,
                 Err(e) => {
                     panic!(
-                        "\n\nerror deserailizing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
+                        "\n\nerror deserializing JSON:\n\nDeserialization Error:\n\n{}\n\nJSON:\n{}",
                         e,
                         json,
                     )
