@@ -17,7 +17,6 @@ pub trait TapHoldNestable:
         PendingKeyState = PendingKeyState,
     > + Copy
     + PartialEq
-    + Into<BaseKey>
 {
 }
 
