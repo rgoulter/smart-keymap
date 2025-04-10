@@ -2,7 +2,7 @@ use std::mem;
 
 use serde::Serialize;
 
-use smart_keymap::{input, key, keymap};
+use smart_keymap::{input, key};
 
 #[derive(Serialize)]
 struct StructSizes {
@@ -25,7 +25,7 @@ fn main() {
         key_composite_key: mem::size_of::<key::composite::Key>(),
         key_composite_pendingkeystate: mem::size_of::<key::composite::PendingKeyState>(),
         key_composite_keystate: mem::size_of::<key::composite::KeyState>(),
-        keymap_keymap: mem::size_of::<keymap::Keymap<smart_keymap::init::KeyDefinitionsType>>(),
+        keymap_keymap: mem::size_of::<smart_keymap::init::Keymap>(),
     };
 
     let json_output = serde_json::to_string_pretty(&sizes_data).unwrap();

@@ -63,6 +63,7 @@ pub mod split;
 #[cfg(not(custom_keymap))]
 pub mod init {
     use crate::key::{composite, keyboard};
+    use crate::keymap;
     use crate::tuples::Keys1;
 
     /// Config used to construct initial context.
@@ -89,6 +90,9 @@ pub mod init {
 
     /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
     pub type KeyDefinitionsType = Keys1<Key, Context, Event, PendingKeyState, KeyState>;
+
+    /// Alias for the [keymap::Keymap] type.
+    pub type Keymap = keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: KeyDefinitionsType =
