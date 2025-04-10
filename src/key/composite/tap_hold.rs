@@ -73,8 +73,8 @@ impl<K: TapHoldNestable> key::Key for key::tap_hold::Key<K> {
                     let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
                     if let Some(th_state) = th_state {
                         let (i, nk) = match th_state {
-                            key::tap_hold::TapHoldState::Tap => (0, self.tap),
-                            key::tap_hold::TapHoldState::Hold => (1, self.hold),
+                            key::tap_hold::TapHoldState::Tap => (0, &self.tap),
+                            key::tap_hold::TapHoldState::Hold => (1, &self.hold),
                         };
                         let (pkr, pke) = nk.new_pressed_key(context, key_path);
                         // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
