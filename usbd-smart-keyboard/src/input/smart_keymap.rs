@@ -16,15 +16,13 @@ pub struct KeymapCallbacks {
 /// through to listing HID scancodes to report using HIDs.
 #[derive(Debug)]
 pub struct KeyboardBackend {
-    keymap: smart_keymap::keymap::Keymap<smart_keymap::init::KeyDefinitionsType>,
+    keymap: smart_keymap::init::Keymap,
     pressed_key_codes: heapless::Vec<page::Keyboard, { smart_keymap::keymap::MAX_PRESSED_KEYS }>,
 }
 
 impl KeyboardBackend {
     /// Constructs a new keyboard backend.
-    pub fn new(
-        keymap: smart_keymap::keymap::Keymap<smart_keymap::init::KeyDefinitionsType>,
-    ) -> Self {
+    pub fn new(keymap: smart_keymap::init::Keymap) -> Self {
         Self {
             keymap,
             pressed_key_codes: heapless::Vec::new(),
