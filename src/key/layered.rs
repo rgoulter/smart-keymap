@@ -303,7 +303,7 @@ where
     K::Context: Into<Context>,
 {
     /// Presses the key, using the highest active key, if any.
-    pub fn new_pressed_key(
+    fn new_pressed_key(
         &self,
         context: K::Context,
         key_path: key::KeyPath,
@@ -320,6 +320,62 @@ where
         // PRESSED KEY PATH: add Layer (0 = base, n = layer_index)
         let (pkr, pke) = passthrough_key.new_pressed_key(context, key_path);
         (pkr.add_path_item(layer as u16), pke)
+    }
+}
+
+impl<
+        K: key::Key<
+                Context = crate::init::Context,
+                Event = crate::init::Event,
+                PendingKeyState = crate::init::PendingKeyState,
+                KeyState = crate::init::KeyState,
+            > + Copy
+            + PartialEq,
+    > key::Key for LayeredKey<K>
+{
+    type Context = crate::init::Context;
+    type Event = crate::init::Event;
+    type PendingKeyState = crate::init::PendingKeyState;
+    type KeyState = crate::init::KeyState;
+
+    fn new_pressed_key(
+        &self,
+        context: Self::Context,
+        key_path: key::KeyPath,
+    ) -> (
+        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        self.new_pressed_key(context, key_path)
+    }
+
+    fn handle_event(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn lookup(
+        &self,
+        path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        match path {
+            [] => panic!(),
+            [0, path @ ..] => self.base.lookup(path),
+            [layer_index, path @ ..] => self.layered[(layer_index - 1) as usize]
+                .as_ref()
+                .unwrap()
+                .lookup(path),
+        }
     }
 }
 
