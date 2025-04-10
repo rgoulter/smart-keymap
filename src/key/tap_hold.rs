@@ -141,13 +141,7 @@ impl<
                         // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
                         let pkr = pkr.add_path_item(i);
 
-                        let ks = match pkr {
-                            // "Pending key resolves into pending key" to be implemented later.
-                            key::PressedKeyResult::Pending(_, _) => todo!(),
-                            key::PressedKeyResult::Resolved(ks) => ks,
-                        };
-
-                        (Some(key::PressedKeyResult::Resolved(ks)), pke)
+                        (Some(pkr), pke)
                     } else {
                         (None, key::KeyEvents::no_events())
                     }
