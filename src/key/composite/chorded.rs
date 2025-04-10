@@ -42,7 +42,15 @@ pub enum ChordedKey<K: ChordedNestable> {
 #[derive(Debug, Clone, Copy)]
 pub struct Chorded<K: ChordedNestable>(pub K);
 
-impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
+impl<
+        K: key::Key<
+            Context = crate::init::Context,
+            Event = crate::init::Event,
+            PendingKeyState = crate::init::PendingKeyState,
+            KeyState = crate::init::KeyState,
+        >,
+    > key::Key for key::chorded::Key<K>
+{
     type Context = Context;
     type Event = Event;
     type PendingKeyState = PendingKeyState;
