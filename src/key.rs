@@ -184,7 +184,10 @@ pub trait Key: Debug {
         context: Self::Context,
         key_path: KeyPath,
         event: Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, KeyEvents<Self::Event>);
+    ) -> (
+        Option<PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
+        KeyEvents<Self::Event>,
+    );
 
     /// Return a reference to the key for the given path.
     fn lookup(
