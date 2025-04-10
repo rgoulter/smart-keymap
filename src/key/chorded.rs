@@ -334,12 +334,6 @@ impl<
                         // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
                         let pkr = pkr.add_path_item(i);
 
-                        let ks = match pkr {
-                            // "Pending key resolves into pending key" to be implemented later.
-                            key::PressedKeyResult::Pending(_, _) => todo!(),
-                            key::PressedKeyResult::Resolved(ks) => ks,
-                        };
-
                         let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
                         let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
                             keymap_index,
@@ -347,7 +341,7 @@ impl<
                         ));
                         pke.add_event(sch_ev);
 
-                        (Some(key::PressedKeyResult::Resolved(ks)), pke)
+                        (Some(pkr), pke)
                     } else {
                         (None, key::KeyEvents::no_events())
                     }
@@ -492,12 +486,6 @@ impl<
 
                         // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
 
-                        let ks = match pkr {
-                            // "Pending key resolves into pending key" to be implemented later.
-                            key::PressedKeyResult::Pending(_, _) => todo!(),
-                            key::PressedKeyResult::Resolved(ks) => ks,
-                        };
-
                         let ch_r_ev = key::chorded::Event::ChordResolved(
                             key::chorded::ChordResolution::Passthrough,
                         );
@@ -507,7 +495,7 @@ impl<
                         ));
                         pke.add_event(sch_ev);
 
-                        (Some(key::PressedKeyResult::Resolved(ks)), pke)
+                        (Some(pkr), pke)
                     } else if let Some(key::chorded::ChordResolution::Chord) = ch_state {
                         let ch_r_ev = key::chorded::Event::ChordResolved(
                             key::chorded::ChordResolution::Chord,
