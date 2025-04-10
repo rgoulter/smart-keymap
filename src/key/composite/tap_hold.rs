@@ -54,9 +54,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
-            TapHoldKey::TapHold(key) => {
-                <key::tap_hold::Key<K> as key::Key>::new_pressed_key(key, context, key_path)
-            }
+            TapHoldKey::TapHold(key) => key.new_pressed_key(context, key_path),
             TapHoldKey::Pass(key) => key.new_pressed_key(context, key_path),
         }
     }

@@ -71,7 +71,7 @@ impl<K: key::Key> Key<K> {
 
 impl<K: key::Key> Key<K> {
     /// Constructs a new pressed key state and a scheduled event for the tap-hold key.
-    pub fn new_pressed_key(
+    fn new_pressed_key(
         &self,
         context: Context,
         key_path: key::KeyPath,
