@@ -547,8 +547,9 @@ impl<
                 Some(key::PressedKeyResult::Resolved(ks)) => {
                     self.resolve_pending_key_state(ks);
                 }
-                Some(key::PressedKeyResult::Pending(_kp, _pks)) => {
-                    todo!()
+                Some(key::PressedKeyResult::Pending(kp, pks)) => {
+                    *key_path = kp;
+                    *pending_key_state = pks;
                 }
                 None => {}
             }
@@ -673,8 +674,9 @@ impl<
                 Some(key::PressedKeyResult::Resolved(ks)) => {
                     self.resolve_pending_key_state(ks);
                 }
-                Some(key::PressedKeyResult::Pending(_kp, _pks)) => {
-                    todo!()
+                Some(key::PressedKeyResult::Pending(kp, pks)) => {
+                    *key_path = kp;
+                    *pending_key_state = pks;
                 }
                 None => {}
             }
