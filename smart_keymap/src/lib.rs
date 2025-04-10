@@ -126,8 +126,7 @@ pub struct KeymapHidReport {
     pub keyboard: [u8; 8],
 }
 
-static mut KEYMAP: keymap::Keymap<init::KeyDefinitionsType> =
-    keymap::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
+static mut KEYMAP: init::Keymap = init::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
 
 /// Initialize the global keymap instance.
 #[allow(static_mut_refs)]
