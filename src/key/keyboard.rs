@@ -73,6 +73,49 @@ impl Key {
     }
 }
 
+impl key::Key for Key {
+    type Context = crate::init::Context;
+    type Event = crate::init::Event;
+    type PendingKeyState = crate::init::PendingKeyState;
+    type KeyState = crate::init::KeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+    ) -> (
+        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        let k_ks = self.new_pressed_key();
+        let pks = key::PressedKeyResult::Resolved(k_ks.into());
+        let pke = key::KeyEvents::no_events();
+        (pks, pke)
+    }
+
+    fn handle_event(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn lookup(
+        &self,
+        _path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        self
+    }
+}
+
 /// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeyState(Key);
