@@ -30,47 +30,6 @@ pub enum BaseKey {
     Keyboard(keyboard::Key),
 }
 
-impl key::Key for callback::Key {
-    type Context = Context;
-    type Event = Event;
-    type PendingKeyState = PendingKeyState;
-    type KeyState = KeyState;
-
-    fn new_pressed_key(
-        &self,
-        _context: Self::Context,
-        _key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
-        let &callback::Key { keymap_callback } = self;
-        let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
-        let km_ev = crate::keymap::KeymapEvent::Callback(keymap_callback);
-        let pke = key::KeyEvents::event(key::Event::Keymap(km_ev));
-        (pks, pke)
-    }
-
-    fn handle_event(
-        &self,
-        _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
-        _key_path: key::KeyPath,
-        _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
-        panic!()
-    }
-
-    fn lookup(
-        &self,
-        _path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        self
-    }
-}
-
 impl key::Key for caps_word::Key {
     type Context = Context;
     type Event = Event;
