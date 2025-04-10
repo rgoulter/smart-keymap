@@ -70,8 +70,8 @@ impl<K: ChordedNestable> key::Key for key::chorded::Key<K> {
                     let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
                     if let Some(ch_state) = ch_state {
                         let (i, nk) = match ch_state {
-                            key::chorded::ChordResolution::Chord => (1, self.chord),
-                            key::chorded::ChordResolution::Passthrough => (0, self.passthrough),
+                            key::chorded::ChordResolution::Chord => (1, &self.chord),
+                            key::chorded::ChordResolution::Passthrough => (0, &self.passthrough),
                         };
                         let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
                         // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
@@ -148,7 +148,7 @@ impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
                 if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
                     let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
                     if let Some(key::chorded::ChordResolution::Passthrough) = ch_state {
-                        let nk = self.passthrough;
+                        let nk = &self.passthrough;
                         let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
 
                         // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
