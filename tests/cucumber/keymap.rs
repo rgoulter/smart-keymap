@@ -14,9 +14,11 @@ use smart_keymap_nickel_helper::{
     NickelError,
 };
 
+use key::composite::{Context, Event, KeyState, PendingKeyState};
+
 type Key = key::composite::Key;
 
-type Keymap = keymap::Keymap<Vec<Key>>;
+type Keymap = keymap::Keymap<Context, Event, PendingKeyState, KeyState, Vec<Key>>;
 
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"

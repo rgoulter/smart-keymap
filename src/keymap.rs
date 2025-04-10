@@ -1,4 +1,6 @@
+use core::cmp::PartialEq;
 use core::fmt::Debug;
+use core::marker::Copy;
 use core::ops::Index;
 
 use serde::Deserialize;
@@ -6,7 +8,7 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
-use key::{composite, Context, Event, KeyState as _};
+use key::{Context, Event, KeyState as _};
 
 const MAX_PENDING_EVENTS: usize = 32;
 const MAX_SCHEDULED_EVENTS: usize = 32;
@@ -320,10 +322,10 @@ impl DistinctReports {
 }
 
 #[derive(Debug)]
-struct PendingState {
+struct PendingState<Ev, PKS> {
     key_path: key::KeyPath,
-    pending_key_state: composite::PendingKeyState,
-    queued_events: heapless::Vec<key::Event<composite::Event>, { MAX_PRESSED_KEYS }>,
+    pending_key_state: PKS,
+    queued_events: heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
 }
 
 /// Callbacks for effect keys in the keymap.
@@ -358,27 +360,26 @@ enum CallbackFunction {
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
-pub struct Keymap<I> {
+pub struct Keymap<Ctx, Ev: Debug, PKS, KS, I> {
     key_definitions: I,
-    context: composite::Context,
-    pressed_inputs: heapless::Vec<input::PressedInput<composite::KeyState>, { MAX_PRESSED_KEYS }>,
-    event_scheduler: EventScheduler<composite::Event>,
+    context: Ctx,
+    pressed_inputs: heapless::Vec<input::PressedInput<KS>, { MAX_PRESSED_KEYS }>,
+    event_scheduler: EventScheduler<Ev>,
     hid_reporter: HIDKeyboardReporter,
-    pending_key_state: Option<PendingState>,
+    pending_key_state: Option<PendingState<Ev, PKS>>,
     input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
     input_queue_delay_counter: u8,
     callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
 }
 
 impl<
-        K: key::Key<
-                Context = composite::Context,
-                Event = composite::Event,
-                PendingKeyState = composite::PendingKeyState,
-                KeyState = composite::KeyState,
-            > + ?Sized,
+        Ctx: Debug,
+        Ev: Debug,
+        PKS: Debug,
+        KS: Debug,
+        K: key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + ?Sized,
         I: Index<usize, Output = K>,
-    > core::fmt::Debug for Keymap<I>
+    > core::fmt::Debug for Keymap<Ctx, Ev, PKS, KS, I>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Keymap")
@@ -394,17 +395,16 @@ impl<
 }
 
 impl<
-        K: key::Key<
-                Context = composite::Context,
-                Event = composite::Event,
-                PendingKeyState = composite::PendingKeyState,
-                KeyState = composite::KeyState,
-            > + ?Sized,
+        Ctx: key::Context<Event = Ev>,
+        Ev: Copy + Debug + PartialEq,
+        PKS,
+        KS: key::KeyState<Context = Ctx, Event = Ev> + Copy,
+        K: key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + ?Sized,
         I: Index<usize, Output = K>,
-    > Keymap<I>
+    > Keymap<Ctx, Ev, PKS, KS, I>
 {
     /// Constructs a new keymap with the given key definitions and context.
-    pub const fn new(key_definitions: I, context: composite::Context) -> Self {
+    pub const fn new(key_definitions: I, context: Ctx) -> Self {
         Self {
             key_definitions,
             context,
@@ -454,7 +454,7 @@ impl<
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
-    fn resolve_pending_key_state(&mut self, key_state: composite::KeyState) {
+    fn resolve_pending_key_state(&mut self, key_state: KS) {
         if let Some(PendingState {
             key_path,
             queued_events,
@@ -635,7 +635,7 @@ impl<
 
     // Called from handle_all_pending_events,
     //  and for handling the (resolving) queue of events from pending key state.
-    fn handle_event(&mut self, ev: key::Event<composite::Event>) {
+    fn handle_event(&mut self, ev: key::Event<Ev>) {
         if let key::Event::Keymap(KeymapEvent::Callback(callback_id)) = ev {
             match self.callbacks.get(&callback_id) {
                 Some(CallbackFunction::Rust(callback_fn)) => {
