@@ -52,6 +52,50 @@ impl ModifierKey {
     }
 }
 
+impl key::Key for ModifierKey {
+    type Context = crate::init::Context;
+    type Event = crate::init::Event;
+    type PendingKeyState = crate::init::PendingKeyState;
+    type KeyState = crate::init::KeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: Self::Context,
+        key_path: key::KeyPath,
+    ) -> (
+        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        let keymap_index: u16 = key_path[0];
+        let (m_ks, lmod_ev) = self.new_pressed_key();
+        let pks = key::PressedKeyResult::Resolved(m_ks.into());
+        let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev)).into_events();
+        (pks, pke)
+    }
+
+    fn handle_event(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: Self::Context,
+        _key_path: key::KeyPath,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn lookup(
+        &self,
+        _path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        self
+    }
+}
+
 impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
 }
