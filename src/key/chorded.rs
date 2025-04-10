@@ -316,7 +316,10 @@ impl<
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+    ) -> (
+        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
+        key::KeyEvents<Self::Event>,
+    ) {
         let keymap_index: u16 = key_path[0];
         match pending_state {
             crate::init::PendingKeyState::Chorded(ch_pks) => {
@@ -344,7 +347,7 @@ impl<
                         ));
                         pke.add_event(sch_ev);
 
-                        (Some(ks), pke)
+                        (Some(key::PressedKeyResult::Resolved(ks)), pke)
                     } else {
                         (None, key::KeyEvents::no_events())
                     }
@@ -474,7 +477,10 @@ impl<
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+    ) -> (
+        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
+        key::KeyEvents<Self::Event>,
+    ) {
         let keymap_index = key_path[0];
         match pending_state {
             crate::init::PendingKeyState::Chorded(ch_pks) => {
@@ -501,7 +507,7 @@ impl<
                         ));
                         pke.add_event(sch_ev);
 
-                        (Some(ks), pke)
+                        (Some(key::PressedKeyResult::Resolved(ks)), pke)
                     } else if let Some(key::chorded::ChordResolution::Chord) = ch_state {
                         let ch_r_ev = key::chorded::Event::ChordResolved(
                             key::chorded::ChordResolution::Chord,
@@ -511,7 +517,12 @@ impl<
                             ch_r_ev.into(),
                         ));
 
-                        (Some(key::NoOpKeyState::new().into()), pke)
+                        (
+                            Some(key::PressedKeyResult::Resolved(
+                                key::NoOpKeyState::new().into(),
+                            )),
+                            pke,
+                        )
                     } else {
                         (None, key::KeyEvents::no_events())
                     }

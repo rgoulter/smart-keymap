@@ -123,7 +123,10 @@ impl<
         context: Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+    ) -> (
+        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
+        key::KeyEvents<Self::Event>,
+    ) {
         let keymap_index = key_path[0];
         match pending_state {
             crate::init::PendingKeyState::TapHold(th_pks) => {
@@ -144,7 +147,7 @@ impl<
                             key::PressedKeyResult::Resolved(ks) => ks,
                         };
 
-                        (Some(ks), pke)
+                        (Some(key::PressedKeyResult::Resolved(ks)), pke)
                     } else {
                         (None, key::KeyEvents::no_events())
                     }

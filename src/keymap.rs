@@ -8,7 +8,7 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
-use key::{Context, Event, KeyState as _};
+use key::Event;
 
 const MAX_PENDING_EVENTS: usize = 32;
 const MAX_SCHEDULED_EVENTS: usize = 32;
@@ -543,8 +543,14 @@ impl<
             pke.into_iter()
                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
-            if let Some(ks) = ks {
-                self.resolve_pending_key_state(ks);
+            match ks {
+                Some(key::PressedKeyResult::Resolved(ks)) => {
+                    self.resolve_pending_key_state(ks);
+                }
+                Some(key::PressedKeyResult::Pending(_kp, _pks)) => {
+                    todo!()
+                }
+                None => {}
             }
         } else {
             // Update each of the pressed keys with the event.
@@ -663,8 +669,14 @@ impl<
             pke.into_iter()
                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
-            if let Some(ks) = ks {
-                self.resolve_pending_key_state(ks);
+            match ks {
+                Some(key::PressedKeyResult::Resolved(ks)) => {
+                    self.resolve_pending_key_state(ks);
+                }
+                Some(key::PressedKeyResult::Pending(_kp, _pks)) => {
+                    todo!()
+                }
+                None => {}
             }
         }
 
