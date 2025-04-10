@@ -285,6 +285,96 @@ impl<K> Key<K> {
     }
 }
 
+impl<
+        K: key::Key<
+            Context = crate::init::Context,
+            Event = crate::init::Event,
+            PendingKeyState = crate::init::PendingKeyState,
+            KeyState = crate::init::KeyState,
+        >,
+    > key::Key for Key<K>
+{
+    type Context = crate::init::Context;
+    type Event = crate::init::Event;
+    type PendingKeyState = crate::init::PendingKeyState;
+    type KeyState = crate::init::KeyState;
+
+    fn new_pressed_key(
+        &self,
+        context: Self::Context,
+        key_path: key::KeyPath,
+    ) -> (
+        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        self.new_pressed_key(context, key_path)
+    }
+
+    fn handle_event(
+        &self,
+        pending_state: &mut Self::PendingKeyState,
+        context: Self::Context,
+        key_path: key::KeyPath,
+        event: key::Event<Self::Event>,
+    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
+        let keymap_index: u16 = key_path[0];
+        match pending_state {
+            crate::init::PendingKeyState::Chorded(ch_pks) => {
+                if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
+                    let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
+                    if let Some(ch_state) = ch_state {
+                        let (i, nk) = match ch_state {
+                            key::chorded::ChordResolution::Chord => (1, &self.chord),
+                            key::chorded::ChordResolution::Passthrough => (0, &self.passthrough),
+                        };
+                        let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
+                        // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
+                        let pkr = pkr.add_path_item(i);
+
+                        let ks = match pkr {
+                            // "Pending key resolves into pending key" to be implemented later.
+                            key::PressedKeyResult::Pending(_, _) => todo!(),
+                            key::PressedKeyResult::Resolved(ks) => ks,
+                        };
+
+                        let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
+                        let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
+                            keymap_index,
+                            ch_r_ev.into(),
+                        ));
+                        pke.add_event(sch_ev);
+
+                        (Some(ks), pke)
+                    } else {
+                        (None, key::KeyEvents::no_events())
+                    }
+                } else {
+                    (None, key::KeyEvents::no_events())
+                }
+            }
+            _ => (None, key::KeyEvents::no_events()),
+        }
+    }
+
+    fn lookup(
+        &self,
+        path: &[u16],
+    ) -> &dyn key::Key<
+        Context = Self::Context,
+        Event = Self::Event,
+        PendingKeyState = Self::PendingKeyState,
+        KeyState = Self::KeyState,
+    > {
+        match path {
+            [] => self,
+            // 0 = passthrough, 1 = chord
+            [0, path @ ..] => self.passthrough.lookup(path),
+            [1, path @ ..] => self.chord.lookup(path),
+            _ => panic!(),
+        }
+    }
+}
+
 /// Auxiliary chorded key (with a passthrough key).
 ///
 /// The auxiliary keys are chorded keys,
