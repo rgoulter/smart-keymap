@@ -42,7 +42,15 @@ pub enum TapHoldKey<K: TapHoldNestable> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TapHold<K: TapHoldNestable>(pub K);
 
-impl<K: TapHoldNestable> key::Key for key::tap_hold::Key<K> {
+impl<
+        K: key::Key<
+            Context = Context,
+            Event = Event,
+            PendingKeyState = PendingKeyState,
+            KeyState = KeyState,
+        >,
+    > key::Key for key::tap_hold::Key<K>
+{
     type Context = Context;
     type Event = Event;
     type PendingKeyState = PendingKeyState;
