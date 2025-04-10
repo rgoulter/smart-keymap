@@ -30,47 +30,6 @@ pub enum BaseKey {
     Keyboard(keyboard::Key),
 }
 
-impl key::Key for caps_word::Key {
-    type Context = Context;
-    type Event = Event;
-    type PendingKeyState = PendingKeyState;
-    type KeyState = KeyState;
-
-    fn new_pressed_key(
-        &self,
-        context: Self::Context,
-        key_path: key::KeyPath,
-    ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
-        let caps_word_context = context.into();
-        let keymap_index: u16 = key_path[0];
-        let pke = self.new_pressed_key(caps_word_context, keymap_index);
-        let pks = key::PressedKeyResult::Resolved(KeyState::NoOp);
-        (pks, pke.into_events())
-    }
-
-    fn handle_event(
-        &self,
-        _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
-        _key_path: key::KeyPath,
-        _event: key::Event<Self::Event>,
-    ) -> (Option<Self::KeyState>, key::KeyEvents<Self::Event>) {
-        panic!()
-    }
-
-    fn lookup(
-        &self,
-        _path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        self
-    }
-}
-
 impl key::Key for sticky::Key {
     type Context = Context;
     type Event = Event;
