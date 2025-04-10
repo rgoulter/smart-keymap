@@ -129,7 +129,15 @@ impl<
     }
 }
 
-impl<K: ChordedNestable> key::Key for key::chorded::AuxiliaryKey<K> {
+impl<
+        K: key::Key<
+            Context = crate::init::Context,
+            Event = crate::init::Event,
+            PendingKeyState = crate::init::PendingKeyState,
+            KeyState = crate::init::KeyState,
+        >,
+    > key::Key for key::chorded::AuxiliaryKey<K>
+{
     type Context = Context;
     type Event = Event;
     type PendingKeyState = PendingKeyState;
