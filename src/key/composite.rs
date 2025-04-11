@@ -128,41 +128,6 @@ impl key::Context for Context {
     }
 }
 
-/// keyboard::Context from composite::Context
-impl From<Context> for () {
-    fn from(_: Context) -> Self {}
-}
-
-impl From<Context> for key::caps_word::Context {
-    fn from(ctx: Context) -> Self {
-        ctx.caps_word_context
-    }
-}
-
-impl From<Context> for key::chorded::Context {
-    fn from(ctx: Context) -> Self {
-        ctx.chorded_context
-    }
-}
-
-impl From<Context> for key::layered::Context {
-    fn from(ctx: Context) -> Self {
-        ctx.layer_context
-    }
-}
-
-impl From<Context> for key::sticky::Context {
-    fn from(ctx: Context) -> Self {
-        ctx.sticky_context
-    }
-}
-
-impl From<Context> for key::tap_hold::Context {
-    fn from(ctx: Context) -> Self {
-        ctx.tap_hold_context
-    }
-}
-
 impl<'c> From<&'c Context> for &'c key::caps_word::Context {
     fn from(ctx: &'c Context) -> Self {
         &ctx.caps_word_context
