@@ -111,8 +111,7 @@ impl<
         key::KeyEvents<Self::Event>,
     ) {
         let (th_pks, sch_ev) = self.new_pressed_key(context.into(), key_path.clone());
-        let pk =
-            key::PressedKeyResult::Pending(key_path, crate::init::PendingKeyState::TapHold(th_pks));
+        let pk = key::PressedKeyResult::Pending(key_path, th_pks.into());
         let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
         (pk, pke)
     }
@@ -128,28 +127,28 @@ impl<
         key::KeyEvents<Self::Event>,
     ) {
         let keymap_index = key_path[0];
-        match pending_state {
-            crate::init::PendingKeyState::TapHold(th_pks) => {
-                if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
-                    if let Some(th_state) = th_state {
-                        let (i, nk) = match th_state {
-                            key::tap_hold::TapHoldState::Tap => (0, &self.tap),
-                            key::tap_hold::TapHoldState::Hold => (1, &self.hold),
-                        };
-                        let (pkr, pke) = nk.new_pressed_key(context, key_path);
-                        // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-                        let pkr = pkr.add_path_item(i);
+        let th_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
+        if let Ok(th_pks) = th_pks_res {
+            if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {
+                let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
+                if let Some(th_state) = th_state {
+                    let (i, nk) = match th_state {
+                        key::tap_hold::TapHoldState::Tap => (0, &self.tap),
+                        key::tap_hold::TapHoldState::Hold => (1, &self.hold),
+                    };
+                    let (pkr, pke) = nk.new_pressed_key(context, key_path);
+                    // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
+                    let pkr = pkr.add_path_item(i);
 
-                        (Some(pkr), pke)
-                    } else {
-                        (None, key::KeyEvents::no_events())
-                    }
+                    (Some(pkr), pke)
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
+            } else {
+                (None, key::KeyEvents::no_events())
             }
-            _ => (None, key::KeyEvents::no_events()),
+        } else {
+            (None, key::KeyEvents::no_events())
         }
     }
 
