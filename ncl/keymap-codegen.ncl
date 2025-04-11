@@ -1115,6 +1115,9 @@ let validators = import "validators.ncl" in
               chords | default = [],
               timeout | default = 200,
             },
+            sticky = {
+              activation | default = "OnStickyKeyRelease",
+            },
             tap_hold = {
               timeout | default = 200,
               interrupt_response | default = "Ignore",
@@ -1136,6 +1139,13 @@ let validators = import "validators.ncl" in
             timeout: %{std.to_string config.chorded.timeout},
             chords: [%{chords_fragment}],
             ..crate::key::chorded::DEFAULT_CONFIG
+        }
+      "%
+      in
+      let sticky_config_expr = m%"
+        crate::key::sticky::Config {
+            activation: crate::key::sticky::StickyKeyActivation::%{config.sticky.activation},
+            ..crate::key::sticky::DEFAULT_CONFIG
         }
       "%
       in
@@ -1189,6 +1199,7 @@ pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         chorded: %{chorded_config_expr},
+        sticky: %{sticky_config_expr},
         tap_hold: %{tap_hold_config_expr},
         ..crate::key::composite::DEFAULT_CONFIG
     };
