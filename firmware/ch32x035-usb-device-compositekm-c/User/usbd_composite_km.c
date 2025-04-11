@@ -16,13 +16,16 @@
 
 #include <string.h>
 
+#include "ch32x035.h"
 #include "debug.h"
 
+#include "ch32x035_dma.h"
 #include "ch32x035_exti.h"
 #include "ch32x035_gpio.h"
 #include "ch32x035_misc.h"
 #include "ch32x035_rcc.h"
 #include "ch32x035_tim.h"
+#include "ch32x035_usart.h"
 
 #include "ch32x035_usbfs_device.h"
 #include "system_ch32x035.h"
@@ -45,9 +48,28 @@ uint8_t PREV_KB_Data_Pack[8] = {0x00};      // Keyboard IN Data Packet
 volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
 volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
+static uint32_t transmit_buffer[1]; // DEMO
+#define RX_BUFFER_SIZE 64
+static uint8_t msg_buffer[MESSAGE_BUFFER_LEN];
+
+static struct {
+  volatile uint8_t current_buffer;
+  uint8_t rx_buffer[2][RX_BUFFER_SIZE];
+} rx_buffers = {
+    .current_buffer = 0,
+    .rx_buffer = {0},
+};
+
 /*******************************************************************************/
 /* Interrupt Function Declaration */
 void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+
+// DEMO
+void USART2_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+
+// DEMO
+void DMA1_Channel6_IRQHandler(void)
+    __attribute__((interrupt("WCH-Interrupt-fast")));
 
 /*********************************************************************
  * @fn      TIM3_Init
@@ -113,6 +135,179 @@ void TIM3_IRQHandler(void) {
   }
 }
 
+// DEMO
+void keymap_split_receive_bytes(uint8_t *buf, uint16_t len) {
+  KeymapInputEvent ev;
+  for (uint16_t i = 0; i < len; i++) {
+    uint8_t recv_byte = buf[i];
+    printf("RX: %04x\r\n", recv_byte);
+    bool received_event =
+        keymap_message_buffer_receive_byte(&msg_buffer, recv_byte, &ev);
+
+    if (received_event) {
+      printf("RX EV: { t=%d, v=%d }\r\n", ev.event_type, ev.value);
+      keymap_register_input_event(ev);
+    }
+  }
+}
+
+void USART2_IRQHandler(void) {
+  if (USART_GetITStatus(USART2, USART_IT_IDLE) != RESET) {
+    // IDLE
+    uint16_t rx_len = (RX_BUFFER_SIZE - DMA1_Channel6->CNTR);
+    uint8_t old_buffer = rx_buffers.current_buffer;
+
+    rx_buffers.current_buffer = !old_buffer;
+
+    DMA_Cmd(DMA1_Channel6, DISABLE);
+    DMA_SetCurrDataCounter(DMA1_Channel6, RX_BUFFER_SIZE);
+    // Switch buffer
+    DMA1_Channel6->MADDR =
+        (uint32_t)(rx_buffers.rx_buffer[rx_buffers.current_buffer]);
+    DMA_Cmd(DMA1_Channel6, ENABLE);
+
+    USART_ReceiveData(USART2); // clear IDLE flag
+
+    // Process received data
+    keymap_split_receive_bytes(rx_buffers.rx_buffer[old_buffer], rx_len);
+  }
+}
+
+// DEMO
+void DMA1_Channel6_IRQHandler(void) {
+  KeymapInputEvent ev;
+
+  if (DMA_GetITStatus(DMA1_IT_TC6)) {
+    uint16_t rx_len = RX_BUFFER_SIZE;
+    uint8_t old_buffer = rx_buffers.current_buffer;
+
+    rx_buffers.current_buffer = !old_buffer;
+
+    DMA_Cmd(DMA1_Channel6, DISABLE);
+    DMA_SetCurrDataCounter(DMA1_Channel6, RX_BUFFER_SIZE);
+    // Switch buffer
+    DMA1_Channel6->MADDR =
+        (uint32_t)(rx_buffers.rx_buffer[rx_buffers.current_buffer]);
+    DMA_Cmd(DMA1_Channel6, ENABLE);
+
+    // Process received data
+    keymap_split_receive_bytes(rx_buffers.rx_buffer[old_buffer], rx_len);
+
+    DMA_ClearITPendingBit(DMA1_IT_TC6);
+  }
+}
+
+// DEMO
+void keyboard_split_init(void) {
+  DMA_InitTypeDef DMA_InitStructure;
+
+  // Enable DMA1 clock
+  RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
+
+  // Configure DMA for USART2 TX
+  DMA_DeInit(DMA1_Channel7); // Channel 7 for USART2 TX
+
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)(&USART2->DATAR);
+  DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)transmit_buffer;
+  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
+  DMA_InitStructure.DMA_BufferSize = 4; // Number of bytes to send
+  DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
+  DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
+  DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
+  DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+  DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
+  DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
+
+  DMA_Init(DMA1_Channel7, &DMA_InitStructure);
+
+  // Configure DMA for USART2 RX
+  DMA_DeInit(DMA1_Channel6); // Channel 6 for USART2 RX
+
+  DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)(&USART2->DATAR);
+  DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)rx_buffers.rx_buffer[0];
+  DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralSRC;
+  DMA_InitStructure.DMA_BufferSize = RX_BUFFER_SIZE;
+  DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
+
+  DMA_Init(DMA1_Channel6, &DMA_InitStructure);
+
+  // Enable DMA1 Channel6 Transfer Complete interrupt
+  DMA_ITConfig(DMA1_Channel6, DMA_IT_TC, ENABLE);
+
+  {
+    NVIC_InitTypeDef NVIC_InitStructure = {0};
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel6_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+  }
+
+  GPIO_InitTypeDef GPIO_InitStructure = {0};
+  USART_InitTypeDef USART_InitStructure = {0};
+  NVIC_InitTypeDef NVIC_InitStructure = {0};
+
+  RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
+  RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
+
+  /* USART2 TX-->A.2   RX-->A.3 */
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
+  GPIO_Init(GPIOA, &GPIO_InitStructure);
+
+  USART_InitStructure.USART_BaudRate = 115200;
+  USART_InitStructure.USART_WordLength = USART_WordLength_8b;
+  USART_InitStructure.USART_StopBits = USART_StopBits_1;
+  USART_InitStructure.USART_Parity = USART_Parity_No;
+  USART_InitStructure.USART_HardwareFlowControl =
+      USART_HardwareFlowControl_None;
+  USART_InitStructure.USART_Mode = USART_Mode_Tx | USART_Mode_Rx;
+
+  USART_Init(USART2, &USART_InitStructure);
+
+  USART_Cmd(USART2, ENABLE);
+
+  USART_ITConfig(USART2, USART_IT_IDLE, ENABLE);
+
+  NVIC_InitStructure.NVIC_IRQChannel = USART2_IRQn;
+  NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;
+  NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+  NVIC_Init(&NVIC_InitStructure);
+
+  // Enable USART DMA mode
+  DMA_Cmd(DMA1_Channel6, ENABLE); // USART2 RX
+
+  USART_DMACmd(USART2, USART_DMAReq_Tx | USART_DMAReq_Rx, ENABLE);
+}
+
+// DEMO
+int keyboard_split_write(KeymapInputEvent ev) {
+  static uint32_t buf[MESSAGE_BUFFER_LEN / 4];
+  keymap_serialize_event((uint8_t *)buf, ev);
+
+  // Wait for any previous DMA transfer to complete
+  if ((DMA1_Channel7->CFGR & DMA_CFGR1_EN) > 0) {
+    while (DMA_GetFlagStatus(DMA1_FLAG_TC7) == RESET)
+      ;
+    DMA_ClearFlag(DMA1_FLAG_TC7);
+  }
+
+  // Configure DMA for transmission
+  DMA_Cmd(DMA1_Channel7, DISABLE);
+  DMA1_Channel7->MADDR = (uint32_t)buf;
+  DMA1_Channel7->CNTR = MESSAGE_BUFFER_LEN;
+  DMA_Cmd(DMA1_Channel7, ENABLE);
+
+  return MESSAGE_BUFFER_LEN;
+}
+
 /*********************************************************************
  * @fn      KB_Scan_Init
  *
@@ -121,6 +316,8 @@ void TIM3_IRQHandler(void) {
  * @return  none
  */
 void KB_Scan_Init(void) {
+  keyboard_split_init(); // DEMO split
+
   keyboard_init();
 
   keymap_init();
