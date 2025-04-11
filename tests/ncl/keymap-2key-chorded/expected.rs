@@ -7,6 +7,10 @@ pub mod init {
             chords: [Some(crate::key::chorded::ChordIndices::Chord2(0, 1))],
             ..crate::key::chorded::DEFAULT_CONFIG
         },
+        sticky: crate::key::sticky::Config {
+            activation: crate::key::sticky::StickyKeyActivation::OnStickyKeyRelease,
+            ..crate::key::sticky::DEFAULT_CONFIG
+        },
         tap_hold: crate::key::tap_hold::Config {
             timeout: 200,
             interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
