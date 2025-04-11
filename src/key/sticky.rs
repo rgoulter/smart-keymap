@@ -284,7 +284,7 @@ impl KeyState {
     /// Handle the given event.
     pub fn handle_event(
         &mut self,
-        context: Context,
+        context: &Context,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> key::KeyEvents<Event> {
@@ -305,7 +305,7 @@ impl KeyState {
                     keymap_index: released_index,
                 }) if released_index == keymap_index => {
                     // The sticky key has been released.
-                    let sticky_ctx: Context = context.into();
+                    let sticky_ctx: &Context = context.into();
                     match sticky_ctx.config.activation {
                         StickyKeyActivation::OnStickyKeyRelease => {
                             let sticky_ev = Event::ActivateModifiers(self.sticky_modifiers);
