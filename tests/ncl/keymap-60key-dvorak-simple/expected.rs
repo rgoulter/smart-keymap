@@ -5,10 +5,12 @@ pub mod init {
         chorded: crate::key::chorded::Config {
             timeout: 200,
             chords: [],
+            ..crate::key::chorded::DEFAULT_CONFIG
         },
         tap_hold: crate::key::tap_hold::Config {
             timeout: 200,
             interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
+            ..crate::key::tap_hold::DEFAULT_CONFIG
         },
         ..crate::key::composite::DEFAULT_CONFIG
     };
