@@ -50,7 +50,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
@@ -62,7 +62,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
@@ -99,7 +99,7 @@ impl<K: TapHoldNestable> key::Key for TapHold<K> {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let TapHold(key) = self;
@@ -109,7 +109,7 @@ impl<K: TapHoldNestable> key::Key for TapHold<K> {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (

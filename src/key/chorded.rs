@@ -233,7 +233,7 @@ pub struct Key<K> {
 
 impl<K: key::Key> Key<K>
 where
-    K::Context: Into<Context>,
+    for<'c> &'c K::Context: Into<&'c Context>,
     K::Event: TryInto<Event>,
     K::Event: From<Event>,
     K::PendingKeyState: From<PendingKeyState>,
@@ -242,7 +242,7 @@ where
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        context: K::Context,
+        context: &K::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
@@ -259,14 +259,14 @@ where
                 ChordResolution::Passthrough => (0, &self.passthrough),
             };
 
-            let (pkr, pke) = key.new_pressed_key(context, key_path);
+            let (pkr, pke) = key.new_pressed_key(&context, key_path);
             // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
             (pkr.add_path_item(i), pke)
         } else {
             let pk = key::PressedKeyResult::Pending(key_path, pks.into());
 
             let timeout_ev = Event::Timeout;
-            let ctx: Context = context.into();
+            let ctx: &Context = context.into();
             let sch_ev = key::ScheduledEvent::after(
                 ctx.config.timeout,
                 key::Event::key_event(keymap_index, timeout_ev),
@@ -301,7 +301,7 @@ impl<
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -313,7 +313,7 @@ impl<
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
@@ -386,7 +386,7 @@ pub struct AuxiliaryKey<K> {
 
 impl<K: key::Key> AuxiliaryKey<K>
 where
-    K::Context: Into<Context>,
+    for<'c> &'c K::Context: Into<&'c Context>,
     K::Event: TryInto<Event>,
     K::Event: From<Event>,
     K::PendingKeyState: From<PendingKeyState>,
@@ -395,7 +395,7 @@ where
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        context: K::Context,
+        context: &K::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
@@ -415,13 +415,15 @@ where
                     (pk, pke)
                 }
                 // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
-                ChordResolution::Passthrough => self.passthrough.new_pressed_key(context, key_path),
+                ChordResolution::Passthrough => {
+                    self.passthrough.new_pressed_key(&context, key_path)
+                }
             }
         } else {
             let pk = key::PressedKeyResult::Pending(key_path, pks.into());
 
             let timeout_ev = Event::Timeout;
-            let ctx: Context = context.into();
+            let ctx: &Context = context.into();
             let sch_ev = key::ScheduledEvent::after(
                 ctx.config.timeout,
                 key::Event::key_event(keymap_index, timeout_ev),
@@ -456,7 +458,7 @@ impl<
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -468,7 +470,7 @@ impl<
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
@@ -584,7 +586,7 @@ pub struct PendingKeyState {
 
 impl PendingKeyState {
     /// Constructs a new [PendingKeyState].
-    pub fn new(context: Context, keymap_index: u16) -> Self {
+    pub fn new(context: &Context, keymap_index: u16) -> Self {
         let sibling_indices = context.sibling_indices(keymap_index);
         let pressed_indices: heapless::Vec<u16, MAX_CHORD_SIZE> = context
             .pressed_indices()
@@ -599,7 +601,7 @@ impl PendingKeyState {
         }
     }
 
-    fn check_resolution(&self, context: Context) -> Option<ChordResolution> {
+    fn check_resolution(&self, context: &Context) -> Option<ChordResolution> {
         let chords = context.chords_for_indices(self.pressed_indices.as_slice());
         match chords.as_slice() {
             [ch] if ch.is_satisfied_by(&self.pressed_indices) => {
@@ -623,7 +625,7 @@ impl PendingKeyState {
     /// Handle PKS for primary chorded key.
     pub fn handle_event(
         &mut self,
-        context: Context,
+        context: &Context,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> Option<ChordResolution> {
@@ -657,7 +659,7 @@ impl PendingKeyState {
                     panic!();
                 }
 
-                self.check_resolution(context)
+                self.check_resolution(&context)
             }
             key::Event::Input(input::Event::Release {
                 keymap_index: released_keymap_index,
@@ -693,11 +695,11 @@ mod tests {
             passthrough: expected_key,
         };
         let keymap_index: u16 = 0;
-        let mut pks: PendingKeyState = PendingKeyState::new(context.into(), keymap_index);
+        let mut pks: PendingKeyState = PendingKeyState::new((&context).into(), keymap_index);
 
         // Act: handle a timeout ev.
         let timeout_ev = key::Event::key_event(keymap_index, Event::Timeout).into_key_event();
-        let actual_res = pks.handle_event(context.into(), keymap_index, timeout_ev);
+        let actual_res = pks.handle_event((&context).into(), keymap_index, timeout_ev);
 
         // Assert
         let expected_res = Some(ChordResolution::Passthrough);
@@ -716,11 +718,11 @@ mod tests {
             passthrough: expected_key,
         };
         let keymap_index: u16 = 0;
-        let mut pks: PendingKeyState = PendingKeyState::new(context.into(), keymap_index);
+        let mut pks: PendingKeyState = PendingKeyState::new((&context).into(), keymap_index);
 
         // Act: handle a key press, for an index that's not part of any chord.
         let non_chord_press = input::Event::Press { keymap_index: 9 }.into();
-        let actual_res = pks.handle_event(context.into(), keymap_index, non_chord_press);
+        let actual_res = pks.handle_event((&context).into(), keymap_index, non_chord_press);
 
         // Assert
         let expected_res = Some(ChordResolution::Passthrough);
@@ -748,11 +750,11 @@ mod tests {
         let _chorded_key = AuxiliaryKey { passthrough };
         let keymap_index: u16 = 0;
         context.handle_event(key::Event::Input(input::Event::Press { keymap_index: 0 }));
-        let mut pks: PendingKeyState = PendingKeyState::new(context.into(), keymap_index);
+        let mut pks: PendingKeyState = PendingKeyState::new((&context).into(), keymap_index);
 
         // Act: handle a key press, for an index that completes (satisfies unambiguously) the chord.
         let chord_press = input::Event::Press { keymap_index: 1 }.into();
-        let actual_res = pks.handle_event(context.into(), keymap_index, chord_press);
+        let actual_res = pks.handle_event((&context).into(), keymap_index, chord_press);
 
         // Assert: resolved aux key should have no events, should have (resolved) no output.
         let expected_res = Some(ChordResolution::Chord);
@@ -775,11 +777,11 @@ mod tests {
             passthrough: expected_key,
         };
         let keymap_index: u16 = 0;
-        let mut pks: PendingKeyState = PendingKeyState::new(context.into(), keymap_index);
+        let mut pks: PendingKeyState = PendingKeyState::new((&context).into(), keymap_index);
 
         // Act: handle a key press, for an index that's not part of any chord.
         let chorded_key_release = input::Event::Release { keymap_index }.into();
-        let actual_res = pks.handle_event(context.into(), keymap_index, chorded_key_release);
+        let actual_res = pks.handle_event((&context).into(), keymap_index, chorded_key_release);
 
         // Assert
         let expected_res = Some(ChordResolution::Passthrough);

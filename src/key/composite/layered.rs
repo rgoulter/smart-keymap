@@ -47,7 +47,7 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
@@ -59,7 +59,7 @@ impl<K: LayeredNestable> key::Key for LayeredKey<K> {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
@@ -96,7 +96,7 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let Layered(key) = self;
@@ -106,7 +106,7 @@ impl<K: LayeredNestable> key::Key for Layered<K> {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (

@@ -535,7 +535,7 @@ impl<
             let pending_key = pending_key.lookup(&key_path[1..]);
             let (ks, pke) = pending_key.handle_event(
                 pending_key_state,
-                self.context,
+                &self.context,
                 key_path.clone(),
                 ev.into(),
             );
@@ -575,7 +575,7 @@ impl<
 
                     let mut key_path = key::KeyPath::new();
                     key_path.push(keymap_index).unwrap();
-                    let (pk, pke) = key.new_pressed_key(self.context, key_path);
+                    let (pk, pke) = key.new_pressed_key(&self.context, key_path);
 
                     pke.into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
@@ -665,7 +665,7 @@ impl<
             let pending_key = &self.key_definitions[key_path[0] as usize];
             let pending_key = pending_key.lookup(&key_path[1..]);
             let (ks, pke) =
-                pending_key.handle_event(pending_key_state, self.context, key_path.clone(), ev);
+                pending_key.handle_event(pending_key_state, &self.context, key_path.clone(), ev);
 
             pke.into_iter()
                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));

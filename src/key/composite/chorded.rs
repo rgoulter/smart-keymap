@@ -50,7 +50,7 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
@@ -63,7 +63,7 @@ impl<K: ChordedNestable> key::Key for ChordedKey<K> {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
@@ -102,7 +102,7 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         let Chorded(key) = self;
@@ -112,7 +112,7 @@ impl<K: ChordedNestable> key::Key for Chorded<K> {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
