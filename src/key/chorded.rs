@@ -321,35 +321,35 @@ impl<
         key::KeyEvents<Self::Event>,
     ) {
         let keymap_index: u16 = key_path[0];
-        match pending_state {
-            crate::init::PendingKeyState::Chorded(ch_pks) => {
-                if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
-                    if let Some(ch_state) = ch_state {
-                        let (i, nk) = match ch_state {
-                            key::chorded::ChordResolution::Chord => (1, &self.chord),
-                            key::chorded::ChordResolution::Passthrough => (0, &self.passthrough),
-                        };
-                        let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
-                        // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
-                        let pkr = pkr.add_path_item(i);
+        let ch_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
+        if let Ok(ch_pks) = ch_pks_res {
+            if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
+                let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
+                if let Some(ch_state) = ch_state {
+                    let (i, nk) = match ch_state {
+                        key::chorded::ChordResolution::Chord => (1, &self.chord),
+                        key::chorded::ChordResolution::Passthrough => (0, &self.passthrough),
+                    };
+                    let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
+                    // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
+                    let pkr = pkr.add_path_item(i);
 
-                        let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
-                        let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
-                            keymap_index,
-                            ch_r_ev.into(),
-                        ));
-                        pke.add_event(sch_ev);
+                    let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
+                    let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
+                        keymap_index,
+                        ch_r_ev.into(),
+                    ));
+                    pke.add_event(sch_ev);
 
-                        (Some(pkr), pke)
-                    } else {
-                        (None, key::KeyEvents::no_events())
-                    }
+                    (Some(pkr), pke)
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
+            } else {
+                (None, key::KeyEvents::no_events())
             }
-            _ => (None, key::KeyEvents::no_events()),
+        } else {
+            (None, key::KeyEvents::no_events())
         }
     }
 
@@ -478,49 +478,46 @@ impl<
         key::KeyEvents<Self::Event>,
     ) {
         let keymap_index = key_path[0];
-        match pending_state {
-            crate::init::PendingKeyState::Chorded(ch_pks) => {
-                if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
-                    if let Some(key::chorded::ChordResolution::Passthrough) = ch_state {
-                        let nk = &self.passthrough;
-                        let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
+        let ch_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
+        if let Ok(ch_pks) = ch_pks_res {
+            if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
+                let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
+                if let Some(key::chorded::ChordResolution::Passthrough) = ch_state {
+                    let nk = &self.passthrough;
+                    let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
 
-                        // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
+                    // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
 
-                        let ch_r_ev = key::chorded::Event::ChordResolved(
-                            key::chorded::ChordResolution::Passthrough,
-                        );
-                        let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
-                            keymap_index,
-                            ch_r_ev.into(),
-                        ));
-                        pke.add_event(sch_ev);
+                    let ch_r_ev = key::chorded::Event::ChordResolved(
+                        key::chorded::ChordResolution::Passthrough,
+                    );
+                    let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
+                        keymap_index,
+                        ch_r_ev.into(),
+                    ));
+                    pke.add_event(sch_ev);
 
-                        (Some(pkr), pke)
-                    } else if let Some(key::chorded::ChordResolution::Chord) = ch_state {
-                        let ch_r_ev = key::chorded::Event::ChordResolved(
-                            key::chorded::ChordResolution::Chord,
-                        );
-                        let pke = key::KeyEvents::event(key::Event::key_event(
-                            keymap_index,
-                            ch_r_ev.into(),
-                        ));
+                    (Some(pkr), pke)
+                } else if let Some(key::chorded::ChordResolution::Chord) = ch_state {
+                    let ch_r_ev =
+                        key::chorded::Event::ChordResolved(key::chorded::ChordResolution::Chord);
+                    let pke =
+                        key::KeyEvents::event(key::Event::key_event(keymap_index, ch_r_ev.into()));
 
-                        (
-                            Some(key::PressedKeyResult::Resolved(
-                                key::NoOpKeyState::new().into(),
-                            )),
-                            pke,
-                        )
-                    } else {
-                        (None, key::KeyEvents::no_events())
-                    }
+                    (
+                        Some(key::PressedKeyResult::Resolved(
+                            key::NoOpKeyState::new().into(),
+                        )),
+                        pke,
+                    )
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
+            } else {
+                (None, key::KeyEvents::no_events())
             }
-            _ => (None, key::KeyEvents::no_events()),
+        } else {
+            (None, key::KeyEvents::no_events())
         }
     }
 
