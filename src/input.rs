@@ -40,7 +40,7 @@ impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> 
     /// Convenience passthrough to key_state handle_event.
     pub fn handle_event(
         &mut self,
-        context: Ctx,
+        context: &Ctx,
         event: crate::key::Event<Ev>,
     ) -> crate::key::KeyEvents<Ev> {
         self.key_state

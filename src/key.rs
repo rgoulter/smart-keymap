@@ -485,7 +485,7 @@ pub trait KeyState: Debug {
     /// Used to update the [KeyState]'s state, and possibly yield event(s).
     fn handle_event(
         &mut self,
-        _context: Self::Context,
+        _context: &Self::Context,
         _keymap_index: u16,
         _event: Event<Self::Event>,
     ) -> KeyEvents<Self::Event> {

@@ -357,7 +357,7 @@ impl key::KeyState for KeyState {
 
     fn handle_event(
         &mut self,
-        context: Self::Context,
+        context: &Self::Context,
         keymap_index: u16,
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
@@ -419,7 +419,7 @@ mod tests {
 
         // Act
         let events = pressed_lmod_key.unwrap_resolved().handle_event(
-            context,
+            &context,
             keymap_index,
             key::Event::Input(input::Event::Release { keymap_index }),
         );
@@ -492,7 +492,7 @@ mod tests {
         let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
         context.layer_context.activate_layer(1);
         let events = pressed_lmod_key.unwrap_resolved().handle_event(
-            context,
+            &context,
             0,
             key::Event::Input(input::Event::Release { keymap_index: 0 }),
         );

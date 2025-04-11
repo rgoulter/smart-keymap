@@ -558,7 +558,7 @@ impl<
             self.pressed_inputs.iter_mut().for_each(|pi| {
                 if let input::PressedInput::Key(pressed_key) = pi {
                     pressed_key
-                        .handle_event(self.context, ev.into())
+                        .handle_event(&self.context, ev.into())
                         .into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                 }
@@ -690,7 +690,7 @@ impl<
             }) = pi
             {
                 key_state
-                    .handle_event(self.context, *keymap_index, ev)
+                    .handle_event(&self.context, *keymap_index, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
