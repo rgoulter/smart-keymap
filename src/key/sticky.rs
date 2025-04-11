@@ -305,8 +305,7 @@ impl KeyState {
                     keymap_index: released_index,
                 }) if released_index == keymap_index => {
                     // The sticky key has been released.
-                    let sticky_ctx: &Context = context.into();
-                    match sticky_ctx.config.activation {
+                    match context.config.activation {
                         StickyKeyActivation::OnStickyKeyRelease => {
                             let sticky_ev = Event::ActivateModifiers(self.sticky_modifiers);
                             let k_ev = key::Event::key_event(keymap_index, sticky_ev);

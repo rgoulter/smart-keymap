@@ -259,7 +259,7 @@ where
                 ChordResolution::Passthrough => (0, &self.passthrough),
             };
 
-            let (pkr, pke) = key.new_pressed_key(&context, key_path);
+            let (pkr, pke) = key.new_pressed_key(context, key_path);
             // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
             (pkr.add_path_item(i), pke)
         } else {
@@ -415,9 +415,7 @@ where
                     (pk, pke)
                 }
                 // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
-                ChordResolution::Passthrough => {
-                    self.passthrough.new_pressed_key(&context, key_path)
-                }
+                ChordResolution::Passthrough => self.passthrough.new_pressed_key(context, key_path),
             }
         } else {
             let pk = key::PressedKeyResult::Pending(key_path, pks.into());
@@ -656,7 +654,7 @@ impl PendingKeyState {
                     panic!();
                 }
 
-                self.check_resolution(&context)
+                self.check_resolution(context)
             }
             key::Event::Input(input::Event::Release {
                 keymap_index: released_keymap_index,
