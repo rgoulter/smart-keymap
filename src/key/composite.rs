@@ -163,6 +163,36 @@ impl From<Context> for key::tap_hold::Context {
     }
 }
 
+impl<'c> From<&'c Context> for &'c key::caps_word::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.caps_word_context
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::chorded::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.chorded_context
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::layered::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.layer_context
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::sticky::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.sticky_context
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::tap_hold::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.tap_hold_context
+    }
+}
+
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
