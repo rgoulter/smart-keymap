@@ -279,6 +279,28 @@ impl From<key::chorded::PendingKeyState> for PendingKeyState {
     }
 }
 
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::PendingKeyState {
+    type Error = ();
+
+    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+        match pks {
+            PendingKeyState::TapHold(pks) => Ok(pks),
+            _ => Err(()),
+        }
+    }
+}
+
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
+    type Error = ();
+
+    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+        match pks {
+            PendingKeyState::Chorded(pks) => Ok(pks),
+            _ => Err(()),
+        }
+    }
+}
+
 /// Aggregate enum for key state. (i.e. pressed key data).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum KeyState {
