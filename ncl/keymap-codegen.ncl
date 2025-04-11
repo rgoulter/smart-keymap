@@ -1135,6 +1135,7 @@ let validators = import "validators.ncl" in
         crate::key::chorded::Config {
             timeout: %{std.to_string config.chorded.timeout},
             chords: [%{chords_fragment}],
+            ..crate::key::chorded::DEFAULT_CONFIG
         }
       "%
       in
@@ -1142,6 +1143,7 @@ let validators = import "validators.ncl" in
         crate::key::tap_hold::Config {
             timeout: %{std.to_string config.tap_hold.timeout},
             interrupt_response: crate::key::tap_hold::InterruptResponse::%{config.tap_hold.interrupt_response},
+            ..crate::key::tap_hold::DEFAULT_CONFIG
         }
       "%
       in
