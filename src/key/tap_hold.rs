@@ -73,7 +73,7 @@ impl<K: key::Key> Key<K> {
     /// Constructs a new pressed key state and a scheduled event for the tap-hold key.
     fn new_pressed_key(
         &self,
-        context: Context,
+        context: &Context,
         key_path: key::KeyPath,
     ) -> (PendingKeyState, key::ScheduledEvent<Event>) {
         let keymap_index: u16 = key_path[0];
@@ -104,7 +104,7 @@ impl<
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -120,7 +120,7 @@ impl<
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
     ) -> (
@@ -301,7 +301,7 @@ impl PendingKeyState {
     /// Returns at most 2 events
     pub fn handle_event(
         &mut self,
-        context: Context,
+        context: &Context,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> Option<TapHoldState> {

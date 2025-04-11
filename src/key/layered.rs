@@ -60,7 +60,7 @@ impl key::Key for ModifierKey {
 
     fn new_pressed_key(
         &self,
-        _context: Self::Context,
+        _context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -76,7 +76,7 @@ impl key::Key for ModifierKey {
     fn handle_event(
         &self,
         _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
+        _context: &Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
     ) -> (
@@ -303,25 +303,25 @@ impl<K: key::Key + Copy + PartialEq> LayeredKey<K> {
 
 impl<K: key::Key + Copy + PartialEq> LayeredKey<K>
 where
-    K::Context: Into<Context>,
+    for<'c> &'c K::Context: Into<&'c Context>,
 {
     /// Presses the key, using the highest active key, if any.
     fn new_pressed_key(
         &self,
-        context: K::Context,
+        context: &K::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
         key::KeyEvents<K::Event>,
     ) {
-        let layer_context: Context = context.into();
+        let layer_context: &Context = context.into();
         let (layer, passthrough_key) = self
             .layered
             .highest_active_key(layer_context.layer_state(), layer_context.default_layer)
             .unwrap_or((0, &self.base));
 
         // PRESSED KEY PATH: add Layer (0 = base, n = layer_index)
-        let (pkr, pke) = passthrough_key.new_pressed_key(context, key_path);
+        let (pkr, pke) = passthrough_key.new_pressed_key(&context, key_path);
         (pkr.add_path_item(layer as u16), pke)
     }
 }
@@ -343,7 +343,7 @@ impl<
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -355,7 +355,7 @@ impl<
     fn handle_event(
         &self,
         _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
+        _context: &Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
     ) -> (
@@ -531,7 +531,7 @@ mod tests {
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
-        let (actual_key_state, _actual_event) = layered_key.new_pressed_key(context, key_path);
+        let (actual_key_state, _actual_event) = layered_key.new_pressed_key(&context, key_path);
 
         // Assert
         let expected_key_state: KeyState = KeyState::Keyboard(expected_key.new_pressed_key());
@@ -557,7 +557,7 @@ mod tests {
         // Act: without activating a layer, press the layered key
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
-        let (actual_pressed_key, _event) = layered_key.new_pressed_key(context, key_path);
+        let (actual_pressed_key, _event) = layered_key.new_pressed_key(&context, key_path);
 
         let actual_key_output = actual_pressed_key.unwrap_resolved().key_output();
 
@@ -596,7 +596,7 @@ mod tests {
         ));
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
-        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(context, key_path);
+        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(&context, key_path);
 
         // Assert
         let expected_pressed_key = KeyState::Keyboard(expected_key.new_pressed_key());
@@ -634,7 +634,7 @@ mod tests {
         ));
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
-        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(context, key_path);
+        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(&context, key_path);
 
         // Assert
         let expected_pressed_key = KeyState::Keyboard(expected_key.new_pressed_key());
@@ -664,7 +664,7 @@ mod tests {
         ));
         let keymap_index = 9; // arbitrary
         let key_path = key::key_path(keymap_index);
-        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(context, key_path);
+        let (actual_pressed_key, _actual_event) = layered_key.new_pressed_key(&context, key_path);
 
         // Assert
         let expected_pressed_key = KeyState::Keyboard(expected_key.new_pressed_key());

@@ -216,7 +216,7 @@ impl key::Key for Key {
 
     fn new_pressed_key(
         &self,
-        _context: Self::Context,
+        _context: &Self::Context,
         _key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -231,7 +231,7 @@ impl key::Key for Key {
     fn handle_event(
         &self,
         _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
+        _context: &Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
     ) -> (

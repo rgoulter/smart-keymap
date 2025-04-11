@@ -38,7 +38,7 @@ impl key::Key for BaseKey {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
@@ -53,7 +53,7 @@ impl key::Key for BaseKey {
     fn handle_event(
         &self,
         _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
+        _context: &Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
     ) -> (

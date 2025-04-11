@@ -170,7 +170,7 @@ pub trait Key: Debug {
     ///  so that holding the key resolves as a hold).
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: KeyPath,
     ) -> (
         PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -181,7 +181,7 @@ pub trait Key: Debug {
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: KeyPath,
         event: Event<Self::Event>,
     ) -> (

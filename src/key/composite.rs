@@ -415,7 +415,7 @@ mod tests {
         let key_path = key::key_path(keymap_index);
         let key = K::layer_modifier(key::layered::ModifierKey::Hold(1));
         let context: Ctx = DEFAULT_CONTEXT;
-        let (pressed_lmod_key, _) = key.new_pressed_key(context, key_path);
+        let (pressed_lmod_key, _) = key.new_pressed_key(&context, key_path);
 
         // Act
         let events = pressed_lmod_key.unwrap_resolved().handle_event(
@@ -455,7 +455,7 @@ mod tests {
         let keymap_index: u16 = 0;
         let key_path = key::key_path(keymap_index);
         let (_pressed_key, pressed_key_events) =
-            keys[keymap_index as usize].new_pressed_key(context, key_path);
+            keys[keymap_index as usize].new_pressed_key(&context, key_path);
         let maybe_ev = pressed_key_events.into_iter().next();
 
         // Act
@@ -489,7 +489,7 @@ mod tests {
         let mut context: Ctx = DEFAULT_CONTEXT;
         let keymap_index: u16 = 0;
         let key_path = key::key_path(keymap_index);
-        let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
+        let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
         context.layer_context.activate_layer(1);
         let events = pressed_lmod_key.unwrap_resolved().handle_event(
             &context,
@@ -530,7 +530,7 @@ mod tests {
         // Act
         let keymap_index: u16 = 2;
         let key_path = key::key_path(keymap_index);
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
         let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
         // Assert
@@ -558,7 +558,7 @@ mod tests {
         // Act
         let keymap_index: u16 = 1;
         let key_path = key::key_path(keymap_index);
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(context, key_path);
+        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
         let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
         // Assert

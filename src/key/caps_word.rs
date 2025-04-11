@@ -117,7 +117,7 @@ impl Key {
     }
 
     /// Constructs a pressed key state
-    pub fn new_pressed_key(&self, context: Context, keymap_index: u16) -> key::KeyEvents<Event> {
+    pub fn new_pressed_key(&self, context: &Context, keymap_index: u16) -> key::KeyEvents<Event> {
         let key_event = match self {
             Key::ToggleCapsWord => {
                 if context.is_active {
@@ -139,7 +139,7 @@ impl key::Key for Key {
 
     fn new_pressed_key(
         &self,
-        context: Self::Context,
+        context: &Self::Context,
         key_path: key::KeyPath,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
@@ -155,7 +155,7 @@ impl key::Key for Key {
     fn handle_event(
         &self,
         _pending_state: &mut Self::PendingKeyState,
-        _context: Self::Context,
+        _context: &Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
     ) -> (
