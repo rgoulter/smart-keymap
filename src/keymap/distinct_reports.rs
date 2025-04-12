@@ -69,3 +69,105 @@ impl DistinctReports {
         self.0.as_slice()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_distinct_reports_equal() {
+        // Assemble
+        let lhs = DistinctReports(vec![[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x04, 0, 0, 0, 0, 0]]);
+        let rhs = DistinctReports(vec![[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x04, 0, 0, 0, 0, 0]]);
+
+        // Act
+
+        // Assert
+        assert!(lhs == rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_not_equal() {
+        // Assemble
+        let lhs = DistinctReports(vec![[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x04, 0, 0, 0, 0, 0]]);
+        let rhs = DistinctReports(vec![[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x05, 0, 0, 0, 0, 0]]);
+
+        // Act
+
+        // Assert
+        assert!(lhs != rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_not_equal_modif() {
+        // Assemble
+        let lhs = DistinctReports(vec![[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x04, 0, 0, 0, 0, 0]]);
+        let rhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0x04, 0, 0, 0, 0, 0],
+        ]);
+
+        // Act
+
+        // Assert
+        assert!(lhs != rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_equal_ignores_0_between() {
+        // Assemble
+        let lhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0x04, 0, 0, 0, 0, 0],
+            [0, 0, 0x05, 0, 0, 0, 0, 0],
+        ]);
+        let rhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0x04, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0x05, 0, 0, 0, 0, 0],
+        ]);
+
+        // Act
+
+        // Assert
+        assert!(lhs == rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_not_equal_respects_trailing_0() {
+        // Assemble
+        let lhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0x04, 0, 0, 0, 0, 0],
+            [0, 0, 0x05, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]);
+        let rhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0x04, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0x05, 0, 0, 0, 0, 0],
+        ]);
+
+        // Act
+
+        // Assert
+        assert!(lhs != rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_update_ignores_consecutive_duplicate() {
+        // Assemble
+        let lhs = DistinctReports(vec![[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x04, 0, 0, 0, 0, 0]]);
+
+        // Act
+        let mut rhs = DistinctReports::new();
+        rhs.update([0, 0, 0x04, 0, 0, 0, 0, 0]);
+        rhs.update([0, 0, 0x04, 0, 0, 0, 0, 0]);
+        rhs.update([0, 0, 0x04, 0, 0, 0, 0, 0]);
+
+        // Assert
+        assert!(lhs == rhs);
+    }
+}
