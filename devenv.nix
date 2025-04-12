@@ -25,6 +25,7 @@
 
   packages = [
     pkgs.cargo-binutils
+    pkgs.cargo-deny
     pkgs.cargo-nextest
     pkgs.clang-tools
     pkgs.cmake-language-server
