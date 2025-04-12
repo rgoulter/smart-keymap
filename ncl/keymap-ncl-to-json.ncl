@@ -1,5 +1,7 @@
 let validators = import "validators.ncl" in
 {
+  Chord = { indices | Array Number, key | KeymapKey },
+
   KeymapKey =
     std.contract.any_of [
       keyboard.Key,
@@ -28,6 +30,7 @@ let validators = import "validators.ncl" in
     = [keys],
 
   chords
+    | Array Chord
     | default
     = [],
 
