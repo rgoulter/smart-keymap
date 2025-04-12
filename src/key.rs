@@ -279,6 +279,11 @@ impl KeyboardModifiers {
         KeyboardModifiers(0x00)
     }
 
+    /// Constructs with modifiers with the given byte.
+    pub const fn from_byte(b: u8) -> Self {
+        KeyboardModifiers(b)
+    }
+
     /// Constructs with the given key_code.
     ///
     /// Returns None if the key_code is not a modifier key code.
