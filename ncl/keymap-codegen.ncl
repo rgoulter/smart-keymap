@@ -96,52 +96,11 @@ let validators = import "validators.ncl" in
   keyboard_modifiers = {
     JsonValue = std.contract.from_validator json_value_validator,
 
-    json_value_validator =
-      validators.record.validator {
-        fields_validator =
-          validators.record.has_only_fields [
-            "left_ctrl",
-            "left_shift",
-            "left_alt",
-            "left_gui",
-            "right_ctrl",
-            "right_shift",
-            "right_alt",
-            "right_gui",
-          ],
-        field_validators = {
-          left_ctrl = validators.is_bool,
-          left_shift = validators.is_bool,
-          left_alt = validators.is_bool,
-          left_gui = validators.is_bool,
-          right_ctrl = validators.is_bool,
-          right_shift = validators.is_bool,
-          right_alt = validators.is_bool,
-          right_gui = validators.is_bool,
-        },
-      },
+    json_value_validator = validators.is_number,
 
     is_json_value = fun k => 'Ok == json_value_validator k,
 
-    expr = match {
-      {} => "crate::key::KeyboardModifiers::new()",
-      { left_ctrl, ..modifiers } if left_ctrl =>
-        "crate::key::KeyboardModifiers::LEFT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
-      { left_alt, ..modifiers } if left_alt =>
-        "crate::key::KeyboardModifiers::LEFT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
-      { left_shift, ..modifiers } if left_shift =>
-        "crate::key::KeyboardModifiers::LEFT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
-      { left_gui, ..modifiers } if left_gui =>
-        "crate::key::KeyboardModifiers::LEFT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
-      { right_ctrl, ..modifiers } if right_ctrl =>
-        "crate::key::KeyboardModifiers::RIGHT_CTRL.union(&%{keyboard_modifiers.expr modifiers})",
-      { right_alt, ..modifiers } if right_alt =>
-        "crate::key::KeyboardModifiers::RIGHT_ALT.union(&%{keyboard_modifiers.expr modifiers})",
-      { right_shift, ..modifiers } if right_shift =>
-        "crate::key::KeyboardModifiers::RIGHT_SHIFT.union(&%{keyboard_modifiers.expr modifiers})",
-      { right_gui, ..modifiers } if right_gui =>
-        "crate::key::KeyboardModifiers::RIGHT_GUI.union(&%{keyboard_modifiers.expr modifiers})",
-    },
+    expr = fun b => "crate::key::KeyboardModifiers::from_byte(%{std.to_string b})",
   },
 
   checks.check_keyboard = {
@@ -150,10 +109,10 @@ let validators = import "validators.ncl" in
       let json_value = { key_code = 4 } in
       keyboard.is_json_value json_value,
     check_json_with_modifier_is =
-      let json_value = { key_code = 4, modifiers = { left_ctrl = true } } in
+      let json_value = { key_code = 4, modifiers = 1 } in
       keyboard.is_json_value json_value,
     check_json_modifiers_is =
-      let json_value = { modifiers = { left_ctrl = true } } in
+      let json_value = { modifiers = 1 } in
       keyboard.is_json_value json_value,
 
     check_keyboard_codegen_values = {
