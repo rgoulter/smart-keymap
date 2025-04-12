@@ -52,6 +52,12 @@
     else
       'Error { message = "Expected string" },
 
+  is_elem_of = fun array v =>
+    if std.array.elem v array then
+      'Ok
+    else
+      'Error { message = "Expected %{std.to_string v} to be elem of %{std.serialize 'Json array}" },
+
   checks.all_of = {
     all_ok_is_ok = {
       expected = 'Ok,
