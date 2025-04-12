@@ -456,8 +456,7 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::LEFT_SHIFT
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(2),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
@@ -492,26 +491,22 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::RIGHT_SHIFT
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(32),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::LEFT_CTRL
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(1),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::LEFT_GUI
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(8),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::LEFT_ALT
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(4),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
@@ -534,20 +529,17 @@ pub mod init {
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::RIGHT_ALT
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(64),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::RIGHT_GUI
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(128),
             )),
         )),
         crate::key::composite::Chorded(crate::key::composite::Layered(
             crate::key::composite::TapHold(crate::key::keyboard::Key::from_modifiers(
-                crate::key::KeyboardModifiers::RIGHT_CTRL
-                    .union(&crate::key::KeyboardModifiers::new()),
+                crate::key::KeyboardModifiers::from_byte(16),
             )),
         )),
     ));
