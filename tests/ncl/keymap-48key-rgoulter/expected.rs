@@ -299,8 +299,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             47,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -326,8 +325,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             36,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -353,8 +351,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             37,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -380,8 +377,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             38,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -407,8 +403,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             48,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -564,8 +559,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(4),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_ALT
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(4),
                     ),
                 )),
                 [
@@ -575,8 +569,7 @@ pub mod init {
                     Some(crate::key::composite::TapHoldKey::Pass(
                         crate::key::keyboard::Key::new_with_modifiers(
                             53,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
@@ -597,8 +590,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(18),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_GUI
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(8),
                     ),
                 )),
                 [
@@ -608,8 +600,7 @@ pub mod init {
                     Some(crate::key::composite::TapHoldKey::Pass(
                         crate::key::keyboard::Key::new_with_modifiers(
                             33,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
@@ -630,8 +621,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(8),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_CTRL
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(1),
                     ),
                 )),
                 [
@@ -641,8 +631,7 @@ pub mod init {
                     Some(crate::key::composite::TapHoldKey::Pass(
                         crate::key::keyboard::Key::new_with_modifiers(
                             34,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
@@ -663,8 +652,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(24),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_SHIFT
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(2),
                     ),
                 )),
                 [
@@ -674,8 +662,7 @@ pub mod init {
                     Some(crate::key::composite::TapHoldKey::Pass(
                         crate::key::keyboard::Key::new_with_modifiers(
                             35,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHoldKey::Pass(
@@ -701,8 +688,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             46,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -792,8 +778,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(11),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::RIGHT_SHIFT
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(32),
                     ),
                 )),
                 [
@@ -817,8 +802,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(23),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_CTRL
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(1),
                     ),
                 )),
                 [
@@ -842,8 +826,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(17),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::RIGHT_GUI
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(128),
                     ),
                 )),
                 [
@@ -867,8 +850,7 @@ pub mod init {
                 crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(
                     crate::key::keyboard::Key::new(22),
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_ALT
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(4),
                     ),
                 )),
                 [
@@ -897,8 +879,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             56,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -924,8 +905,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             30,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -951,8 +931,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             31,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -978,8 +957,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             32,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -1005,8 +983,7 @@ pub mod init {
                     Some(crate::key::composite::TapHold(
                         crate::key::keyboard::Key::new_with_modifiers(
                             49,
-                            crate::key::KeyboardModifiers::LEFT_SHIFT
-                                .union(&crate::key::KeyboardModifiers::new()),
+                            crate::key::KeyboardModifiers::from_byte(2),
                         ),
                     )),
                     Some(crate::key::composite::TapHold(
@@ -1266,8 +1243,7 @@ pub mod init {
                         crate::key::composite::BaseKey::Keyboard(
                             crate::key::keyboard::Key::new_with_modifiers(
                                 55,
-                                crate::key::KeyboardModifiers::LEFT_SHIFT
-                                    .union(&crate::key::KeyboardModifiers::new()),
+                                crate::key::KeyboardModifiers::from_byte(2),
                             ),
                         ),
                     )),
@@ -1300,8 +1276,7 @@ pub mod init {
                         crate::key::composite::BaseKey::Keyboard(
                             crate::key::keyboard::Key::new_with_modifiers(
                                 39,
-                                crate::key::KeyboardModifiers::LEFT_SHIFT
-                                    .union(&crate::key::KeyboardModifiers::new()),
+                                crate::key::KeyboardModifiers::from_byte(2),
                             ),
                         ),
                     )),
@@ -1334,8 +1309,7 @@ pub mod init {
                         crate::key::composite::BaseKey::Keyboard(
                             crate::key::keyboard::Key::new_with_modifiers(
                                 45,
-                                crate::key::KeyboardModifiers::LEFT_SHIFT
-                                    .union(&crate::key::KeyboardModifiers::new()),
+                                crate::key::KeyboardModifiers::from_byte(2),
                             ),
                         ),
                     )),

@@ -56,8 +56,7 @@ pub mod init {
                 crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4)),
                 crate::key::composite::BaseKey::Keyboard(
                     crate::key::keyboard::Key::from_modifiers(
-                        crate::key::KeyboardModifiers::LEFT_CTRL
-                            .union(&crate::key::KeyboardModifiers::new()),
+                        crate::key::KeyboardModifiers::from_byte(1),
                     ),
                 ),
             )),
