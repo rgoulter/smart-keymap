@@ -2,6 +2,43 @@ let validators = import "validators.ncl" in
 {
   Chord = { indices | Array Number, key | KeymapKey },
 
+  ChordedConfig = {
+    timeout | optional | Number,
+  },
+
+  StickyActivation =
+    std.contract.from_validator (
+      validators.is_elem_of [
+        "OnStickyKeyRelease"
+      ]
+    ),
+
+  StickyConfig = {
+    activation
+      | optional
+      | StickyActivation,
+  },
+
+  TapHoldInterruptResponse =
+    std.contract.from_validator (
+      validators.is_elem_of [
+        "HoldOnKeyPress",
+        "HoldOnKeyTap",
+        "Ignore",
+      ]
+    ),
+
+  TapHoldConfig = {
+    timeout | optional | Number,
+    interrupt_response | optional | TapHoldInterruptResponse,
+  },
+
+  Config = {
+    chorded | optional | ChordedConfig,
+    sticky | optional | StickyConfig,
+    tap_hold | optional | TapHoldConfig,
+  },
+
   KeymapKey =
     std.contract.any_of [
       keyboard.Key,
@@ -18,7 +55,7 @@ let validators = import "validators.ncl" in
 
   KeymapLayer = std.contract.any_of [ Array KeymapKey, String ],
 
-  config = {},
+  config | Config = {},
 
   keys
     | optional,
