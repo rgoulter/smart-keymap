@@ -3,19 +3,11 @@ pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         chorded: crate::key::chorded::Config {
-            timeout: 200,
             chords: [],
             ..crate::key::chorded::DEFAULT_CONFIG
         },
-        sticky: crate::key::sticky::Config {
-            activation: crate::key::sticky::StickyKeyActivation::OnStickyKeyRelease,
-            ..crate::key::sticky::DEFAULT_CONFIG
-        },
-        tap_hold: crate::key::tap_hold::Config {
-            timeout: 200,
-            interrupt_response: crate::key::tap_hold::InterruptResponse::Ignore,
-            ..crate::key::tap_hold::DEFAULT_CONFIG
-        },
+        sticky: crate::key::sticky::DEFAULT_CONFIG,
+        tap_hold: crate::key::tap_hold::DEFAULT_CONFIG,
         ..crate::key::composite::DEFAULT_CONFIG
     };
 
