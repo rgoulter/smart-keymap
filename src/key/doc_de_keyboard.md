@@ -18,7 +18,7 @@ Modifiers:
 use smart_keymap::key::keyboard::Key;
 use smart_keymap::key::KeyboardModifiers;
 let json = r#"
-  { "modifiers": { "left_ctrl": true } }
+  { "modifiers": 1 }
 "#;
 let expected_key: Key = Key::from_modifiers(
     KeyboardModifiers::LEFT_CTRL,
@@ -33,7 +33,7 @@ Key code with modifiers:
 use smart_keymap::key::keyboard::Key;
 use smart_keymap::key::KeyboardModifiers;
 let json = r#"
-  { "key_code": 4, "modifiers": { "left_ctrl": true } }
+  { "key_code": 4, "modifiers": 1 }
 "#;
 let expected_key: Key = Key::new_with_modifiers(
     0x04,
