@@ -1409,7 +1409,7 @@ dependencies = [
 
 [[package]]
 name = "rp2040-rtic-smart-keyboard"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1630,7 +1630,7 @@ dependencies = [
 
 [[package]]
 name = "smart-keymap"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "cucumber",
  "futures",
@@ -1647,11 +1647,11 @@ dependencies = [
 
 [[package]]
 name = "smart-keymap-nickel-helper"
-version = "0.6.0-dev"
+version = "0.6.0"
 
 [[package]]
 name = "smart_keymap"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "smart-keymap",
 ]
@@ -1679,7 +1679,7 @@ checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
 name = "stm32f4-rtic-smart-keyboard"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -1992,7 +1992,7 @@ dependencies = [
 
 [[package]]
 name = "usbd-smart-keyboard"
-version = "0.6.0-dev"
+version = "0.6.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
