@@ -1110,52 +1110,81 @@ let validators = import "validators.ncl" in
       let { config, keys } =
         json_keymap
         & {
-          config = {
-            chorded = {
-              chords | default = [],
-              timeout | default = 200,
-            },
-            sticky = {
-              activation | default = "OnStickyKeyRelease",
-            },
-            tap_hold = {
-              timeout | default = 200,
-              interrupt_response | default = "Ignore",
-            },
-          },
+          config | default = {},
         }
       in
       let chorded_config_expr =
-        let chords_fragment =
-          config.chorded.chords
-          |> std.array.map (match {
-            [i, j] => "Some(crate::key::chorded::ChordIndices::Chord2(%{std.to_string i}, %{std.to_string j}))"
+        if std.record.has_field "chorded" config then
+          let timeout_field_fragment =
+            if std.record.has_field "timeout" config.chorded then
+              "timeout: %{std.to_string config.chorded.timeout},"
+            else
+              ""
+          in
+          let chords_field_fragment =
+            if std.record.has_field "chords" config.chorded then
+              let chords_fragment =
+                config.chorded.chords
+                |> std.array.map (match {
+                  [i, j] => "Some(crate::key::chorded::ChordIndices::Chord2(%{std.to_string i}, %{std.to_string j}))"
+                }
+                )
+                |> std.string.join ","
+              in
+              "chords: [%{chords_fragment}],"
+            else
+              ""
+          in
+          m%"
+          crate::key::chorded::Config {
+              %{timeout_field_fragment}
+              %{chords_field_fragment}
+              ..crate::key::chorded::DEFAULT_CONFIG
           }
-          )
-          |> std.string.join ","
-        in
-        m%"
-        crate::key::chorded::Config {
-            timeout: %{std.to_string config.chorded.timeout},
-            chords: [%{chords_fragment}],
-            ..crate::key::chorded::DEFAULT_CONFIG
-        }
-      "%
+        "%
+        else
+          "crate::key::chorded::DEFAULT_CONFIG"
       in
-      let sticky_config_expr = m%"
-        crate::key::sticky::Config {
-            activation: crate::key::sticky::StickyKeyActivation::%{config.sticky.activation},
-            ..crate::key::sticky::DEFAULT_CONFIG
-        }
-      "%
+      let sticky_config_expr =
+        if std.record.has_field "sticky" config then
+          let activation_field_fragment =
+            if std.record.has_field "activation" config.sticky then
+              "activation: crate::key::sticky::StickyKeyActivation::%{config.sticky.activation},"
+            else
+              ""
+          in
+          m%"
+            crate::key::sticky::Config {
+                %{activation_field_fragment}
+                ..crate::key::sticky::DEFAULT_CONFIG
+            }
+          "%
+        else
+          "crate::key::sticky::DEFAULT_CONFIG"
       in
-      let tap_hold_config_expr = m%"
-        crate::key::tap_hold::Config {
-            timeout: %{std.to_string config.tap_hold.timeout},
-            interrupt_response: crate::key::tap_hold::InterruptResponse::%{config.tap_hold.interrupt_response},
-            ..crate::key::tap_hold::DEFAULT_CONFIG
-        }
-      "%
+      let tap_hold_config_expr =
+        if std.record.has_field "tap_hold" config then
+          let timeout_field_fragment =
+            if std.record.has_field "timeout" config.tap_hold then
+              "timeout: %{std.to_string config.tap_hold.timeout},"
+            else
+              ""
+          in
+          let interrupt_response_field_fragment =
+            if std.record.has_field "interrupt_response" config.tap_hold then
+              "interrupt_response: crate::key::tap_hold::InterruptResponse::%{config.tap_hold.interrupt_response},"
+            else
+              ""
+          in
+          m%"
+            crate::key::tap_hold::Config {
+                %{timeout_field_fragment}
+                %{interrupt_response_field_fragment}
+                ..crate::key::tap_hold::DEFAULT_CONFIG
+            }
+          "%
+        else
+          "crate::key::tap_hold::DEFAULT_CONFIG"
       in
       let keymap_len = std.array.length keys in
       let num_layers =
@@ -1193,6 +1222,12 @@ let validators = import "validators.ncl" in
         |> std.array.map (fun k => "%{k.rust_expr},")
         |> std.string.join ""
       in
+      let chord_count =
+        if std.record.has_field "chorded" config && std.record.has_field "chords" config.chorded then
+          config.chorded.chords |> std.array.length
+        else
+          0
+      in
       m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
@@ -1208,7 +1243,7 @@ pub mod init {
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
 
     /// The maximum number of chords.
-    pub const MAX_CHORDS: usize = %{config.chorded.chords |> std.array.length |> std.to_string};
+    pub const MAX_CHORDS: usize = %{chord_count |> std.to_string};
 
     pub use crate::key::composite::Context;
 
