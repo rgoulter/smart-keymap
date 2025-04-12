@@ -1,6 +1,6 @@
 [package]
 name = "rp2040-rtic-smart-keyboard"
-version = "0.6.0"
+version = "0.7.0-dev"
 authors = ["Richard Goulter <richard.goulter@gmail.com>"]
 edition = "2018"
 
