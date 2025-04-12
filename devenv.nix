@@ -32,6 +32,7 @@
     pkgs.just
     pkgs.lldb
     pkgs.nickel
+    pkgs.nls
     pkgs.rust-cbindgen
     pkgs.yaml-language-server
   ];
