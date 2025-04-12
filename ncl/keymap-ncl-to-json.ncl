@@ -555,14 +555,20 @@ let validators = import "validators.ncl" in
     | default
     | doc "The keymap.json output value."
     =
-      let config_ =
-        config
+      let { chorded = km_config_chorded, ..km_config } = config & { chorded = {} } in
+      let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
+      let config_json_value =
+        km_config
         & {
-          chorded.chords = chords |> std.array.map (fun { key, indices, .. } => indices),
+          chorded =
+            km_config_chorded
+            & {
+              chords = chord_indices,
+            },
         }
       in
       {
         keys = chorded_keys |> std.array.map key.to_json_value,
-        config = config_,
+        config = config_json_value,
       },
 }
