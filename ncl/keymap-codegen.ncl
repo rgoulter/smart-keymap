@@ -1,8 +1,56 @@
 let validators = import "validators.ncl" in
 {
+  ChordIndicesJson = Array Number,
+
+  ChordedConfigJson = {
+    chords | optional | Array ChordIndicesJson,
+    timeout | optional | Number,
+  },
+
+  StickyActivationJson =
+    std.contract.from_validator (
+      validators.is_elem_of [
+        "OnStickyKeyRelease"
+      ]
+    ),
+
+  StickyConfigJson = {
+    activation
+      | optional
+      | StickyActivationJson,
+  },
+
+  TapHoldInterruptResponseJson =
+    std.contract.from_validator (
+      validators.is_elem_of [
+        "HoldOnKeyPress",
+        "HoldOnKeyTap",
+        "Ignore",
+      ]
+    ),
+
+  TapHoldConfigJson = {
+    timeout | optional | Number,
+    interrupt_response | optional | TapHoldInterruptResponseJson,
+  },
+
+  ConfigJson = {
+    chorded | optional | ChordedConfigJson,
+    sticky | optional | StickyConfigJson,
+    tap_hold | optional | TapHoldConfigJson,
+  },
+
+  KeymapJson
+    | doc "Contract for the keymap.json value"
+    = {
+      keys | Array key.JsonValue,
+      config | optional | ConfigJson,
+      ..
+    },
+
   json_keymap
     | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
-    | { keys | Array key.JsonValue, .. },
+    | KeymapJson,
 
   # Given an array of codegen_values,
   #  return the 'wrapper type' that unifies all the values.
