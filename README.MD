@@ -188,3 +188,18 @@ The example USB HID keyboard software from the EVT has been adapted
 to work with smart_keymap lib.
 
 See [firmware/ch32x035-usb-device-compositekm-c](firmware/ch32x035-usb-device-compositekm-c/README.MD) for more details.
+
+## License
+
+Licensed under either of
+
+- Apache License, Version 2.0, ([LICENSE-APACHE](LICENSE-APACHE) or <http://www.apache.org/licenses/LICENSE-2.0>)
+- MIT license ([LICENSE-MIT](LICENSE-MIT) or <http://opensource.org/licenses/MIT>)
+
+at your option.
+
+### Contribution
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you, as defined in the Apache-2.0 license, shall be
+dual licensed as above, without any additional terms or conditions.
