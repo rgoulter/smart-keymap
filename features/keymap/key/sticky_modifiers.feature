@@ -23,6 +23,7 @@ Feature: Sticky Modifiers Key
       {
         keys = [
           (K.sticky K.LeftShift),
+          (K.sticky K.LeftCtrl),
           K.A,
           K.B,
         ]
@@ -43,5 +44,69 @@ Feature: Sticky Modifiers Key
       [
         press (K.LeftShift),
         press K.A,
+      ]
+      """
+
+  Example: tapped sticky modifier keys stack
+    When the keymap registers the following input
+      """
+      [
+        press (K.sticky K.LeftShift),
+        release (K.sticky K.LeftShift),
+        press (K.sticky K.LeftCtrl),
+        release (K.sticky K.LeftCtrl),
+        press K.A,
+      ]
+      """
+    Then the output should be equivalent to output from
+      """
+      [
+        press K.LeftShift,
+        press K.LeftCtrl,
+        press K.A,
+      ]
+      """
+
+  Example: sticky modifier key releases when modified key releases
+    When the keymap registers the following input
+      """
+      [
+        press (K.sticky K.LeftShift),
+        release (K.sticky K.LeftShift),
+        press K.A,
+        release K.A,
+      ]
+      """
+    Then the output should be equivalent to output from
+      """
+      [
+        press (K.LeftShift),
+        press K.A,
+        release K.A,
+        release (K.LeftShift),
+      ]
+      """
+
+  Example: sticky modifier key acts as regular key when interrupted by tap
+    When the keymap registers the following input
+      """
+      [
+        press (K.sticky K.LeftShift),
+        press K.A,
+        release K.A,
+        release (K.sticky K.LeftShift),
+        press K.B,
+        release K.B,
+      ]
+      """
+    Then the output should be equivalent to output from
+      """
+      [
+        press (K.LeftShift),
+        press K.A,
+        release K.A,
+        release (K.LeftShift),
+        press K.B,
+        release K.B,
       ]
       """
