@@ -101,6 +101,31 @@ let validators = import "validators.ncl" in
           right_gui = validators.is_bool,
         },
       },
+
+    # Must agree with consts used in key::KeyboardModifiers
+    to_json_value = fun km =>
+      let km =
+        km
+        & {
+          left_ctrl | default = false,
+          left_shift | default = false,
+          left_alt | default = false,
+          left_gui | default = false,
+          right_ctrl | default = false,
+          right_shift | default = false,
+          right_alt | default = false,
+          right_gui | default = false,
+        }
+      in
+      0
+      + (if km.left_ctrl then 1 else 0)
+      + (if km.left_shift then 2 else 0)
+      + (if km.left_alt then 4 else 0)
+      + (if km.left_gui then 8 else 0)
+      + (if km.right_ctrl then 16 else 0)
+      + (if km.right_shift then 32 else 0)
+      + (if km.right_alt then 64 else 0)
+      + (if km.right_gui then 128 else 0),
   },
 
   checks.keyboard =
@@ -137,7 +162,10 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_value = fun key => key,
+      to_json_value = match {
+        { modifiers = km, ..k } => k & { modifiers = keyboard_modifiers.to_json_value km },
+        k => k,
+      },
     },
 
   checks.layer_modifier =
@@ -230,7 +258,7 @@ let validators = import "validators.ncl" in
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_value = fun key => key,
+      to_json_value = fun { sticky_modifiers = sm } => { sticky_modifiers = keyboard_modifiers.to_json_value sm },
     },
 
   checks.layered =
@@ -324,12 +352,12 @@ let validators = import "validators.ncl" in
 
       check_tap_keyboard_hold_keyboard_to_json_json_value_keyboard = {
         actual = K.A & K.hold K.LeftCtrl |> tap_hold.to_json_value,
-        expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
+        expected = { tap = { key_code = 4 }, hold = { modifiers = 1 } },
       },
 
       check_json_value_tap_keyboard_hold_keyboard = {
         actual = K.A & K.hold K.LeftCtrl |> key.to_json_value,
-        expected = { tap = { key_code = 4 }, hold = { modifiers = { left_ctrl = true } } },
+        expected = { tap = { key_code = 4 }, hold = { modifiers = 1 } },
       },
     },
 
