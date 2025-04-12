@@ -38,7 +38,31 @@ impl core::cmp::PartialEq for DistinctReports {
             }
 
             if self.0[i] != other.0[j] {
-                return false;
+                // Special cases
+                //  - comparing "modifier pressed" in two reports, vs one report.
+                //  - comparing "modifier released" in two reports, vs one report.
+                if i > 0
+                    && i < self_len - 1
+                    && self.0[i + 1] == other.0[j]
+                    && ((self.0[i - 1][0] == self.0[i][0] && self.0[i][2..] == self.0[i + 1][2..])
+                        || (self.0[i - 1][2..] == self.0[i][2..]
+                            && self.0[i][0] == self.0[i + 1][0]))
+                {
+                    // self uses two reports for equivalent of one report in other
+                    i += 1;
+                } else if j > 0
+                    && j < other_len - 1
+                    && self.0[i] == other.0[j + 1]
+                    && ((other.0[j - 1][0] == other.0[j][0]
+                        && other.0[j][2..] == other.0[j + 1][2..])
+                        || (other.0[j - 1][2..] == other.0[j][2..]
+                            && other.0[j][0] == other.0[j + 1][0]))
+                {
+                    // other uses two reports for equivalent of one report in self
+                    j += 1;
+                } else {
+                    return false;
+                }
             }
 
             i += 1;
@@ -166,6 +190,47 @@ mod tests {
         rhs.update([0, 0, 0x04, 0, 0, 0, 0, 0]);
         rhs.update([0, 0, 0x04, 0, 0, 0, 0, 0]);
         rhs.update([0, 0, 0x04, 0, 0, 0, 0, 0]);
+
+        // Assert
+        assert!(lhs == rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_allows_modifier_press_equivalence() {
+        // Assemble
+        let lhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0x04, 0, 0, 0, 0, 0],
+        ]);
+        let rhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0x04, 0, 0, 0, 0, 0],
+        ]);
+
+        // Act
+
+        // Assert
+        assert!(lhs == rhs);
+    }
+
+    #[test]
+    fn test_distinct_reports_allows_modifier_release_equivalence() {
+        // Assemble
+        let lhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0x04, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]);
+        let rhs = DistinctReports(vec![
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0, 0, 0, 0, 0, 0],
+            [0x01, 0, 0x04, 0, 0, 0, 0, 0],
+            [0x01, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+        ]);
+
+        // Act
 
         // Assert
         assert!(lhs == rhs);
