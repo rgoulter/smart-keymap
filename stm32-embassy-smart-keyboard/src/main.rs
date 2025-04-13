@@ -32,20 +32,20 @@ async fn main(_spawner: Spawner) {
     {
         use embassy_stm32::rcc::*;
         config.rcc.hse = Some(Hse {
-            freq: Hertz(8_000_000),
-            mode: HseMode::Bypass,
+            freq: Hertz(25_000_000),
+            mode: HseMode::Oscillator,
         });
         config.rcc.pll_src = PllSource::HSE;
         config.rcc.pll = Some(Pll {
-            prediv: PllPreDiv::DIV4,
-            mul: PllMul::MUL168,
-            divp: Some(PllPDiv::DIV2), // 8mhz / 4 * 168 / 2 = 168Mhz.
-            divq: Some(PllQDiv::DIV7), // 8mhz / 4 * 168 / 7 = 48Mhz.
+            prediv: PllPreDiv::DIV25,  // PLL Input: 25MHz / 25 = 1MHz
+            mul: PllMul::MUL336,       // VCO Output: 1MHz * 336 = 336MHz
+            divp: Some(PllPDiv::DIV4), // System Clock (PLL_P): 336MHz / 4 = 84MHz.
+            divq: Some(PllQDiv::DIV7), // USB/SDIO/RNG Clock (PLL_Q): 336MHz / 7 = 48MHz
             divr: None,
         });
         config.rcc.ahb_pre = AHBPrescaler::DIV1;
-        config.rcc.apb1_pre = APBPrescaler::DIV4;
-        config.rcc.apb2_pre = APBPrescaler::DIV2;
+        config.rcc.apb1_pre = APBPrescaler::DIV2;
+        config.rcc.apb2_pre = APBPrescaler::DIV1;
         config.rcc.sys = Sysclk::PLL1_P;
         config.rcc.mux.clk48sel = mux::Clk48sel::PLL1_Q;
     }
@@ -120,12 +120,12 @@ async fn main(_spawner: Spawner) {
 
     let (reader, mut writer) = hid.split();
 
-    let mut button = ExtiInput::new(p.PC13, p.EXTI13, Pull::Down);
+    let mut button = ExtiInput::new(p.PA0, p.EXTI0, Pull::Up);
 
     // Do stuff with the class!
     let in_fut = async {
         loop {
-            button.wait_for_rising_edge().await;
+            button.wait_for_falling_edge().await;
             // signal_pin.wait_for_high().await;
             info!("Button pressed!");
             // Create a report with the A key pressed. (no shift modifier)
@@ -141,7 +141,7 @@ async fn main(_spawner: Spawner) {
                 Err(e) => warn!("Failed to send report: {:?}", e),
             };
 
-            button.wait_for_falling_edge().await;
+            button.wait_for_rising_edge().await;
             // signal_pin.wait_for_low().await;
             info!("Button released!");
             let report = KeyboardReport {
