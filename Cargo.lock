@@ -2201,6 +2201,7 @@ dependencies = [
  "embassy-stm32",
  "embassy-time",
  "embassy-usb",
+ "keyberon",
  "keyberon-smart-keyboard",
  "panic-probe",
  "smart-keymap",
