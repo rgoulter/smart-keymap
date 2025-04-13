@@ -20,3 +20,9 @@ cortex-m-rt = "0.7.0"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 usbd-hid = "0.8.1"
 
+keyberon-smart-keyboard = { path = "../keyberon-smart-keyboard" }
+# smart-keymap = { git = "https://github.com/rgoulter/smart-keymap.git" }
+smart-keymap = { path = "..", default-features = false }
+
+[build-dependencies]
+smart-keymap-nickel-helper = { path = "../smart-keymap-nickel-helper" }
