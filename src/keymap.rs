@@ -110,6 +110,13 @@ pub enum KeymapCallback {
     ResetToBootloader,
 }
 
+/// Context provided from the keymap to the smart keys.
+#[derive(Debug, Clone, Copy)]
+pub struct KeymapContext {}
+
+/// Default keymap context.
+pub const DEFAULT_KEYMAP_CONTEXT: KeymapContext = KeymapContext {};
+
 /// Events related to the keymap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeymapEvent {
