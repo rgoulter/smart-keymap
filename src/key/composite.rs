@@ -8,7 +8,7 @@ use core::fmt::Debug;
 #[cfg(feature = "std")]
 use serde::Deserialize;
 
-use crate::key;
+use crate::{key, keymap};
 
 mod base;
 mod chorded;
@@ -63,6 +63,7 @@ pub const DEFAULT_CONFIG: Config = Config {
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
+    keymap_context: keymap::KeymapContext,
     caps_word_context: key::caps_word::Context,
     chorded_context: key::chorded::Context,
     layer_context: key::layered::Context,
@@ -72,6 +73,7 @@ pub struct Context {
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
+    keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
     caps_word_context: key::caps_word::DEFAULT_CONTEXT,
     chorded_context: key::chorded::DEFAULT_CONTEXT,
     layer_context: key::layered::DEFAULT_CONTEXT,
@@ -124,6 +126,12 @@ impl key::Context for Context {
         }
 
         pke
+    }
+}
+
+impl<'c> From<&'c Context> for &'c keymap::KeymapContext {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.keymap_context
     }
 }
 
