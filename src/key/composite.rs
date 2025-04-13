@@ -83,11 +83,10 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
-            caps_word_context: key::caps_word::DEFAULT_CONTEXT,
             chorded_context: key::chorded::Context::from_config(config.chorded),
-            layer_context: key::layered::DEFAULT_CONTEXT,
             sticky_context: key::sticky::Context::from_config(config.sticky),
             tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
+            ..DEFAULT_CONTEXT
         }
     }
 }
