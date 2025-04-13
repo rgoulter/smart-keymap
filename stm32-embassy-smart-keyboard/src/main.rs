@@ -17,9 +17,61 @@ use embassy_usb::{Builder, Handler};
 use usbd_hid::descriptor::{KeyboardReport, SerializedDescriptor};
 use {defmt_rtt as _, panic_probe as _};
 
+use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
+use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
+
+use board::KEYMAP_INDICES;
+
 bind_interrupts!(struct Irqs {
     OTG_FS => usb::InterruptHandler<peripherals::USB_OTG_FS>;
 });
+
+#[cfg(not(custom_board))]
+mod board {
+    use embassy_stm32::gpio::Input;
+
+    pub const COLS: usize = 1;
+    pub const ROWS: usize = 1;
+
+    pub const KEYMAP_INDICES: [[Option<u16>; COLS]; ROWS] = [[Some(0)]];
+
+    pub type Keyboard<'d> = keyberon_smart_keyboard::input::Keyboard<COLS, ROWS, DirectPins<'d>>;
+
+    pub type PressedKeys = keyberon_smart_keyboard::input::PressedKeys<COLS, ROWS>;
+
+    pub struct DirectPins<'d>(pub Input<'d>);
+
+    impl<'d> keyberon_smart_keyboard::input::MatrixScanner<COLS, ROWS> for DirectPins<'d> {
+        fn is_boot_key_pressed(&mut self) -> bool {
+            self.0.is_low()
+        }
+
+        fn get(&mut self) -> Result<[[bool; COLS]; ROWS], core::convert::Infallible> {
+            Ok([[self.0.is_low(); COLS]])
+        }
+    }
+
+    macro_rules! keyboard {
+        ($p:ident) => {
+            crate::board::Keyboard {
+                matrix: crate::board::DirectPins(embassy_stm32::gpio::Input::new(
+                    $p.PA0,
+                    embassy_stm32::gpio::Pull::Up,
+                )),
+                debouncer: keyberon::debounce::Debouncer::new(
+                    crate::board::PressedKeys::default(),
+                    crate::board::PressedKeys::default(),
+                    25,
+                ),
+            }
+        };
+    }
+
+    pub(crate) use keyboard;
+}
+
+#[cfg(custom_board)]
+include!(concat!(env!("OUT_DIR"), "/board.rs"));
 
 #[embassy_executor::main]
 async fn main(_spawner: Spawner) {
