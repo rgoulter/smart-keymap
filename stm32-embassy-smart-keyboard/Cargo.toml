@@ -17,6 +17,7 @@ defmt-rtt = "0.4"
 
 cortex-m = { version = "0.7.6", features = ["inline-asm", "critical-section-single-core"] }
 cortex-m-rt = "0.7.0"
+keyberon = { git = "https://github.com/TeXitoi/keyberon", branch = "master" }
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 usbd-hid = "0.8.1"
 
