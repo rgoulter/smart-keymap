@@ -35,6 +35,14 @@ pub struct KeymapOutput {
     pressed_key_codes: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>,
 }
 
+impl Default for KeymapOutput {
+    fn default() -> Self {
+        Self {
+            pressed_key_codes: heapless::Vec::new(),
+        }
+    }
+}
+
 impl KeymapOutput {
     /// Constructs a new keymap output.
     pub fn new(pressed_key_codes: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>) -> Self {
