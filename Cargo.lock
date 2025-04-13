@@ -2199,6 +2199,7 @@ dependencies = [
  "embassy-executor",
  "embassy-futures",
  "embassy-stm32",
+ "embassy-time",
  "embassy-usb",
  "panic-probe",
  "usbd-hid",
