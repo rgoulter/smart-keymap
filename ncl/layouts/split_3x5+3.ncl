@@ -7,6 +7,11 @@
     in
     (std.record.remove "layers" split_3x5_3_keymap)
     & {
-      layers = std.array.map from_split_3x5_3 split_3x5_3_layers
+      layers =
+        let NO_KEY =
+          let K = import "keys.ncl" in
+          K.NO
+        in
+        std.array.map (fun l => from_split_3x5_3 { no_key = NO_KEY, from_layout = l }) split_3x5_3_layers
     },
 }
