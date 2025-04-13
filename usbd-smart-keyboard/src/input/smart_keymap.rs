@@ -17,7 +17,7 @@ pub struct KeymapCallbacks {
 #[derive(Debug)]
 pub struct KeyboardBackend {
     keymap: smart_keymap::init::Keymap,
-    pressed_key_codes: heapless::Vec<page::Keyboard, { smart_keymap::keymap::MAX_PRESSED_KEYS }>,
+    keymap_output: smart_keymap::keymap::KeymapOutput,
 }
 
 impl KeyboardBackend {
@@ -25,7 +25,7 @@ impl KeyboardBackend {
     pub fn new(keymap: smart_keymap::init::Keymap) -> Self {
         Self {
             keymap,
-            pressed_key_codes: heapless::Vec::new(),
+            keymap_output: smart_keymap::keymap::KeymapOutput::default(),
         }
     }
 
@@ -54,13 +54,15 @@ impl KeyboardBackend {
     pub fn tick(&mut self) -> bool {
         self.keymap.tick();
 
-        let old_pressed_key_codes = core::mem::take(&mut self.pressed_key_codes);
-
         let keymap_output = self.keymap.report_output();
-        let pressed_keycodes = keymap_output.pressed_key_codes();
-        self.pressed_key_codes = pressed_keycodes.iter().map(|&key| key.into()).collect();
 
-        old_pressed_key_codes != self.pressed_key_codes
+        let old_keymap_output = core::mem::replace(&mut self.keymap_output, keymap_output);
+
+        old_keymap_output != self.keymap_output
+    }
+
+    pub fn keymap_output(&self) -> &smart_keymap::keymap::KeymapOutput {
+        &self.keymap_output
     }
 
     /// Writes the HID keyboard and consumer reports from the smart keymap.
@@ -69,11 +71,16 @@ impl KeyboardBackend {
         CE: core::fmt::Debug, // usb error
         R: HIDReporter<page::Keyboard, page::Consumer, CE>,
     {
-        hid_reporter.write_keyboard_report(self.pressed_key_codes.clone())
+        hid_reporter.write_keyboard_report(self.pressed_key_codes())
     }
 
-    pub fn pressed_key_codes(&self) -> &heapless::Vec<page::Keyboard, 16> {
-        &self.pressed_key_codes
+    pub fn pressed_key_codes(&self) -> heapless::Vec<page::Keyboard, 16> {
+        let pressed_keycodes = self.keymap_output.pressed_key_codes();
+        pressed_keycodes
+            .iter()
+            .cloned()
+            .map(|key| key.into())
+            .collect()
     }
 }
 
