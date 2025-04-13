@@ -3,7 +3,10 @@ pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         chorded: crate::key::chorded::Config {
-            chords: [],
+            chords: [
+                Some(crate::key::chorded::ChordIndices::Chord2(26, 27)),
+                Some(crate::key::chorded::ChordIndices::Chord2(32, 33)),
+            ],
             ..crate::key::chorded::DEFAULT_CONFIG
         },
         sticky: crate::key::sticky::DEFAULT_CONFIG,
@@ -18,7 +21,7 @@ pub mod init {
     pub const LAYER_COUNT: usize = 6;
 
     /// The maximum number of chords.
-    pub const MAX_CHORDS: usize = 0;
+    pub const MAX_CHORDS: usize = 2;
 
     pub use crate::key::composite::Context;
 
@@ -167,7 +170,12 @@ pub mod init {
                 crate::key::composite::TapHold<crate::key::keyboard::Key>,
             >,
         >,
-        crate::key::composite::Chorded<
+        crate::key::chorded::Key<
+            crate::key::composite::LayeredKey<
+                crate::key::composite::TapHold<crate::key::keyboard::Key>,
+            >,
+        >,
+        crate::key::chorded::AuxiliaryKey<
             crate::key::composite::LayeredKey<
                 crate::key::composite::TapHold<crate::key::keyboard::Key>,
             >,
@@ -192,17 +200,12 @@ pub mod init {
                 crate::key::composite::TapHold<crate::key::keyboard::Key>,
             >,
         >,
-        crate::key::composite::Chorded<
+        crate::key::chorded::Key<
             crate::key::composite::LayeredKey<
                 crate::key::composite::TapHold<crate::key::keyboard::Key>,
             >,
         >,
-        crate::key::composite::Chorded<
-            crate::key::composite::LayeredKey<
-                crate::key::composite::TapHold<crate::key::keyboard::Key>,
-            >,
-        >,
-        crate::key::composite::Chorded<
+        crate::key::chorded::AuxiliaryKey<
             crate::key::composite::LayeredKey<
                 crate::key::composite::TapHold<crate::key::keyboard::Key>,
             >,
@@ -921,8 +924,14 @@ pub mod init {
                 ],
             ),
         )),
-        crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
-            crate::key::layered::LayeredKey::new(
+        crate::key::chorded::Key::new(
+            crate::key::composite::LayeredKey::Pass(crate::key::composite::TapHold(
+                crate::key::keyboard::Key::new_with_modifiers(
+                    75,
+                    crate::key::KeyboardModifiers::from_byte(8),
+                ),
+            )),
+            crate::key::composite::LayeredKey::Layered(crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(13)),
                 [
                     Some(crate::key::composite::TapHold(
@@ -945,9 +954,9 @@ pub mod init {
                         crate::key::keyboard::Key::new(0),
                     )),
                 ],
-            ),
-        )),
-        crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
+            )),
+        ),
+        crate::key::chorded::AuxiliaryKey::new(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(14)),
                 [
@@ -1068,8 +1077,14 @@ pub mod init {
                 ],
             ),
         )),
-        crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
-            crate::key::layered::LayeredKey::new(
+        crate::key::chorded::Key::new(
+            crate::key::composite::LayeredKey::Pass(crate::key::composite::TapHold(
+                crate::key::keyboard::Key::new_with_modifiers(
+                    78,
+                    crate::key::KeyboardModifiers::from_byte(8),
+                ),
+            )),
+            crate::key::composite::LayeredKey::Layered(crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(16)),
                 [
                     None,
@@ -1085,9 +1100,9 @@ pub mod init {
                         crate::key::keyboard::Key::new(0),
                     )),
                 ],
-            ),
-        )),
-        crate::key::composite::Chorded(crate::key::composite::LayeredKey::Layered(
+            )),
+        ),
+        crate::key::chorded::AuxiliaryKey::new(crate::key::composite::LayeredKey::Layered(
             crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(26)),
                 [
