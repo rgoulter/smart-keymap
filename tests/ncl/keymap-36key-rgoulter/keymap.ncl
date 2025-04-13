@@ -13,6 +13,12 @@ let MOU_R = 5 in
 let MED_R = 6 in
 
 {
+  chords =
+    let K = import "keys.ncl" in
+    [
+        { indices = [22, 23], key = K.LeftGUI & K.PageUp, },
+        { indices = [26, 27], key = K.LeftGUI & K.PageDown, },
+    ],
   config.tap_hold.interrupt_response = "HoldOnKeyTap",
   custom_keys = fun K =>
     let HoldLayerMod = fun layer_index => K.hold (K.layer_mod.hold layer_index) in
