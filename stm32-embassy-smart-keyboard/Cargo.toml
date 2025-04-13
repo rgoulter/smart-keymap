@@ -5,7 +5,7 @@ version = "0.7.0-dev"
 license = "MIT OR Apache-2.0"
 
 [dependencies]
-embassy-stm32 = { version = "0.2.0", features = ["defmt", "stm32f401cc", "unstable-pac", "memory-x", "time-driver-tim4", "exti", "chrono"] }
+embassy-stm32 = { version = "0.2.0", features = ["defmt", "stm32f401cc", "unstable-pac", "time-driver-tim4", "exti", "chrono"] }
 embassy-executor = { version = "0.7.0", features = ["arch-cortex-m", "executor-thread", "executor-interrupt", "defmt"] }
 embassy-time = { version = "0.4.0", features = ["defmt", "defmt-timestamp-uptime", "tick-hz-32_768"] }
 
