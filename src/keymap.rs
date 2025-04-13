@@ -30,7 +30,7 @@ const MAX_QUEUED_INPUT_EVENTS: usize = 32;
 pub const INPUT_QUEUE_TICK_DELAY: u8 = 1;
 
 /// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct KeymapOutput {
     pressed_key_codes: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>,
 }
