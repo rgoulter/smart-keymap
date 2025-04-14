@@ -14,6 +14,7 @@ use embassy_time::Timer;
 use embassy_usb::class::hid::{HidReaderWriter, ReportId, RequestHandler, State};
 use embassy_usb::control::OutResponse;
 use embassy_usb::{Builder, Handler};
+use static_cell::StaticCell;
 use usbd_hid::descriptor::{KeyboardReport, SerializedDescriptor};
 use {defmt_rtt as _, panic_probe as _};
 
@@ -21,6 +22,13 @@ use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
 use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
 
 use board::KEYMAP_INDICES;
+
+static EP_OUT_BUFFER: StaticCell<[u8; 256]> = StaticCell::new();
+
+static CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+static BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+static MS_OS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
+static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
 
 bind_interrupts!(struct Irqs {
     OTG_FS => usb::InterruptHandler<peripherals::USB_OTG_FS>;
@@ -98,19 +106,12 @@ async fn main(_spawner: Spawner) {
     }
     let p = embassy_stm32::init(config);
 
-    let mut ep_out_buffer = [0u8; 256];
+    let ep_out_buffer: &'static mut [u8; 256] = EP_OUT_BUFFER.init([0u8; 256]);
     let mut config = embassy_stm32::usb::Config::default();
 
     config.vbus_detection = false;
 
-    let driver = Driver::new_fs(
-        p.USB_OTG_FS,
-        Irqs,
-        p.PA12,
-        p.PA11,
-        &mut ep_out_buffer,
-        config,
-    );
+    let driver = Driver::new_fs(p.USB_OTG_FS, Irqs, p.PA12, p.PA11, ep_out_buffer, config);
 
     let mut config = embassy_usb::Config::new(0xc0de, 0xcafe);
     config.manufacturer = Some("Embassy");
@@ -119,10 +120,10 @@ async fn main(_spawner: Spawner) {
     config.max_power = 100;
     config.max_packet_size_0 = 64;
 
-    let mut config_descriptor = [0; 256];
-    let mut bos_descriptor = [0; 256];
-    let mut ms_os_descriptor = [0; 256];
-    let mut control_buf = [0; 64];
+    let config_descriptor = CONFIG_DESCRIPTOR.init([0; 256]);
+    let bos_descriptor = BOS_DESCRIPTOR.init([0; 256]);
+    let ms_os_descriptor = MS_OS_DESCRIPTOR.init([0; 256]);
+    let control_buf = CONTROL_BUF.init([0; 64]);
 
     let mut request_handler = MyRequestHandler {};
     let mut device_handler = MyDeviceHandler::new();
@@ -132,10 +133,10 @@ async fn main(_spawner: Spawner) {
     let mut builder = Builder::new(
         driver,
         config,
-        &mut config_descriptor,
-        &mut bos_descriptor,
-        &mut ms_os_descriptor,
-        &mut control_buf,
+        config_descriptor,
+        bos_descriptor,
+        ms_os_descriptor,
+        control_buf,
     );
 
     builder.handler(&mut device_handler);
