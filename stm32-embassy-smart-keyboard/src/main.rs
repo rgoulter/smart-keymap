@@ -6,7 +6,6 @@ use core::sync::atomic::{AtomicBool, Ordering};
 use defmt::*;
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
-use embassy_stm32::gpio::{Input, Pull};
 use embassy_stm32::time::Hertz;
 use embassy_stm32::usb::Driver;
 use embassy_stm32::{bind_interrupts, peripherals, usb, Config};
@@ -29,6 +28,8 @@ static CONFIG_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
 static BOS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
 static MS_OS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
 static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
+
+static KEYBOARD_BACKEND: StaticCell<KeyboardBackend> = StaticCell::new();
 
 bind_interrupts!(struct Irqs {
     OTG_FS => usb::InterruptHandler<peripherals::USB_OTG_FS>;
@@ -156,37 +157,40 @@ async fn main(_spawner: Spawner) {
 
     let (reader, mut writer) = hid.split();
 
-    let button = Input::new(p.PA0, Pull::Up);
+    let mut keyboard = board::keyboard!(p);
+
+    let backend = KEYBOARD_BACKEND.init({
+        use smart_keymap::init;
+        use smart_keymap::keymap::Keymap;
+        let keymap = Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
+        KeyboardBackend::new(keymap)
+    });
+
+    let mut report_success = true;
 
     let in_fut = async {
         loop {
             Timer::after_millis(1).await;
 
-            if button.is_low() {
-                info!("Button pressed!");
-                let report = KeyboardReport {
-                    keycodes: [4, 0, 0, 0, 0, 0],
-                    leds: 0,
-                    modifier: 0,
-                    reserved: 0,
-                };
-                match writer.write_serialize(&report).await {
-                    Ok(()) => {}
-                    Err(e) => warn!("Failed to send report: {:?}", e),
-                };
-            } else {
-                info!("Button released!");
-                let report = KeyboardReport {
-                    keycodes: [0, 0, 0, 0, 0, 0],
-                    leds: 0,
-                    modifier: 0,
-                    reserved: 0,
-                };
-                match writer.write_serialize(&report).await {
-                    Ok(()) => {}
-                    Err(e) => warn!("Failed to send report: {:?}", e),
-                };
+            for event in keyboard.events() {
+                if let Some(event) = keymap_index_of(&KEYMAP_INDICES, event) {
+                    backend.event(event);
+                }
             }
+            if report_success {
+                backend.tick();
+            }
+
+            let report = backend.keymap_output().as_hid_boot_keyboard_report();
+            match writer.write(&report).await {
+                Ok(()) => {
+                    report_success = true;
+                }
+                Err(e) => {
+                    warn!("Failed to send report: {:?}", e);
+                    report_success = false;
+                }
+            };
         }
     };
 
