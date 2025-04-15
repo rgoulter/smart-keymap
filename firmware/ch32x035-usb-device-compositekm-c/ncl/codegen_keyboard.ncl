@@ -1,9 +1,49 @@
+let C = import "contracts.ncl" in
+
 (import "codegen-matrix-row_to_col.ncl")
 & (import "codegen-matrix-col_to_row.ncl")
 & {
+  contracts = {
+    GpioPin = { port | String, pin | Number },
+
+    GpioPins = { _ | GpioPin },
+
+    Board = {
+      matrix
+        | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
+        | {
+          cols | Array GpioPin,
+          rows | Array GpioPin,
+          key_count | Number,
+          implementation | String,
+        },
+
+      disable_swd
+        | doc "Whether to disable SWD."
+        | Bool
+        | default
+        = false,
+
+      led = {
+        enabled
+          | doc "Whether to enable the LED."
+          | Bool
+          | default
+          = false,
+
+        pin
+          | doc "The pin to use for the LED."
+          | GpioPin,
+      },
+
+      ..
+    },
+  },
+  
   gpio_pins
-    : { _ : { port : String, pin : Number } }
     | doc "Record with A1, A2, ... A23, B1, B2, ..., C24, mapped to { port, pin } records."
+    | C.GpioPins
+    : { _ : { port : String, pin : Number } }
     =
       let ports = ["A", "B", "C"] in
       let pins = std.array.range 0 24 in
@@ -23,32 +63,9 @@
 
   matrix_scan = std.record.get board.matrix.implementation matrix_scan_impl,
 
-  board = {
-    matrix
-      | {
-        cols | Array { port | String, pin | Number },
-        rows | Array { port | String, pin | Number },
-        key_count | Number,
-        implementation | String,
-      }
-      | doc "the cols/rows, and number of keys, used for generating the matrix scan code.",
-
-    disable_swd
-      | doc "Whether to disable SWD."
-      | default
-      = false,
-
-    led = {
-      enabled
-        | doc "Whether to enable the LED."
-        | default
-        = false,
-
-      pin
-        | doc "The pin to use for the LED."
-        | { port | String, pin | Number },
-    },
-  },
+  board
+   | C.Board
+   ,
 
   enter_bootloader_check = m%"
     %{matrix_scan.is_sw_1_1_pressed}
