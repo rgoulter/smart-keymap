@@ -1,7 +1,9 @@
-{
-  gpio_pins,
+let C = import "contracts.ncl" in
 
-  board = {
+{
+  gpio_pins | C.GpioPins,
+
+  board | C.Board = {
     matrix =
       let p = gpio_pins in
       {
