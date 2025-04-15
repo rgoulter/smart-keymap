@@ -175,7 +175,7 @@ let C = import "contracts.ncl" in
     else
       "",
 
-  output
+  sources.keyboard
     | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
     = m%"
   #include <stdbool.h>

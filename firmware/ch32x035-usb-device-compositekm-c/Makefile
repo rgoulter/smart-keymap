@@ -24,7 +24,7 @@ format:
 generated/keyboard.c:
 	nickel export \
 	  --format=raw \
-	  --field=output \
+	  --field=sources.keyboard \
 	  $(BOARD) \
 	  ncl/codegen_keyboard.ncl \
 	  > generated/keyboard.c
