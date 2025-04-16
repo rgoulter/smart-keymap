@@ -1,4 +1,4 @@
-board := "ncl/ch32x-48.ncl"
+board := "ncl/boards/ch32x-48.ncl"
 
 default: build
 

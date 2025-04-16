@@ -75,7 +75,7 @@ jobs:
         shell: bash
         run: |
           cd ${FIRMWARE}
-          make BOARD=ncl/ch32x-48.ncl
+          make BOARD=ncl/boards/ch32x-48.ncl
           mkdir build
           cd build
           export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH

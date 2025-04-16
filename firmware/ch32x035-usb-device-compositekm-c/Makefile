@@ -1,4 +1,4 @@
-BOARD=ncl/weact-ch32x-core-board.ncl
+BOARD=ncl/boards/weact-ch32x-core-board.ncl
 
 include generated/codegen.mk
 
@@ -14,7 +14,7 @@ test:
 	nickel \
 	  eval \
 	  --field=keymap_indices \
-	  ncl/ch32x-48.ncl \
+	  ncl/boards/ch32x-48.ncl \
 	  ncl/test-expected-ch32x-48.ncl \
 	  ncl/test-actual-ch32x-48.ncl
 
@@ -26,7 +26,7 @@ format:
 codegen: $(CODEGEN_TARGETS)
 
 .PHONY: generated-ch32x-48
-generated-ch32x-48: BOARD=ncl/ch32x-48.ncl
+generated-ch32x-48: BOARD=ncl/boards/ch32x-48.ncl
 generated-ch32x-48: codegen
 
 .PHONY: libsmartkeymap
