@@ -87,6 +87,10 @@ let C = import "codegen/contracts.ncl" in
 
   #include "smart_keymap.h"
 
+  #ifdef KEYBOARD_SPLIT
+  #include "keyboard_split.h"
+  #endif
+
   %{matrix_scan.keyboard_matrix_init board.matrix}
 
   void key_state_changed(uint32_t index, bool new_state) {
@@ -97,6 +101,10 @@ let C = import "codegen/contracts.ncl" in
           ev.event_type = KeymapEventRelease;
       }
       keymap_register_input_event(ev);
+
+      #ifdef KEYBOARD_SPLIT
+      keyboard_split_write(ev);
+      #endif
   }
 
   %{keyboard_matrix_scan board.matrix}
