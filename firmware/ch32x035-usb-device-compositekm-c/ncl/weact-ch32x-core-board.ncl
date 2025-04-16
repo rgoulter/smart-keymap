@@ -12,6 +12,6 @@
       },
 
     keymap_index_for_key = fun { column_index | Number, row_index | Number, .. } =>
-      'Ok (column_index + row_index * (std.array.length board.cols)),
+      'Ok (column_index + row_index * (std.array.length matrix.cols)),
   },
 }
