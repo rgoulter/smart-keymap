@@ -5,7 +5,6 @@ project(usb-device-compositekm)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(usb-device-compositekm
-  generated/keyboard.c
   User/ch32x035_it.c
   User/ch32x035_usbfs_device.c
   User/main.c
@@ -19,8 +18,10 @@ target_include_directories(usb-device-compositekm PUBLIC User)
 
 enable_language(C ASM)
 
-add_subdirectory(sdk sdk)
+add_subdirectory(generated)
+target_link_libraries(usb-device-compositekm keyboard_codegen)
 
+add_subdirectory(sdk sdk)
 target_link_libraries(usb-device-compositekm sdk)
 
 add_subdirectory(libsmartkeymap smartkeymap)
