@@ -1,6 +1,5 @@
 CODEGEN_DEPS = \
   $(BOARD) \
-  ncl/codegen.ncl \
   ncl/codegen/keyboard.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
@@ -40,7 +39,7 @@ CODEGEN_TARGETS := \
 	$(CODEGEN_INCLUDES_TARGETS) \
 	$(CODEGEN_SOURCE_TARGETS)
 
-generated/%.cmake: ncl/codegen_%.ncl $(CODEGEN_DEPS)
+generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	nickel export \
     --import-path=ncl/ \
 	  --format=raw \
@@ -48,7 +47,7 @@ generated/%.cmake: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 	  $(CODEGEN_DEPS) \
 	  > $@
 
-generated/%.h: ncl/codegen_%.ncl $(CODEGEN_DEPS)
+generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	nickel export \
     --import-path=ncl/ \
 	  --format=raw \
@@ -56,7 +55,7 @@ generated/%.h: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 	  $(CODEGEN_DEPS) \
 	  > $@
 
-generated/%.c: ncl/codegen_%.ncl $(CODEGEN_DEPS)
+generated/%.c: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	nickel export \
     --import-path=ncl/ \
 	  --format=raw \
