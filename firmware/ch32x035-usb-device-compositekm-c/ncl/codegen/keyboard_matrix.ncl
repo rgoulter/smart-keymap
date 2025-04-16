@@ -70,6 +70,15 @@ let C = import "codegen/contracts.ncl" in
     target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c)
     "%,
 
+  includes.keyboard_matrix
+    = m%"
+    #pragma once
+
+    void keyboard_matrix_init(void);
+
+    void keyboard_matrix_scan(void);
+    "%,
+
   sources.keyboard_matrix
     = m%"
   #include <stdbool.h>
