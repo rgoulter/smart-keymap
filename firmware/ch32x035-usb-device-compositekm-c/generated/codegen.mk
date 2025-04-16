@@ -1,7 +1,7 @@
 CODEGEN_DEPS = \
   $(BOARD) \
   ncl/codegen.ncl \
-  ncl/codegen_keyboard.ncl
+  ncl/codegen/keyboard.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
   nickel export \
