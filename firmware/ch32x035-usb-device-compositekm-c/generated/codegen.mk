@@ -40,6 +40,13 @@ CODEGEN_TARGETS := \
 	$(CODEGEN_INCLUDES_TARGETS) \
 	$(CODEGEN_SOURCE_TARGETS)
 
+.PHONY: .clean-codegen
+.clean-codegen:
+	rm -f generated/*.cmake
+	rm -f generated/keyboard.c
+	rm -f generated/keyboard_led.h
+	rm -f generated/keyboard_led.c
+
 generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	nickel export \
     --import-path=ncl/ \

@@ -6,8 +6,7 @@ include generated/codegen.mk
 all: codegen libsmartkeymap
 
 .PHONY: clean
-clean:
-	rm generated/keyboard.c
+clean: .clean-codegen
 
 .PHONY: test
 test:
