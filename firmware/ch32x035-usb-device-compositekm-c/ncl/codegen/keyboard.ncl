@@ -4,16 +4,12 @@ let C = import "contracts.ncl" in
 & (import "matrix-col_to_row.ncl")
 & {
   contracts = {
-    GpioPin = { port | String, pin | Number },
-
-    GpioPins = { _ | GpioPin },
-
     Board = {
       matrix
         | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
         | {
-          cols | Array GpioPin,
-          rows | Array GpioPin,
+          cols | Array C.GpioPin,
+          rows | Array C.GpioPin,
           key_count | Number,
           implementation | String,
         },
@@ -33,26 +29,13 @@ let C = import "contracts.ncl" in
 
         pin
           | doc "The pin to use for the LED."
-          | GpioPin,
+          | C.GpioPin,
       },
 
       ..
     },
   },
   
-  gpio_pins
-    | doc "Record with A1, A2, ... A23, B1, B2, ..., C24, mapped to { port, pin } records."
-    | C.GpioPins
-    : { _ : { port : String, pin : Number } }
-    =
-      let ports = ["A", "B", "C"] in
-      let pins = std.array.range 0 24 in
-
-      std.array.flat_map
-        (fun port_name => std.array.map (fun pin_num => { "%{port_name}%{std.to_string pin_num}" = { "port" = port_name, "pin" = pin_num } }) pins)
-        ports
-      |> (std.array.fold_left (&) {}) | { _ : { port : String, pin : Number } },
-
   matrix_scan = {
     keyboard_matrix_init,
     keyboard_matrix_scan_raw,
@@ -64,8 +47,10 @@ let C = import "contracts.ncl" in
   matrix_scan = std.record.get board.matrix.implementation matrix_scan_impl,
 
   board
-   | C.Board
-   ,
+   | C.Board,
+
+  gpio_pins
+    | C.GpioPins,
 
   enter_bootloader_check = m%"
     %{matrix_scan.is_sw_1_1_pressed}
