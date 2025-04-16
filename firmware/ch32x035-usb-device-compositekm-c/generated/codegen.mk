@@ -5,6 +5,7 @@ CODEGEN_DEPS = \
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
   nickel export \
+    --import-path=ncl/ \
     --field=cmakelists_filenames \
     --format=raw \
     $(CODEGEN_DEPS) \
@@ -12,6 +13,7 @@ NICKEL_QUERY_CMAKELISTS_CMD := \
 
 NICKEL_QUERY_INCLUDES_CMD := \
   nickel export \
+    --import-path=ncl/ \
     --field=includes_filenames \
     --format=raw \
     $(CODEGEN_DEPS) \
@@ -19,6 +21,7 @@ NICKEL_QUERY_INCLUDES_CMD := \
 
 NICKEL_QUERY_SOURCES_CMD := \
   nickel export \
+    --import-path=ncl/ \
     --field=source_filenames \
     --format=raw \
     $(CODEGEN_DEPS) \
@@ -39,6 +42,7 @@ CODEGEN_TARGETS := \
 
 generated/%.cmake: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 	nickel export \
+    --import-path=ncl/ \
 	  --format=raw \
 	  --field=cmakelists.$* \
 	  $(CODEGEN_DEPS) \
@@ -46,6 +50,7 @@ generated/%.cmake: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 
 generated/%.h: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 	nickel export \
+    --import-path=ncl/ \
 	  --format=raw \
 	  --field=includes.$* \
 	  $(CODEGEN_DEPS) \
@@ -53,6 +58,7 @@ generated/%.h: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 
 generated/%.c: ncl/codegen_%.ncl $(CODEGEN_DEPS)
 	nickel export \
+    --import-path=ncl/ \
 	  --format=raw \
 	  --field=sources.$* \
 	  $(CODEGEN_DEPS) \
