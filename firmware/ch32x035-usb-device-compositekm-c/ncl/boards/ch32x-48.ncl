@@ -1,4 +1,4 @@
-let C = import "contracts.ncl" in
+let C = import "codegen/contracts.ncl" in
 
 {
   gpio_pins | C.GpioPins,
