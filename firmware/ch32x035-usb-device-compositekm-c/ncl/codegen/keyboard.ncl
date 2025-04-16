@@ -53,6 +53,8 @@ let C = import "contracts.ncl" in
 
   #include "smart_keymap.h"
 
+  #include "keyboard_matrix.h"
+
   void keyboard_reset_to_bootloader(void) {
       SystemReset_StartMode(Start_Mode_BOOT);
       NVIC_SystemReset();

@@ -28,6 +28,7 @@
 #include "system_ch32x035.h"
 
 #include "keyboard.h"
+#include "keyboard_matrix.h"
 #include "smart_keymap.h"
 #ifdef KEYBOARD_LED_ENABLED
 #include "keyboard_led.h"

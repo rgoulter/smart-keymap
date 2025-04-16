@@ -46,9 +46,10 @@ CODEGEN_TARGETS := \
 .clean-codegen:
 	rm -f generated/*.cmake
 	rm -f generated/keyboard.c
-	rm -f generated/keyboard_led.h
 	rm -f generated/keyboard_led.c
+	rm -f generated/keyboard_led.h
 	rm -f generated/keyboard_matrix.c
+	rm -f generated/keyboard_matrix.h
 
 generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	nickel export \
