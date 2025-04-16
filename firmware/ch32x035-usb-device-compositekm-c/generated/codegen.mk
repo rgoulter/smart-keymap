@@ -1,5 +1,6 @@
 CODEGEN_DEPS = \
   $(BOARD) \
+  ncl/codegen/gpio.ncl \
   ncl/codegen/keyboard.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
