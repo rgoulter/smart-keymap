@@ -5,6 +5,8 @@ include generated/codegen.mk
 .PHONY: all
 all: codegen libsmartkeymap
 
+include ncl/ncl.mk
+
 .PHONY: clean
 clean: .clean-codegen
 
