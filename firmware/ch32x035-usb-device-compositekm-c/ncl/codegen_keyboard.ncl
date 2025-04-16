@@ -175,6 +175,11 @@ let C = import "contracts.ncl" in
     else
       "",
 
+  cmakelists.keyboard
+    = m%"
+    target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
+    "%,
+
   sources.keyboard
     | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
     = m%"
