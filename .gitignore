@@ -14,3 +14,11 @@ devenv.local.nix
 
 # C LSP
 .ccls-cache/
+
+# Binaries
+*.bin
+*.hex
+*.uf2
+
+# Nickel generated doc
+.nickel
