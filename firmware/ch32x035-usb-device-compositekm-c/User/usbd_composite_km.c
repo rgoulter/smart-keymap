@@ -29,6 +29,9 @@
 
 #include "keyboard.h"
 #include "smart_keymap.h"
+#ifdef KEYBOARD_LED_ENABLED
+#include "keyboard_led.h"
+#endif
 
 /*******************************************************************************/
 /* Global Variable Definition */
@@ -101,7 +104,9 @@ void TIM3_IRQHandler(void) {
     /* Handle keyboard scan data */
     KB_Scan_Handle();
 
+#ifdef KEYBOARD_LED_ENABLED
     keyboard_led_tick();
+#endif
 
     if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0) {
       keymap_tick(&hid_report);

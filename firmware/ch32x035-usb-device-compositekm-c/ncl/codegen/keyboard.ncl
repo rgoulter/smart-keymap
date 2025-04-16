@@ -20,18 +20,6 @@ let C = import "contracts.ncl" in
         | default
         = false,
 
-      led = {
-        enabled
-          | doc "Whether to enable the LED."
-          | Bool
-          | default
-          = false,
-
-        pin
-          | doc "The pin to use for the LED."
-          | C.GpioPin,
-      },
-
       ..
     },
   },
@@ -68,18 +56,11 @@ let C = import "contracts.ncl" in
     else
       "",
 
+  init_fragments,
+
   led_init_fragment =
-    if board.led.enabled then
-      m%"
-        // Init LED
-        {
-          GPIO_InitTypeDef GPIO_InitStructure = {0};
-          GPIO_InitStructure.GPIO_Pin = GPIO_Pin_%{std.to_string board.led.pin.pin};
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-          GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-          GPIO_Init(GPIO%{board.led.pin.port}, &GPIO_InitStructure);
-        }
-        "%
+    if std.record.has_field "keyboard_led" init_fragments then
+      init_fragments.keyboard_led
     else
       "",
 
@@ -139,27 +120,6 @@ let C = import "contracts.ncl" in
   }
   "%,
 
-  # Function which blinks the LED
-  keyboard_led_tick =
-    if board.led.enabled then
-      m%"
-        static uint16_t keyboard_led_timer = 0;
-        static uint8_t keyboard_led_state = 0;
-
-        void keyboard_led_tick(void) {
-            // Toggle the LED every 1000 ticks
-            keyboard_led_timer++;
-            if (keyboard_led_timer > 1000) {
-                keyboard_led_timer = 0;
-                keyboard_led_state = 1 - keyboard_led_state;
-
-                GPIO_WriteBit(GPIO%{board.led.pin.port}, GPIO_Pin_%{std.to_string board.led.pin.pin}, keyboard_led_state);
-            }
-        }
-        "%
-    else
-      "",
-
   cmakelists.keyboard
     = m%"
     target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
@@ -191,7 +151,5 @@ let C = import "contracts.ncl" in
   }
 
   %{keyboard_matrix_scan board.matrix}
-
-  %{keyboard_led_tick}
-  "%
+  "%,
 }
