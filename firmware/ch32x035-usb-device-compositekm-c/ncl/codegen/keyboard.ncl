@@ -1,7 +1,7 @@
 let C = import "contracts.ncl" in
 
-(import "codegen-matrix-row_to_col.ncl")
-& (import "codegen-matrix-col_to_row.ncl")
+(import "matrix-row_to_col.ncl")
+& (import "matrix-col_to_row.ncl")
 & {
   contracts = {
     GpioPin = { port | String, pin | Number },
