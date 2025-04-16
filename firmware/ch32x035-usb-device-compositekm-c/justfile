@@ -6,7 +6,7 @@ _libsmartkeymap:
   make libsmartkeymap
 
 generate-keyboard:
-  make generated/keyboard.c BOARD={{board}}
+  make codegen BOARD={{board}}
 
 cmake-generate: _libsmartkeymap generate-keyboard
   mkdir -p build
