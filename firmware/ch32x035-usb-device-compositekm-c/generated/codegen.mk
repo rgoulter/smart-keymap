@@ -1,7 +1,8 @@
 CODEGEN_DEPS = \
   $(BOARD) \
   ncl/codegen/gpio.ncl \
-  ncl/codegen/keyboard.ncl
+  ncl/codegen/keyboard.ncl \
+  ncl/codegen/keyboard_led.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
   nickel export \
