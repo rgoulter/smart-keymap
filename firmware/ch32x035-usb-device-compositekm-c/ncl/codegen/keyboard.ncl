@@ -12,13 +12,13 @@ let C = import "contracts.ncl" in
       ..
     },
   },
-  
+
   matrix_scan = {
     is_sw_1_1_pressed,
   },
 
   board
-   | C.Board,
+    | C.Board,
 
   disable_swd_fragment =
     if board.disable_swd then
@@ -37,13 +37,11 @@ let C = import "contracts.ncl" in
     else
       "",
 
-  cmakelists.keyboard
-    = m%"
+  cmakelists.keyboard = m%"
     target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
     "%,
 
-  sources.keyboard
-    = m%"
+  sources.keyboard = m%"
   #include <stdbool.h>
 
   #include "debug.h"

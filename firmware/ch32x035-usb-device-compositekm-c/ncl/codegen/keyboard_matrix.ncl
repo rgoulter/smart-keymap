@@ -1,8 +1,8 @@
 let C = import "codegen/contracts.ncl" in
 
-(import "matrix/row_to_col.ncl") &
-(import "matrix/col_to_row.ncl") &
-{
+(import "matrix/row_to_col.ncl")
+& (import "matrix/col_to_row.ncl")
+& {
   contracts = {
     Board = {
       matrix
@@ -25,7 +25,7 @@ let C = import "codegen/contracts.ncl" in
   },
 
   board
-   | C.Board,
+    | C.Board,
 
   gpio_pins
     | C.GpioPins,
@@ -65,13 +65,11 @@ let C = import "codegen/contracts.ncl" in
   }
   "%,
 
-  cmakelists.keyboard_matrix
-    = m%"
+  cmakelists.keyboard_matrix = m%"
     target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c)
     "%,
 
-  includes.keyboard_matrix
-    = m%"
+  includes.keyboard_matrix = m%"
     #pragma once
 
     void keyboard_matrix_init(void);
@@ -79,8 +77,7 @@ let C = import "codegen/contracts.ncl" in
     void keyboard_matrix_scan(void);
     "%,
 
-  sources.keyboard_matrix
-    = m%"
+  sources.keyboard_matrix = m%"
   #include <stdbool.h>
 
   #include "debug.h"

@@ -4,11 +4,12 @@ let C = import "codegen/contracts.ncl" in
 # diode direction: current from row to column.
 # impl.: pull-up rows
 {
-  board | C.Board = {
-    matrix,
+  board | C.Board
+    = {
+      matrix,
 
-    keymap_index_for_key,
-  },
+      keymap_index_for_key,
+    },
 
   matrix_scan =
     if board.matrix.implementation == "row_to_col" then
