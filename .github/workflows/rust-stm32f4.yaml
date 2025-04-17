@@ -58,11 +58,11 @@ jobs:
       - name: Run Cargo Build (stm32f4-rtic-smart-keyboard)
         run: cargo build --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard
 
-      - name: Run Cargo Build (stm32f4-rtic-smart-keyboard, bin=minif4_36-rev2021_4-lhs)
-        run: cargo build --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard --bin=minif4_36-rev2021_4-lhs
+      - name: Run Cargo Build (stm32f4-rtic-smart-keyboard, ex=minif4_36-rev2021_4-lhs)
+        run: cargo build --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard --example=minif4_36-rev2021_4-lhs
 
-      - name: Run Cargo Build (stm32f4-rtic-smart-keyboard, bin=minif4_36-rev2021_4-rhs)
-        run: cargo build --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard --bin=minif4_36-rev2021_4-rhs
+      - name: Run Cargo Build (stm32f4-rtic-smart-keyboard, ex=minif4_36-rev2021_4-rhs)
+        run: cargo build --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard --example=minif4_36-rev2021_4-rhs
 
       - name: Run Cargo Doc
         run: |
