@@ -1,7 +1,8 @@
+let C = import "../ncl/codegen/contracts.ncl" in
 {
-  gpio_pins,
+  gpio_pins | { _ | C.GpioPin },
 
-  board = {
+  board | C.Board = {
     usb = {
       vid = 0xCAFE,
       pid = 0x0005,
