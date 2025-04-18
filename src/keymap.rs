@@ -294,6 +294,15 @@ impl<
         }
     }
 
+    fn has_pressed_input_with_keymap_index(&self, keymap_index: u16) -> bool {
+        self.pressed_inputs.iter().any(|pi| match pi {
+            &input::PressedInput::Key(input::PressedKey {
+                keymap_index: ki, ..
+            }) => keymap_index == ki,
+            _ => false,
+        })
+    }
+
     fn process_input(&mut self, ev: input::Event) {
         if let Some(PendingState {
             key_path,
@@ -343,7 +352,9 @@ impl<
                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
             match ev {
-                input::Event::Press { keymap_index } => {
+                input::Event::Press { keymap_index }
+                    if !self.has_pressed_input_with_keymap_index(keymap_index) =>
+                {
                     let key = &self.key_definitions[keymap_index as usize];
 
                     let mut key_path = key::KeyPath::new();
@@ -407,6 +418,8 @@ impl<
                         })
                         .map(|i| self.pressed_inputs.remove(i));
                 }
+
+                _ => {}
             }
         }
 
