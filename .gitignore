@@ -22,3 +22,5 @@ devenv.local.nix
 
 # Nickel generated doc
 .nickel
+
+.*.stamp
