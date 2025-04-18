@@ -24,7 +24,8 @@ test-ncl-checks:
 .PHONY: ncl-format
 ncl-format:
 	nickel format \
-	   ncl/layouts/split_3x5+3.ncl \
+	   ncl/layouts/remap.ncl \
+	   ncl/layouts/remap-36keys.ncl \
 	   ncl/checks.ncl \
 	   ncl/hid-report.ncl \
 	   ncl/import-keymap-json.ncl \

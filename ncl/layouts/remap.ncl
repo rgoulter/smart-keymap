@@ -1,9 +1,10 @@
 {
-  into_layout = fun from_split_3x5_3 split_3x5_3_keymap =>
+  source_key_count | Number,
+  into_layout = fun from_layout source_keymap =>
     let remapped_indices # Array { target_index : Number, source_index : Number }
     =
-      let split_3x5_3_indices = std.array.range 0 36 in
-      let target_indices = from_split_3x5_3 { no_key = false, from_layout = split_3x5_3_indices } in
+      let source_indices = std.array.range 0 source_key_count in
+      let target_indices = from_layout { no_key = false, from_layout = source_indices } in
       target_indices
       |> std.array.map_with_index (fun ti si => { target_index = ti, source_index = si })
       |> std.array.filter (fun { target_index, .. } => target_index != false)
@@ -24,13 +25,13 @@
       in
       chords |> std.array.map remap_chord
     in
-    let split_3x5_3_layers =
+    let source_layers =
       let km_aug = import "keymap-ncl-to-json.ncl" in
-      split_3x5_3_keymap.layers
-      |> std.array.map (split_3x5_3_keymap & km_aug).layer_as_array_of_keys
+      source_keymap.layers
+      |> std.array.map (source_keymap & km_aug).layer_as_array_of_keys
     in
     (
-      split_3x5_3_keymap
+      source_keymap
       |> (match {
         { chords = source_chords, ..km } => { chords = remap_chords source_chords } & km,
         km => km,
@@ -44,6 +45,6 @@
           let K = import "keys.ncl" in
           K.NO
         in
-        std.array.map (fun l => from_split_3x5_3 { no_key = NO_KEY, from_layout = l }) split_3x5_3_layers
+        std.array.map (fun l => from_layout { no_key = NO_KEY, from_layout = l }) source_layers
     },
 }
