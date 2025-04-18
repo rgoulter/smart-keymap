@@ -14,6 +14,7 @@
 /* Header Files */
 #include "usbd_composite_km.h"
 
+#include <stdbool.h>
 #include <string.h>
 
 #include "ch32x035.h"
@@ -52,7 +53,25 @@ uint8_t PREV_KB_Data_Pack[8] = {0x00};      // Keyboard IN Data Packet
 volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
 volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
-static uint32_t transmit_buffer[1]; // DEMO
+// --- Ring Buffer Configuration ---
+#define TX_QUEUE_SIZE 16 // Must be a power of 2 (e.g., 8, 16, 32)
+#if (TX_QUEUE_SIZE & (TX_QUEUE_SIZE - 1)) != 0
+#error TX_QUEUE_SIZE must be a power of 2
+#endif
+
+// Ring buffer structure to hold outgoing events
+static volatile KeymapInputEvent tx_event_queue[TX_QUEUE_SIZE];
+static volatile uint8_t tx_queue_head = 0; // Index to write next event
+static volatile uint8_t tx_queue_tail = 0; // Index to read next event for TX
+
+// DMA requires a buffer, preferably aligned. We serialize into this just before TX.
+// Keep using uint32_t for potential alignment benefits if required by DMA hardware.
+static uint32_t transmit_dma_buffer[MESSAGE_BUFFER_LEN / 4]; // Remains 1 x uint32_t = 4 bytes
+
+// Flag to indicate if UART TX DMA is currently active
+static volatile bool uart_tx_busy = false;
+
+
 #define RX_BUFFER_SIZE 64
 static uint8_t msg_buffer[MESSAGE_BUFFER_LEN];
 
@@ -201,6 +220,40 @@ void DMA1_Channel6_IRQHandler(void) {
   }
 }
 
+/*********************************************************************
+ * @fn      DMA1_Channel7_IRQHandler
+ *
+ * @brief   Handles DMA1 Channel 7 global interrupt request (USART2 TX Complete).
+ *          Checks the queue for more events and starts the next DMA transfer.
+ *
+ * @return  none
+ */
+// DEMO
+void DMA1_Channel7_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+void DMA1_Channel7_IRQHandler(void) {
+  if (DMA_GetITStatus(DMA1_IT_TC7)) {
+    // Clear the DMA Transfer Complete flag for Channel 7
+    DMA_ClearITPendingBit(DMA1_IT_TC7);
+
+    // Check if there are more events in the queue
+    if (tx_queue_head != tx_queue_tail) {
+      // Dequeue the next event
+      KeymapInputEvent event_to_send = tx_event_queue[tx_queue_tail];
+      tx_queue_tail = (tx_queue_tail + 1) & (TX_QUEUE_SIZE - 1); // Move tail index, wrap around
+
+      keymap_serialize_event((uint8_t *)transmit_dma_buffer, event_to_send);
+
+      DMA_Cmd(DMA1_Channel7, DISABLE);
+      DMA_SetCurrDataCounter(DMA1_Channel7, MESSAGE_BUFFER_LEN);
+      DMA_Cmd(DMA1_Channel7, ENABLE);
+
+      uart_tx_busy = true;
+    } else {
+      uart_tx_busy = false;
+    }
+  }
+}
+
 // DEMO
 void keyboard_split_init(void) {
   DMA_InitTypeDef DMA_InitStructure;
@@ -208,22 +261,36 @@ void keyboard_split_init(void) {
   // Enable DMA1 clock
   RCC_AHBPeriphClockCmd(RCC_AHBPeriph_DMA1, ENABLE);
 
-  // Configure DMA for USART2 TX
-  DMA_DeInit(DMA1_Channel7); // Channel 7 for USART2 TX
-
+  // Configure DMA for USART2 TX (Channel 7)
+  DMA_DeInit(DMA1_Channel7);
   DMA_InitStructure.DMA_PeripheralBaseAddr = (uint32_t)(&USART2->DATAR);
-  DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)transmit_buffer;
+  // Point MADDR initially to the static DMA buffer
+  DMA_InitStructure.DMA_MemoryBaseAddr = (uint32_t)transmit_dma_buffer;
   DMA_InitStructure.DMA_DIR = DMA_DIR_PeripheralDST;
-  DMA_InitStructure.DMA_BufferSize = 4; // Number of bytes to send
+  DMA_InitStructure.DMA_BufferSize = MESSAGE_BUFFER_LEN; // Set correct length initially
   DMA_InitStructure.DMA_PeripheralInc = DMA_PeripheralInc_Disable;
+  /* DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Disable; // Memory address (transmit_dma_buffer) is fixed */
   DMA_InitStructure.DMA_MemoryInc = DMA_MemoryInc_Enable;
   DMA_InitStructure.DMA_PeripheralDataSize = DMA_PeripheralDataSize_Byte;
   DMA_InitStructure.DMA_MemoryDataSize = DMA_MemoryDataSize_Byte;
   DMA_InitStructure.DMA_Mode = DMA_Mode_Normal;
   DMA_InitStructure.DMA_Priority = DMA_Priority_Medium;
   DMA_InitStructure.DMA_M2M = DMA_M2M_Disable;
-
   DMA_Init(DMA1_Channel7, &DMA_InitStructure);
+
+  // --- Enable DMA TX Transfer Complete Interrupt ---
+  DMA_ITConfig(DMA1_Channel7, DMA_IT_TC, ENABLE);
+
+  // Configure NVIC for DMA1 Channel 7
+  {
+    NVIC_InitTypeDef NVIC_InitStructure = {0};
+    NVIC_InitStructure.NVIC_IRQChannel = DMA1_Channel7_IRQn;
+    NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 1; // Adjust priority as needed
+    NVIC_InitStructure.NVIC_IRQChannelSubPriority = 1;        // Should be same or lower than TIM3 if TIM3 needs priority
+    NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+    NVIC_Init(&NVIC_InitStructure);
+  }
+  // --- End Interrupt Enable ---
 
   // Configure DMA for USART2 RX
   DMA_DeInit(DMA1_Channel6); // Channel 6 for USART2 RX
@@ -292,24 +359,59 @@ void keyboard_split_init(void) {
 }
 
 // DEMO
+/*********************************************************************
+ * @fn      keyboard_split_queue_event
+ *
+ * @brief   Adds a keyboard event to the TX queue for asynchronous sending.
+ *          If the UART TX is idle, it starts the first DMA transfer.
+ *
+ * @param   ev - The KeymapInputEvent to queue.
+ *
+ * @return  0 on success, -1 if queue is full.
+ */
 int keyboard_split_write(KeymapInputEvent ev) {
-  static uint32_t buf[MESSAGE_BUFFER_LEN / 4];
-  keymap_serialize_event((uint8_t *)buf, ev);
+  uint8_t next_head = (tx_queue_head + 1) & (TX_QUEUE_SIZE - 1);
 
-  // Wait for any previous DMA transfer to complete
-  if ((DMA1_Channel7->CFGR & DMA_CFGR1_EN) > 0) {
-    while (DMA_GetFlagStatus(DMA1_FLAG_TC7) == RESET)
-      ;
-    DMA_ClearFlag(DMA1_FLAG_TC7);
+  // Check if the queue is full
+  if (next_head == tx_queue_tail) {
+    // Queue is full, drop the event (or handle error differently)
+    printf("WARN: TX Queue Full! Dropping event {t=%d, v=%d}\r\n", ev.event_type, ev.value);
+    return -1;
   }
 
-  // Configure DMA for transmission
-  DMA_Cmd(DMA1_Channel7, DISABLE);
-  DMA1_Channel7->MADDR = (uint32_t)buf;
-  DMA1_Channel7->CNTR = MESSAGE_BUFFER_LEN;
-  DMA_Cmd(DMA1_Channel7, ENABLE);
+  // Add the event to the queue
+  tx_event_queue[tx_queue_head] = ev;
+  tx_queue_head = next_head; // Move head index
 
-  return MESSAGE_BUFFER_LEN;
+  // --- Critical Section Start (Optional but recommended) ---
+  // If another interrupt could modify uart_tx_busy or start DMA, disable interrupts briefly
+   __disable_irq(); // Or use specific PRIMASK/BASEPRI method if finer control needed
+
+  // If UART TX was idle, start the transmission process
+  if (!uart_tx_busy) {
+     // Check if queue actually has data now (should always be true here, but good practice)
+     if(tx_queue_head != tx_queue_tail) {
+        uart_tx_busy = true; // Mark as busy *before* starting DMA
+
+        // Dequeue the event we just added (or the oldest one if multiple were added rapidly)
+        KeymapInputEvent event_to_send = tx_event_queue[tx_queue_tail];
+        tx_queue_tail = (tx_queue_tail + 1) & (TX_QUEUE_SIZE - 1); // Move tail
+
+        // Serialize the event into the DMA buffer
+        keymap_serialize_event((uint8_t *)transmit_dma_buffer, event_to_send);
+
+        // Configure and start DMA (ensure channel is disabled before setting count)
+        DMA_Cmd(DMA1_Channel7, DISABLE);
+        DMA_SetCurrDataCounter(DMA1_Channel7, MESSAGE_BUFFER_LEN);
+        DMA1_Channel7->MADDR = (uint32_t)transmit_dma_buffer; // Ensure address is set
+        DMA_Cmd(DMA1_Channel7, ENABLE);
+     }
+  }
+
+  // --- Critical Section End ---
+   __enable_irq();
+
+  return 0;
 }
 
 /*********************************************************************
