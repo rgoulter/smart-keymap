@@ -54,10 +54,11 @@ CODEGEN_TARGETS := \
 .PHONY: FORCE_STAMP
 
 generated/.board.stamp: FORCE_STAMP
-	scripts/board-stamp.sh "$@" "$(BOARD)"
+	@scripts/board-stamp.sh "$@" "$(BOARD)"
 
 generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
-	nickel export \
+	@echo "Generating $@"
+	@nickel export \
     --import-path=ncl/ \
 	  --format=raw \
 	  --field=cmakelists.$* \
@@ -65,7 +66,8 @@ generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	  > $@
 
 generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
-	nickel export \
+	@echo "Generating $@"
+	@nickel export \
     --import-path=ncl/ \
 	  --format=raw \
 	  --field=includes.$* \
@@ -73,7 +75,8 @@ generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	  > $@
 
 generated/%.c: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
-	nickel export \
+	@echo "Generating $@"
+	@nickel export \
     --import-path=ncl/ \
 	  --format=raw \
 	  --field=sources.$* \
