@@ -138,3 +138,23 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
   keymap_tick(actual_report);
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
 }
+
+void test_keyboard_double_keypress(void) {
+  uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
+  uint8_t actual_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+  keymap_init();
+
+  keymap_register_input_event(
+      (struct KeymapInputEvent){.event_type = KeymapEventPress,
+                                .value = 2}); // Third key in the keymap is A
+  keymap_tick(actual_report);
+
+  keymap_register_input_event(
+      (struct KeymapInputEvent){.event_type = KeymapEventPress,
+                                .value = 2}); // Third key in the keymap is A
+
+  keymap_tick(actual_report);
+
+  TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report, 8);
+}
