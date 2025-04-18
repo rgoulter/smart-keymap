@@ -1,9 +1,9 @@
 BOARD=ncl/boards/weact-ch32x-core-board.ncl
 
-include generated/codegen.mk
-
 .PHONY: all
 all: codegen libsmartkeymap
+
+include generated/codegen.mk
 
 include ncl/ncl.mk
 
