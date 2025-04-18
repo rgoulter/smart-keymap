@@ -51,7 +51,12 @@ CODEGEN_TARGETS := \
 	rm -f generated/keyboard_matrix.c
 	rm -f generated/keyboard_matrix.h
 
-generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS)
+.PHONY: FORCE_STAMP
+
+generated/.board.stamp: FORCE_STAMP
+	scripts/board-stamp.sh "$@" "$(BOARD)"
+
+generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	nickel export \
     --import-path=ncl/ \
 	  --format=raw \
@@ -59,7 +64,7 @@ generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	  $(CODEGEN_DEPS) \
 	  > $@
 
-generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS)
+generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	nickel export \
     --import-path=ncl/ \
 	  --format=raw \
@@ -67,7 +72,7 @@ generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS)
 	  $(CODEGEN_DEPS) \
 	  > $@
 
-generated/%.c: ncl/codegen/%.ncl $(CODEGEN_DEPS)
+generated/%.c: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	nickel export \
     --import-path=ncl/ \
 	  --format=raw \
