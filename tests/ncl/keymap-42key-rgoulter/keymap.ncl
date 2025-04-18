@@ -1,4 +1,4 @@
-let split_3x5_3 = import "layouts/split_3x5+3.ncl" in
+let remap_36keys = import "layouts/remap-36keys.ncl" in
 
 let from_3x5_3 = fun
   {
@@ -18,4 +18,4 @@ let from_3x5_3 = fun
   ]
 in
 (import "../keymap-36key-rgoulter/keymap.ncl")
-  |> split_3x5_3.into_layout from_3x5_3
+  |> remap_36keys.into_layout from_3x5_3
