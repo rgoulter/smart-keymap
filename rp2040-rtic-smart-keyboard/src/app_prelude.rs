@@ -1,4 +1,4 @@
-pub use usbd_smart_keyboard::app_prelude::*;
+pub use usbd_smart_keyboard::app_prelude::{usb_poll, VID};
 
 pub use core::convert::Infallible;
 
