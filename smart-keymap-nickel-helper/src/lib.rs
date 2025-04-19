@@ -22,8 +22,10 @@ pub type NickelResult = Result<String, NickelError>;
 
 /// Evaluates the Nickel expr for a keymap, returning the keymap.rs contents.
 pub fn nickel_keymap_rs_for_keymap_path(
-    ncl_import_path: String,
-    keymap_path: &Path,
+    NickelEvalInputs {
+        ncl_import_path,
+        input_path,
+    }: NickelEvalInputs,
 ) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
@@ -33,7 +35,7 @@ pub fn nickel_keymap_rs_for_keymap_path(
             "--field=keymap_rs",
             "keymap-codegen.ncl",
             "keymap-ncl-to-json.ncl",
-            keymap_path.to_str().unwrap(),
+            input_path.to_str().unwrap(),
         ])
         .stdin(Stdio::null())
         .stderr(Stdio::piped())

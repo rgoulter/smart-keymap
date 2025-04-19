@@ -3,7 +3,9 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use smart_keymap_nickel_helper::{nickel_keymap_rs_for_keymap_path, rustfmt, NickelError};
+use smart_keymap_nickel_helper::{
+    nickel_keymap_rs_for_keymap_path, rustfmt, NickelError, NickelEvalInputs,
+};
 
 fn main() {
     println!("cargo:rerun-if-env-changed=SMART_KEYMAP_CUSTOM_KEYMAP");
@@ -26,10 +28,10 @@ fn main() {
 
             // Evaluate the custom keymap file with Nickel
             let keymap_path = Path::new(&custom_keymap_path);
-            match nickel_keymap_rs_for_keymap_path(
-                format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-                keymap_path,
-            ) {
+            match nickel_keymap_rs_for_keymap_path(NickelEvalInputs {
+                ncl_import_path: format!("{}/ncl", env!("CARGO_MANIFEST_DIR")).as_str(),
+                input_path: keymap_path,
+            }) {
                 Ok(keymap_rs) => {
                     let mut file = fs::File::create(&dest_path).unwrap();
                     let formatted = rustfmt(keymap_rs);
