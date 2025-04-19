@@ -8,7 +8,10 @@ use smart_keymap_nickel_helper::{nickel_keymap_rs_for_keymap_path, rustfmt, Nick
 fn main() {
     println!("cargo:rerun-if-env-changed=SMART_KEYMAP_CUSTOM_KEYMAP");
     println!("cargo::rustc-check-cfg=cfg(custom_keymap)");
-    if let Ok(custom_keymap_path) = env::var("SMART_KEYMAP_CUSTOM_KEYMAP") {
+    if let Some(custom_keymap_path) = env::var("SMART_KEYMAP_CUSTOM_KEYMAP")
+        .ok()
+        .filter(|s| !s.is_empty())
+    {
         let out_dir = env::var("OUT_DIR").unwrap();
         let dest_path = Path::new(&out_dir).join("keymap.rs");
         println!("cargo:rerun-if-changed={}", dest_path.to_str().unwrap());
