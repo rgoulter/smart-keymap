@@ -6,7 +6,7 @@ rustflags = [
   "-C", "link-arg=--library-path=ld/stm32f4xx-tinyuf2"
 ]
 
-[target.thumbv6m-none-eabi]
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
 
 runner = "elf2uf2-rs -d"
 
