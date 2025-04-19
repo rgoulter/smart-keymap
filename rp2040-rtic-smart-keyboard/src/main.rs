@@ -63,6 +63,8 @@ mod app {
 
     use rp2040_rtic_smart_keyboard::app_prelude::*;
 
+    use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
+
     use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
     use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
     use usbd_smart_keyboard::input::MatrixScanner;
@@ -214,7 +216,9 @@ mod app {
         }
 
         usb_class.lock(|k| {
-            let res = backend.write_reports(k);
+            let res = k
+                .device::<NKROBootKeyboard<'_, _>, _>()
+                .write_report(backend.pressed_key_codes());
             match res {
                 Err(UsbHidError::WouldBlock) => *report_success = false,
                 Err(UsbHidError::UsbError(_)) => panic!(),
