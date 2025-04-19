@@ -1,5 +1,3 @@
-pub use usbd_smart_keyboard::app_prelude::VID;
-
 pub use core::convert::Infallible;
 
 pub use keyberon::debounce::Debouncer;
@@ -19,5 +17,5 @@ pub use usbd_human_interface_device::usb_class::UsbHidClassBuilder;
 pub use usbd_human_interface_device::UsbHidError;
 
 pub use crate::app_init;
-pub use crate::common::{usb_poll, UsbClass, UsbDevice};
+pub use crate::common::{usb_poll, UsbClass, UsbDevice, VID};
 pub use crate::input::{Input, Output};
