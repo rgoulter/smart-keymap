@@ -3,14 +3,6 @@ use core::convert::Infallible;
 use keyberon::debounce::Debouncer;
 use keyberon::layout::Event;
 
-use usb_device::bus::UsbBus;
-use usb_device::UsbError;
-
-use usbd_human_interface_device::device::consumer::{ConsumerControl, MultipleConsumerReport};
-use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
-use usbd_human_interface_device::page;
-use usbd_human_interface_device::UsbHidError;
-
 /// For input from the smart_keymap crate.
 pub mod smart_keymap;
 
