@@ -186,7 +186,7 @@ mod app {
     fn rx(c: rx::Context) {
         let rx::LocalResources { split_conn_rx } = c.local;
         if let Some(event) = split_conn_rx.read() {
-            layout::spawn(LayoutMessage::Event(event)).unwrap();
+            layout::spawn(BackendMessage::Event(event)).unwrap();
         }
     }
 
@@ -203,7 +203,7 @@ mod app {
     }
 
     #[task(priority = 3, capacity = 8, shared = [usb_class, usb_dev], local = [backend, report_success])]
-    fn layout(c: layout::Context, message: LayoutMessage) {
+    fn layout(c: layout::Context, message: BackendMessage) {
         let layout::SharedResources {
             mut usb_class,
             mut usb_dev,
@@ -213,7 +213,7 @@ mod app {
             report_success,
         } = c.local;
         match message {
-            LayoutMessage::Tick => {
+            BackendMessage::Tick => {
                 if *report_success {
                     backend.tick();
                 }
@@ -239,7 +239,7 @@ mod app {
                     }
                 });
             }
-            LayoutMessage::Event(event) => {
+            BackendMessage::Event(event) => {
                 backend.event(event);
             }
         };
@@ -258,10 +258,10 @@ mod app {
         for event in keyboard.events() {
             if let Some(event) = keymap_index_of(&KEYMAP_INDICES, event) {
                 split_conn_tx.write(event);
-                layout::spawn(LayoutMessage::Event(event)).unwrap();
+                layout::spawn(BackendMessage::Event(event)).unwrap();
             }
         }
 
-        layout::spawn(LayoutMessage::Tick).unwrap();
+        layout::spawn(BackendMessage::Tick).unwrap();
     }
 }
