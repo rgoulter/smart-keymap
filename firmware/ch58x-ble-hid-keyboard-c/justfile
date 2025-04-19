@@ -1,4 +1,4 @@
-board := "ncl/wabble-60.ncl"
+board := "ncl/boards/wabble-60.ncl"
 
 default: build
 
