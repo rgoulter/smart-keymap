@@ -57,6 +57,7 @@ mod app {
 
     use rtt_target::{rprintln, rtt_init_print};
     use usb_device::bus::UsbBusAllocator;
+    use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
     use usbd_human_interface_device::UsbHidError;
 
     use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
@@ -178,7 +179,9 @@ mod app {
         }
 
         usb_class.lock(|k| {
-            let res = backend.write_reports(k);
+            let res = k
+                .device::<NKROBootKeyboard<'_, _>, _>()
+                .write_report(backend.pressed_key_codes());
             match res {
                 Err(UsbHidError::WouldBlock) => *report_success = false,
                 Err(UsbHidError::UsbError(_)) => panic!(),
