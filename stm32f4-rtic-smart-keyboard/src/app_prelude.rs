@@ -1,4 +1,4 @@
-pub use usbd_smart_keyboard::app_prelude::*;
+pub use usbd_smart_keyboard::app_prelude::{usb_poll, VID};
 
 pub use stm32f4xx_hal as hal;
 
