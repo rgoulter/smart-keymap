@@ -1,4 +1,4 @@
-pub use usbd_smart_keyboard::app_prelude::{usb_poll, VID};
+pub use usbd_smart_keyboard::app_prelude::VID;
 
 pub use stm32f4xx_hal as hal;
 
@@ -14,4 +14,4 @@ pub use hal::{
 };
 
 pub use crate::app_init;
-pub use crate::common::{UsbClass, UsbDevice};
+pub use crate::common::{usb_poll, UsbClass, UsbDevice};
