@@ -1,6 +1,7 @@
-use std::path::Path;
-
+use std::env;
+use std::fs;
 use std::io::{self, Write};
+use std::path::Path;
 use std::process::{Command, Stdio};
 
 /// Inputs for Nickel evaluation.
@@ -9,6 +10,20 @@ pub struct NickelEvalInputs<'a> {
     pub ncl_import_path: &'a str,
     /// Path to a Nickel file to evaluate.
     pub input_path: &'a Path,
+}
+
+/// Inputs for Nickel code generation. (e.g. board.rs, keymap.rs).
+pub struct CodegenInputs<'a> {
+    /// The environment variable to for the codegen input.
+    pub env_var: &'a str,
+    /// The name of the conditional-compilation flag.
+    pub cfg_name: &'a str,
+    /// The base name for the custom module. (e.g. "keymap.rs", "board.rs")
+    pub module_basename: &'a str,
+    /// The Nickel import path to use for the evaluation.
+    pub ncl_import_path: &'a str,
+    /// The Nickel evaluation function.
+    pub nickel_eval_fn: fn(NickelEvalInputs) -> NickelResult,
 }
 
 /// Likely reasons why running `nickel` may fail.
@@ -285,4 +300,53 @@ pub fn nickel_to_json_for_hid_report(
     let output = nickel_command.wait_with_output()?;
 
     String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
+}
+
+/// Generates the code for the given module.
+pub fn codegen_rust_module(
+    CodegenInputs {
+        env_var,
+        cfg_name,
+        module_basename,
+        ncl_import_path,
+        nickel_eval_fn,
+    }: CodegenInputs,
+) {
+    println!("cargo:rerun-if-env-changed={}", env_var);
+    println!("cargo::rustc-check-cfg=cfg({})", cfg_name);
+    if let Some(custom_module_path) = env::var(env_var).ok().filter(|s| !s.is_empty()) {
+        let out_dir = env::var("OUT_DIR").unwrap();
+        let dest_path = Path::new(&out_dir).join(module_basename);
+        println!("cargo:rerun-if-changed={}", dest_path.to_str().unwrap());
+
+        if custom_module_path.ends_with(".rs") {
+            println!("cargo:rustc-cfg={}", cfg_name);
+
+            // Copy the custom module file to the output directory
+            fs::copy(custom_module_path, &dest_path).unwrap();
+        } else if custom_module_path.ends_with(".ncl") {
+            println!("cargo:rustc-cfg={}", cfg_name);
+
+            // Evaluate the custom keymap file with Nickel
+            let input_path = Path::new(&custom_module_path);
+            match nickel_eval_fn(NickelEvalInputs {
+                ncl_import_path,
+                input_path,
+            }) {
+                Ok(keymap_rs) => {
+                    let mut file = fs::File::create(&dest_path).unwrap();
+                    let formatted = rustfmt(keymap_rs);
+                    file.write_all(formatted.as_bytes()).unwrap();
+                }
+                Err(NickelError::NickelNotFound) => {
+                    panic!("`nickel` not found in PATH");
+                }
+                Err(NickelError::EvalError(e)) => {
+                    panic!("Nickel evaluation failed: {}", e);
+                }
+            }
+        } else {
+            panic!("Unsupported {}: {}", env_var, custom_module_path);
+        }
+    }
 }
