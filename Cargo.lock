@@ -2008,9 +2008,6 @@ dependencies = [
  "panic-rtt-target",
  "rtt-target 0.4.0",
  "smart-keymap",
- "usb-device",
- "usbd-human-interface-device",
- "usbd-serial",
 ]
 
 [[package]]
