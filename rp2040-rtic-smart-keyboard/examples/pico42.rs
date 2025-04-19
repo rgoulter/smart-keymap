@@ -262,9 +262,13 @@ mod app {
         backend.tick();
 
         usb_class.lock(|k| {
-            let _ = k
-                .device::<NKROBootKeyboard<'_, _>, _>()
-                .write_report(backend.pressed_key_codes());
+            let _ = k.device::<NKROBootKeyboard<'_, _>, _>().write_report(
+                backend
+                    .keymap_output()
+                    .pressed_key_codes()
+                    .iter()
+                    .map(|&key| key.into()),
+            );
         });
     }
 }
