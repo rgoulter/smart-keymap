@@ -43,8 +43,7 @@
   }
   "%,
 
-  output
-    | doc "C code with keyboard_matrix_init and keyboard_matrix_scan functions."
+  sources.keyboard
     = m%"
   #include <stdbool.h>
 
