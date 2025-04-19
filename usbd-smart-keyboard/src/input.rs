@@ -11,8 +11,6 @@ use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
 use usbd_human_interface_device::page;
 use usbd_human_interface_device::UsbHidError;
 
-use crate::common;
-
 /// For input from the smart_keymap crate.
 pub mod smart_keymap;
 
