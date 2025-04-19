@@ -1,4 +1,4 @@
-BOARD=ncl/wabble-60.ncl
+BOARD=ncl/boards/wabble-60.ncl
 
 .PHONY: all
 all: generated/keyboard.c libsmartkeymap
@@ -12,7 +12,7 @@ test:
 	nickel \
 	  eval \
 	  --field=keymap_indices \
-	  ncl/wabble-60.ncl \
+	  ncl/boards/wabble-60.ncl \
 	  ncl/test-expected-wabble-60.ncl \
 	  ncl/test-actual-wabble-60.ncl
 
@@ -31,7 +31,7 @@ generated/keyboard.c:
 	  > generated/keyboard.c
 
 .PHONY: generated-wabble-60
-generated-wabble-60: BOARD=ncl/wabble-60.ncl
+generated-wabble-60: BOARD=ncl/boards/wabble-60.ncl
 generated-wabble-60: generated/keyboard.c
 
 .PHONY: libsmartkeymap
