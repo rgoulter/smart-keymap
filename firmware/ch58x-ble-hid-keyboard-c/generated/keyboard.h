@@ -3,6 +3,4 @@
 
 void keyboard_init(void);
 
-void keyboard_matrix_scan(void);
-
 #endif // SMART_KEYBOARD_H_
