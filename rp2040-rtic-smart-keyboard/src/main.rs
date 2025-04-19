@@ -216,9 +216,13 @@ mod app {
         }
 
         usb_class.lock(|k| {
-            let res = k
-                .device::<NKROBootKeyboard<'_, _>, _>()
-                .write_report(backend.pressed_key_codes());
+            let res = k.device::<NKROBootKeyboard<'_, _>, _>().write_report(
+                backend
+                    .keymap_output()
+                    .pressed_key_codes()
+                    .iter()
+                    .map(|&key| key.into()),
+            );
             match res {
                 Err(UsbHidError::WouldBlock) => *report_success = false,
                 Err(UsbHidError::UsbError(_)) => panic!(),
