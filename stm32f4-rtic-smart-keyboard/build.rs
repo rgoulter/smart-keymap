@@ -3,7 +3,9 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use smart_keymap_nickel_helper::{nickel_board_rs_for_board_path, rustfmt, NickelError};
+use smart_keymap_nickel_helper::{
+    nickel_board_rs_for_board_path, rustfmt, NickelError, NickelEvalInputs,
+};
 
 fn main() {
     println!("cargo:rerun-if-env-changed=SMART_KEYBOARD_CUSTOM_BOARD");
@@ -22,11 +24,11 @@ fn main() {
             println!("cargo:rustc-cfg=custom_board");
 
             // Evaluate the custom keymap file with Nickel
-            let keymap_path = Path::new(&custom_board_path);
-            match nickel_board_rs_for_board_path(
-                format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-                keymap_path,
-            ) {
+            let board_path = Path::new(&custom_board_path);
+            match nickel_board_rs_for_board_path(NickelEvalInputs {
+                ncl_import_path: format!("{}/ncl", env!("CARGO_MANIFEST_DIR")).as_str(),
+                input_path: board_path,
+            }) {
                 Ok(board_rs) => {
                     let mut file = fs::File::create(&dest_path).unwrap();
                     let formatted = rustfmt(board_rs);

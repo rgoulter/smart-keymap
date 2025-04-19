@@ -67,7 +67,12 @@ pub fn nickel_keymap_rs_for_keymap_path(
 }
 
 /// Evaluates the Nickel expr for a board, returning the board.rs contents.
-pub fn nickel_board_rs_for_board_path(ncl_import_path: String, board_path: &Path) -> NickelResult {
+pub fn nickel_board_rs_for_board_path(
+    NickelEvalInputs {
+        ncl_import_path,
+        input_path,
+    }: NickelEvalInputs,
+) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
@@ -75,7 +80,7 @@ pub fn nickel_board_rs_for_board_path(ncl_import_path: String, board_path: &Path
             format!("--import-path={}", ncl_import_path).as_ref(),
             "--field=board_rs",
             "codegen.ncl",
-            board_path.to_str().unwrap(),
+            input_path.to_str().unwrap(),
         ])
         .stdin(Stdio::null())
         .stderr(Stdio::piped())
