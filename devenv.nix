@@ -23,7 +23,9 @@
     shell.enable = true;
   };
 
-  packages = [
+  packages = let
+    uf2conv = pkgs.callPackage ./nix/uf2conv {};
+  in [
     pkgs.cargo-binutils
     pkgs.cargo-deny
     pkgs.cargo-nextest
@@ -36,5 +38,6 @@
     pkgs.nls
     pkgs.rust-cbindgen
     pkgs.yaml-language-server
+    uf2conv
   ];
 }
