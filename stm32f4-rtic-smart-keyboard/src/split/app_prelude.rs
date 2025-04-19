@@ -14,7 +14,7 @@ pub use usb_device::prelude::UsbDeviceState;
 pub use usbd_human_interface_device::usb_class::UsbHidClassBuilder;
 
 pub use usbd_smart_keyboard::input::Keyboard;
-pub use usbd_smart_keyboard::split::transport::LayoutMessage;
+pub use usbd_smart_keyboard::split::BackendMessage;
 
 pub use crate::split::app_init as split_app_init;
 pub use crate::split::transport::{TransportReader, TransportWriter};
