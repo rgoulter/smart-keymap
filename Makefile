@@ -43,7 +43,7 @@ test-rust:
 .PHONY: build-rust-thumbv6m-none-eabi
 build-rust-thumbv6m-none-eabi:
 	$(CARGO) build --release --target=$(RP2040_TARGET) --no-default-features
-	$(CARGO) build --release --target=$(RP2040_TARGET) --package=usbd-smart-keyboard
+	$(CARGO) build --release --target=$(RP2040_TARGET) --package=keyberon-smart-keyboard
 	$(CARGO) build --release --target=$(RP2040_TARGET) --package=rp2040-rtic-smart-keyboard
 
 .PHONY: build-rust-rp2040
@@ -52,7 +52,7 @@ build-rust-rp2040: build-rust-thumbv6m-none-eabi
 .PHONY: build-rust-thumbv7em-none-eabihf
 build-rust-thumbv7em-none-eabihf:
 	$(CARGO) build --release --target=$(STM32F4_TARGET) --no-default-features
-	$(CARGO) build --release --target=$(STM32F4_TARGET) --package=usbd-smart-keyboard
+	$(CARGO) build --release --target=$(STM32F4_TARGET) --package=keyberon-smart-keyboard
 	$(CARGO) build --release --target=$(STM32F4_TARGET) --package=stm32f4-rtic-smart-keyboard
 	$(CARGO) build --release --target=$(STM32F4_TARGET) --package=stm32f4-rtic-smart-keyboard --example=minif4_36-rev2021_4-lhs
 	$(CARGO) build --release --target=$(STM32F4_TARGET) --package=stm32f4-rtic-smart-keyboard --example=minif4_36-rev2021_4-rhs

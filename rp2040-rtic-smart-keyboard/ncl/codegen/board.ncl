@@ -80,7 +80,7 @@ let C = import "contracts.ncl" in
 mod board {
     use rp2040_hal as hal;
 
-    use usbd_smart_keyboard::matrix::Matrix;
+    use keyberon_smart_keyboard::matrix::Matrix;
 
     use rp2040_rtic_smart_keyboard::input::{Input, Output};
 
@@ -95,13 +95,13 @@ mod board {
     pub const MANUFACTURER: &str = %{manufacturer_expr};
     pub const PRODUCT: &str = %{product_expr};
 
-    pub type Keyboard = usbd_smart_keyboard::input::Keyboard<
+    pub type Keyboard = keyberon_smart_keyboard::input::Keyboard<
         COLS,
         ROWS,
         Matrix<Input, Output, COLS, ROWS, hal::Timer>,
     >;
 
-    pub type PressedKeys = usbd_smart_keyboard::input::PressedKeys<COLS, ROWS>;
+    pub type PressedKeys = keyberon_smart_keyboard::input::PressedKeys<COLS, ROWS>;
 
     macro_rules! rows_and_cols {
         ($gpio_pins:expr, $cols:ident, $rows:ident) => {

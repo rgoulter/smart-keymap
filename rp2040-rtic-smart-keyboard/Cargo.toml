@@ -28,9 +28,9 @@ usb-device = { version = "0.3", features = ["control-buffer-256"] }
 usbd-human-interface-device = "0.5"
 usbd-serial = "0.2"
 
+keyberon-smart-keyboard = { path = "../keyberon-smart-keyboard" }
 # smart-keymap = { git = "https://github.com/rgoulter/smart-keymap.git" }
 smart-keymap = { path = "..", default-features = false }
-usbd-smart-keyboard = { path = "../usbd-smart-keyboard" }
 
 [build-dependencies]
 smart-keymap-nickel-helper = { path = "../smart-keymap-nickel-helper" }

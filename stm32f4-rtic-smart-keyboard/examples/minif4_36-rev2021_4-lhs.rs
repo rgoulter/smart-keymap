@@ -22,11 +22,11 @@ mod board {
     pub const MANUFACTURER: &str = "smart-keyboard";
     pub const PRODUCT: &str = "MiniF4-36 rev2021.4 LHS";
 
-    pub type Keyboard = usbd_smart_keyboard::input::Keyboard<COLS, ROWS, Matrix>;
+    pub type Keyboard = keyberon_smart_keyboard::input::Keyboard<COLS, ROWS, Matrix>;
 
-    pub type PressedKeys = usbd_smart_keyboard::input::PressedKeys<COLS, ROWS>;
+    pub type PressedKeys = keyberon_smart_keyboard::input::PressedKeys<COLS, ROWS>;
 
-    pub type Matrix = usbd_smart_keyboard::matrix::DirectPinMatrix<Input, COLS, ROWS>;
+    pub type Matrix = keyberon_smart_keyboard::matrix::DirectPinMatrix<Input, COLS, ROWS>;
 
     macro_rules! keyboard {
         ($gpioa:ident, $gpiob:ident) => {
@@ -83,9 +83,9 @@ mod app {
     use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
     use usbd_human_interface_device::UsbHidError;
 
+    use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
+    use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
     use smart_keymap::split::BUFFER_SIZE;
-    use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
-    use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
 
     use stm32f4_rtic_smart_keyboard::split::app_prelude::*;
 

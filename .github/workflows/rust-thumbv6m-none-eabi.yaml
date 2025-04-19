@@ -12,7 +12,7 @@ on:
       - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
       - 'smart-keymap-nickel-helper/**'
-      - 'usbd-smart-keyboard/**'
+      - 'keyberon-smart-keyboard/**'
   pull_request:
     branches:
       - '*'
@@ -24,7 +24,7 @@ on:
       - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
       - 'smart-keymap-nickel-helper/**'
-      - 'usbd-smart-keyboard/**'
+      - 'keyberon-smart-keyboard/**'
 
 jobs:
   cargo-build-target-thumbv6m-none-eabi:
@@ -52,8 +52,8 @@ jobs:
       - name: Run Cargo Build
         run: cargo build --target=thumbv6m-none-eabi --no-default-features
 
-      - name: Run Cargo Build (usbd-smart-keymap)
-        run: cargo build --target=thumbv6m-none-eabi --package=usbd-smart-keyboard
+      - name: Run Cargo Build (keyberon-smart-keymap)
+        run: cargo build --target=thumbv6m-none-eabi --package=keyberon-smart-keyboard
 
       - name: Run Cargo Build (rp2040-rtic-smart-keyboard)
         run: cargo build --target=thumbv6m-none-eabi --package=rp2040-rtic-smart-keyboard
@@ -66,6 +66,6 @@ jobs:
           cargo doc \
             --package=rp2040-rtic-smart-keyboard \
             --package=smart-keymap \
-            --package=usbd-smart-keyboard
+            --package=keyberon-smart-keyboard
         env:
           RUSTDOCFLAGS: --deny warnings
