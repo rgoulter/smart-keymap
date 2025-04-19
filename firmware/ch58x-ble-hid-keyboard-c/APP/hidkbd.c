@@ -24,6 +24,7 @@
 #include "hidkbdservice.h"
 
 #include "keyboard.h"
+#include "keyboard_matrix.h"
 #include "smart_keymap.h"
 
 /*********************************************************************

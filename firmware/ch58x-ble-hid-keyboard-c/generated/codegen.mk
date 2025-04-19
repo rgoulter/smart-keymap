@@ -1,5 +1,7 @@
 CODEGEN_DEPS = \
   $(BOARD) \
+  ncl/codegen/gpio.ncl \
+  ncl/codegen/keyboard_matrix.ncl \
   ncl/codegen/keyboard.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
@@ -43,6 +45,8 @@ CODEGEN_TARGETS := \
 .clean-codegen:
 	rm -f generated/*.cmake
 	rm -f generated/keyboard.c
+	rm -f generated/keyboard_matrix.h
+	rm -f generated/keyboard_matrix.c
 
 .PHONY: FORCE_STAMP
 
