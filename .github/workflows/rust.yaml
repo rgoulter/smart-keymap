@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - '.cargo/cargo.toml'
+      - '.cargo/config.toml'
       - 'Cargo.*'
       - 'features/**/*.feature'
       - 'ncl/**/*.ncl'
@@ -16,7 +16,7 @@ on:
     branches:
       - '*'
     paths:
-      - '.cargo/cargo.toml'
+      - '.cargo/config.toml'
       - 'Cargo.*'
       - 'features/**/*.feature'
       - 'ncl/**/*.ncl'

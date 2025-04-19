@@ -5,7 +5,7 @@ on:
     branches:
       - master
     paths:
-      - '.cargo/cargo.toml'
+      - '.cargo/config.toml'
       - 'Cargo.*'
       - 'ld/stm32f4xx-tinyuf2/*'
       - 'ncl/**/*.ncl'
@@ -17,7 +17,7 @@ on:
     branches:
       - '*'
     paths:
-      - '.cargo/cargo.toml'
+      - '.cargo/config.toml'
       - 'Cargo.*'
       - 'ld/stm32f4xx-tinyuf2/*'
       - 'ncl/**/*.ncl'
