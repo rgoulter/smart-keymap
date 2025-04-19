@@ -54,7 +54,7 @@ jobs:
         run: |
           cargo doc \
             --package=smart-keymap \
-            --package=usbd-smart-keyboard
+            --package=keyberon-smart-keyboard
         env:
           RUSTDOCFLAGS: --deny warnings
 

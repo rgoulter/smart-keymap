@@ -18,13 +18,13 @@ mod board {
     pub const MANUFACTURER: &str = "smart-keyboard";
     pub const PRODUCT: &str = "STM32F4 Keyboard";
 
-    pub type Keyboard = usbd_smart_keyboard::input::Keyboard<COLS, ROWS, DirectPins>;
+    pub type Keyboard = keyberon_smart_keyboard::input::Keyboard<COLS, ROWS, DirectPins>;
 
-    pub type PressedKeys = usbd_smart_keyboard::input::PressedKeys<COLS, ROWS>;
+    pub type PressedKeys = keyberon_smart_keyboard::input::PressedKeys<COLS, ROWS>;
 
     pub struct DirectPins(pub gpioa::PA0<Input>);
 
-    impl usbd_smart_keyboard::input::MatrixScanner<COLS, ROWS> for DirectPins {
+    impl keyberon_smart_keyboard::input::MatrixScanner<COLS, ROWS> for DirectPins {
         fn is_boot_key_pressed(&mut self) -> bool {
             self.0.is_low()
         }
@@ -60,8 +60,8 @@ mod app {
     use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
     use usbd_human_interface_device::UsbHidError;
 
-    use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
-    use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
+    use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
+    use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
 
     use stm32f4_rtic_smart_keyboard::app_prelude::*;
 

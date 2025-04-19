@@ -1,5 +1,5 @@
 [package]
-name = "usbd-smart-keyboard"
+name = "keyberon-smart-keyboard"
 version = "0.7.0-dev"
 license = "MIT OR Apache-2.0"
 authors = ["Richard Goulter <richard.goulter@gmail.com>"]

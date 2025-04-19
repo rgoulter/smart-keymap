@@ -906,6 +906,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "keyberon-smart-keyboard"
+version = "0.7.0-dev"
+dependencies = [
+ "cortex-m",
+ "cortex-m-rt",
+ "cortex-m-rtic",
+ "embedded-hal 1.0.0",
+ "frunk",
+ "fugit",
+ "generic-array",
+ "heapless 0.7.17",
+ "keyberon",
+ "nb 1.1.0",
+ "panic-halt",
+ "panic-rtt-target",
+ "rtt-target 0.4.0",
+ "smart-keymap",
+]
+
+[[package]]
 name = "lazy-regex"
 version = "3.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1420,6 +1440,7 @@ dependencies = [
  "generic-array",
  "heapless 0.7.17",
  "keyberon",
+ "keyberon-smart-keyboard",
  "nb 1.1.0",
  "panic-halt",
  "panic-rtt-target",
@@ -1433,7 +1454,6 @@ dependencies = [
  "usb-device",
  "usbd-human-interface-device",
  "usbd-serial",
- "usbd-smart-keyboard",
 ]
 
 [[package]]
@@ -1691,6 +1711,7 @@ dependencies = [
  "generic-array",
  "heapless 0.7.17",
  "keyberon",
+ "keyberon-smart-keyboard",
  "nb 1.1.0",
  "panic-halt",
  "panic-rtt-target",
@@ -1702,7 +1723,6 @@ dependencies = [
  "usb-device",
  "usbd-human-interface-device",
  "usbd-serial",
- "usbd-smart-keyboard",
 ]
 
 [[package]]
@@ -1988,26 +2008,6 @@ dependencies = [
  "embedded-io",
  "nb 1.1.0",
  "usb-device",
-]
-
-[[package]]
-name = "usbd-smart-keyboard"
-version = "0.7.0-dev"
-dependencies = [
- "cortex-m",
- "cortex-m-rt",
- "cortex-m-rtic",
- "embedded-hal 1.0.0",
- "frunk",
- "fugit",
- "generic-array",
- "heapless 0.7.17",
- "keyberon",
- "nb 1.1.0",
- "panic-halt",
- "panic-rtt-target",
- "rtt-target 0.4.0",
- "smart-keymap",
 ]
 
 [[package]]

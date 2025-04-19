@@ -6,7 +6,7 @@ mod board {
 
     use hal::gpio::bank0;
 
-    use usbd_smart_keyboard::matrix::Matrix;
+    use keyberon_smart_keyboard::matrix::Matrix;
 
     use rp2040_rtic_smart_keyboard::input::{Input, Output, UnconfiguredPin};
 
@@ -28,13 +28,13 @@ mod board {
     pub const MANUFACTURER: &str = "smart-keyboard";
     pub const PRODUCT: &str = "Pico42";
 
-    pub type Keyboard = usbd_smart_keyboard::input::Keyboard<
+    pub type Keyboard = keyberon_smart_keyboard::input::Keyboard<
         COLS,
         ROWS,
         Matrix<Input, Output, COLS, ROWS, hal::Timer>,
     >;
 
-    pub type PressedKeys = usbd_smart_keyboard::input::PressedKeys<COLS, ROWS>;
+    pub type PressedKeys = keyberon_smart_keyboard::input::PressedKeys<COLS, ROWS>;
 
     pub fn cols(
         gp0: UnconfiguredPin<bank0::Gpio0>,
@@ -122,10 +122,10 @@ mod app {
 
     use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
 
-    use usbd_smart_keyboard::input::smart_keymap::keymap_index_of;
-    use usbd_smart_keyboard::input::smart_keymap::KeyboardBackend;
-    use usbd_smart_keyboard::input::MatrixScanner;
-    use usbd_smart_keyboard::matrix::Matrix as DelayedMatrix;
+    use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
+    use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
+    use keyberon_smart_keyboard::input::MatrixScanner;
+    use keyberon_smart_keyboard::matrix::Matrix as DelayedMatrix;
 
     use super::board;
 
