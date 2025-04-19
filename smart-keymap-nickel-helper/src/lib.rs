@@ -3,6 +3,14 @@ use std::path::Path;
 use std::io::{self, Write};
 use std::process::{Command, Stdio};
 
+/// Inputs for Nickel evaluation.
+pub struct NickelEvalInputs<'a> {
+    /// The Nickel import path to use for the evaluation.
+    pub ncl_import_path: &'a str,
+    /// Path to a Nickel file to evaluate.
+    pub input_path: &'a Path,
+}
+
 /// Likely reasons why running `nickel` may fail.
 pub enum NickelError {
     NickelNotFound,
