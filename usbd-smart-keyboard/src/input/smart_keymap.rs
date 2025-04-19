@@ -1,8 +1,3 @@
-use usbd_human_interface_device::page;
-use usbd_human_interface_device::UsbHidError;
-
-use crate::input::HIDReporter;
-
 /// Callbacks for the keymap.
 pub struct KeymapCallbacks {
     /// Callback for resetting keyboard state.
@@ -63,24 +58,6 @@ impl KeyboardBackend {
 
     pub fn keymap_output(&self) -> &smart_keymap::keymap::KeymapOutput {
         &self.keymap_output
-    }
-
-    /// Writes the HID keyboard and consumer reports from the smart keymap.
-    pub fn write_reports<R, CE>(&mut self, hid_reporter: &mut R) -> Result<(), UsbHidError>
-    where
-        CE: core::fmt::Debug, // usb error
-        R: HIDReporter<page::Keyboard, page::Consumer, CE>,
-    {
-        hid_reporter.write_keyboard_report(self.pressed_key_codes())
-    }
-
-    pub fn pressed_key_codes(&self) -> heapless::Vec<page::Keyboard, 16> {
-        let pressed_keycodes = self.keymap_output.pressed_key_codes();
-        pressed_keycodes
-            .iter()
-            .cloned()
-            .map(|key| key.into())
-            .collect()
     }
 }
 
