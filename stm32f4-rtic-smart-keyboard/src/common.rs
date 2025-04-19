@@ -20,6 +20,9 @@ pub type UsbClass = UsbHidClass<
 
 pub type UsbDevice = usb_device::device::UsbDevice<'static, UsbBusType>;
 
+/// A USB Vendor ID.
+pub const VID: u16 = 0xcafe;
+
 /// Polls the given [UsbDevice] with the [UsbHidClass] that has a [NKROBootKeyboard]. (e.g. [UsbClass]).
 pub fn usb_poll(usb_dev: &mut UsbDevice, keyboard: &mut UsbClass) {
     if usb_dev.poll(&mut [keyboard]) {
