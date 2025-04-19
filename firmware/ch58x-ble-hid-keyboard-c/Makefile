@@ -12,6 +12,7 @@ clean: .clean-codegen
 test:
 	nickel \
 	  eval \
+	  --import-path=ncl/ \
 	  --field=keymap_indices \
 	  ncl/boards/wabble-60.ncl \
 	  ncl/test-expected-wabble-60.ncl \
