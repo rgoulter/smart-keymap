@@ -27,7 +27,7 @@ generated/keyboard.c:
 	  --format=raw \
 	  --field=output \
 	  $(BOARD) \
-	  ncl/codegen_keyboard.ncl \
+	  ncl/codegen/keyboard.ncl \
 	  > generated/keyboard.c
 
 .PHONY: generated-wabble-60
