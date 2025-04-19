@@ -23,7 +23,7 @@
 #include "hidkbd.h"
 #include "hidkbdservice.h"
 
-#include "smart_keyboard.h"
+#include "keyboard.h"
 #include "smart_keymap.h"
 
 /*********************************************************************

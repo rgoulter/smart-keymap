@@ -43,6 +43,10 @@
   }
   "%,
 
+  cmakelists.keyboard = m%"
+    target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
+    "%,
+
   sources.keyboard
     = m%"
   #include <stdbool.h>

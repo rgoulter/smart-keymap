@@ -8,7 +8,6 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(HID_Keyboard
     APP/hidkbd.c
     APP/hidkbd_main.c
-    generated/keyboard.c
     Profile/battservice.c
     Profile/devinfoservice.c
     Profile/hiddev.c
@@ -21,6 +20,9 @@ target_include_directories(HID_Keyboard
     APP/include
     Profile/include
 )
+
+add_subdirectory(generated)
+target_link_libraries(HID_Keyboard keyboard_codegen)
 
 add_subdirectory(sdk sdk)
 
