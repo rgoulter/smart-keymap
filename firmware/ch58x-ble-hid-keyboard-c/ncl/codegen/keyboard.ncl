@@ -1,4 +1,4 @@
-(import "codegen-matrix-col_to_row.ncl")
+(import "matrix/col_to_row.ncl")
 & {
   gpio_pins
     : { _ : { port : String, pin : Number } }
