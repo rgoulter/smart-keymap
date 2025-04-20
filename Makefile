@@ -11,7 +11,8 @@ STM32F4_RELEASE_TARGET_DIR ?= $(STM32F4_TARGET_DIR)/release
 DEST_DIR ?= .
 
 STM32F4_RTIC_EXAMPLES := $(notdir $(basename $(wildcard stm32f4-rtic-smart-keyboard/examples/*.rs)))
-STM32F4_EXAMPLES := $(STM32F4_RTIC_EXAMPLES)
+STM32F4_EMBASSY_EXAMPLES := $(notdir $(basename $(wildcard stm32f4-embassy-smart-keyboard/examples/*.rs)))
+STM32F4_EXAMPLES := $(STM32F4_RTIC_EXAMPLES) $(STM32F4_EMBASSY_EXAMPLES )
 
 EXAMPLES := $(STM32F4_EXAMPLES)
 EXAMPLES_BIN := $(addprefix example-, $(addsuffix .bin,$(EXAMPLES)))
@@ -91,6 +92,9 @@ $(STM32F4_RELEASE_TARGET_DIR)/examples/%: stm32f4-rtic-smart-keyboard/examples/%
 
 $(STM32F4_RELEASE_TARGET_DIR)/%: stm32f4-rtic-smart-keyboard/src/bin/%.rs
 	cargo build --target=$(STM32F4_TARGET) --package=stm32f4-rtic-smart-keyboard --release --bin="$*"
+
+$(STM32F4_RELEASE_TARGET_DIR)/examples/%: stm32-embassy-smart-keyboard/examples/%.rs
+	cargo build --target=$(STM32F4_TARGET) --package=stm32-embassy-smart-keyboard --release --example="$*"
 
 $(DEST_DIR)/%.bin: $(STM32F4_RELEASE_TARGET_DIR)/examples/%
 	rust-objcopy $(STM32F4_RELEASE_TARGET_DIR)/examples/$* --output-target "binary" $(DEST_DIR)/$*.bin
