@@ -87,6 +87,10 @@ $(STM32F4_RELEASE_TARGET_DIR)/examples/minif4_36-rev2021_4-lhs: SMART_KEYMAP_CUS
 
 $(STM32F4_RELEASE_TARGET_DIR)/examples/minif4_36-rev2021_4-rhs: SMART_KEYMAP_CUSTOM_KEYMAP=$(shell pwd)/tests/ncl/keymap-36key-rgoulter/keymap.ncl
 
+$(STM32F4_RELEASE_TARGET_DIR)/examples/minif4_36-rev2021_5-lhs: SMART_KEYMAP_CUSTOM_KEYMAP=$(shell pwd)/tests/ncl/keymap-36key-rgoulter/keymap.ncl
+
+$(STM32F4_RELEASE_TARGET_DIR)/examples/minif4_36-rev2021_5-rhs: SMART_KEYMAP_CUSTOM_KEYMAP=$(shell pwd)/tests/ncl/keymap-36key-rgoulter/keymap.ncl
+
 $(STM32F4_RELEASE_TARGET_DIR)/examples/%: stm32f4-rtic-smart-keyboard/examples/%.rs
 	cargo build --target=$(STM32F4_TARGET) --package=stm32f4-rtic-smart-keyboard --release --example="$*"
 
