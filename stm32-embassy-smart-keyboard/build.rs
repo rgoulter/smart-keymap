@@ -7,6 +7,8 @@ use smart_keymap_nickel_helper::{
 fn main() {
     println!("cargo:rustc-link-arg-bins=--nmagic");
     println!("cargo:rustc-link-arg-bins=-Tdefmt.x");
+    println!("cargo:rustc-link-arg-examples=--nmagic");
+    println!("cargo:rustc-link-arg-examples=-Tdefmt.x");
 
     codegen_rust_module(CodegenInputs {
         env_var: "SMART_KEYBOARD_CUSTOM_BOARD",
