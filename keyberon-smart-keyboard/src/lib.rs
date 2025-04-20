@@ -1,4 +1,4 @@
-//! # USBD Smart Keyboard
+//! # Keyberon Smart Keyboard
 //!
 //! This crate provides functionality for using [smart_keymap]
 //!  as part of Rust keyboard firmware.
