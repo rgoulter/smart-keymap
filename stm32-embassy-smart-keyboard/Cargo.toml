@@ -20,6 +20,7 @@ cortex-m = { version = "0.7.6", features = ["inline-asm", "critical-section-sing
 cortex-m-rt = "0.7.0"
 keyberon = { git = "https://github.com/TeXitoi/keyberon", branch = "master" }
 panic-probe = { version = "0.3", features = ["print-defmt"] }
+panic-halt = "0.2.0"
 static_cell = "2.1.0"
 usbd-hid = "0.8.1"
 

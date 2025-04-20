@@ -2213,6 +2213,7 @@ dependencies = [
  "embassy-usb",
  "keyberon",
  "keyberon-smart-keyboard",
+ "panic-halt",
  "panic-probe",
  "smart-keymap",
  "smart-keymap-nickel-helper",
