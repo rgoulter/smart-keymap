@@ -50,6 +50,9 @@ mod board {
     pub(crate) use keyboard;
 }
 
+#[cfg(custom_board)]
+include!(concat!(env!("OUT_DIR"), "/board.rs"));
+
 #[rtic::app(device = stm32f4xx_hal::pac, peripherals = true)]
 mod app {
     // set the panic handler
