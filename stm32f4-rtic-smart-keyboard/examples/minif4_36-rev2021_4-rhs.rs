@@ -1,7 +1,6 @@
 #![no_main]
 #![no_std]
 
-#[cfg(not(custom_board))]
 mod board {
     pub use stm32f4_rtic_smart_keyboard::input::Input;
 
