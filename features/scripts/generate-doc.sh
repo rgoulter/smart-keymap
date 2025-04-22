@@ -17,6 +17,7 @@ keymap_key_features=(
     "tap_hold-config-interrupt-ignore"
     "tap_hold-config-interrupt-presses"
     "tap_hold-config-interrupt-tap"
+    "tap_hold-config-required_idle_time"
     "layered"
     "caps_word"
     "sticky_modifiers"
