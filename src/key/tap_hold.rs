@@ -23,7 +23,7 @@ pub enum InterruptResponse {
 /// Configuration settings for tap hold keys.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
-    /// The timeout (in number of ticks) for a tap-hold key to resolve as hold.
+    /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
     #[serde(default = "default_timeout")]
     pub timeout: u16,
 
