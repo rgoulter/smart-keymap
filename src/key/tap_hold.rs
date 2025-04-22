@@ -30,6 +30,13 @@ pub struct Config {
     /// How the tap-hold key should respond to interruptions.
     #[serde(default = "default_interrupt_response")]
     pub interrupt_response: InterruptResponse,
+
+    /// Amount of time (in milliseconds) the keymap must have been idle
+    ///  in order for tap hold to support 'hold' functionality.
+    ///
+    /// This reduces disruption from unexpected hold resolutions
+    ///  when typing quickly.
+    pub required_idle_time: Option<u16>,
 }
 
 fn default_timeout() -> u16 {
@@ -44,6 +51,7 @@ fn default_interrupt_response() -> InterruptResponse {
 pub const DEFAULT_CONFIG: Config = Config {
     timeout: 200,
     interrupt_response: InterruptResponse::Ignore,
+    required_idle_time: None,
 };
 
 impl Default for Config {
