@@ -129,6 +129,12 @@ impl key::Context for Context {
     }
 }
 
+impl keymap::SetKeymapContext for Context {
+    fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
+        self.keymap_context = context;
+    }
+}
+
 impl<'c> From<&'c Context> for &'c keymap::KeymapContext {
     fn from(ctx: &'c Context) -> Self {
         &ctx.keymap_context
