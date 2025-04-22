@@ -117,6 +117,12 @@ pub struct KeymapContext {}
 /// Default keymap context.
 pub const DEFAULT_KEYMAP_CONTEXT: KeymapContext = KeymapContext {};
 
+/// Trait for setting the keymap context.
+pub trait SetKeymapContext {
+    /// Sets the keymap context.
+    fn set_keymap_context(&mut self, context: KeymapContext);
+}
+
 /// Events related to the keymap.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum KeymapEvent {
