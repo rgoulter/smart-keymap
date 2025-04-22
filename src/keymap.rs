@@ -112,10 +112,15 @@ pub enum KeymapCallback {
 
 /// Context provided from the keymap to the smart keys.
 #[derive(Debug, Clone, Copy)]
-pub struct KeymapContext {}
+pub struct KeymapContext {
+    /// Number of milliseconds since keymap has been initialized.
+    pub time_ms: u32,
+}
 
 /// Default keymap context.
-pub const DEFAULT_KEYMAP_CONTEXT: KeymapContext = KeymapContext {};
+pub const DEFAULT_KEYMAP_CONTEXT: KeymapContext = KeymapContext {
+    time_ms: 0,
+};
 
 /// Trait for setting the keymap context.
 pub trait SetKeymapContext {
@@ -524,7 +529,9 @@ impl<
 
     /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
-        let km_context = KeymapContext {};
+        let km_context = KeymapContext {
+            time_ms: self.event_scheduler.schedule_counter,
+        };
         self.context.set_keymap_context(km_context);
 
         if !self.input_queue.is_empty() && self.input_queue_delay_counter == 0 {
