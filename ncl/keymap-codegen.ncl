@@ -32,6 +32,7 @@ let validators = import "validators.ncl" in
   TapHoldConfigJson = {
     timeout | optional | Number,
     interrupt_response | optional | TapHoldInterruptResponseJson,
+    required_idle_time | optional | Number,
   },
 
   ConfigJson = {
