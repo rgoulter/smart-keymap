@@ -115,11 +115,15 @@ pub enum KeymapCallback {
 pub struct KeymapContext {
     /// Number of milliseconds since keymap has been initialized.
     pub time_ms: u32,
+
+    /// Number of milliseconds since keymap received an input event.
+    pub idle_time_ms: u32,
 }
 
 /// Default keymap context.
 pub const DEFAULT_KEYMAP_CONTEXT: KeymapContext = KeymapContext {
     time_ms: 0,
+    idle_time_ms: 0,
 };
 
 /// Trait for setting the keymap context.
@@ -537,6 +541,7 @@ impl<
     pub fn tick(&mut self) {
         let km_context = KeymapContext {
             time_ms: self.event_scheduler.schedule_counter,
+            idle_time_ms: self.idle_time,
         };
         self.context.set_keymap_context(km_context);
 
