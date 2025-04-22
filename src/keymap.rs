@@ -242,6 +242,11 @@ impl<
             .unwrap();
     }
 
+    /// Sets the number of ms per tick().
+    pub fn set_ms_per_tick(&mut self, ms_per_tick: u8) {
+        self.ms_per_tick = ms_per_tick;
+    }
+
     // If the pending key state is resolved,
     //  then clear the pending key state.
     fn resolve_pending_key_state(&mut self, key_state: KS) {
