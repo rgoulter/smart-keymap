@@ -38,7 +38,7 @@ impl ChordIndices {
 /// Chord definitions.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
-    /// The timeout (in number of ticks) for a chorded key to resolve.
+    /// The timeout (in number of milliseconds) for a chorded key to resolve.
     ///
     /// (Resolves as passthrough key if no chord is satisfied).
     #[serde(default = "default_timeout")]
