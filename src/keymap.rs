@@ -151,6 +151,7 @@ pub struct Keymap<Ctx, Ev: Debug, PKS, KS, I> {
     context: Ctx,
     pressed_inputs: heapless::Vec<input::PressedInput<KS>, { MAX_PRESSED_KEYS }>,
     event_scheduler: EventScheduler<Ev>,
+    ms_per_tick: u8,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState<Ev, PKS>>,
     input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
@@ -171,6 +172,7 @@ impl<
         f.debug_struct("Keymap")
             .field("context", &self.context)
             .field("event_scheduler", &self.event_scheduler)
+            .field("ms_per_tick", &self.ms_per_tick)
             .field("hid_reporter", &self.hid_reporter)
             .field("input_queue", &self.input_queue)
             .field("input_queue_delay_counter", &self.input_queue_delay_counter)
@@ -196,6 +198,7 @@ impl<
             context,
             pressed_inputs: heapless::Vec::new(),
             event_scheduler: EventScheduler::new(),
+            ms_per_tick: 1,
             hid_reporter: HIDKeyboardReporter::new(),
             pending_key_state: None,
             input_queue: heapless::spsc::Queue::new(),
@@ -214,6 +217,7 @@ impl<
             self.input_queue.dequeue().unwrap();
         }
         self.input_queue_delay_counter = 0;
+        self.ms_per_tick = 1;
     }
 
     /// Registers the given callback to the keymap.
@@ -528,7 +532,7 @@ impl<
             self.input_queue_delay_counter -= 1;
         }
 
-        self.event_scheduler.tick();
+        self.event_scheduler.tick(self.ms_per_tick);
 
         self.handle_pending_events();
     }

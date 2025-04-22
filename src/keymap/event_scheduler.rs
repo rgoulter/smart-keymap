@@ -76,8 +76,8 @@ impl<E: Debug> EventScheduler<E> {
             });
     }
 
-    pub fn tick(&mut self) {
-        self.schedule_counter += 1;
+    pub fn tick(&mut self, delta_ms: u8) {
+        self.schedule_counter += delta_ms as u32;
         let scheduled_ready =
             if let Some(&ScheduledEvent { time, .. }) = self.scheduled_events.last() {
                 time <= self.schedule_counter
