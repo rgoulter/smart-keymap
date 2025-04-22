@@ -181,7 +181,7 @@ impl<
 }
 
 impl<
-        Ctx: key::Context<Event = Ev>,
+        Ctx: key::Context<Event = Ev> + SetKeymapContext,
         Ev: Copy + Debug + PartialEq,
         PKS,
         KS: key::KeyState<Context = Ctx, Event = Ev> + Copy,
@@ -515,6 +515,9 @@ impl<
 
     /// Advances the state of the keymap by one tick.
     pub fn tick(&mut self) {
+        let km_context = KeymapContext {};
+        self.context.set_keymap_context(km_context);
+
         if !self.input_queue.is_empty() && self.input_queue_delay_counter == 0 {
             let ie = self.input_queue.dequeue().unwrap();
             self.process_input(ie);
