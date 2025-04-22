@@ -12,6 +12,7 @@ pub mod init {
         sticky: crate::key::sticky::DEFAULT_CONFIG,
         tap_hold: crate::key::tap_hold::Config {
             interrupt_response: crate::key::tap_hold::InterruptResponse::HoldOnKeyTap,
+
             ..crate::key::tap_hold::DEFAULT_CONFIG
         },
         ..crate::key::composite::DEFAULT_CONFIG
