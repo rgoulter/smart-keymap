@@ -1183,10 +1183,17 @@ let validators = import "validators.ncl" in
             else
               ""
           in
+          let required_idle_time_field_fragment =
+            if std.record.has_field "required_idle_time" config.tap_hold then
+              "required_idle_time: Some(%{std.to_string config.tap_hold.required_idle_time}),"
+            else
+              ""
+          in
           m%"
             crate::key::tap_hold::Config {
                 %{timeout_field_fragment}
                 %{interrupt_response_field_fragment}
+                %{required_idle_time_field_fragment}
                 ..crate::key::tap_hold::DEFAULT_CONFIG
             }
           "%
