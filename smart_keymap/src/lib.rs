@@ -137,6 +137,15 @@ pub extern "C" fn keymap_init() {
     }
 }
 
+/// Sets the number of milliseconds between calls to `keymap_tick`.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub extern "C" fn keymap_set_ms_per_tick(ms_per_tick: u8) {
+    unsafe {
+        KEYMAP.set_ms_per_tick(ms_per_tick);
+    }
+}
+
 /// Register an input event to the global keymap instance.
 #[allow(static_mut_refs)]
 #[no_mangle]
