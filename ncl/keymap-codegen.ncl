@@ -293,7 +293,16 @@ let validators = import "validators.ncl" in
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["keymap_callback"],
           field_validators = {
-            keymap_callback = validators.is_string,
+            keymap_callback =
+              validators.any_of [
+                validators.is_string,
+                validators.record.validator {
+                  fields_validator = validators.record.has_exact_fields ["Custom"],
+                  field_validators = {
+                    Custom = validators.is_array,
+                  },
+                }
+              ],
           },
         },
 
@@ -308,7 +317,15 @@ let validators = import "validators.ncl" in
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::callback::Key::new(crate::keymap::KeymapCallback::%{keymap_callback})",
+          rust_expr =
+            let cb_expr =
+              keymap_callback
+              |> match {
+                { Custom = [i, j] } =>
+                  "crate::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
+                _ => "crate::keymap::KeymapCallback::%{keymap_callback}"
+              }
+            in "crate::key::callback::Key::new(%{cb_expr})",
           json_value = k,
         },
 
