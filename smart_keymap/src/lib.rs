@@ -225,6 +225,20 @@ pub unsafe extern "C" fn keymap_register_callback(
     }
 }
 
+/// Registers a custom callback with the keymap.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_register_custom_callback(
+    custom_0: u8,
+    custom_1: u8,
+    callback_fn: extern "C" fn() -> (),
+) {
+    unsafe {
+        let callback_id = keymap::KeymapCallback::Custom(custom_0, custom_1);
+        KEYMAP.set_callback_extern(callback_id, callback_fn);
+    }
+}
+
 /// Serializes the given event into the given buffer.
 #[no_mangle]
 pub unsafe extern "C" fn keymap_serialize_event(buf: *mut u8, event: KeymapInputEvent) {
