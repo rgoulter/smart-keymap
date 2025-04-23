@@ -1,3 +1,5 @@
+#![doc = include_str!("doc_de_callback.md")]
+
 use serde::Deserialize;
 
 use crate::key;
