@@ -217,6 +217,8 @@ let validators = import "validators.ncl" in
       key_validator = fun k =>
         k
         |> match {
+          { keymap_callback = { Custom = indices @ [i, j] } } =>
+            validators.array.validator validators.is_number indices,
           { keymap_callback } => validators.is_string keymap_callback,
           _ => 'Error { message = "expected { keymap_callback = <KeymapCallback variant> }" },
         },
