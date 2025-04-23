@@ -108,6 +108,8 @@ pub enum KeymapCallback {
     Reset,
     /// Reset the keyboard to bootloader
     ResetToBootloader,
+    /// A custom callback. Its behaviour is specific to the firmware implementation.
+    Custom(u8, u8),
 }
 
 /// Context provided from the keymap to the smart keys.
