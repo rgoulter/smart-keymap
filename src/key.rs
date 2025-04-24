@@ -17,6 +17,8 @@ pub mod keyboard;
 pub mod layered;
 /// Sticky Modifier keys.
 pub mod sticky;
+/// Tap-Dance keys.
+pub mod tap_dance;
 /// Tap-Hold keys.
 pub mod tap_hold;
 
