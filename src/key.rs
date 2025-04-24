@@ -387,10 +387,17 @@ impl KeyboardModifiers {
     }
 }
 
+/// Enum for the different types of key codes.
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub enum KeyUsage {
+    /// Key usage code.
+    Keyboard(u8),
+}
+
 /// Struct for the output from [KeyState].
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyOutput {
-    key_code: u8,
+    key_code: KeyUsage,
     key_modifiers: KeyboardModifiers,
 }
 
@@ -399,12 +406,12 @@ impl KeyOutput {
     pub fn from_key_code(key_code: u8) -> Self {
         if let Some(key_modifiers) = KeyboardModifiers::from_key_code(key_code) {
             KeyOutput {
-                key_code: 0x00,
+                key_code: KeyUsage::Keyboard(0x00),
                 key_modifiers,
             }
         } else {
             KeyOutput {
-                key_code,
+                key_code: KeyUsage::Keyboard(key_code),
                 key_modifiers: KeyboardModifiers::new(),
             }
         }
@@ -425,13 +432,13 @@ impl KeyOutput {
     /// Constructs a [KeyOutput] for just the given keyboard modifiers.
     pub fn from_key_modifiers(key_modifiers: KeyboardModifiers) -> Self {
         KeyOutput {
-            key_code: 0x00,
+            key_code: KeyUsage::Keyboard(0x00),
             key_modifiers,
         }
     }
 
     /// Returns the key code value.
-    pub fn key_code(&self) -> u8 {
+    pub fn key_code(&self) -> KeyUsage {
         self.key_code
     }
 
