@@ -26,7 +26,7 @@ impl Context {
             key::Event::Keymap(keymap::KeymapEvent::ResolvedKeyOutput {
                 key_output:
                     key::KeyOutput {
-                        key_code,
+                        key_code: key::KeyUsage::Keyboard(key_code),
                         key_modifiers,
                     },
                 ..

@@ -62,7 +62,13 @@ impl KeymapOutput {
 
         result.extend(modifiers.as_key_codes());
 
-        result.extend(self.pressed_key_codes.iter().map(|ko| ko.key_code()));
+        result.extend(
+            self.pressed_key_codes
+                .iter()
+                .flat_map(|ko| match ko.key_code() {
+                    key::KeyUsage::Keyboard(kc) => Some(kc),
+                }),
+        );
 
         result
     }
@@ -83,7 +89,9 @@ impl KeymapOutput {
         let key_codes = self
             .pressed_key_codes
             .iter()
-            .map(|ko| ko.key_code())
+            .flat_map(|ko| match ko.key_code() {
+                key::KeyUsage::Keyboard(kc) => Some(kc),
+            })
             .filter(|&kc| kc != 0);
 
         for (i, key_code) in key_codes.take(6).enumerate() {
