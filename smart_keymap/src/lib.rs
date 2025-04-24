@@ -105,16 +105,10 @@ impl From<input::Event> for KeymapInputEvent {
                 event_type: KeymapInputEventType::KeymapEventRelease,
                 value,
             },
-            // LIMITATION: split transport for virtual keys only works for basic key codes.
-            input::Event::VirtualKeyPress { key_output } => KeymapInputEvent {
-                event_type: KeymapInputEventType::KeymapEventVirtualPress,
-                value: key_output.key_code() as u16,
-            },
-            // LIMITATION: split transport for virtual keys only works for basic key codes.
-            input::Event::VirtualKeyRelease { key_output } => KeymapInputEvent {
-                event_type: KeymapInputEventType::KeymapEventVirtualRelease,
-                value: key_output.key_code() as u16,
-            },
+            // LIMITATION: split transport for virtual keys not implemented
+            input::Event::VirtualKeyPress { .. } => todo!(),
+            // LIMITATION: split transport for virtual keys not implemented
+            input::Event::VirtualKeyRelease { .. } => todo!(),
         }
     }
 }
