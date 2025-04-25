@@ -37,10 +37,22 @@ pub struct Key<K: key::Key> {
     definitions: [Option<K>; MAX_TAP_DANCE_DEFINITIONS],
 }
 
-impl<K: key::Key> Key<K> {
+impl<K: key::Key + Copy> Key<K> {
     /// Constructs a new tap-dance key.
     pub const fn new(definitions: [Option<K>; MAX_TAP_DANCE_DEFINITIONS]) -> Key<K> {
         Key { definitions }
+    }
+
+    /// Construct the tap-dance key from the given slice of keys.
+    pub const fn from_definitions(defs: &[K]) -> Self {
+        let mut definitions: [Option<K>; MAX_TAP_DANCE_DEFINITIONS] =
+            [None; MAX_TAP_DANCE_DEFINITIONS];
+        let mut idx = 0;
+        while idx < definitions.len() && idx < defs.len() {
+            definitions[idx] = Some(defs[idx]);
+            idx += 1;
+        }
+        Self::new(definitions)
     }
 }
 
