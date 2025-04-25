@@ -32,6 +32,8 @@ impl TapHoldNestable for BaseKey {}
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(untagged))]
 pub enum TapHoldKey<K: TapHoldNestable> {
+    /// A tap-dance key.
+    TapDance(key::tap_dance::Key<K>),
     /// A tap-hold key.
     TapHold(key::tap_hold::Key<K>),
     /// A non-tap-hold key.
@@ -54,6 +56,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
         key_path: key::KeyPath,
     ) -> (PressedKeyResult, key::KeyEvents<Self::Event>) {
         match self {
+            TapHoldKey::TapDance(key) => key.new_pressed_key(context, key_path),
             TapHoldKey::TapHold(key) => key.new_pressed_key(context, key_path),
             TapHoldKey::Pass(key) => key.new_pressed_key(context, key_path),
         }
@@ -70,6 +73,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
         key::KeyEvents<Self::Event>,
     ) {
         match self {
+            TapHoldKey::TapDance(key) => key.handle_event(pending_state, context, key_path, event),
             TapHoldKey::TapHold(key) => key.handle_event(pending_state, context, key_path, event),
             TapHoldKey::Pass(key) => key.handle_event(pending_state, context, key_path, event),
         }
@@ -85,6 +89,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
         KeyState = Self::KeyState,
     > {
         match self {
+            TapHoldKey::TapDance(key) => key.lookup(path),
             TapHoldKey::TapHold(key) => key.lookup(path),
             TapHoldKey::Pass(key) => key.lookup(path),
         }
