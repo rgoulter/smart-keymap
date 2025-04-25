@@ -75,6 +75,9 @@ pub mod init {
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = 4;
 
+    /// The tap-dance definitions.
+    pub const MAX_TAP_DANCE_DEFINITIONS: usize = 3;
+
     pub use composite::Context;
 
     pub use composite::Event;
