@@ -287,13 +287,34 @@ impl<
             let mut i = 1;
             let mut old_input_queue: heapless::spsc::Queue<input::Event, MAX_QUEUED_INPUT_EVENTS> =
                 core::mem::take(&mut self.input_queue);
-            for ev in queued_events {
+
+            // Partition the events from the pending keymap index
+            //  separately from the other queued events.
+            // (Only queue the *last* event from the pending keymap index).
+            let (pending_input_ev, queued_events): (
+                heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
+                heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
+            ) = queued_events.iter().partition(|ev| match ev {
+                key::Event::Input(input::Event::Press {
+                    keymap_index: queued_kmi,
+                }) => *queued_kmi == keymap_index,
+                key::Event::Input(input::Event::Release {
+                    keymap_index: queued_kmi,
+                }) => *queued_kmi == keymap_index,
+                key::Event::Key {
+                    keymap_index: queued_kmi,
+                    ..
+                } => *queued_kmi == keymap_index,
+                _ => false,
+            });
+
+            for ev in queued_events.iter().chain(pending_input_ev.last()) {
                 match ev {
                     key::Event::Input(ie) => {
-                        self.input_queue.enqueue(ie).unwrap();
+                        self.input_queue.enqueue(*ie).unwrap();
                     }
                     _ => {
-                        self.event_scheduler.schedule_after(i, ev);
+                        self.event_scheduler.schedule_after(i, *ev);
                         i += 1;
                     }
                 }
