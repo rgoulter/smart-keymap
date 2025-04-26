@@ -403,6 +403,54 @@ let validators = import "validators.ncl" in
       },
   },
 
+  tap_dance
+    | doc "for key::tap_dance::Key."
+    = {
+      JsonValue = std.contract.from_validator json_value_validator,
+
+      # JSON serialization of key::tap_dance::Key is { definitions: [Option<K>] }
+      #  and the codegen uses the from_definitions(&[K]) constructor.
+      json_value_validator =
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["definitions"],
+          field_validators = {
+            definitions = validators.array.validator key.json_value_validator,
+          },
+        },
+
+      is_json_value = fun k => 'Ok == json_value_validator k,
+
+      codegen_values = fun k @ { definitions } =>
+        let definitions_cv = definitions |> std.array.map (fun k => k |> key.codegen_values |> tap_hold_nestable.wrap) in
+
+        let target_type = unified_key_impl_for_codegen_values definitions_cv in
+
+        {
+          nested = {
+            definitions = definitions_cv |> std.array.map (fun cv => cv |> key.lift_to target_type),
+          },
+          key_type = {
+            key_type = "crate::key::tap_dance::Key",
+            nested_key_type = (std.array.first nested.definitions).key_type,
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+          },
+          key_impl = {} & (std.array.first nested.definitions).key_impl,
+          rust_expr =
+            let definitions_expr = nested.definitions |> std.array.map (fun cv => cv.rust_expr) in
+            let definitions_slice_expr = "&[%{definitions_expr |> std.string.join ", "}]" in
+            "crate::key::tap_dance::Key::from_definitions(%{definitions_slice_expr})",
+          json_value = k,
+        },
+
+      map_nested = fun f cv @ { nested, ..rest } =>
+        rest
+        & {
+          nested = {
+            definitions = std.array.map f cv.nested.definitions,
+          },
+        },
+    },
+
   checks.check_tap_hold = {
     # Use a json value to check the "is" predicate.
     check_json_tap_keyboard_hold_keyboard_is =
@@ -490,6 +538,7 @@ let validators = import "validators.ncl" in
   # Related to key::composite::LayeredNestable trait.
   layered_nestable = {
     # Wraps the codegen values for
+    #   - key::tap_dance::Key.
     #   - key::tap_hold::Key.
     #   - TapHoldNestable impls.
     #     - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
@@ -500,6 +549,8 @@ let validators = import "validators.ncl" in
     wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
+        "crate::key::tap_dance::Key" =>
+          cv |> composite.tap_hold_key.tap_dance_,
         "crate::key::tap_hold::Key" =>
           cv |> composite.tap_hold_key.tap_hold_,
         _ =>
@@ -892,6 +943,23 @@ let validators = import "validators.ncl" in
     },
 
     tap_hold_key = {
+      tap_dance_ = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::TapHoldKey",
+            nested_key_type = nested.key_type.nested_key_type,
+            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
+            variant = "TapDance",
+          },
+          key_impl =
+            nested.key_impl
+            & {
+              tap_hold = key_type.key_type,
+            },
+          rust_expr = "crate::key::composite::TapHoldKey::TapDance(%{nested.rust_expr})",
+        },
+
       tap_hold_ = fun cv =>
         {
           nested = cv,
@@ -929,6 +997,7 @@ let validators = import "validators.ncl" in
       lift_to = fun key_impl { nested = nested_, ..cv } =>
         cv.key_type.variant
         |> match {
+          "TapDance" => cv & { nested = tap_dance.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
           "TapHold" => cv & { nested = tap_hold.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
           "Pass" => cv & { nested = key.lift_to key_impl nested_ },
         },
@@ -1087,6 +1156,7 @@ let validators = import "validators.ncl" in
         keymap_callback.json_value_validator,
         sticky.json_value_validator,
         layered.json_value_validator,
+        tap_dance.json_value_validator,
         tap_hold.json_value_validator,
         chorded.json_value_validator,
         chorded_aux.json_value_validator,
@@ -1101,6 +1171,7 @@ let validators = import "validators.ncl" in
       k if keymap_callback.is_json_value k => keymap_callback.codegen_values k,
       k if sticky.is_json_value k => sticky.codegen_values k,
       k if layered.is_json_value k => layered.codegen_values k,
+      k if tap_dance.is_json_value k => tap_dance.codegen_values k,
       k if tap_hold.is_json_value k => tap_hold.codegen_values k,
       k if chorded.is_json_value k => chorded.codegen_values k,
       k if chorded_aux.is_json_value k => chorded_aux.codegen_values k,
