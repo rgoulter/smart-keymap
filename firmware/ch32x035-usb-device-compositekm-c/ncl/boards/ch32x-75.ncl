@@ -40,5 +40,7 @@
       enabled = true,
       pin = gpio_pins.B9,
     },
+
+    debug.tx = 2,
   },
 }
