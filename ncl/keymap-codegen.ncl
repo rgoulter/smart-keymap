@@ -184,6 +184,8 @@ let validators = import "validators.ncl" in
           cv |> composite.base_key.keyboard
         else
           cv,
+
+      traverse = fun f acc cv => f acc cv,
     },
 
   caps_word
@@ -218,6 +220,8 @@ let validators = import "validators.ncl" in
           cv |> composite.base_key.caps_word
         else
           cv,
+
+      traverse = fun f acc cv => f acc cv,
     },
 
   checks.layer_modifier_is = {
@@ -282,6 +286,8 @@ let validators = import "validators.ncl" in
           cv |> composite.base_key.layer_modifier
         else
           cv,
+
+      traverse = fun f acc cv => f acc cv,
     },
 
   keymap_callback
@@ -334,6 +340,8 @@ let validators = import "validators.ncl" in
           cv |> composite.base_key.keymap_callback
         else
           cv,
+
+      traverse = fun f acc cv => f acc cv,
     },
 
   sticky
@@ -377,6 +385,8 @@ let validators = import "validators.ncl" in
           cv |> composite.base_key.sticky
         else
           cv,
+
+      traverse = fun f acc cv => f acc cv,
     },
 
   # Related to key::composite::TapHoldNestable trait.
@@ -449,6 +459,15 @@ let validators = import "validators.ncl" in
             definitions = std.array.map f cv.nested.definitions,
           },
         },
+
+      # Traverse by visiting the tap_dance key,
+      #  then traversing the definitions.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        std.array.fold_left
+          (fun acc nested_cv => key.traverse f acc nested_cv)
+          acc
+          cv.nested.definitions,
     },
 
   checks.check_tap_hold = {
@@ -533,6 +552,13 @@ let validators = import "validators.ncl" in
             hold = f cv.nested.hold,
           },
         },
+
+      # Traverse by visiting the tap_hold key,
+      #  then traversing the tap, hold keys.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        let acc = key.traverse f acc cv.nested.tap in
+        key.traverse f acc cv.nested.hold,
     },
 
   # Related to key::composite::LayeredNestable trait.
@@ -698,6 +724,19 @@ let validators = import "validators.ncl" in
             layered = std.array.map (fun cv => if cv != null then f cv else null) cv.nested.layered,
           },
         },
+
+      # Traverse by visiting the layered key itself,
+      #  then traversing the base, non-null nested layered keys.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        let acc = key.traverse f acc cv.nested.base in
+        let nn_layered_cvs =
+          std.array.filter ((!=) null) cv.nested.layered
+        in
+        std.array.fold_left
+          (fun acc nested_cv => key.traverse f acc nested_cv)
+          acc
+          nn_layered_cvs,
     },
 
   # Related to key::composite::ChordedNestable trait.
@@ -780,6 +819,13 @@ let validators = import "validators.ncl" in
       #  we want a lift_to fn
       lift_to = fun key_impl cv =>
         chorded.map_nested (fun cv_ => key.lift_to key_impl cv_) cv,
+
+      # Traverse by visiting the chorded key,
+      #  then traversing the chord, passthrough keys.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        let acc = key.traverse f acc cv.nested.chord in
+        key.traverse f acc cv.nested.passthrough,
     },
 
   chorded_aux
@@ -833,6 +879,12 @@ let validators = import "validators.ncl" in
       #  we want a lift_to fn
       lift_to = fun key_impl cv =>
         chorded_aux.map_nested (fun cv_ => key.lift_to key_impl cv_) cv,
+
+      # Traverse by visiting the chorded aux key,
+      #  then traversing the passthrough key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested.passthrough,
     },
 
   checks.check_composite = {
@@ -940,6 +992,12 @@ let validators = import "validators.ncl" in
 
       lift_to = fun key_impl cv =>
         cv,
+
+      # Traverse by visiting the wrapper key,
+      #  then by visiting the nested key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested,
     },
 
     tap_hold_key = {
@@ -1001,6 +1059,12 @@ let validators = import "validators.ncl" in
           "TapHold" => cv & { nested = tap_hold.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
           "Pass" => cv & { nested = key.lift_to key_impl nested_ },
         },
+
+      # Traverse by visiting the wrapper key,
+      #  then by visiting the nested key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested,
     },
 
     tap_hold_ = {
@@ -1027,6 +1091,12 @@ let validators = import "validators.ncl" in
           nested_ |> key.lift_to key_impl |> tap_hold_key.passthrough
         else
           cv & { nested = key.lift_to key_impl nested_ },
+
+      # Traverse by visiting the wrapper key,
+      #  then by visiting the nested key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested,
     },
 
     layered_key = {
@@ -1070,6 +1140,12 @@ let validators = import "validators.ncl" in
           "Layered" => cv & { nested = layered.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
           "Pass" => cv & { nested = key.lift_to key_impl nested_ },
         },
+
+      # Traverse by visiting the wrapper key,
+      #  then by visiting the nested key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested,
     },
 
     layered_ = {
@@ -1096,6 +1172,12 @@ let validators = import "validators.ncl" in
           nested_ |> key.lift_to key_impl |> layered_key.passthrough
         else
           cv & { nested = key.lift_to key_impl nested_ },
+
+      # Traverse by visiting the wrapper key,
+      #  then by visiting the nested key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested,
     },
 
     chorded_ = {
@@ -1120,6 +1202,12 @@ let validators = import "validators.ncl" in
           std.fail_with "not implemented"
         else
           cv & { nested = key.lift_to key_impl nested_ },
+
+      # Traverse by visiting the wrapper key,
+      #  then by visiting the nested key.
+      traverse = fun f acc cv =>
+        let acc = f acc cv in
+        key.traverse f acc cv.nested,
     },
 
     # Construct codegen values to used with keymap::Keymap.
@@ -1198,6 +1286,10 @@ let validators = import "validators.ncl" in
         }
       in
       impl.lift_to key_impl cv,
+
+    traverse = fun f acc cv =>
+      let codegen_module = codegen_module_for_codegen_value cv in
+      codegen_module.traverse f acc cv,
   },
 
   keymap_rs
