@@ -1,5 +1,6 @@
 CODEGEN_DEPS = \
   $(BOARD) \
+  ncl/codegen/debug.ncl \
   ncl/codegen/gpio.ncl \
   ncl/codegen/keyboard.ncl \
   ncl/codegen/keyboard_led.ncl \
