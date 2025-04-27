@@ -24,6 +24,7 @@ let C = import "contracts.ncl" in
     if board.disable_swd then
       m%"
         // Disable SWD
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
         GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
         "%
     else
@@ -54,6 +55,7 @@ let C = import "contracts.ncl" in
 
   #include "ch32x035_flash.h"
   #include "ch32x035_gpio.h"
+  #include "ch32x035_rcc.h"
 
   #include "smart_keymap.h"
 
