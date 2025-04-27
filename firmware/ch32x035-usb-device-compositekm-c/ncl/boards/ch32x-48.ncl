@@ -39,5 +39,7 @@ let C = import "codegen/contracts.ncl" in
       enabled = true,
       pin = gpio_pins.A5,
     },
+
+    debug.tx = 2,
   },
 }
