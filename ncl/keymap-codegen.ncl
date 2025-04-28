@@ -1403,6 +1403,31 @@ let validators = import "validators.ncl" in
           "crate::key::tap_hold::DEFAULT_CONFIG"
       in
       let keymap_len = std.array.length keys in
+      let max_tap_dance_definitions =
+        # For each of the keys,
+        #  compute max length of any tap dance definitions.
+        let max_td_defs =
+          std.array.map
+            (fun k =>
+              let cv = key.codegen_values k in
+              key.traverse
+                (fun acc cv =>
+                  cv
+                  |> match {
+                    { nested = { definitions }, .. } =>
+                      let len = std.array.length definitions in
+                      if len > acc then len else acc,
+                    _ => acc,
+                  }
+                )
+                0
+                cv
+            )
+            keys
+        in
+        # Compute the max over all
+        std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
+      in
       let num_layers =
         keys
         |> std.array.fold_left
@@ -1462,7 +1487,7 @@ pub mod init {
     pub const MAX_CHORDS: usize = %{chord_count |> std.to_string};
 
     /// The tap-dance definitions.
-    pub const MAX_TAP_DANCE_DEFINITIONS: usize = 0;
+    pub const MAX_TAP_DANCE_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
 
     pub use crate::key::composite::Context;
 

@@ -16,6 +16,7 @@ SCRIPTS_DIR="$(dirname "$0")"
 #  - can be compiled.
 ncl_tests=(
     "keymap-1key-simple"
+    "keymap-1key-tap_dance"
     "keymap-1key-tap_hold"
     "keymap-1key-2layer-th-lmod"
     "keymap-1key-callback-custom"
