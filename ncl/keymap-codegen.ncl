@@ -1266,6 +1266,27 @@ let validators = import "validators.ncl" in
       k => std.fail_with "bad json_value for key: %{k |> std.serialize 'Json}",
     },
 
+    codegen_module_for_codegen_value = fun cv @ { key_type = { key_type, .. }, .. } =>
+      key_type
+      |> match {
+        "crate::key::keyboard::Key" => keyboard,
+        "crate::key::caps_word::Key" => caps_word,
+        "crate::key::layered::ModifierKey" => layer_modifier,
+        "crate::key::callback::Key" => keymap_callback,
+        "crate::key::sticky::Key" => sticky,
+        "crate::key::tap_dance::Key" => tap_dance,
+        "crate::key::tap_hold::Key" => tap_hold,
+        "crate::key::layered::LayeredKey" => layered,
+        "crate::key::chorded::Key" => chorded,
+        "crate::key::chorded::AuxiliaryKey" => chorded_aux,
+        "crate::key::composite::BaseKey" => composite.base_key,
+        "crate::key::composite::TapHoldKey" => composite.tap_hold_key,
+        "crate::key::composite::TapHold" => composite.tap_hold_,
+        "crate::key::composite::LayeredKey" => composite.layered_key,
+        "crate::key::composite::Layered" => composite.layered_,
+        cv => std.fail_with "bad codegen_values for key.codegen_module_for_codegen_value: %{cv |> std.serialize 'Json}",
+      },
+
     lift_to = fun key_impl cv @ { key_type = { key_type, .. }, .. } =>
       let impl =
         key_type
