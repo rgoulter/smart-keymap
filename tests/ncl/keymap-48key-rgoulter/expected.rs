@@ -10,6 +10,7 @@ pub mod init {
             ..crate::key::chorded::DEFAULT_CONFIG
         },
         sticky: crate::key::sticky::DEFAULT_CONFIG,
+        tap_dance: crate::key::tap_dance::DEFAULT_CONFIG,
         tap_hold: crate::key::tap_hold::Config {
             interrupt_response: crate::key::tap_hold::InterruptResponse::HoldOnKeyTap,
 
