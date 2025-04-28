@@ -58,6 +58,41 @@ Some sample ncl keymaps can be found under [tests/ncl/](https://github.com/rgoul
 
 Published documentation for the Rust crate can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
 
+### Keyboards using Smart Keymap
+
+[Pico42](https://github.com/rgoulter/keyboard-labs#pico42-simple-hand-solderable-pcb-in-bm40jj40-form-factor),
+[rp2040-rtic-smart-keyboard firmware](https://github.com/rgoulter/smart-keymap/tree/master/rp2040-rtic-smart-keyboard).
+
+<img src="https://raw.githubusercontent.com/rgoulter/keyboard-labs/refs/heads/master/docs/images/keyboards/pico42/pico42-mx_lowprofile_case.JPG" width=600 />
+
+[CH32X-36](https://github.com/rgoulter/keyboard-labs#ch32x-36-low-budget-36-key-split-keyboard-with-smt-components),
+[ch32x035-usb-device-compositekm-c firmware](https://github.com/rgoulter/smart-keymap/tree/master/firmware/ch32x035-usb-device-compositekm-c)
+
+<img src="https://raw.githubusercontent.com/rgoulter/keyboard-labs/master/docs/images/keyboards/ch32x-36/ch32x-36.JPG" width=600 />
+
+[CH32X-48](https://github.com/rgoulter/keyboard-labs#ch32x-48-low-budget-pcba-in-bm40jj40-form-factor),
+[ch32x035-usb-device-compositekm-c firmware](https://github.com/rgoulter/smart-keymap/tree/master/firmware/ch32x035-usb-device-compositekm-c)
+
+<img src="https://raw.githubusercontent.com/rgoulter/keyboard-labs/master/docs/images/keyboards/ch32x-48/ch32x-48.JPG" width=600 />
+
+[CH32X-75-LPR](https://github.com/rgoulter/keyboard-labs#ch32x-75-lpr-low-budget-pcba-with-low-profile-redragon-switches),
+[ch32x035-usb-device-compositekm-c firmware](https://github.com/rgoulter/smart-keymap/tree/master/firmware/ch32x035-usb-device-compositekm-c)
+
+<img src="https://raw.githubusercontent.com/rgoulter/keyboard-labs/master/docs/images/keyboards/ch32x-75-lpr/ch32x-75.JPG" width=600 />
+
+[WABBLE-60](https://github.com/rgoulter/keyboard-labs#wabble-60-5x12-ortholinear-ble-risc-v-powered-adaptation-of-peejs-lumberjack-pcb),
+[ch58x-ble-hid-keyboard-c firmware](https://github.com/rgoulter/smart-keymap/tree/master/firmware/ch58x-ble-hid-keyboard-c)
+
+<img src="https://raw.githubusercontent.com/rgoulter/keyboard-labs/master/docs/images/keyboards/wabble-60/wabble-60.JPG" width=600 />
+
+[MiniF4-36](https://github.com/rgoulter/keyboard-labs#x-1-36-key-split-reversible-pcb-with-weact-studio-mini-f4-dev-board),
+[stm32f4-rtic-smart-keyboard firmware](https://github.com/rgoulter/smart-keymap/tree/master/stm32f4-rtic-smart-keyboard),
+[stm32-embassy-smart-keyboard firmware](https://github.com/rgoulter/smart-keymap/tree/master/stm32-embassy-smart-keyboard),
+
+<img src="https://raw.githubusercontent.com/rgoulter/keyboard-labs/master/docs/images/photo-keyboard-x-1-mx-tented.JPG" width=600 />
+
+See the [Keyboards wiki page](https://github.com/rgoulter/smart-keymap/wiki/Keyboards).
+
 ## Comparison to Other Keyboard Firmware
 
 Smart Keymap provides a library of functions. In this sense, it's most similar
