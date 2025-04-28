@@ -28,6 +28,10 @@ let validators = import "validators.ncl" in
       ]
     ),
 
+  TapDanceConfig = {
+    timeout | optional | Number,
+  },
+
   TapHoldConfig = {
     timeout | optional | Number,
     interrupt_response | optional | TapHoldInterruptResponse,
@@ -37,6 +41,7 @@ let validators = import "validators.ncl" in
   Config = {
     chorded | optional | ChordedConfig,
     sticky | optional | StickyConfig,
+    tap_dance | optional | TapDanceConfig,
     tap_hold | optional | TapHoldConfig,
   },
 
@@ -48,6 +53,7 @@ let validators = import "validators.ncl" in
       caps_word.Key,
       sticky.Key,
       layered.Key,
+      tap_dance.Key,
       tap_hold.Key,
       chorded.Key,
       chorded_aux.Key,
@@ -336,6 +342,34 @@ let validators = import "validators.ncl" in
         },
     },
 
+  tap_dance
+    | doc "for key::tap_dance::Key."
+    = {
+      Key = std.contract.from_validator key_validator,
+
+      key_validator = fun k =>
+        k
+        |> match {
+          { tap_dances, ..tap_key } =>
+            let valid_tap_key = key.key_validator tap_key in
+            let valid_tap_dances = validators.array.validator key.key_validator tap_dances in
+            [valid_tap_dances, valid_tap_key]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
+            },
+          _ => 'Error { message = "expected { tap_dances = [Key, ..], ..tap_key }" },
+        },
+
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_value = fun { tap_dances, ..tap_key } =>
+        {
+          definitions = [key.to_json_value tap_key] @ (std.array.map key.to_json_value tap_dances),
+        },
+    },
+
   checks.tap_hold =
     let K = import "keys.ncl" in
     {
@@ -454,6 +488,7 @@ let validators = import "validators.ncl" in
         caps_word.key_validator,
         sticky.key_validator,
         layered.key_validator,
+        tap_dance.key_validator,
         tap_hold.key_validator,
         chorded.key_validator,
         chorded_aux.key_validator,
@@ -466,9 +501,10 @@ let validators = import "validators.ncl" in
       k if chorded.is_key k => chorded.to_json_value k,
       # Make key::chorded::AuxiliaryKey
       k if chorded_aux.is_key k => chorded_aux.to_json_value k,
-      # Make key::tap_hold::Key from keys with a "hold" modifier.
       # Make key::layered::LayeredKey
       k if layered.is_key k => layered.to_json_value k,
+      # Make key::tap_dance::Key from keys with a "tap_dances" modifier.
+      k if tap_dance.is_key k => tap_dance.to_json_value k,
       # Make key::tap_hold::Key from keys with a "hold" modifier.
       k if tap_hold.is_key k => tap_hold.to_json_value k,
       # Make key::callback::Key
