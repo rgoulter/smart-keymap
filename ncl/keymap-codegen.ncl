@@ -20,6 +20,10 @@ let validators = import "validators.ncl" in
       | StickyActivationJson,
   },
 
+  TapDanceConfigJson = {
+    timeout | optional | Number,
+  },
+
   TapHoldInterruptResponseJson =
     std.contract.from_validator (
       validators.is_elem_of [
@@ -38,6 +42,7 @@ let validators = import "validators.ncl" in
   ConfigJson = {
     chorded | optional | ChordedConfigJson,
     sticky | optional | StickyConfigJson,
+    tap_dance | optional | TapDanceConfigJson,
     tap_hold | optional | TapHoldConfigJson,
   },
 
@@ -1371,6 +1376,23 @@ let validators = import "validators.ncl" in
         else
           "crate::key::sticky::DEFAULT_CONFIG"
       in
+      let tap_dance_config_expr =
+        if std.record.has_field "tap_dance" config then
+          let timeout_field_fragment =
+            if std.record.has_field "timeout" config.dance then
+              "timeout: %{std.to_string config.tap_dance.timeout},"
+            else
+              ""
+          in
+          m%"
+            crate::key::tap_dance::Config {
+                %{timeout_field_fragment}
+                ..crate::key::tap_dance::DEFAULT_CONFIG
+            }
+          "%
+        else
+          "crate::key::tap_dance::DEFAULT_CONFIG"
+      in
       let tap_hold_config_expr =
         if std.record.has_field "tap_hold" config then
           let timeout_field_fragment =
@@ -1476,6 +1498,7 @@ pub mod init {
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         chorded: %{chorded_config_expr},
         sticky: %{sticky_config_expr},
+        tap_dance: %{tap_dance_config_expr},
         tap_hold: %{tap_hold_config_expr},
         ..crate::key::composite::DEFAULT_CONFIG
     };
