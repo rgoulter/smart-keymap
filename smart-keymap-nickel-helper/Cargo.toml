@@ -1,6 +1,6 @@
 [package]
 name = "smart-keymap-nickel-helper"
-version = "0.8.0-dev"
+version = "0.8.0"
 license = "MIT OR Apache-2.0"
 edition = "2021"
 

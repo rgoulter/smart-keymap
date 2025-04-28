@@ -1,6 +1,6 @@
 [package]
 name = "smart_keymap"
-version = "0.8.0-dev"
+version = "0.8.0"
 edition = "2021"
 
 [lib]
