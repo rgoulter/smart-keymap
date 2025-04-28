@@ -58,6 +58,23 @@ Some sample ncl keymaps can be found under [tests/ncl/](https://github.com/rgoul
 
 Published documentation for the Rust crate can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
 
+## Comparison to Other Keyboard Firmware
+
+Smart Keymap provides a library of functions. In this sense, it's most similar
+ to [TeXitoi's keyberon](https://github.com/TeXitoi/keyberon), where the user
+ has to implement their own keyboard firmware. -- This is in contrast to popular
+ customisable keyboard firmwares such as [QMK](https://qmk.fm/) or
+ [ZMK](https://zmk.dev/), which are frameworks.
+
+Configuring keymaps is done using [Nickel](https://nickel-lang.org/).
+ Keyberon's keymaps are written directly in Rust,
+ QMK's keymaps are written either in C, or with its data-driven configuration using JSON.
+ ZMK's keymaps are written with [devicetree](https://www.devicetree.org/).
+
+Smart Keymap draws a lot of inspiration from [semickolon's fak](https://github.com/semickolon/fak)
+ and [kirei](https://github.com/semickolon/kirei) projects, which also use Nickel.
+ Similar to these projects, Smart Keymap supports low-cost MCUs from WCH (CH32X, CH58x).
+
 ## Keyboard Firmware
 
 Some keyboard firmware which uses `smart-keymap`:
