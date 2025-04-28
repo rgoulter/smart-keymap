@@ -20,6 +20,7 @@ keymap_key_features=(
     "tap_hold-config-required_idle_time"
     "layered"
     "caps_word"
+    "tap_dance"
     "sticky_modifiers"
 )
 
