@@ -394,6 +394,43 @@ let validators = import "validators.ncl" in
       traverse = fun f acc cv => f acc cv,
     },
 
+  custom
+    | doc "for key::custom::Key."
+    = {
+      JsonValue = std.contract.from_validator json_value_validator,
+
+      json_value_validator =
+        validators.record.validator {
+          fields_validator = validators.record.has_exact_fields ["custom"],
+          field_validators = {
+            custom = validators.is_number,
+          },
+        },
+
+      is_json_value = fun k => 'Ok == json_value_validator k,
+
+      codegen_values = fun k @ { custom } =>
+        {
+          key_type = {
+            key_type = "crate::key::custom::Key",
+            as_rust_type_path = key_type,
+          },
+          key_impl = {
+            base = key_type.key_type,
+          },
+          rust_expr = "crate::key::custom::Key::new(%{std.to_string custom})",
+          json_value = k,
+        },
+
+      lift_to = fun key_impl cv =>
+        if key_impl.base == "crate::key::composite::BaseKey" then
+          cv |> composite.base_key.custom
+        else
+          cv,
+
+      traverse = fun f acc cv => f acc cv,
+    },
+
   # Related to key::composite::TapHoldNestable trait.
   tap_hold_nestable = {
     # Wraps the codegen values for
@@ -402,6 +439,7 @@ let validators = import "validators.ncl" in
     #   - key::caps_word::Key
     #   - key::callback::Key
     #   - key::sticky::Key
+    #   - key::custom::Key
     #
     # In particular, the returned value is a codegen values record
     #  for an item which implements key::Key with associated
@@ -414,6 +452,7 @@ let validators = import "validators.ncl" in
         "crate::key::caps_word::Key" => cv,
         "crate::key::callback::Key" => cv,
         "crate::key::sticky::Key" => cv,
+        "crate::key::custom::Key" => cv,
         cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
       },
   },
@@ -995,6 +1034,20 @@ let validators = import "validators.ncl" in
           rust_expr = "crate::key::composite::BaseKey::Sticky(%{cv.rust_expr})",
         },
 
+      custom = fun cv =>
+        {
+          nested = cv,
+          key_type = {
+            key_type = "crate::key::composite::BaseKey",
+            as_rust_type_path = key_type,
+            variant = "Custom",
+          },
+          key_impl = {
+            base = key_type.key_type,
+          },
+          rust_expr = "crate::key::composite::BaseKey::Custom(%{nested.rust_expr})",
+        },
+
       lift_to = fun key_impl cv =>
         cv,
 
@@ -1248,6 +1301,7 @@ let validators = import "validators.ncl" in
         layer_modifier.json_value_validator,
         keymap_callback.json_value_validator,
         sticky.json_value_validator,
+        custom.json_value_validator,
         layered.json_value_validator,
         tap_dance.json_value_validator,
         tap_hold.json_value_validator,
@@ -1263,6 +1317,7 @@ let validators = import "validators.ncl" in
       k if layer_modifier.is_json_value k => layer_modifier.codegen_values k,
       k if keymap_callback.is_json_value k => keymap_callback.codegen_values k,
       k if sticky.is_json_value k => sticky.codegen_values k,
+      k if custom.is_json_value k => custom.codegen_values k,
       k if layered.is_json_value k => layered.codegen_values k,
       k if tap_dance.is_json_value k => tap_dance.codegen_values k,
       k if tap_hold.is_json_value k => tap_hold.codegen_values k,
@@ -1279,6 +1334,7 @@ let validators = import "validators.ncl" in
         "crate::key::layered::ModifierKey" => layer_modifier,
         "crate::key::callback::Key" => keymap_callback,
         "crate::key::sticky::Key" => sticky,
+        "crate::key::custom::Key" => custom,
         "crate::key::tap_dance::Key" => tap_dance,
         "crate::key::tap_hold::Key" => tap_hold,
         "crate::key::layered::LayeredKey" => layered,
@@ -1301,6 +1357,7 @@ let validators = import "validators.ncl" in
           "crate::key::layered::ModifierKey" => layer_modifier,
           "crate::key::callback::Key" => keymap_callback,
           "crate::key::sticky::Key" => sticky,
+          "crate::key::custom::Key" => custom,
           "crate::key::chorded::Key" => chorded,
           "crate::key::chorded::AuxiliaryKey" => chorded_aux,
           "crate::key::composite::BaseKey" => composite.base_key,
