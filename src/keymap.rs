@@ -102,6 +102,17 @@ impl KeymapOutput {
 
         report
     }
+
+    /// Returns the pressed custom codes.
+    pub fn pressed_custom_codes(&self) -> heapless::Vec<u8, 24> {
+        self.pressed_key_codes
+            .iter()
+            .flat_map(|ko| match ko.key_code() {
+                key::KeyUsage::Custom(kc) => Some(kc),
+                _ => None,
+            })
+            .collect()
+    }
 }
 
 #[derive(Debug)]
