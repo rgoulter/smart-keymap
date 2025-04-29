@@ -1,0 +1,12 @@
+{
+  "config": {
+    "chorded": {
+      "chords": []
+    }
+  },
+  "keys": [
+    {
+      "custom": 255
+    }
+  ]
+}
