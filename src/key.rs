@@ -392,6 +392,8 @@ impl KeyboardModifiers {
 pub enum KeyUsage {
     /// Key usage code.
     Keyboard(u8),
+    /// Custom code. (Behaviour defined by firmware implementation).
+    Custom(u8),
 }
 
 /// Struct for the output from [KeyState].
