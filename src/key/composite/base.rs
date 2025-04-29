@@ -7,6 +7,7 @@ use crate::key;
 
 use key::callback;
 use key::caps_word;
+use key::custom;
 use key::keyboard;
 use key::layered;
 use key::sticky;
@@ -28,6 +29,8 @@ pub enum BaseKey {
     Sticky(sticky::Key),
     /// A keyboard key.
     Keyboard(keyboard::Key),
+    /// A custom key.
+    Custom(custom::Key),
 }
 
 impl key::Key for BaseKey {
@@ -46,6 +49,7 @@ impl key::Key for BaseKey {
             BaseKey::LayerModifier(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::Callback(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::CapsWord(key) => key::Key::new_pressed_key(key, context, key_path),
+            BaseKey::Custom(key) => key::Key::new_pressed_key(key, context, key_path),
             BaseKey::Sticky(key) => key::Key::new_pressed_key(key, context, key_path),
         }
     }
@@ -97,6 +101,12 @@ impl From<callback::Key> for BaseKey {
 impl From<caps_word::Key> for BaseKey {
     fn from(key: caps_word::Key) -> Self {
         BaseKey::CapsWord(key)
+    }
+}
+
+impl From<custom::Key> for BaseKey {
+    fn from(key: custom::Key) -> Self {
+        BaseKey::Custom(key)
     }
 }
 
