@@ -439,6 +439,14 @@ impl KeyOutput {
         }
     }
 
+    /// Constructs a [KeyOutput] from a custom code.
+    pub fn from_custom_code(custom_code: u8) -> Self {
+        KeyOutput {
+            key_code: KeyUsage::Custom(custom_code),
+            key_modifiers: KeyboardModifiers::new(),
+        }
+    }
+
     /// Returns the key code value.
     pub fn key_code(&self) -> KeyUsage {
         self.key_code
