@@ -376,6 +376,8 @@ pub enum KeyState {
     LayerModifier(key::layered::ModifierKeyState),
     /// Key state for [key::sticky::KeyState].
     Sticky(key::sticky::KeyState),
+    /// Key state for [key::custom::KeyState].
+    Custom(key::custom::KeyState),
 }
 
 impl From<key::NoOpKeyState<Context, Event>> for KeyState {
@@ -399,6 +401,12 @@ impl From<key::layered::ModifierKeyState> for KeyState {
 impl From<key::sticky::KeyState> for KeyState {
     fn from(ks: key::sticky::KeyState) -> Self {
         KeyState::Sticky(ks)
+    }
+}
+
+impl From<key::custom::KeyState> for KeyState {
+    fn from(ks: key::custom::KeyState) -> Self {
+        KeyState::Custom(ks)
     }
 }
 
@@ -437,6 +445,7 @@ impl key::KeyState for KeyState {
                 }
             }
             KeyState::NoOp => key::KeyEvents::no_events(),
+            KeyState::Custom(_) => key::KeyEvents::no_events(),
         }
     }
 
@@ -446,6 +455,7 @@ impl key::KeyState for KeyState {
             KeyState::LayerModifier(_) => None,
             KeyState::Sticky(ks) => ks.key_output(),
             KeyState::NoOp => None,
+            KeyState::Custom(ks) => Some(ks.key_output()),
         }
     }
 }
