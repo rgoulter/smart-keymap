@@ -52,6 +52,7 @@ let validators = import "validators.ncl" in
       keymap_callback.Key,
       caps_word.Key,
       sticky.Key,
+      custom.Key,
       layered.Key,
       tap_dance.Key,
       tap_hold.Key,
@@ -268,6 +269,23 @@ let validators = import "validators.ncl" in
       is_key = fun k => 'Ok == key_validator k,
 
       to_json_value = fun { sticky_modifiers = sm } => { sticky_modifiers = keyboard_modifiers.to_json_value sm },
+    },
+
+  custom
+    | doc "for key::custom::Key."
+    = {
+      Key = std.contract.from_validator key_validator,
+
+      key_validator = fun k =>
+        k
+        |> match {
+          { custom } => validators.is_number custom,
+          _ => 'Error { message = "Expected { custom }" },
+        },
+
+      is_key = fun k => 'Ok == key_validator k,
+
+      to_json_value = fun key => key,
     },
 
   checks.layered =
@@ -487,6 +505,7 @@ let validators = import "validators.ncl" in
         keymap_callback.key_validator,
         caps_word.key_validator,
         sticky.key_validator,
+        custom.key_validator,
         layered.key_validator,
         tap_dance.key_validator,
         tap_hold.key_validator,
@@ -513,6 +532,8 @@ let validators = import "validators.ncl" in
       k if caps_word.is_key k => caps_word.to_json_value k,
       # Make key::sticky::Key
       k if sticky.is_key k => sticky.to_json_value k,
+      # Make key::custom::Key
+      k if custom.is_key k => custom.to_json_value k,
       # Otherwise, keys with just a base key_code are key::keyboard keys.
       k if keyboard.is_key k => keyboard.to_json_value k,
       # Make key::layered::ModifierKey
