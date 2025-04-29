@@ -11,6 +11,8 @@ pub mod callback;
 pub mod caps_word;
 /// Chorded keys. (Chording functionality).
 pub mod chorded;
+/// Custom keys.
+pub mod custom;
 /// HID Keyboard keys.
 pub mod keyboard;
 /// Layered keys. (Layering functionality).
