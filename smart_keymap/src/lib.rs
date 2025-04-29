@@ -118,6 +118,8 @@ impl From<input::Event> for KeymapInputEvent {
 pub struct KeymapHidReport {
     /// HID Boot keyboard report.
     pub keyboard: [u8; 8],
+    /// Reported `Custom` codes. (Implementation defined).
+    pub custom: [u8; 6],
 }
 
 static mut KEYMAP: init::Keymap = init::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
@@ -186,11 +188,22 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
     unsafe {
         KEYMAP.tick();
 
-        let keyboard_report = KEYMAP.report_output().as_hid_boot_keyboard_report();
+        let keymap_output = KEYMAP.report_output();
+
+        let keyboard_report = keymap_output.as_hid_boot_keyboard_report();
         core::ptr::copy_nonoverlapping(
             keyboard_report.as_ptr(),
             report.keyboard.as_mut_ptr(),
             keyboard_report.len(),
+        );
+
+        let zeros = [0; 6];
+        core::ptr::copy_nonoverlapping(zeros.as_ptr(), report.custom.as_mut_ptr(), zeros.len());
+        let custom_codes = &keymap_output.pressed_custom_codes();
+        core::ptr::copy_nonoverlapping(
+            custom_codes.as_ptr(),
+            report.custom.as_mut_ptr(),
+            6.min(custom_codes.len()),
         );
     }
 }
