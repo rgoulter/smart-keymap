@@ -77,6 +77,11 @@
         },
     },
 
+  custom = fun K =>
+    {
+      custom = fun c => { custom = c },
+    },
+
   shifted = fun K =>
     {
       Exclaim = K.N1,
