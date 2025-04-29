@@ -67,6 +67,7 @@ impl KeymapOutput {
                 .iter()
                 .flat_map(|ko| match ko.key_code() {
                     key::KeyUsage::Keyboard(kc) => Some(kc),
+                    _ => None,
                 }),
         );
 
@@ -91,6 +92,7 @@ impl KeymapOutput {
             .iter()
             .flat_map(|ko| match ko.key_code() {
                 key::KeyUsage::Keyboard(kc) => Some(kc),
+                _ => None,
             })
             .filter(|&kc| kc != 0);
 
