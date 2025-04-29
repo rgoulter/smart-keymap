@@ -19,7 +19,7 @@ void test_taphold_dth_uth_is_tap(void) {
   // (Check the tap key gets pressed).
 
   uint8_t expected_report[8] = {0, 0, KC_C, 0, 0, 0, 0, 0};
-  KeymapHidReport report;
+  KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
   keymap_init();
@@ -40,7 +40,7 @@ void test_taphold_dth_uth_eventually_clears(void) {
   // (Check the tap key releases).
 
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-  KeymapHidReport report;
+  KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
   keymap_init();
@@ -67,7 +67,7 @@ void test_taphold_dth_eventually_holds(void) {
   // Pressing T.H., is eventually the same as holding the hold key.
 
   uint8_t expected_report[8] = {MOD_LCTL, 0, 0, 0, 0, 0, 0, 0};
-  KeymapHidReport report;
+  KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
   keymap_init();
