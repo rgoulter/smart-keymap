@@ -18,17 +18,30 @@ pub enum StickyKeyActivation {
     // OnNextKeyPress,
 }
 
+/// When the sticky modifiers release.
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "std", derive(Deserialize))]
+pub enum StickyKeyRelease {
+    /// Sticky modifiers release when the modified key is released.
+    OnModifiedKeyRelease,
+    /// Sticky modifiers release when a key is pressed after the modified key.
+    OnNextKeyPress,
+}
+
 /// Sticky Key configuration.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 pub struct Config {
     /// The sticky key activation mode.
     pub activation: StickyKeyActivation,
+    /// When the sticky modifiers release.
+    pub release: StickyKeyRelease,
 }
 
 /// The default [Config].
 pub const DEFAULT_CONFIG: Config = Config {
     activation: StickyKeyActivation::OnStickyKeyRelease,
+    release: StickyKeyRelease::OnModifiedKeyRelease,
 };
 
 impl Default for Config {
