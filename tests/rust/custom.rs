@@ -3,7 +3,6 @@ use smart_keymap::key;
 use smart_keymap::keymap;
 use smart_keymap::tuples;
 
-use keymap::DistinctReports;
 use keymap::Keymap;
 
 use key::composite::{Context, Event, KeyState, PendingKeyState};
