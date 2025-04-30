@@ -33,9 +33,19 @@ pub enum StickyKeyRelease {
 #[cfg_attr(feature = "std", derive(Deserialize))]
 pub struct Config {
     /// The sticky key activation mode.
+    #[cfg_attr(feature = "std", serde(default = "default_activation"))]
     pub activation: StickyKeyActivation,
     /// When the sticky modifiers release.
+    #[cfg_attr(feature = "std", serde(default = "default_release"))]
     pub release: StickyKeyRelease,
+}
+
+fn default_activation() -> StickyKeyActivation {
+    DEFAULT_CONFIG.activation
+}
+
+fn default_release() -> StickyKeyRelease {
+    DEFAULT_CONFIG.release
 }
 
 /// The default [Config].
