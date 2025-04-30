@@ -22,6 +22,7 @@ keymap_key_features=(
     "caps_word"
     "tap_dance"
     "sticky_modifiers"
+    "sticky_modifiers-config-release_on_next_press"
 )
 
 keymap_ncl_features=(
