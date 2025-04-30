@@ -22,6 +22,7 @@ let ch32 = inputs.rgoulter-ch32.packages.${pkgs.stdenv.system}; in
     pkgs.nls
 
     ch32.wchisp
-    ch32.xpack-riscv-none-elf-gcc
+    # ch32.xpack-riscv-none-elf-gcc
+    ch32.mrs-riscv-embedded-gcc12
   ];
 }
