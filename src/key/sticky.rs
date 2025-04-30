@@ -189,7 +189,33 @@ impl Context {
 
                 pke
             }
-            // TODO: support releasing the VK modifiers if *another* key is resolved when have some pressed_keymap_index.
+            // Case: after the sticky key modifiers are modifying a key,
+            //        another key is pressed,
+            //        & the config.release is OnNextKeyPress.
+            //  - Modified key is released.
+            (active_modifier_count, key::Event::Input(input::Event::Press { .. }))
+                if self.pressed_keymap_index.is_some()
+                    && self.config.release == StickyKeyRelease::OnNextKeyPress =>
+            {
+                // Another key has been pressed (& config is to release sticky modifiers);
+                //  release the VK.
+                let mut pke = key::KeyEvents::no_events();
+
+                self.active_modifiers[..active_modifier_count as usize]
+                    .iter()
+                    .for_each(|&m| {
+                        let sticky_key_output = key::KeyOutput::from_key_modifiers(m);
+                        let vk_ev = key::Event::Input(input::Event::VirtualKeyRelease {
+                            key_output: sticky_key_output,
+                        });
+                        pke.add_event(key::ScheduledEvent::immediate(vk_ev));
+                    });
+
+                self.active_modifier_count = 0;
+                self.pressed_keymap_index = None;
+
+                pke
+            }
             _ => key::KeyEvents::no_events(),
         }
     }
