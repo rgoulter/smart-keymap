@@ -1,5 +1,3 @@
-mod release_on_next_press;
-
 use smart_keymap::input;
 use smart_keymap::key;
 use smart_keymap::keymap;
@@ -33,7 +31,13 @@ const KEYS: Keys4<SK, K, K, SK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
     )))),
 ));
 
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
+const CONTEXT: Ctx = composite::Context::from_config(composite::Config {
+    sticky: sticky::Config {
+        release: sticky::StickyKeyRelease::OnNextKeyPress,
+        ..sticky::DEFAULT_CONFIG
+    },
+    ..composite::DEFAULT_CONFIG
+});
 
 #[test]
 fn tap_sticky_mod_modifies_next_keyboard_key() {
@@ -62,37 +66,6 @@ fn tap_sticky_mod_modifies_next_keyboard_key() {
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0x02, 0, 0, 0, 0, 0, 0, 0],
         [0x02, 0, 0x04, 0, 0, 0, 0, 0],
-    ];
-    assert_eq!(expected_reports, actual_reports.reports());
-}
-
-#[test]
-fn tap_sticky_mod_acts_as_regular_mod_when_interrupted_by_key_slash() {
-    // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
-    let mut actual_reports = DistinctReports::new();
-
-    // Act
-    // Tap Sticky Modifier
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
-    // Press "/"
-    keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
-
-    // Assert
-    let expected_reports: &[[u8; 8]] = &[
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x38, 0, 0, 0, 0, 0],
     ];
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -214,7 +187,7 @@ fn tap_multiple_sticky_mod_modifies_next_keyboard_key() {
 }
 
 #[test]
-fn tap_sticky_mod_modifies_next_keyboard_key_until_released() {
+fn tap_sticky_mod_releases_on_next_key_press() {
     // Assemble
     let mut keymap = Keymap::new(KEYS, CONTEXT);
     let mut actual_reports = DistinctReports::new();
@@ -230,14 +203,8 @@ fn tap_sticky_mod_modifies_next_keyboard_key_until_released() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    // Tap "/"
+    // Press "/"
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    keymap.handle_input(input::Event::Release { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
-    // Release "A"
-    keymap.handle_input(input::Event::Release { keymap_index: 1 });
     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
     while keymap.has_scheduled_events() {
@@ -250,9 +217,7 @@ fn tap_sticky_mod_modifies_next_keyboard_key_until_released() {
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0x02, 0, 0, 0, 0, 0, 0, 0],
         [0x02, 0, 0x04, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0x38, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x38, 0, 0, 0, 0],
     ];
     assert_eq!(expected_reports, actual_reports.reports());
 }
