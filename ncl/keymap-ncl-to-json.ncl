@@ -13,10 +13,21 @@ let validators = import "validators.ncl" in
       ]
     ),
 
+  StickyReleaseJson =
+    std.contract.from_validator (
+      validators.is_elem_of [
+        "OnModifiedKeyRelease",
+        "OnNextKeyPress",
+      ]
+    ),
+
   StickyConfig = {
     activation
       | optional
       | StickyActivation,
+    release
+      | optional
+      | StickyReleaseJson,
   },
 
   TapHoldInterruptResponse =
