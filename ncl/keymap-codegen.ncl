@@ -14,10 +14,21 @@ let validators = import "validators.ncl" in
       ]
     ),
 
+  StickyReleaseJson =
+    std.contract.from_validator (
+      validators.is_elem_of [
+        "OnModifiedKeyRelease",
+        "OnNextKeyPress",
+      ]
+    ),
+
   StickyConfigJson = {
     activation
       | optional
       | StickyActivationJson,
+    release
+      | optional
+      | StickyReleaseJson,
   },
 
   TapDanceConfigJson = {
@@ -1424,10 +1435,24 @@ let validators = import "validators.ncl" in
             else
               ""
           in
+          let release_field_fragment =
+            if std.record.has_field "release" config.sticky then
+              "release: crate::key::sticky::StickyKeyRelease::%{config.sticky.release},"
+            else
+              ""
+          in
+          let config_fragment =
+            [
+              activation_field_fragment,
+              release_field_fragment,
+              "..crate::key::sticky::DEFAULT_CONFIG"
+            ]
+            |> std.array.filter ((!=) "")
+            |> std.string.join "\n"
+          in
           m%"
             crate::key::sticky::Config {
-                %{activation_field_fragment}
-                ..crate::key::sticky::DEFAULT_CONFIG
+                %{config_fragment}
             }
           "%
         else
