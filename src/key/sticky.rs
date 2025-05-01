@@ -40,10 +40,12 @@ pub struct Config {
     pub release: StickyKeyRelease,
 }
 
+#[cfg(feature = "std")]
 fn default_activation() -> StickyKeyActivation {
     DEFAULT_CONFIG.activation
 }
 
+#[cfg(feature = "std")]
 fn default_release() -> StickyKeyRelease {
     DEFAULT_CONFIG.release
 }
