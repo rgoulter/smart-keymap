@@ -28,7 +28,7 @@ static uint32_t transmit_dma_buffer[MESSAGE_BUFFER_LEN / 4];
 static volatile bool uart_tx_busy = false;
 
 void KEYBOARD_SPLIT_TX_DMA_IRQ_HANDLER(void)
-    __attribute__((interrupt("WCH-Interrupt-fast")));
+    __attribute__((interrupt()));
 void KEYBOARD_SPLIT_TX_DMA_IRQ_HANDLER(void) {
   if (DMA_GetITStatus(KEYBOARD_SPLIT_TX_TC_FLAG)) {
     DMA_ClearITPendingBit(KEYBOARD_SPLIT_TX_TC_FLAG);
