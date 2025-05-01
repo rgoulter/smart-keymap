@@ -53,7 +53,7 @@ volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
 /*******************************************************************************/
 /* Interrupt Function Declaration */
-void TIM3_IRQHandler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
+void TIM3_IRQHandler(void) __attribute__((interrupt()));
 
 /*********************************************************************
  * @fn      TIM3_Init
