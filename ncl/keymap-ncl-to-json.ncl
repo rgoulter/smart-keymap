@@ -72,7 +72,25 @@ let validators = import "validators.ncl" in
       std.contract.from_validator validators.is_null,
     ],
 
-  KeymapLayer = std.contract.any_of [ Array KeymapKey, String ],
+  keymap_layer_string = fun v =>
+    v
+    |> validators.is_string
+    |> match {
+      'Ok =>
+        v
+        |> words_from_whitespace_delimited_string
+        |> std.array.filter (fun w => !(std.record.has_field w extended_keys))
+        |> match {
+          [] => 'Ok,
+          words =>
+            'Error { message = "Invalid keymap layer string: keys not defined: %{words |> std.string.join ", "}" },
+        },
+      e => e,
+    },
+
+  KeymapLayerString = std.contract.from_validator keymap_layer_string,
+
+  KeymapLayer = std.contract.any_of [ Array KeymapKey, KeymapLayerString],
 
   config | Config = {},
 
@@ -594,6 +612,10 @@ let validators = import "validators.ncl" in
     },
   },
 
+  extended_keys =
+    let { extend_keys, .. } = import "key-extensions.ncl" in
+    extend_keys (import "keys.ncl") custom_keys,
+
   # Return array-of-keys representation of layer.
   #
   # A KeymapLayer may be either:
@@ -601,11 +623,9 @@ let validators = import "validators.ncl" in
   #   - String
   layer_as_array_of_keys = fun l =>
     if std.is_string l then
-      let { extend_keys, .. } = import "key-extensions.ncl" in
-      let K = extend_keys (import "keys.ncl") custom_keys in
       l
       |> words_from_whitespace_delimited_string
-      |> map_fields_with_record K
+      |> map_fields_with_record extended_keys
     else
       l,
 
