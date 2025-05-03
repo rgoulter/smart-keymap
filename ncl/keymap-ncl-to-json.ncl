@@ -596,6 +596,10 @@ let validators = import "validators.ncl" in
     },
   },
 
+  extended_keys =
+    let { extend_keys, .. } = import "key-extensions.ncl" in
+    extend_keys (import "keys.ncl") custom_keys,
+
   # Return array-of-keys representation of layer.
   #
   # A KeymapLayer may be either:
@@ -603,11 +607,9 @@ let validators = import "validators.ncl" in
   #   - String
   layer_as_array_of_keys = fun l =>
     if std.is_string l then
-      let { extend_keys, .. } = import "key-extensions.ncl" in
-      let K = extend_keys (import "keys.ncl") custom_keys in
       l
       |> words_from_whitespace_delimited_string
-      |> map_fields_with_record K
+      |> map_fields_with_record extended_keys
     else
       l,
 
