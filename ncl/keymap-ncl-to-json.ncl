@@ -72,7 +72,9 @@ let validators = import "validators.ncl" in
       std.contract.from_validator validators.is_null,
     ],
 
-  KeymapLayer = std.contract.any_of [ Array KeymapKey, String ],
+  KeymapLayerString = String,
+
+  KeymapLayer = std.contract.any_of [ Array KeymapKey, KeymapLayerString],
 
   config | Config = {},
 
