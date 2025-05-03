@@ -3,7 +3,7 @@
 {
   devcontainer = {
     enable = true;
-    settings.updateContentCommand = "";
+    settings.updateContentCommand = "sudo setfacl -k /tmp";
   };
 
   pre-commit.hooks = {
