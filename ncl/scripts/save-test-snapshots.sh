@@ -22,6 +22,7 @@ ncl_tests=(
     "keymap-48key-rgoulter"
     "keymap-60key-dvorak-simple"
     "keymap-60key-dvorak-simple-with-tap_hold"
+    "keymap-34key-seniply"
 )
 for ncl_test in "${ncl_tests[@]}"
 do
