@@ -40,10 +40,15 @@ This project provides a library which handles the keymap behaviour part of this.
   
 ## Usage
 
-The main idea is write a keymap in Nickel (`keymap.ncl`),
- and build keyboard firmware which uses `smart-keymap` with this custom keymap.
+The main idea is write a keymap in Nickel (`keymap.ncl`), and build keyboard
+ firmware which uses `smart-keymap` with this custom keymap, either using
+ smart-keymap as a Rust crate, or using `libsmart_keymap` as a native library.
 
-See [the RP2040 firmware example below](#building-with-custom-keymap-and-board)
+See the [keyboard firmware](#keyboard-firmware) section below for keyboard
+ firmware which uses smart-keymap.
+
+To make use of smart-keymap in a "user config" repository, see
+[rgoulter/smart-keyboard-config](https://github.com/rgoulter/smart-keyboard-config).
 
 ## Documentation and Examples
 
