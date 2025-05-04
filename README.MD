@@ -57,11 +57,13 @@ Documentation for features which have been implemented can be found at:
 
 Some sample ncl keymaps can be found under [tests/ncl/](https://github.com/rgoulter/smart-keymap/tree/master/tests/ncl). In particular:
 
-- [48-key basic keymap](tests/ncl/keymap-48key-basic/keymap.ncl),
-- [36-key rgoulter keymap](tests/ncl/keymap-36key-rgoulter/keymap.ncl).
-  - used as a [48-key keymap](tests/ncl/keymap-48key-rgoulter/keymap.ncl).
+- [48-key basic keymap](tests/ncl/keymap-48key-basic/keymap.ncl)
+- [36-key rgoulter keymap](tests/ncl/keymap-36key-rgoulter/keymap.ncl)
+  - used as a [48-key keymap](tests/ncl/keymap-48key-rgoulter/keymap.ncl)
+- [34-key seniply keymap](tests/ncl/keymap-34key-seniply/keymap.ncl)
+- [36-key miryoku keymap](tests/ncl/keymap-36key-miryoku/keymap.ncl)
 
-Published documentation for the Rust crate can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
+Published documentation for the Rust crates can be found at <https://rgoulter.com/smart-keymap/doc/smart_keymap/index.html>.
 
 ### Keyboards using Smart Keymap
 
@@ -257,6 +259,29 @@ env \
       --release \
       --target=thumbv6m-none-eabi \
       --package=rp2040-rtic-smart-keyboard
+```
+
+### STM32F4 RTIC & Embassy Keyboard firmware
+
+Firmware for [MiniF4-36 rev2021.4](https://github.com/rgoulter/keyboard-labs#x-1-36-key-split-reversible-pcb-with-weact-studio-mini-f4-dev-board)
+split halves are implemented under [stm32f4-rtic-smart-keyboard/examples](stm32f4-rtic-smart-keyboard/examples).
+
+Firmware for [MiniF4-36 rev2021.5](https://github.com/rgoulter/keyboard-labs#x-1-36-key-split-reversible-pcb-with-weact-studio-mini-f4-dev-board)
+split halves are implemented under [stm32-embassy-smart-keyboard/examples](stm32-embassy-smart-keyboard/examples).
+
+The `memory.x` used to link the firmware assumes [tinyuf2](https://github.com/adafruit/tinyuf2) is used as the bootloader.
+
+The STM32F4-RTIC examples can be built by running:
+
+```
+make minif4_36-rev2021_4-lhs.uf2
+make minif4_36-rev2021_4-rhs.uf2
+```
+
+The keymap file used can be changed by setting `SMART_KEYMAP_CUSTOM_KEYMAP` in the `make` invocation:
+
+```
+make minif4_36-rev2021_4-lhs.uf2 SMART_KEYMAP_CUSTOM_KEYMAP=path/to/keymap.ncl
 ```
 
 ### CH32X035 USB HID Keyboard
