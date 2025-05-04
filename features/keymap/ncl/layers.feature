@@ -36,7 +36,7 @@ Feature: Layers
       }
       """
 
-  Example: acts as the base key when no layer is active
+  Example: layers acts as the base when no layer is active
 
     If no layers are active, the key will be the key
      on the base layer.
@@ -52,7 +52,7 @@ Feature: Layers
       { key_codes = [K.A] }
       """
 
-  Example: acts as the key on that layer when its layer modifier held
+  Example: layers acts as active layer when its layer modifier is held
 
     When the keymap registers the following input
       """

@@ -1,4 +1,4 @@
-Feature: Sticky Modifiers Key (config release: OnNextKeyPress)
+Feature: Sticky Modifiers Key (configure release: OnNextKeyPress)
 
   The `config.sticky.release` can be set to `"OnNextKeyPress"`
    so that the sticky key releases when the next key is pressed

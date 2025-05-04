@@ -1,6 +1,6 @@
 Feature: HID Keyboard Key
 
-  Example: Keymap with a keyboard Key
+  Example: keyboard key
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
@@ -17,7 +17,7 @@ Feature: HID Keyboard Key
       { key_codes = [K.A] }
       """
 
-  Example: Keymap with a modified keyboard Key
+  Example: modified keyboard key
 
     In keymap.ncl, modifiers can be merged with keys
      to form a modified key.

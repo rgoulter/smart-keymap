@@ -67,7 +67,7 @@ Feature: Sticky Modifiers Key
       ]
       """
 
-  Example: sticky modifier key releases when modified key releases
+  Example: sticky modifier releases when modified key releases
     When the keymap registers the following input
       """
       [

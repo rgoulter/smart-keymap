@@ -2,7 +2,7 @@ Feature: Layer String
 
   Layers in `keymap.ncl` can be defined using strings.
 
-  Example: keymap.ncl with layer string.
+  Example: keymap.ncl with layer string
 
     `keymap.ncl` supports defining each layer in the keymap
      with a string.
@@ -26,7 +26,7 @@ Feature: Layer String
       }
       """
 
-  Example: keymap.ncl with layer string, with custom keys.
+  Example: keymap.ncl with layer string, with custom key definitions
 
     Often you'll want to be able to use custom keys, even
      in layer strings.

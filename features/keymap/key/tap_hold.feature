@@ -33,7 +33,7 @@ Feature: TapHold Key
       }
       """
 
-  Example: acts as 'tap' when tapped
+  Example: tap hold key acts as 'tap' when tapped
     When the keymap registers the following input
       """
       [
@@ -46,7 +46,7 @@ Feature: TapHold Key
       { key_codes = [K.A] }
       """
 
-  Example: acts as 'hold' when held
+  Example: tap hold key acts as 'hold' when held
 
     When the keymap registers the following input
       """

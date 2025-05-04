@@ -23,7 +23,7 @@ Feature: TapDance Key
       }
       """
 
-  Example: tap dance acts as its first definition when tapped once
+  Example: tap dance key acts as its first definition when tapped once
     When the keymap registers the following input
       """
       [
@@ -40,7 +40,7 @@ Feature: TapDance Key
       ]
       """
 
-  Example: tap dance acts as its first definition when pressed once and held
+  Example: tap dance key acts as its first definition when pressed once and held
 
     When the keymap registers the following input
       """
@@ -56,7 +56,7 @@ Feature: TapDance Key
       ]
       """
 
-  Example: tap dance acts as its third definition when tapped three times
+  Example: tap dance key acts as its third definition when tapped three times
     When the keymap registers the following input
       """
       [

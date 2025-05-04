@@ -30,7 +30,7 @@ Feature: TapHold Key (configure required_idle_time)
       }
       """
 
-  Example: tap hold resolves as tap when pressed before required idle time
+  Example: tap hold key resolves as tap when pressed before required idle time
 
     Pressing a tap-hold key immediately resolves it as 'tap' when
      it's pressed after another key, within the required idle time.
@@ -58,7 +58,7 @@ Feature: TapHold Key (configure required_idle_time)
       ]
       """
 
-  Example: tap hold resolves as tap when tapped after required idle time
+  Example: tap hold key resolves as tap when tapped after required idle time
 
     Whereas, the tap-hold key behaves as usual if the keymap is
      idle for the required time.
@@ -89,7 +89,7 @@ Feature: TapHold Key (configure required_idle_time)
       """
 
 
-  Example: tap hold resolves as tap when tapped after required idle time
+  Example: tap hold key resolves as tap when tapped after required idle time
 
     When the keymap registers the following input
       """

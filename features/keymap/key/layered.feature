@@ -1,4 +1,4 @@
-Feature: Layered Keys
+Feature: Layered Key
 
   "Layered Keys" are a lower-level key which implements
    layering functionality.
@@ -19,7 +19,7 @@ Feature: Layered Keys
       }
       """
 
-  Example: acts as the base key when no layer is active
+  Example: layered key acts as the base key when no layer is active
 
     If no layers are active, the key will be the key
      on the base layer.
@@ -35,7 +35,7 @@ Feature: Layered Keys
       { key_codes = [K.A] }
       """
 
-  Example: acts as the key on that layer when its layer modifier held
+  Example: layered key acts as the key on that layer when its layer modifier held
 
     When the keymap registers the following input
       """

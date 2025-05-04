@@ -29,7 +29,7 @@ Feature: Caps Word Key
       }
       """
 
-  Example: acts as 'tap' when tapped
+  Example: caps word key activates when tapped and deactivates after space key pressed
     When the keymap registers the following input
       """
       [

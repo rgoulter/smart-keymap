@@ -25,7 +25,7 @@ Feature: Chords
       }
       """
 
-  Example: tapped key behaves as usual
+  Example: chorded key behaves as usual when tapped individually
 
     When the keymap registers the following input
       """
@@ -40,7 +40,7 @@ Feature: Chords
       ]
       """
 
-  Example: tapped together behaves as chord
+  Example: chorded keys tapped together behaves as chord
 
     When the keymap registers the following input
       """
@@ -56,7 +56,7 @@ Feature: Chords
       ]
       """
 
-  Example: pressed together with delay behaves as separate keys
+  Example: chorded keys pressed together with delay behaves as separate keys
 
     When the keymap registers the following input
       """
