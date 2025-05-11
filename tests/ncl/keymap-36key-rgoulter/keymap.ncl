@@ -12,6 +12,9 @@ let NAV_R = 4 in
 let MOU_R = 5 in
 let MED_R = 6 in
 
+let HoldLayerMod =
+  let K = import "keys.ncl" in
+  fun layer_index => K.hold (K.layer_mod.hold layer_index) in
 {
   chords =
     let K = import "keys.ncl" in
@@ -35,10 +38,28 @@ let MED_R = 6 in
           "% |> CH.indices,
           key = K.LeftGUI & K.PageDown,
         },
+        # TODO: "Alias"? (NCL feature?)
+        {
+          indices = m%"
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ _ _ _ _
+                _ X X   _ _ _
+          "% |> CH.indices,
+          key = K.Tab & HoldLayerMod MOU_R,
+        },
+        {
+          indices = m%"
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ _ _ _ _
+                _ _ _   X X _
+          "% |> CH.indices,
+          key = K.Delete & HoldLayerMod FUN_L,
+        },
     ],
   config.tap_hold.interrupt_response = "HoldOnKeyTap",
   custom_keys = fun K =>
-    let HoldLayerMod = fun layer_index => K.hold (K.layer_mod.hold layer_index) in
     {
       SPC_NAVR = K.Space & HoldLayerMod NAV_R,
       TAB_MOUR = K.Tab & HoldLayerMod MOU_R,
