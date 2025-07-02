@@ -2,6 +2,7 @@ mod overlapping;
 mod overlapping_aux;
 mod overlapping_simultaneous;
 mod tap_hold;
+mod tap_hold_over_tap_hold;
 
 use smart_keymap::input;
 use smart_keymap::key;
