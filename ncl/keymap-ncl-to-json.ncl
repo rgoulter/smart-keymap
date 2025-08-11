@@ -213,6 +213,7 @@ let validators = import "validators.ncl" in
         |> match {
           { layer_modifier = { default_ } } => validators.is_number default_,
           { layer_modifier = { hold } } => validators.is_number hold,
+          { layer_modifier = { set_active_layers_to } } => (validators.array.validator validators.is_number) set_active_layers_to,
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } }" },
         },
 
@@ -225,6 +226,13 @@ let validators = import "validators.ncl" in
             { Default = default_layer },
           { layer_modifier = { hold = hold_layer } } =>
             { Hold = hold_layer },
+          { layer_modifier = { set_active_layers_to = active_layers } } =>
+            let active_layers_bitset =
+              active_layers
+              |> std.array.map (std.number.pow 2)
+              |> std.array.reduce_left (+)
+            in
+            { SetActiveLayers = active_layers_bitset },
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } }" },
         }
     },
