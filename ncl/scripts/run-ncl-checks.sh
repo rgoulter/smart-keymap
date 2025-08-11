@@ -14,5 +14,6 @@ nickel \
   --import-path="${REPOSITORY_DIR}/ncl" \
   --field="evaluated_checks" \
   checks.ncl \
+  chording.ncl \
   keymap-ncl-to-json.ncl \
   keymap-codegen.ncl
