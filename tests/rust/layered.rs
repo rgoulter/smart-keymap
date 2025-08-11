@@ -1,3 +1,4 @@
+mod set_active_layers;
 mod tap_hold;
 
 use smart_keymap::input;
