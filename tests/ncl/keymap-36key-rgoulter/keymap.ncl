@@ -15,9 +15,26 @@ let MED_R = 6 in
 {
   chords =
     let K = import "keys.ncl" in
+    let CH = import "chording.ncl" in
     [
-        { indices = [22, 23], key = K.LeftGUI & K.PageUp, },
-        { indices = [26, 27], key = K.LeftGUI & K.PageDown, },
+        {
+          indices = m%"
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ _ _ _ _
+            _ _ X X _   _ _ _ _ _
+                _ _ _   _ _ _
+          "% |> CH.indices,
+          key = K.LeftGUI & K.PageUp,
+        },
+        {
+          indices = m%"
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ _ _ _ _
+            _ _ _ _ _   _ X X _ _
+                _ _ _   _ _ _
+          "% |> CH.indices,
+          key = K.LeftGUI & K.PageDown,
+        },
     ],
   config.tap_hold.interrupt_response = "HoldOnKeyTap",
   custom_keys = fun K =>
