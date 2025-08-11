@@ -51,6 +51,10 @@
           {
             layer_modifier = { hold = layer_num }
           },
+        set_active_layers_to = fun active_layers =>
+          {
+            layer_modifier = { set_active_layers_to = active_layers }
+          },
       },
 
       # Layer Transparency
