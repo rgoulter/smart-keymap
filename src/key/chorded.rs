@@ -12,7 +12,9 @@ pub use crate::init::MAX_CHORDS;
 pub const MAX_CHORD_SIZE: usize = 2;
 
 /// Chords are defined by an (unordered) set of indices into the keymap.
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "std", derive(Deserialize))]
+#[cfg_attr(feature = "std", serde(from = "Vec<u16>"))]
 pub struct ChordIndices {
     /// A chord from two keys.
     indices: [u16; MAX_CHORD_SIZE],
@@ -46,18 +48,26 @@ impl ChordIndices {
     }
 }
 
+#[cfg(feature = "std")]
+impl From<Vec<u16>> for ChordIndices {
+    fn from(v: Vec<u16>) -> Self {
+        ChordIndices::from_slice(&v)
+    }
+}
+
 /// Chord definitions.
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "std", derive(Deserialize))]
 pub struct Config {
     /// The timeout (in number of milliseconds) for a chorded key to resolve.
     ///
     /// (Resolves as passthrough key if no chord is satisfied).
-    #[serde(default = "default_timeout")]
+    #[cfg_attr(feature = "std", serde(default = "default_timeout"))]
     pub timeout: u16,
 
     /// The keymap chords.
-    #[serde(default = "default_chords")]
-    #[serde(deserialize_with = "deserialize_chords")]
+    #[cfg_attr(feature = "std", serde(default = "default_chords"))]
+    #[cfg_attr(feature = "std", serde(deserialize_with = "deserialize_chords"))]
     pub chords: [Option<ChordIndices>; MAX_CHORDS],
 }
 
@@ -70,20 +80,26 @@ fn default_chords() -> [Option<ChordIndices>; MAX_CHORDS] {
 }
 
 /// Deserialize chords for [Config].
+#[cfg(feature = "std")]
 fn deserialize_chords<'de, D>(
     deserializer: D,
 ) -> Result<[Option<ChordIndices>; MAX_CHORDS], D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let mut v: heapless::Vec<Option<ChordIndices>, MAX_CHORDS> =
+    let mut v: heapless::Vec<Option<Vec<u16>>, MAX_CHORDS> =
         Deserialize::deserialize(deserializer)?;
 
     while !v.is_full() {
         v.push(None).unwrap();
     }
 
-    v.into_array()
+    let v_ch: heapless::Vec<Option<ChordIndices>, MAX_CHORDS> = v
+        .iter()
+        .map(|ch_op| ch_op.clone().map(|ch| ch.into()))
+        .collect();
+
+    v_ch.into_array()
         .map_err(|_| serde::de::Error::custom("unable to deserialize"))
 }
 
