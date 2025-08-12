@@ -13,11 +13,20 @@ pub use crate::init::LAYER_COUNT;
 /// The type used for layer index.
 pub type LayerIndex = usize;
 
+/// The type used for set of active layers in ModifierKey.
+/// (Limited to [MAX_BITSET_LAYER] layers.)
+pub type LayerBitset = u32;
+
+/// The maximum number of layers that can be represented in a [LayerBitset].
+pub const MAX_BITSET_LAYER: usize = 8 * core::mem::size_of::<LayerBitset>();
+
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum ModifierKey {
     /// Activates the given layer when the held.
     Hold(LayerIndex),
+    /// Sets the set of active layers to the given layers when the key is pressed.
+    SetActiveLayers(LayerBitset),
     /// Sets the default layer.
     Default(LayerIndex),
 }
@@ -26,6 +35,31 @@ impl ModifierKey {
     /// Create a new [ModifierKey] that activates the given layer when held.
     pub const fn hold(layer: LayerIndex) -> Self {
         ModifierKey::Hold(layer)
+    }
+
+    /// Create a new [ModifierKey] that sets the active layers to the given slice of layers when pressed.
+    ///
+    /// Each LayerIndex in the slice must be less than [MAX_BITSET_LAYER].
+    pub const fn set_active_layers(layers: &[LayerIndex]) -> Self {
+        let mut bitset = 0;
+
+        let mut idx = 0;
+        while idx < layers.len() {
+            let layer = layers[idx];
+            if layer < MAX_BITSET_LAYER {
+                bitset |= 1 << layer;
+            } else {
+                panic!("LayerIndex must be less than MAX_BITSET_LAYER");
+            }
+            idx += 1;
+        }
+
+        ModifierKey::SetActiveLayers(bitset)
+    }
+
+    /// Create a new [ModifierKey] that sets the active layers bitset.
+    pub const fn set_active_layers_from_bitset(bitset: LayerBitset) -> Self {
+        ModifierKey::SetActiveLayers(bitset)
     }
 
     /// Create a new [ModifierKey] that sets the default layer.
@@ -41,6 +75,11 @@ impl ModifierKey {
             ModifierKey::Hold(layer) => {
                 let pks = ModifierKeyState(*self);
                 let event = LayerEvent::LayerActivated(*layer);
+                (pks, event)
+            }
+            ModifierKey::SetActiveLayers(layer_set) => {
+                let pks = ModifierKeyState(*self);
+                let event = LayerEvent::LayersSet(*layer_set);
                 (pks, event)
             }
             ModifierKey::Default(layer) => {
@@ -185,6 +224,19 @@ impl Context {
             }
             LayerEvent::LayerDeactivated(layer) => {
                 self.active_layers.deactivate(layer);
+            }
+            LayerEvent::LayersSet(layer_set) => {
+                // 32 because the bitset is a u32
+                let max_layer = LAYER_COUNT.min(32);
+
+                // layer 0 is always active.
+                for li in 1..max_layer {
+                    if (layer_set & (1 << li)) != 0 {
+                        self.active_layers.activate(li);
+                    } else {
+                        self.active_layers.deactivate(li);
+                    }
+                }
             }
             LayerEvent::DefaultLayerSet(0) => self.default_layer = None,
             LayerEvent::DefaultLayerSet(layer) => self.default_layer = Some(layer),
@@ -392,6 +444,8 @@ pub enum LayerEvent {
     LayerActivated(LayerIndex),
     /// Deactivates the given layer.
     LayerDeactivated(LayerIndex),
+    /// Sets the active layers to the given set of layers.
+    LayersSet(LayerBitset),
     /// Changes the default layer.
     DefaultLayerSet(LayerIndex),
 }
@@ -419,6 +473,7 @@ impl ModifierKeyState {
                 }
                 _ => None,
             },
+            ModifierKey::SetActiveLayers(_layer_set) => None,
             ModifierKey::Default(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {

@@ -253,16 +253,17 @@ let validators = import "validators.ncl" in
       JsonValue = std.contract.from_validator json_value_validator,
 
       # c.f. doc_de_layered.md.
-      # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer).
+      # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer), SetActiveLayers([layer, ...]).
       json_value_validator =
         validators.record.validator {
           fields_validator =
             validators.all_of [
-              validators.record.has_any_field_of ["Default", "Hold"],
-              validators.record.has_only_fields ["Default", "Hold"],
+              validators.record.has_any_field_of ["Default", "Hold", "SetActiveLayers"],
+              validators.record.has_only_fields ["Default", "Hold", "SetActiveLayers"],
             ],
           field_validators = {
             Hold = validators.is_number,
+            SetActiveLayers = validators.is_number,
           },
         },
 
@@ -293,6 +294,18 @@ let validators = import "validators.ncl" in
                 base = key_type.key_type,
               },
               rust_expr = "crate::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
+              json_value = k,
+            },
+          { SetActiveLayers = active_layers_bitset } =>
+            {
+              key_type = {
+                key_type = "crate::key::layered::ModifierKey",
+                as_rust_type_path = key_type,
+              },
+              key_impl = {
+                base = key_type.key_type,
+              },
+              rust_expr = "crate::key::layered::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
               json_value = k,
             },
         },
