@@ -54,7 +54,7 @@ use smart_keymap::key::chorded::ChordIndices;
 let json = r#"
   [3, 4]
 "#;
-let expected_chord: ChordIndices = ChordIndices::Chord2(3, 4);
+let expected_chord: ChordIndices = ChordIndices::from_slice(&[3, 4]);
 let actual_chord: ChordIndices = serde_json::from_str(json).unwrap();
 assert_eq!(expected_chord, actual_chord);
 ```
