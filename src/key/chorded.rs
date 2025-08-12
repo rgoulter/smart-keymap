@@ -35,16 +35,14 @@ impl ChordIndices {
         &self.indices
     }
 
-    /// Returns whether the given index is part of the chord.
+    /// Whether the given index is part of the chord.
     pub fn has_index(&self, index: u16) -> bool {
-        let [i0, i1] = self.indices;
-        i0 == index || i1 == index
+        self.as_slice().iter().any(|&i| i == index)
     }
 
-    /// Returns whether the chord is satisfied by the given indices.
+    /// Whether the chord is satisfied by the given indices.
     pub fn is_satisfied_by(&self, indices: &[u16]) -> bool {
-        let [i0, i1] = &self.indices;
-        indices.contains(i0) && indices.contains(i1)
+        self.as_slice().iter().all(|&i| indices.contains(&i))
     }
 }
 
@@ -94,12 +92,8 @@ where
         v.push(None).unwrap();
     }
 
-    let v_ch: heapless::Vec<Option<ChordIndices>, MAX_CHORDS> = v
-        .iter()
-        .map(|ch_op| ch_op.clone().map(|ch| ch.into()))
-        .collect();
-
-    v_ch.into_array()
+    v.into_array()
+        .map(|a| a.map(|ch_op| ch_op.map(|ch| ch.into())))
         .map_err(|_| serde::de::Error::custom("unable to deserialize"))
 }
 
