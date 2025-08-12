@@ -19,6 +19,7 @@ keymap_key_features=(
     "tap_hold-config-interrupt-tap"
     "tap_hold-config-required_idle_time"
     "layered"
+    "layers-set_layers_to"
     "caps_word"
     "tap_dance"
     "sticky_modifiers"
