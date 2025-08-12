@@ -13,10 +13,9 @@ pub const MAX_CHORD_SIZE: usize = 2;
 
 /// Chords are defined by an (unordered) set of indices into the keymap.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", serde(untagged))]
-pub enum ChordIndices {
+pub struct ChordIndices {
     /// A chord from two keys.
-    Chord2(u16, u16),
+    indices: [u16; MAX_CHORD_SIZE],
 }
 
 impl ChordIndices {
@@ -24,21 +23,26 @@ impl ChordIndices {
     ///
     /// The given slice must be less than [MAX_CHORD_SIZE] in length.
     pub const fn from_slice(indices: &[u16]) -> ChordIndices {
-        ChordIndices::Chord2(indices[0], indices[1])
+        ChordIndices {
+            indices: [indices[0], indices[1]],
+        }
+    }
+
+    /// The chord indices as a slice.
+    pub const fn as_slice(&self) -> &[u16] {
+        &self.indices
     }
 
     /// Returns whether the given index is part of the chord.
     pub fn has_index(&self, index: u16) -> bool {
-        match self {
-            ChordIndices::Chord2(i0, i1) => i0 == &index || i1 == &index,
-        }
+        let [i0, i1] = self.indices;
+        i0 == index || i1 == index
     }
 
     /// Returns whether the chord is satisfied by the given indices.
     pub fn is_satisfied_by(&self, indices: &[u16]) -> bool {
-        match self {
-            ChordIndices::Chord2(i0, i1) => indices.contains(i0) && indices.contains(i1),
-        }
+        let [i0, i1] = &self.indices;
+        indices.contains(i0) && indices.contains(i1)
     }
 }
 
@@ -143,13 +147,10 @@ impl Context {
 
         let chords = self.chords_for_indices(&[index]);
 
-        chords.iter().for_each(|&ch| match ch {
-            ChordIndices::Chord2(i0, i1) => {
-                if let Err(pos) = res.binary_search(&i0) {
-                    res.insert(pos, i0).unwrap();
-                }
-                if let Err(pos) = res.binary_search(&i1) {
-                    res.insert(pos, i1).unwrap();
+        chords.iter().for_each(|&ch| {
+            for &i in ch.as_slice() {
+                if let Err(pos) = res.binary_search(&i) {
+                    res.insert(pos, i).unwrap();
                 }
             }
         });
