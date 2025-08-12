@@ -30,7 +30,12 @@ const KEYS: Keys2<CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
 
 const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
     chorded: chorded::Config {
-        chords: [Some(chorded::ChordIndices::Chord2(0, 1)), None, None, None],
+        chords: [
+            Some(chorded::ChordIndices::from_slice(&[0, 1])),
+            None,
+            None,
+            None,
+        ],
         ..chorded::DEFAULT_CONFIG
     },
     ..composite::DEFAULT_CONFIG
