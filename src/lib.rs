@@ -58,6 +58,9 @@ pub mod tuples;
 /// Split keyboard support.
 pub mod split;
 
+/// A helper value type for Copy-able slices.
+pub mod slice;
+
 /// Types and initial data used for constructing a [keymap::Keymap].
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
