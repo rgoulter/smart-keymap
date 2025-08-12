@@ -9,7 +9,7 @@ use crate::{input, key};
 pub use crate::init::MAX_CHORDS;
 
 /// The maximum number of keys in a chord.
-const MAX_CHORD_SIZE: usize = 2;
+pub const MAX_CHORD_SIZE: usize = 2;
 
 /// Chords are defined by an (unordered) set of indices into the keymap.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -20,6 +20,13 @@ pub enum ChordIndices {
 }
 
 impl ChordIndices {
+    /// Constructs a new [ChordIndices] value from the given slice.
+    ///
+    /// The given slice must be less than [MAX_CHORD_SIZE] in length.
+    pub const fn from_slice(indices: &[u16]) -> ChordIndices {
+        ChordIndices::Chord2(indices[0], indices[1])
+    }
+
     /// Returns whether the given index is part of the chord.
     pub fn has_index(&self, index: u16) -> bool {
         match self {
