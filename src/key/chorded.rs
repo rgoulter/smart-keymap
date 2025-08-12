@@ -742,7 +742,7 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS, with chord 01.
         let mut context = key::composite::Context::from_config(composite::Config {
             chorded: Config {
-                chords: [Some(ChordIndices::Chord2(0, 1)), None, None, None],
+                chords: [Some(ChordIndices::from_slice(&[0, 1])), None, None, None],
                 ..DEFAULT_CONFIG
             },
             ..composite::DEFAULT_CONFIG
