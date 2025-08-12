@@ -4,7 +4,7 @@ use core::fmt::Debug;
 
 use serde::Deserialize;
 
-use crate::{input, key};
+use crate::{input, key, slice::Slice};
 
 pub use crate::init::MAX_CHORDS;
 
@@ -12,12 +12,12 @@ pub use crate::init::MAX_CHORDS;
 pub const MAX_CHORD_SIZE: usize = 2;
 
 /// Chords are defined by an (unordered) set of indices into the keymap.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(from = "Vec<u16>"))]
 pub struct ChordIndices {
     /// A chord from two keys.
-    indices: [u16; MAX_CHORD_SIZE],
+    indices: Slice<u16, MAX_CHORD_SIZE>,
 }
 
 impl ChordIndices {
@@ -26,13 +26,13 @@ impl ChordIndices {
     /// The given slice must be less than [MAX_CHORD_SIZE] in length.
     pub const fn from_slice(indices: &[u16]) -> ChordIndices {
         ChordIndices {
-            indices: [indices[0], indices[1]],
+            indices: Slice::from_slice(indices),
         }
     }
 
     /// The chord indices as a slice.
     pub const fn as_slice(&self) -> &[u16] {
-        &self.indices
+        self.indices.as_slice()
     }
 
     /// Whether the given index is part of the chord.
@@ -43,6 +43,12 @@ impl ChordIndices {
     /// Whether the chord is satisfied by the given indices.
     pub fn is_satisfied_by(&self, indices: &[u16]) -> bool {
         self.as_slice().iter().all(|&i| indices.contains(&i))
+    }
+}
+
+impl core::cmp::PartialEq for ChordIndices {
+    fn eq(&self, other: &Self) -> bool {
+        self.indices.as_slice() == other.indices.as_slice()
     }
 }
 
