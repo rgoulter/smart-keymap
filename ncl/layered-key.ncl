@@ -30,6 +30,18 @@
       'Release { layer_modifier = { hold }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = deactivate_layer al hold } & layer_state,
+      'Press { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } =>
+        let { active_layers, ..layer_state } = layer_state in
+        let layer_count = std.array.length active_layers in
+        let new_active_layers =
+          std.array.generate
+            (fun idx =>
+              let layer_index = idx + 1 in
+              std.array.elem layer_index new_active_layer_indices
+            )
+            layer_count
+        in
+        { active_layers = new_active_layers } & layer_state,
       'Release { layer_modifier = { default_ }, .. } =>
         let { default_layer, ..layer_state } = layer_state in
         { default_layer = default_ } & layer_state,
