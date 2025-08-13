@@ -821,32 +821,33 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
-      # JSON serialization of key::chorded::Key is { chord: key, passthrough: key }
+      # JSON serialization of key::chorded::Key is { chords: [[id, key]], passthrough: key }
       json_value_validator =
         validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["chord", "passthrough"],
+          fields_validator = validators.record.has_exact_fields ["chords", "passthrough"],
           field_validators = {
-            chord = key.json_value_validator,
+            chords =
+              validators.array.validator (validators.tuple.validator [validators.is_number, key.json_value_validator]),
             passthrough = key.json_value_validator,
           },
         },
 
       is_json_value = fun k => 'Ok == json_value_validator k,
 
-      codegen_values = fun k @ { chord, passthrough } =>
-        let chord_cv = chord |> key.codegen_values |> chorded_nestable.wrap in
+      codegen_values = fun k @ { chords, passthrough } =>
+        let chords_cv = chords |> std.array.map (fun [id, ch_k] => [id, ch_k |> key.codegen_values |> chorded_nestable.wrap]) in
         let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
 
-        let target_type = unified_key_impl_for_codegen_values [chord_cv, passthrough_cv] in
+        let target_type = unified_key_impl_for_codegen_values ([passthrough_cv] @ (chords_cv |> std.array.map (fun [_, cv] => cv))) in
 
         {
           nested = {
-            chord = chord_cv |> key.lift_to target_type,
+            chords = chords_cv |> std.array.map (fun [i, cv] => [i, cv |> key.lift_to target_type]),
             passthrough = passthrough_cv |> key.lift_to target_type,
           },
           key_type = {
             key_type = "crate::key::chorded::Key",
-            nested_key_type = nested.chord.key_type,
+            nested_key_type = nested.passthrough.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
           key_impl =
@@ -855,7 +856,9 @@ let validators = import "validators.ncl" in
               chorded = key_type.key_type,
             },
           rust_expr =
-            let chord_expr = nested.chord.rust_expr in
+            # Assume ONE chord only
+            let [[_, chord_key]] = nested.chords in
+            let chord_expr = chord_key.rust_expr in
             let passthrough_expr = nested.passthrough.rust_expr in
             "crate::key::chorded::Key::new(%{chord_expr}, %{passthrough_expr})",
           json_value = k,
@@ -865,7 +868,7 @@ let validators = import "validators.ncl" in
         rest
         & {
           nested = {
-            chord = f cv.nested.chord,
+            chords = cv.nested.chords |> std.array.map (fun [i, ch_cv] => [i, f ch_cv]),
             passthrough = f cv.nested.passthrough,
           },
         },
@@ -876,10 +879,11 @@ let validators = import "validators.ncl" in
         chorded.map_nested (fun cv_ => key.lift_to key_impl cv_) cv,
 
       # Traverse by visiting the chorded key,
-      #  then traversing the chord, passthrough keys.
+      #  then traversing the chord keys, passthrough keys.
       traverse = fun f acc cv =>
         let acc = f acc cv in
-        let acc = key.traverse f acc cv.nested.chord in
+        let chords_cvs = cv.nested.chords |> std.array.map (fun [_, ch_cv] => ch_cv) in
+        let acc = std.array.fold_left (fun acc ch_cv => key.traverse f acc ch_cv) acc chords_cvs in
         key.traverse f acc cv.nested.passthrough,
     },
 
