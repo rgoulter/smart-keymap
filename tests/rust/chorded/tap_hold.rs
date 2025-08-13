@@ -18,10 +18,13 @@ type AK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::
 
 const KEYS: Keys2<CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::ChordedKey::Chorded(chorded::Key::new(
-        composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key::new(
-            keyboard::Key::new(0x06),
-            keyboard::Key::new(0xE0),
-        ))),
+        &[(
+            0,
+            composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key::new(
+                keyboard::Key::new(0x06),
+                keyboard::Key::new(0xE0),
+            ))),
+        )],
         composite::Layered(composite::TapHoldKey::Pass(keyboard::Key::new(0x04))),
     )),
     composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(

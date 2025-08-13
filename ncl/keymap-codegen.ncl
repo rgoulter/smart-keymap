@@ -858,11 +858,14 @@ let validators = import "validators.ncl" in
               chorded = key_type.key_type,
             },
           rust_expr =
-            # Assume ONE chord only
-            let [[_, chord_key]] = nested.chords in
-            let chord_expr = chord_key.rust_expr in
+            let chords_expr = m%"&[%{
+              nested.chords
+              |> std.array.map (fun [i, ch_cv] => "(%{i |> std.to_string}, %{ch_cv.rust_expr})")
+              |> std.string.join ", "
+            }]"%
+            in
             let passthrough_expr = nested.passthrough.rust_expr in
-            "crate::key::chorded::Key::new(%{chord_expr}, %{passthrough_expr})",
+            "crate::key::chorded::Key::new(%{chords_expr}, %{passthrough_expr})",
           json_value = k,
         },
 

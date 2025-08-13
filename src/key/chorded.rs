@@ -290,11 +290,10 @@ where
     }
 }
 
-impl<K> Key<K> {
+impl<K: Copy> Key<K> {
     /// Constructs new chorded key.
-    pub const fn new(chord: K, passthrough: K) -> Self {
-        let chord_id: ChordId = 0; // Placeholder chord id.
-        let chords = [(chord_id, chord)];
+    pub const fn new(chords: &[(ChordId, K)], passthrough: K) -> Self {
+        let chords = [chords[0]]; // Only one chord is supported for now.
         Key {
             chords,
             passthrough,
