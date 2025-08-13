@@ -1416,9 +1416,8 @@ let validators = import "validators.ncl" in
             if std.record.has_field "chords" config.chorded then
               let chords_fragment =
                 config.chorded.chords
-                |> std.array.map (match {
-                  [i, j] => "Some(crate::key::chorded::ChordIndices::from_slice(&[%{std.to_string i}, %{std.to_string j}]))"
-                }
+                |> std.array.map (fun indices =>
+                  "Some(crate::key::chorded::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}]))"
                 )
                 |> std.string.join ","
               in
