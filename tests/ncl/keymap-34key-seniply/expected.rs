@@ -15,6 +15,9 @@ pub mod init {
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 5;
 
+    /// The maximum number of keys in a chord.
+    pub const MAX_CHORD_SIZE: usize = 2;
+
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = 0;
 

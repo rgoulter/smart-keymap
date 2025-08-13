@@ -6,10 +6,7 @@ use serde::Deserialize;
 
 use crate::{input, key, slice::Slice};
 
-pub use crate::init::MAX_CHORDS;
-
-/// The maximum number of keys in a chord.
-pub const MAX_CHORD_SIZE: usize = 2;
+pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE};
 
 /// Chords are defined by an (unordered) set of indices into the keymap.
 #[derive(Debug, Clone, Copy)]
