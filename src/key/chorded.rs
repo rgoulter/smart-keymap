@@ -72,10 +72,12 @@ pub struct Config {
     pub chords: [Option<ChordIndices>; MAX_CHORDS],
 }
 
+#[cfg(feature = "std")]
 fn default_timeout() -> u16 {
     DEFAULT_CONFIG.timeout
 }
 
+#[cfg(feature = "std")]
 fn default_chords() -> [Option<ChordIndices>; MAX_CHORDS] {
     DEFAULT_CONFIG.chords
 }
