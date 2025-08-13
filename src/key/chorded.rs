@@ -8,12 +8,12 @@ use crate::{input, key, slice::Slice};
 
 pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE};
 
-/// Chords are defined by an (unordered) set of indices into the keymap.
+/// Chords are defined by an (unordered) set of keymap indices into the keymap.
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(from = "Vec<u16>"))]
 pub struct ChordIndices {
-    /// A chord from two keys.
+    /// A slice of keymap indices.
     indices: Slice<u16, MAX_CHORD_SIZE>,
 }
 
