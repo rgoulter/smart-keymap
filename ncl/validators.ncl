@@ -233,4 +233,32 @@
         err => err,
       }
   },
+
+  checks.check_tuple_validators = {
+    check_validator = 'Ok == tuple.validator [is_number, is_string] [1, "abc"],
+  },
+
+  tuple = {
+    validator = fun elements_validators t =>
+      t
+      |> is_array
+      |> match {
+        'Ok =>
+          let rec validate_elements = fun validators elements =>
+            elements
+            |> match {
+              [] => 'Ok,
+              [element, ..elements] =>
+                let [element_validator, ..validators] = validators in
+                element_validator element
+                |> match {
+                  'Ok => validate_elements validators elements,
+                  err => err,
+                }
+            }
+          in
+          validate_elements elements_validators t,
+        err => err,
+      },
+  },
 }
