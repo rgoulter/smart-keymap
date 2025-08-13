@@ -1587,6 +1587,20 @@ let validators = import "validators.ncl" in
         else
           0
       in
+      let max_overlapping_chord_size =
+        if std.record.has_field "chorded" config && std.record.has_field "chords" config.chorded then
+          config.chorded.chords
+          |> std.array.map (fun [i, ..] => std.to_string i)
+          |> std.array.fold_left
+            (fun r i =>
+              std.record.update i (1 + (std.record.get_or i 0 r)) r
+            )
+            {}
+          |> std.record.values
+          |> std.array.fold_left std.number.max 0
+        else
+          0
+      in
       m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
@@ -1607,6 +1621,9 @@ pub mod init {
 
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = %{chord_count |> std.to_string};
+
+    /// The maximum number of overlapping chords for a chorded key.
+    pub const MAX_OVERLAPPING_CHORD_SIZE: usize = %{max_overlapping_chord_size |> std.to_string};
 
     /// The tap-dance definitions.
     pub const MAX_TAP_DANCE_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
