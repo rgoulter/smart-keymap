@@ -81,6 +81,9 @@ pub mod init {
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = 4;
 
+    /// The maximum number of overlapping chords for a chorded key.
+    pub const MAX_OVERLAPPING_CHORD_SIZE: usize = 1;
+
     /// The tap-dance definitions.
     pub const MAX_TAP_DANCE_DEFINITIONS: usize = 3;
 
