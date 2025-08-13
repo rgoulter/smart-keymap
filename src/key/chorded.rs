@@ -8,6 +8,9 @@ use crate::{input, key, slice::Slice};
 
 pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE};
 
+/// A chord identifier.
+pub type ChordId = u8;
+
 /// Chords are defined by an (unordered) set of keymap indices into the keymap.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 #[serde(from = "heapless::Vec<u16, MAX_CHORD_SIZE>")]
@@ -232,7 +235,7 @@ impl Context {
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key<K> {
     /// The chorded key
-    pub chord: K,
+    pub chords: [(ChordId, K); 1],
     /// The passthrough key
     pub passthrough: K,
 }
@@ -261,7 +264,10 @@ where
 
         if let Some(resolution) = chord_resolution {
             let (i, key) = match resolution {
-                ChordResolution::Chord => (1, &self.chord),
+                ChordResolution::Chord => {
+                    let (_chord_id, k) = &self.chords[0];
+                    (1, k)
+                }
                 ChordResolution::Passthrough => (0, &self.passthrough),
             };
 
@@ -287,7 +293,12 @@ where
 impl<K> Key<K> {
     /// Constructs new chorded key.
     pub const fn new(chord: K, passthrough: K) -> Self {
-        Key { chord, passthrough }
+        let chord_id: ChordId = 0; // Placeholder chord id.
+        let chords = [(chord_id, chord)];
+        Key {
+            chords,
+            passthrough,
+        }
     }
 }
 
@@ -333,7 +344,10 @@ impl<
                 let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
                 if let Some(ch_state) = ch_state {
                     let (i, nk) = match ch_state {
-                        key::chorded::ChordResolution::Chord => (1, &self.chord),
+                        key::chorded::ChordResolution::Chord => {
+                            let (_chord_id, k) = &self.chords[0];
+                            (1, k)
+                        }
                         key::chorded::ChordResolution::Passthrough => (0, &self.passthrough),
                     };
                     let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
@@ -372,7 +386,10 @@ impl<
             [] => self,
             // 0 = passthrough, 1 = chord
             [0, path @ ..] => self.passthrough.lookup(path),
-            [1, path @ ..] => self.chord.lookup(path),
+            [1, path @ ..] => {
+                let (_chord_id, k) = &self.chords[0];
+                k.lookup(path)
+            }
             _ => panic!(),
         }
     }

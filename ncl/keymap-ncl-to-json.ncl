@@ -466,23 +466,23 @@ let validators = import "validators.ncl" in
       key_validator = fun k =>
         k
         |> match {
-          { chord = chord_key, passthrough = passthrough_key } =>
-            let valid_chord_key = key.key_validator chord_key in
+          { chords = chords_, passthrough = passthrough_key } =>
+            let valid_chords = chords_ |> validators.array.validator (validators.tuple.validator [validators.is_number, key.key_validator]) in
             let valid_passthrough_key = key.key_validator passthrough_key in
-            [valid_chord_key, valid_passthrough_key]
+            [valid_chords, valid_passthrough_key]
             |> match {
               ['Ok, 'Ok] => 'Ok,
               [err, _] => err,
               [_, err] => err,
             },
-          _ => 'Error { message = "expected { chord = Key, passthrough = Key }" },
+          _ => 'Error { message = "expected { chords = [[index, Key]], passthrough = Key }" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_value = fun { chord = chord_key, passthrough = passthrough_key } =>
+      to_json_value = fun { chords = chords_, passthrough = passthrough_key } =>
         {
-          chord = key.to_json_value chord_key,
+          chords = chords_ |> std.array.map (fun [i, chord_key] => [i, key.to_json_value chord_key]),
           passthrough = key.to_json_value passthrough_key,
         },
     },
@@ -642,8 +642,8 @@ let validators = import "validators.ncl" in
         |> std.array.map_with_index (fun idx ch => ch & { chord_index = idx })
         |> std.array.filter (fun { indices = [chord_primary_key_index, ..], .. } => chord_primary_key_index == key_index)
         |> match {
-          [{ key, .. }] =>
-            { chord = key, passthrough = k },
+          [{ chord_index, key, .. }] =>
+            { chords = [[chord_index, key]], passthrough = k },
           [] =>
             if std.array.any (fun { indices, .. } => std.array.elem key_index indices) chords then
               { passthrough = k }
