@@ -217,3 +217,63 @@ fn rolling_tap_chord_acts_as_chord() {
     ];
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn press_chord_4_acts_as_chord() {
+    // Assemble
+    let keys: tuples::Keys4<CK, AK, AK, AK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
+        composite::ChordedKey::Chorded(chorded::Key::new(
+            composite::Layered(composite::TapHold(keyboard::Key::new(0x08))),
+            composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
+        )),
+        composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
+            composite::TapHold(keyboard::Key::new(0x05)),
+        ))),
+        composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
+            composite::TapHold(keyboard::Key::new(0x06)),
+        ))),
+        composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
+            composite::TapHold(keyboard::Key::new(0x07)),
+        ))),
+    ));
+    let context: Ctx = key::composite::Context::from_config(composite::Config {
+        chorded: chorded::Config {
+            chords: [
+                Some(chorded::ChordIndices::from_slice(&[0, 1, 2, 3])),
+                None,
+                None,
+                None,
+            ],
+            ..chorded::DEFAULT_CONFIG
+        },
+        ..composite::DEFAULT_CONFIG
+    });
+    let mut keymap = Keymap::new(keys, context);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x08, 0, 0, 0, 0, 0],
+    ];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
