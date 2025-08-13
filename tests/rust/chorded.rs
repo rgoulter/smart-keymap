@@ -20,7 +20,10 @@ type AK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::
 
 const KEYS: Keys2<CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
     composite::ChordedKey::Chorded(chorded::Key::new(
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x06))),
+        &[(
+            0,
+            composite::Layered(composite::TapHold(keyboard::Key::new(0x06))),
+        )],
         composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
     )),
     composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
@@ -223,7 +226,10 @@ fn press_chord_4_acts_as_chord() {
     // Assemble
     let keys: tuples::Keys4<CK, AK, AK, AK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
         composite::ChordedKey::Chorded(chorded::Key::new(
-            composite::Layered(composite::TapHold(keyboard::Key::new(0x08))),
+            &[(
+                0,
+                composite::Layered(composite::TapHold(keyboard::Key::new(0x08))),
+            )],
             composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
         )),
         composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(

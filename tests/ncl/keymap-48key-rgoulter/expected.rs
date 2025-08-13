@@ -933,12 +933,15 @@ pub mod init {
             ),
         )),
         crate::key::chorded::Key::new(
-            crate::key::composite::LayeredKey::Pass(crate::key::composite::TapHold(
-                crate::key::keyboard::Key::new_with_modifiers(
-                    75,
-                    crate::key::KeyboardModifiers::from_byte(8),
-                ),
-            )),
+            &[(
+                0,
+                crate::key::composite::LayeredKey::Pass(crate::key::composite::TapHold(
+                    crate::key::keyboard::Key::new_with_modifiers(
+                        75,
+                        crate::key::KeyboardModifiers::from_byte(8),
+                    ),
+                )),
+            )],
             crate::key::composite::LayeredKey::Layered(crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(13)),
                 [
@@ -1086,12 +1089,15 @@ pub mod init {
             ),
         )),
         crate::key::chorded::Key::new(
-            crate::key::composite::LayeredKey::Pass(crate::key::composite::TapHold(
-                crate::key::keyboard::Key::new_with_modifiers(
-                    78,
-                    crate::key::KeyboardModifiers::from_byte(8),
-                ),
-            )),
+            &[(
+                1,
+                crate::key::composite::LayeredKey::Pass(crate::key::composite::TapHold(
+                    crate::key::keyboard::Key::new_with_modifiers(
+                        78,
+                        crate::key::KeyboardModifiers::from_byte(8),
+                    ),
+                )),
+            )],
             crate::key::composite::LayeredKey::Layered(crate::key::layered::LayeredKey::new(
                 crate::key::composite::TapHold(crate::key::keyboard::Key::new(16)),
                 [
