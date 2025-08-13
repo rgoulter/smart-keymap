@@ -1573,6 +1573,12 @@ let validators = import "validators.ncl" in
         else
           0
       in
+      let max_chord_size =
+        if std.record.has_field "chorded" config && std.record.has_field "chords" config.chorded then
+          config.chorded.chords |> std.array.map std.array.length |> std.array.fold_left std.number.max 0
+        else
+          0
+      in
       m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
@@ -1589,7 +1595,7 @@ pub mod init {
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
 
     /// The maximum number of keys in a chord.
-    pub const MAX_CHORD_SIZE: usize = 2;
+    pub const MAX_CHORD_SIZE: usize = %{max_chord_size |> std.to_string};
 
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = %{chord_count |> std.to_string};
