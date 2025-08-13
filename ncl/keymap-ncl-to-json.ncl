@@ -642,14 +642,14 @@ let validators = import "validators.ncl" in
         |> std.array.map_with_index (fun idx ch => ch & { chord_index = idx })
         |> std.array.filter (fun { indices = [chord_primary_key_index, ..], .. } => chord_primary_key_index == key_index)
         |> match {
-          [{ chord_index, key, .. }] =>
-            { chords = [[chord_index, key]], passthrough = k },
           [] =>
             if std.array.any (fun { indices, .. } => std.array.elem key_index indices) chords then
               { passthrough = k }
             else
               k,
-          _ => std.fail_with "chorded_keys: multiple chords for key",
+          chords_ =>
+            let chords_ = chords_ |> std.array.map (fun { chord_index, key, .. } => [chord_index, key]) in
+            { chords = chords_, passthrough = k },
         }
       )
       layered_keys,
