@@ -638,7 +638,9 @@ let validators = import "validators.ncl" in
   chorded_keys =
     std.array.map_with_index
       (fun key_index k =>
-        std.array.filter (fun { indices = [chord_primary_key_index, ..], .. } => chord_primary_key_index == key_index) chords
+        chords
+        |> std.array.map_with_index (fun idx ch => ch & { chord_index = idx })
+        |> std.array.filter (fun { indices = [chord_primary_key_index, ..], .. } => chord_primary_key_index == key_index)
         |> match {
           [{ key, .. }] =>
             { chord = key, passthrough = k },
