@@ -76,7 +76,7 @@ pub mod init {
     pub const LAYER_COUNT: usize = 8;
 
     /// The maximum number of keys in a chord.
-    pub const MAX_CHORD_SIZE: usize = 2;
+    pub const MAX_CHORD_SIZE: usize = 16;
 
     /// The maximum number of chords.
     pub const MAX_CHORDS: usize = 4;
