@@ -834,15 +834,17 @@ let validators = import "validators.ncl" in
 
       is_json_value = fun k => 'Ok == json_value_validator k,
 
+      map_chords = fun f chords => chords |> std.array.map (fun [id, ch_k] => [id, ch_k |> f]),
+
       codegen_values = fun k @ { chords, passthrough } =>
-        let chords_cv = chords |> std.array.map (fun [id, ch_k] => [id, ch_k |> key.codegen_values |> chorded_nestable.wrap]) in
+        let chords_cv = chords |> map_chords (fun ch_k => ch_k |> key.codegen_values |> chorded_nestable.wrap) in
         let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
 
         let target_type = unified_key_impl_for_codegen_values ([passthrough_cv] @ (chords_cv |> std.array.map (fun [_, cv] => cv))) in
 
         {
           nested = {
-            chords = chords_cv |> std.array.map (fun [i, cv] => [i, cv |> key.lift_to target_type]),
+            chords = chords_cv |> map_chords (fun cv => cv |> key.lift_to target_type),
             passthrough = passthrough_cv |> key.lift_to target_type,
           },
           key_type = {
@@ -868,7 +870,7 @@ let validators = import "validators.ncl" in
         rest
         & {
           nested = {
-            chords = cv.nested.chords |> std.array.map (fun [i, ch_cv] => [i, f ch_cv]),
+            chords = cv.nested.chords |> map_chords f,
             passthrough = f cv.nested.passthrough,
           },
         },
