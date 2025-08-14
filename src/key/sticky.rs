@@ -8,8 +8,7 @@ use crate::key;
 use crate::keymap;
 
 /// When the sticky modifiers activate.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", derive(Deserialize))]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum StickyKeyActivation {
     /// Sticky modifiers activate when the sticky key is released.
     OnStickyKeyRelease,
@@ -19,8 +18,7 @@ pub enum StickyKeyActivation {
 }
 
 /// When the sticky modifiers release.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", derive(Deserialize))]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum StickyKeyRelease {
     /// Sticky modifiers release when the modified key is released.
     OnModifiedKeyRelease,
@@ -29,23 +27,20 @@ pub enum StickyKeyRelease {
 }
 
 /// Sticky Key configuration.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", derive(Deserialize))]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The sticky key activation mode.
-    #[cfg_attr(feature = "std", serde(default = "default_activation"))]
+    #[serde(default = "default_activation")]
     pub activation: StickyKeyActivation,
     /// When the sticky modifiers release.
-    #[cfg_attr(feature = "std", serde(default = "default_release"))]
+    #[serde(default = "default_release")]
     pub release: StickyKeyRelease,
 }
 
-#[cfg(feature = "std")]
 fn default_activation() -> StickyKeyActivation {
     DEFAULT_CONFIG.activation
 }
 
-#[cfg(feature = "std")]
 fn default_release() -> StickyKeyRelease {
     DEFAULT_CONFIG.release
 }
