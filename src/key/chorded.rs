@@ -567,6 +567,17 @@ pub enum ChordResolution {
     Passthrough,
 }
 
+/// The resolution state of a chorded key.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum PendingChordState {
+    /// The key state is resolved (as chord or as passthrough).
+    Resolved(ChordResolution),
+    /// The key chord state is pending.
+    ///
+    /// The chord may be pending with the ID of a satisfied chord.
+    Pending(Option<ChordId>),
+}
+
 /// State for pressed keys.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PendingKeyState {
