@@ -1,7 +1,10 @@
 use core::mem::MaybeUninit;
 
+use serde::Deserialize;
+
 /// A helper value type for Copy-able slices.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(from = "heapless::Vec<T, N>")]
 pub struct Slice<T: Copy, const N: usize> {
     len: usize,
     data: [MaybeUninit<T>; N],
@@ -41,6 +44,12 @@ impl<T: Copy, const N: usize> core::ops::Deref for Slice<T, N> {
 impl<T: Copy, const N: usize> core::convert::From<&[T]> for Slice<T, N> {
     fn from(slice: &[T]) -> Self {
         Self::from_slice(slice)
+    }
+}
+
+impl<T: Copy, const N: usize> core::convert::From<heapless::Vec<T, N>> for Slice<T, N> {
+    fn from(v: heapless::Vec<T, N>) -> Self {
+        Self::from_slice(v.as_slice())
     }
 }
 
