@@ -9,7 +9,7 @@ use crate::{input, key, slice::Slice};
 pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE};
 
 /// Chords are defined by an (unordered) set of keymap indices into the keymap.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "std", derive(Deserialize))]
 #[cfg_attr(feature = "std", serde(from = "Vec<u16>"))]
 pub struct ChordIndices {
@@ -40,12 +40,6 @@ impl ChordIndices {
     /// Whether the chord is satisfied by the given indices.
     pub fn is_satisfied_by(&self, indices: &[u16]) -> bool {
         self.as_slice().iter().all(|&i| indices.contains(&i))
-    }
-}
-
-impl core::cmp::PartialEq for ChordIndices {
-    fn eq(&self, other: &Self) -> bool {
-        self.indices.as_slice() == other.indices.as_slice()
     }
 }
 
