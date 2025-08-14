@@ -147,3 +147,51 @@ fn overlap_partial_press_dc_acts_as_chord() {
     let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x13, 0, 0, 0, 0, 0]];
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn overlap_press_bc_acts_as_chord() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    let press_indices = &[1, 2];
+
+    for &keymap_index in press_indices {
+        keymap.handle_input(input::Event::Press { keymap_index });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x12, 0, 0, 0, 0, 0]];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn overlap_press_cb_acts_as_chord() {
+    // Assemble
+    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut actual_reports = DistinctReports::new();
+
+    // Act
+    let press_indices = &[2, 1];
+
+    for &keymap_index in press_indices {
+        keymap.handle_input(input::Event::Press { keymap_index });
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    while keymap.has_scheduled_events() {
+        keymap.tick();
+        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
+
+    // Assert
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x12, 0, 0, 0, 0, 0]];
+    assert_eq!(expected_reports, actual_reports.reports());
+}
