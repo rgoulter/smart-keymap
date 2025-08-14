@@ -9,9 +9,8 @@ use crate::{input, key, slice::Slice};
 pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE};
 
 /// Chords are defined by an (unordered) set of keymap indices into the keymap.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", derive(Deserialize))]
-#[cfg_attr(feature = "std", serde(from = "Vec<u16>"))]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[serde(from = "heapless::Vec<u16, MAX_CHORD_SIZE>")]
 pub struct ChordIndices {
     /// A slice of keymap indices.
     indices: Slice<u16, MAX_CHORD_SIZE>,
@@ -43,48 +42,38 @@ impl ChordIndices {
     }
 }
 
-#[cfg(feature = "std")]
-impl From<Vec<u16>> for ChordIndices {
-    fn from(v: Vec<u16>) -> Self {
+impl From<heapless::Vec<u16, MAX_CHORD_SIZE>> for ChordIndices {
+    fn from(v: heapless::Vec<u16, MAX_CHORD_SIZE>) -> Self {
         ChordIndices::from_slice(&v)
     }
 }
 
 /// Chord definitions.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", derive(Deserialize))]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The timeout (in number of milliseconds) for a chorded key to resolve.
     ///
     /// (Resolves as passthrough key if no chord is satisfied).
-    #[cfg_attr(feature = "std", serde(default = "default_timeout"))]
+    #[serde(default = "default_timeout")]
     pub timeout: u16,
 
     /// The keymap chords.
-    #[cfg_attr(feature = "std", serde(default = "default_chords"))]
-    #[cfg_attr(feature = "std", serde(deserialize_with = "deserialize_chords"))]
+    #[serde(deserialize_with = "deserialize_chords")]
     pub chords: [Option<ChordIndices>; MAX_CHORDS],
 }
 
-#[cfg(feature = "std")]
 fn default_timeout() -> u16 {
     DEFAULT_CONFIG.timeout
 }
 
-#[cfg(feature = "std")]
-fn default_chords() -> [Option<ChordIndices>; MAX_CHORDS] {
-    DEFAULT_CONFIG.chords
-}
-
 /// Deserialize chords for [Config].
-#[cfg(feature = "std")]
 fn deserialize_chords<'de, D>(
     deserializer: D,
 ) -> Result<[Option<ChordIndices>; MAX_CHORDS], D::Error>
 where
     D: serde::Deserializer<'de>,
 {
-    let mut v: heapless::Vec<Option<Vec<u16>>, MAX_CHORDS> =
+    let mut v: heapless::Vec<Option<heapless::Vec<u16, MAX_CHORD_SIZE>>, MAX_CHORDS> =
         Deserialize::deserialize(deserializer)?;
 
     while !v.is_full() {
