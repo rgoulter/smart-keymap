@@ -558,22 +558,6 @@ pub enum Event {
     Timeout,
 }
 
-/// Whether enough keys have been pressed to satisfy a chord.
-///
-/// In the case of non-overlapping chords,
-///  a satisfied chord is a resolved chord.
-///
-/// In the case of overlapping chords,
-///  e.g. "chord 01" and "chord 012",
-///  pressed "01" is satisfies "chord 01".
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ChordSatisfaction {
-    /// Status where not enough keys have been pressed to satisfy a chord.
-    Unsatisfied,
-    /// Status where enough keys have been pressed to satisfy a chord.
-    Satisfied,
-}
-
 /// Whether the pressed key state has resolved to a chord or not.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ChordResolution {
@@ -588,8 +572,6 @@ pub enum ChordResolution {
 pub struct PendingKeyState {
     /// The keymap indices which have been pressed.
     pressed_indices: heapless::Vec<u16, { MAX_CHORD_SIZE }>,
-    /// Whether the chord has been satisfied.
-    satisfaction: ChordSatisfaction,
 }
 
 impl PendingKeyState {
@@ -603,10 +585,7 @@ impl PendingKeyState {
             .copied()
             .collect();
 
-        Self {
-            pressed_indices,
-            satisfaction: ChordSatisfaction::Unsatisfied,
-        }
+        Self { pressed_indices }
     }
 
     fn check_resolution(&self, context: &Context) -> Option<ChordResolution> {
