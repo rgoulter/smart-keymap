@@ -5,7 +5,6 @@
 
 use core::fmt::Debug;
 
-#[cfg(feature = "std")]
 use serde::Deserialize;
 
 use crate::{key, keymap};
@@ -39,20 +38,19 @@ pub type Key = ChordedKey<LayeredKey<TapHoldKey<BaseKey>>>;
 pub type PressedKeyResult = key::PressedKeyResult<PendingKeyState, KeyState>;
 
 /// Config used for constructing initial context
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "std", derive(Deserialize))]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The chorded configuration.
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub chorded: key::chorded::Config,
     /// The sticky modifier configuration
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub sticky: key::sticky::Config,
     /// The tap dance configuration.
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub tap_dance: key::tap_dance::Config,
     /// The tap hold configuration.
-    #[cfg_attr(feature = "std", serde(default))]
+    #[serde(default)]
     pub tap_hold: key::tap_hold::Config,
 }
 
