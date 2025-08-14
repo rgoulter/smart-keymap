@@ -81,6 +81,16 @@ impl Default for Config {
     }
 }
 
+/// State for a key chord.
+pub struct ChordState {
+    /// The chord index in the chorded config.
+    pub index: usize,
+    /// The chord's indices.
+    pub chord: ChordIndices,
+    /// Whether the chord is satisfied by the pressed indices.
+    pub is_satisfied: bool,
+}
+
 /// Chord definitions.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context {
