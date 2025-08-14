@@ -41,6 +41,12 @@ impl<T: Copy, const N: usize> core::ops::Deref for Slice<T, N> {
     }
 }
 
+impl<T: Copy + PartialEq, const N: usize> core::cmp::PartialEq for Slice<T, N> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_slice() == other.as_slice()
+    }
+}
+
 impl<T: Copy, const N: usize> core::convert::From<&[T]> for Slice<T, N> {
     fn from(slice: &[T]) -> Self {
         Self::from_slice(slice)
