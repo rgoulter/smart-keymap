@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 use crate::{input, key, slice::Slice};
 
-pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE};
+pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE, MAX_OVERLAPPING_CHORD_SIZE};
 
 /// A chord identifier.
 pub type ChordId = u8;
@@ -233,14 +233,14 @@ impl Context {
 /// The primary key is the key with the lowest index in the chord,
 ///  and has the key used for the resolved chord.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key<K> {
+pub struct Key<K: Copy> {
     /// The chorded key
-    pub chords: [(ChordId, K); 1],
+    pub chords: Slice<(ChordId, K), MAX_OVERLAPPING_CHORD_SIZE>,
     /// The passthrough key
     pub passthrough: K,
 }
 
-impl<K: key::Key> Key<K>
+impl<K: Copy + key::Key> Key<K>
 where
     for<'c> &'c K::Context: Into<&'c Context>,
     K::Event: TryInto<Event>,
@@ -293,7 +293,7 @@ where
 impl<K: Copy> Key<K> {
     /// Constructs new chorded key.
     pub const fn new(chords: &[(ChordId, K)], passthrough: K) -> Self {
-        let chords = [chords[0]]; // Only one chord is supported for now.
+        let chords = Slice::from_slice(&[chords[0]]); // Only one chord is supported for now.
         Key {
             chords,
             passthrough,
@@ -302,12 +302,13 @@ impl<K: Copy> Key<K> {
 }
 
 impl<
-        K: key::Key<
-            Context = crate::init::Context,
-            Event = crate::init::Event,
-            PendingKeyState = crate::init::PendingKeyState,
-            KeyState = crate::init::KeyState,
-        >,
+        K: Copy
+            + key::Key<
+                Context = crate::init::Context,
+                Event = crate::init::Event,
+                PendingKeyState = crate::init::PendingKeyState,
+                KeyState = crate::init::KeyState,
+            >,
     > key::Key for Key<K>
 {
     type Context = crate::init::Context;
