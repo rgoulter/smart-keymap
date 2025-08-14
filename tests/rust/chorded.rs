@@ -1,3 +1,4 @@
+mod overlapping;
 mod tap_hold;
 
 use smart_keymap::input;
