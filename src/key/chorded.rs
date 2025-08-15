@@ -256,7 +256,7 @@ where
 
         let chord_resolution = pks.check_resolution(context.into());
 
-        if let Some(resolution) = chord_resolution {
+        if let PendingChordState::Resolved(resolution) = chord_resolution {
             let (i, key) = match resolution {
                 ChordResolution::Chord(resolved_chord_id) => {
                     if let Some((_, k)) = self
@@ -440,7 +440,7 @@ where
 
         let chord_resolution = pks.check_resolution(context.into());
 
-        if let Some(resolution) = chord_resolution {
+        if let PendingChordState::Resolved(resolution) = chord_resolution {
             match resolution {
                 ChordResolution::Chord(_resolved_chord_id) => {
                     let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
@@ -619,7 +619,7 @@ impl PendingKeyState {
         Self { pressed_indices }
     }
 
-    fn check_resolution(&self, context: &Context) -> Option<ChordResolution> {
+    fn check_resolution(&self, context: &Context) -> PendingChordState {
         let chords = context.chords_for_indices(self.pressed_indices.as_slice());
         match chords.as_slice() {
             [ChordState {
@@ -630,16 +630,16 @@ impl PendingKeyState {
                 // Only one chord is satisfied by pressed indices.
                 //
                 // This resolves the chord.
-                Some(ChordResolution::Chord(*index as u8))
+                PendingChordState::Resolved(ChordResolution::Chord(*index as u8))
             }
             [] => {
                 // Otherwise, this key state resolves to "Passthrough",
                 //  since it has been interrupted by an unrelated key press.
-                Some(ChordResolution::Passthrough)
+                PendingChordState::Resolved(ChordResolution::Passthrough)
             }
             _ => {
                 // Overlapping chords.
-                None
+                PendingChordState::Pending(None)
             }
         }
     }
@@ -681,7 +681,10 @@ impl PendingKeyState {
                     panic!();
                 }
 
-                self.check_resolution(context)
+                match self.check_resolution(context) {
+                    PendingChordState::Resolved(resolution) => Some(resolution),
+                    PendingChordState::Pending(_) => None,
+                }
             }
             key::Event::Input(input::Event::Release {
                 keymap_index: released_keymap_index,
