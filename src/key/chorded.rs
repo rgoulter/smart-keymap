@@ -112,18 +112,22 @@ impl Context {
         }
     }
 
-    /// Returns the chord indices for the given pressed indices.
-    ///
-    /// The returned vec is empty if any of the indices are not part of a chord.
-    pub fn chords_for_indices(
-        &self,
-        indices: &[u16],
-    ) -> heapless::Vec<ChordIndices, { MAX_CHORDS }> {
+    /// Returns the satisfiable chords for the given pressed indices.
+    pub fn chords_for_indices(&self, indices: &[u16]) -> heapless::Vec<ChordState, { MAX_CHORDS }> {
         self.config
             .chords
             .iter()
-            .filter(|c| indices.iter().all(|&i| c.has_index(i)))
-            .cloned()
+            .enumerate()
+            // filter: satisfiable chords
+            .filter(|&(_index, chord)| indices.iter().all(|&i| chord.has_index(i)))
+            .map(|(index, &chord)| {
+                let is_satisfied = chord.is_satisfied_by(indices);
+                ChordState {
+                    index,
+                    chord,
+                    is_satisfied,
+                }
+            })
             .collect()
     }
 
@@ -138,8 +142,8 @@ impl Context {
 
         let chords = self.chords_for_indices(&[index]);
 
-        chords.iter().for_each(|&ch| {
-            for &i in ch.as_slice() {
+        chords.iter().for_each(|&ChordState { chord, .. }| {
+            for &i in chord.as_slice() {
                 if let Err(pos) = res.binary_search(&i) {
                     res.insert(pos, i).unwrap();
                 }
@@ -618,7 +622,7 @@ impl PendingKeyState {
     fn check_resolution(&self, context: &Context) -> Option<ChordResolution> {
         let chords = context.chords_for_indices(self.pressed_indices.as_slice());
         match chords.as_slice() {
-            [ch] if ch.is_satisfied_by(&self.pressed_indices) => {
+            [ChordState { chord, .. }] if chord.is_satisfied_by(&self.pressed_indices) => {
                 // Only one chord is satisfied by pressed indices.
                 //
                 // This resolves the aux key.
