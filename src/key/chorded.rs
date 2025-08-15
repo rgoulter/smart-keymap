@@ -294,7 +294,7 @@ where
 impl<K: Copy> Key<K> {
     /// Constructs new chorded key.
     pub const fn new(chords: &[(ChordId, K)], passthrough: K) -> Self {
-        let chords = Slice::from_slice(&[chords[0]]); // Only one chord is supported for now.
+        let chords = Slice::from_slice(chords);
         Key {
             chords,
             passthrough,
