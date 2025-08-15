@@ -275,7 +275,7 @@ where
             // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
             (pkr.add_path_item(i), pke)
         } else {
-            let pk = key::PressedKeyResult::Pending(key_path, pks.into());
+            let pkr = key::PressedKeyResult::Pending(key_path, pks.into());
 
             let timeout_ev = Event::Timeout;
             let ctx: &Context = context.into();
@@ -285,7 +285,7 @@ where
             );
             let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
 
-            (pk, pke)
+            (pkr, pke)
         }
     }
 }
@@ -432,16 +432,16 @@ where
         if let Some(resolution) = chord_resolution {
             match resolution {
                 ChordResolution::Chord => {
-                    let pk = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                    let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
                     let pke = key::KeyEvents::no_events();
 
-                    (pk, pke)
+                    (pkr, pke)
                 }
                 // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
                 ChordResolution::Passthrough => self.passthrough.new_pressed_key(context, key_path),
             }
         } else {
-            let pk = key::PressedKeyResult::Pending(key_path, pks.into());
+            let pkr = key::PressedKeyResult::Pending(key_path, pks.into());
 
             let timeout_ev = Event::Timeout;
             let ctx: &Context = context.into();
@@ -451,7 +451,7 @@ where
             );
             let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
 
-            (pk, pke)
+            (pkr, pke)
         }
     }
 }
