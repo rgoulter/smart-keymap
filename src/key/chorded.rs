@@ -637,9 +637,14 @@ impl PendingKeyState {
                 //  since it has been interrupted by an unrelated key press.
                 PendingChordState::Resolved(ChordResolution::Passthrough)
             }
-            _ => {
+            satisfiable_chords => {
                 // Overlapping chords.
-                PendingChordState::Pending(None)
+                PendingChordState::Pending(
+                    satisfiable_chords
+                        .iter()
+                        .find(|&ChordState { is_satisfied, .. }| *is_satisfied)
+                        .map(|&ChordState { index, .. }| index as u8),
+                )
             }
         }
     }
