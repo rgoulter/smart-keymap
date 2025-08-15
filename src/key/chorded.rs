@@ -622,12 +622,15 @@ impl PendingKeyState {
     fn check_resolution(&self, context: &Context) -> Option<ChordResolution> {
         let chords = context.chords_for_indices(self.pressed_indices.as_slice());
         match chords.as_slice() {
-            [ChordState { chord, .. }] if chord.is_satisfied_by(&self.pressed_indices) => {
+            [ChordState {
+                index,
+                is_satisfied,
+                ..
+            }] if *is_satisfied => {
                 // Only one chord is satisfied by pressed indices.
                 //
-                // This resolves the aux key.
-                let resolved_chord_id = 0; // FIXME: placeholder
-                Some(ChordResolution::Chord(resolved_chord_id))
+                // This resolves the chord.
+                Some(ChordResolution::Chord(*index as u8))
             }
             [] => {
                 // Otherwise, this key state resolves to "Passthrough",
