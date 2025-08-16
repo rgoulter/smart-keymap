@@ -343,33 +343,56 @@ impl<
         if let Ok(ch_pks) = ch_pks_res {
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
+
+                // Whether handling the event resulted in a chord resolution.
                 if let Some(ch_state) = ch_state {
-                    let (i, nk) = match ch_state {
-                        key::chorded::ChordResolution::Chord(resolved_chord_id) => {
-                            if let Some((_, k)) = self
-                                .chords
-                                .iter()
-                                .find(|(ch_id, _)| *ch_id == resolved_chord_id)
+                    let chorded_ctx: &Context = context.into();
+                    let maybe_pathel_and_key = match ch_state {
+                        ChordResolution::Chord(resolved_chord_id) => {
+                            // Whether the resolved chord is associated with this key.
+                            // (i.e. the resolved chord's primary keymap index is this keymap index).
+                            if let Some(resolved_chord_indices) =
+                                chorded_ctx.config.chords.get(resolved_chord_id as usize)
                             {
-                                (resolved_chord_id, k)
+                                if resolved_chord_indices.as_slice()[0] == keymap_index {
+                                    if let Some((_, k)) = self
+                                        .chords
+                                        .iter()
+                                        .find(|(ch_id, _)| *ch_id == resolved_chord_id)
+                                    {
+                                        Some((resolved_chord_id, k))
+                                    } else {
+                                        panic!("event's chord resolution has invalid chord id")
+                                    }
+                                } else {
+                                    None
+                                }
                             } else {
                                 panic!("event's chord resolution has invalid chord id")
                             }
                         }
-                        ChordResolution::Passthrough => (0, &self.passthrough),
+                        ChordResolution::Passthrough => Some((0, &self.passthrough)),
                     };
-                    let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
-                    // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                    let pkr = pkr.add_path_item(1 + i as u16);
 
-                    let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
+                    let ch_r_ev = Event::ChordResolved(ch_state);
                     let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
                         keymap_index,
                         ch_r_ev.into(),
                     ));
-                    pke.add_event(sch_ev);
 
-                    (Some(pkr), pke)
+                    if let Some((i, nk)) = maybe_pathel_and_key {
+                        let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
+                        // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
+                        let pkr = pkr.add_path_item(1 + i as u16);
+
+                        pke.add_event(sch_ev);
+
+                        (Some(pkr), pke)
+                    } else {
+                        let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                        let pke = key::KeyEvents::no_events();
+                        (Some(pkr), pke)
+                    }
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
