@@ -3,7 +3,9 @@ pub mod init {
     /// Config used by tap-hold keys.
     pub const CONFIG: crate::key::composite::Config = crate::key::composite::Config {
         chorded: crate::key::chorded::Config {
-            chords: [Some(crate::key::chorded::ChordIndices::from_slice(&[0, 1]))],
+            chords: crate::slice::Slice::from_slice(&[
+                crate::key::chorded::ChordIndices::from_slice(&[0, 1]),
+            ]),
             ..crate::key::chorded::DEFAULT_CONFIG
         },
         sticky: crate::key::sticky::DEFAULT_CONFIG,
