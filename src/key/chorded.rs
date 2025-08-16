@@ -705,8 +705,22 @@ impl PendingKeyState {
                 key_event: Event::Timeout,
             } => {
                 // Timed out before chord unambiguously resolved.
-                //  So, the key behaves as the passthrough key.
-                Some(ChordResolution::Passthrough)
+                match self.check_resolution(context) {
+                    PendingChordState::Pending(Some(satisfied_chord_id)) => {
+                        Some(ChordResolution::Chord(satisfied_chord_id))
+                    }
+                    PendingChordState::Pending(None) => {
+                        // No satisfied chord,
+                        //  so, the key behaves as the passthrough key.
+                        Some(ChordResolution::Passthrough)
+                    }
+                    PendingChordState::Resolved(ChordResolution::Passthrough) => {
+                        Some(ChordResolution::Passthrough)
+                    }
+                    PendingChordState::Resolved(ChordResolution::Chord(_)) => {
+                        panic!("illegal state")
+                    }
+                }
             }
             key::Event::Input(input::Event::Press {
                 keymap_index: pressed_keymap_index,
