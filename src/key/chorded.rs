@@ -81,6 +81,16 @@ impl Default for Config {
     }
 }
 
+/// State for a key chord.
+pub struct ChordState {
+    /// The chord index in the chorded config.
+    pub index: usize,
+    /// The chord's indices.
+    pub chord: ChordIndices,
+    /// Whether the chord is satisfied by the pressed indices.
+    pub is_satisfied: bool,
+}
+
 /// Chord definitions.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context {
@@ -102,18 +112,22 @@ impl Context {
         }
     }
 
-    /// Returns the chord indices for the given pressed indices.
-    ///
-    /// The returned vec is empty if any of the indices are not part of a chord.
-    pub fn chords_for_indices(
-        &self,
-        indices: &[u16],
-    ) -> heapless::Vec<ChordIndices, { MAX_CHORDS }> {
+    /// Returns the satisfiable chords for the given pressed indices.
+    pub fn chords_for_indices(&self, indices: &[u16]) -> heapless::Vec<ChordState, { MAX_CHORDS }> {
         self.config
             .chords
             .iter()
-            .filter(|c| indices.iter().all(|&i| c.has_index(i)))
-            .cloned()
+            .enumerate()
+            // filter: satisfiable chords
+            .filter(|&(_index, chord)| indices.iter().all(|&i| chord.has_index(i)))
+            .map(|(index, &chord)| {
+                let is_satisfied = chord.is_satisfied_by(indices);
+                ChordState {
+                    index,
+                    chord,
+                    is_satisfied,
+                }
+            })
             .collect()
     }
 
@@ -128,8 +142,8 @@ impl Context {
 
         let chords = self.chords_for_indices(&[index]);
 
-        chords.iter().for_each(|&ch| {
-            for &i in ch.as_slice() {
+        chords.iter().for_each(|&ChordState { chord, .. }| {
+            for &i in chord.as_slice() {
                 if let Err(pos) = res.binary_search(&i) {
                     res.insert(pos, i).unwrap();
                 }
@@ -237,23 +251,50 @@ where
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
         key::KeyEvents<K::Event>,
     ) {
+        let chorded_ctx: &Context = context.into();
+
         let keymap_index: u16 = key_path[0];
         let pks = PendingKeyState::new(context.into(), keymap_index);
 
         let chord_resolution = pks.check_resolution(context.into());
 
-        if let Some(resolution) = chord_resolution {
-            let (i, key) = match resolution {
-                ChordResolution::Chord => {
-                    let (_chord_id, k) = &self.chords[0];
-                    (1, k)
+        if let PendingChordState::Resolved(resolution) = chord_resolution {
+            let maybe_pathel_key = match resolution {
+                ChordResolution::Chord(resolved_chord_id) => {
+                    // Whether the resolved chord is associated with this key.
+                    // (i.e. the resolved chord's primary keymap index is this keymap index).
+                    if let Some(resolved_chord_indices) =
+                        chorded_ctx.config.chords.get(resolved_chord_id as usize)
+                    {
+                        if resolved_chord_indices.as_slice()[0] == keymap_index {
+                            if let Some((_, k)) = self
+                                .chords
+                                .iter()
+                                .find(|(ch_id, _)| *ch_id == resolved_chord_id)
+                            {
+                                Some((resolved_chord_id, k))
+                            } else {
+                                panic!("check_resolution has invalid chord id")
+                            }
+                        } else {
+                            None
+                        }
+                    } else {
+                        panic!("check_resolution has invalid chord id")
+                    }
                 }
-                ChordResolution::Passthrough => (0, &self.passthrough),
+                ChordResolution::Passthrough => Some((0, &self.passthrough)),
             };
 
-            let (pkr, pke) = key.new_pressed_key(context, key_path);
-            // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
-            (pkr.add_path_item(i), pke)
+            if let Some((i, k)) = maybe_pathel_key {
+                let (pkr, pke) = k.new_pressed_key(context, key_path);
+                // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
+                (pkr.add_path_item(1 + i as u16), pke)
+            } else {
+                let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                let pke = key::KeyEvents::no_events();
+                (pkr, pke)
+            }
         } else {
             let pkr = key::PressedKeyResult::Pending(key_path, pks.into());
 
@@ -273,7 +314,7 @@ where
 impl<K: Copy> Key<K> {
     /// Constructs new chorded key.
     pub const fn new(chords: &[(ChordId, K)], passthrough: K) -> Self {
-        let chords = Slice::from_slice(&[chords[0]]); // Only one chord is supported for now.
+        let chords = Slice::from_slice(&chords);
         Key {
             chords,
             passthrough,
@@ -322,26 +363,55 @@ impl<
         if let Ok(ch_pks) = ch_pks_res {
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let ch_state = ch_pks.handle_event(context.into(), keymap_index, ch_ev);
+
+                // Whether handling the event resulted in a chord resolution.
                 if let Some(ch_state) = ch_state {
-                    let (i, nk) = match ch_state {
-                        key::chorded::ChordResolution::Chord => {
-                            let (_chord_id, k) = &self.chords[0];
-                            (1, k)
+                    let chorded_ctx: &Context = context.into();
+                    let maybe_pathel_and_key = match ch_state {
+                        key::chorded::ChordResolution::Chord(resolved_chord_id) => {
+                            // Whether the resolved chord is associated with this key.
+                            // (i.e. the resolved chord's primary keymap index is this keymap index).
+                            if let Some(resolved_chord_indices) =
+                                chorded_ctx.config.chords.get(resolved_chord_id as usize)
+                            {
+                                if resolved_chord_indices.as_slice()[0] == keymap_index {
+                                    if let Some((_, k)) = self
+                                        .chords
+                                        .iter()
+                                        .find(|(ch_id, _)| *ch_id == resolved_chord_id)
+                                    {
+                                        Some((resolved_chord_id, k))
+                                    } else {
+                                        panic!("event's chord resolution has invalid chord id")
+                                    }
+                                } else {
+                                    None
+                                }
+                            } else {
+                                panic!("event's chord resolution has invalid chord id")
+                            }
                         }
-                        key::chorded::ChordResolution::Passthrough => (0, &self.passthrough),
+                        key::chorded::ChordResolution::Passthrough => Some((0, &self.passthrough)),
                     };
-                    let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
-                    // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = chord)
-                    let pkr = pkr.add_path_item(i);
 
-                    let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
-                    let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
-                        keymap_index,
-                        ch_r_ev.into(),
-                    ));
-                    pke.add_event(sch_ev);
+                    if let Some((i, nk)) = maybe_pathel_and_key {
+                        let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
+                        // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
+                        let pkr = pkr.add_path_item(1 + i as u16);
 
-                    (Some(pkr), pke)
+                        let ch_r_ev = key::chorded::Event::ChordResolved(ch_state);
+                        let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
+                            keymap_index,
+                            ch_r_ev.into(),
+                        ));
+                        pke.add_event(sch_ev);
+
+                        (Some(pkr), pke)
+                    } else {
+                        let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                        let pke = key::KeyEvents::no_events();
+                        (Some(pkr), pke)
+                    }
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
@@ -364,13 +434,16 @@ impl<
     > {
         match path {
             [] => self,
-            // 0 = passthrough, 1 = chord
+            // 0 = passthrough, 1 = 1+chord_id
             [0, path @ ..] => self.passthrough.lookup(path),
-            [1, path @ ..] => {
-                let (_chord_id, k) = &self.chords[0];
-                k.lookup(path)
+            [chord_id_plus_1, path @ ..] => {
+                let chord_id = *chord_id_plus_1 as u8 - 1;
+                if let Some((_, k)) = self.chords.iter().find(|(ch_id, _)| *ch_id == chord_id) {
+                    k.lookup(path)
+                } else {
+                    panic!("invalid lookup path for key::chorded::Key, invalid chord id")
+                }
             }
-            _ => panic!(),
         }
     }
 }
@@ -409,9 +482,9 @@ where
 
         let chord_resolution = pks.check_resolution(context.into());
 
-        if let Some(resolution) = chord_resolution {
+        if let PendingChordState::Resolved(resolution) = chord_resolution {
             match resolution {
-                ChordResolution::Chord => {
+                ChordResolution::Chord(_resolved_chord_id) => {
                     let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
                     let pke = key::KeyEvents::no_events();
 
@@ -499,9 +572,12 @@ impl<
                     pke.add_event(sch_ev);
 
                     (Some(pkr), pke)
-                } else if let Some(key::chorded::ChordResolution::Chord) = ch_state {
-                    let ch_r_ev =
-                        key::chorded::Event::ChordResolved(key::chorded::ChordResolution::Chord);
+                } else if let Some(key::chorded::ChordResolution::Chord(resolved_chord_id)) =
+                    ch_state
+                {
+                    let ch_r_ev = key::chorded::Event::ChordResolved(
+                        key::chorded::ChordResolution::Chord(resolved_chord_id),
+                    );
                     let pke =
                         key::KeyEvents::event(key::Event::key_event(keymap_index, ch_r_ev.into()));
 
@@ -548,29 +624,24 @@ pub enum Event {
     Timeout,
 }
 
-/// Whether enough keys have been pressed to satisfy a chord.
-///
-/// In the case of non-overlapping chords,
-///  a satisfied chord is a resolved chord.
-///
-/// In the case of overlapping chords,
-///  e.g. "chord 01" and "chord 012",
-///  pressed "01" is satisfies "chord 01".
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ChordSatisfaction {
-    /// Status where not enough keys have been pressed to satisfy a chord.
-    Unsatisfied,
-    /// Status where enough keys have been pressed to satisfy a chord.
-    Satisfied,
-}
-
 /// Whether the pressed key state has resolved to a chord or not.
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
 pub enum ChordResolution {
     /// Resolved as chord.
-    Chord,
+    Chord(ChordId),
     /// Resolved as passthrough key.
     Passthrough,
+}
+
+/// The resolution state of a chorded key.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum PendingChordState {
+    /// The key state is resolved (as chord or as passthrough).
+    Resolved(ChordResolution),
+    /// The key chord state is pending.
+    ///
+    /// The chord may be pending with the ID of a satisfied chord.
+    Pending(Option<ChordId>),
 }
 
 /// State for pressed keys.
@@ -578,8 +649,6 @@ pub enum ChordResolution {
 pub struct PendingKeyState {
     /// The keymap indices which have been pressed.
     pressed_indices: heapless::Vec<u16, { MAX_CHORD_SIZE }>,
-    /// Whether the chord has been satisfied.
-    satisfaction: ChordSatisfaction,
 }
 
 impl PendingKeyState {
@@ -593,29 +662,35 @@ impl PendingKeyState {
             .copied()
             .collect();
 
-        Self {
-            pressed_indices,
-            satisfaction: ChordSatisfaction::Unsatisfied,
-        }
+        Self { pressed_indices }
     }
 
-    fn check_resolution(&self, context: &Context) -> Option<ChordResolution> {
+    fn check_resolution(&self, context: &Context) -> PendingChordState {
         let chords = context.chords_for_indices(self.pressed_indices.as_slice());
         match chords.as_slice() {
-            [ch] if ch.is_satisfied_by(&self.pressed_indices) => {
+            [ChordState {
+                index,
+                is_satisfied,
+                ..
+            }] if *is_satisfied => {
                 // Only one chord is satisfied by pressed indices.
                 //
-                // This resolves the aux key.
-                Some(ChordResolution::Chord)
+                // This resolves the chord.
+                PendingChordState::Resolved(ChordResolution::Chord(*index as u8))
             }
             [] => {
                 // Otherwise, this key state resolves to "Passthrough",
                 //  since it has been interrupted by an unrelated key press.
-                Some(ChordResolution::Passthrough)
+                PendingChordState::Resolved(ChordResolution::Passthrough)
             }
-            _ => {
+            satisfiable_chords => {
                 // Overlapping chords.
-                None
+                PendingChordState::Pending(
+                    satisfiable_chords
+                        .iter()
+                        .find(|&ChordState { is_satisfied, .. }| *is_satisfied)
+                        .map(|&ChordState { index, .. }| index as u8),
+                )
             }
         }
     }
@@ -633,8 +708,22 @@ impl PendingKeyState {
                 key_event: Event::Timeout,
             } => {
                 // Timed out before chord unambiguously resolved.
-                //  So, the key behaves as the passthrough key.
-                Some(ChordResolution::Passthrough)
+                match self.check_resolution(context) {
+                    PendingChordState::Pending(Some(satisfied_chord_id)) => {
+                        Some(ChordResolution::Chord(satisfied_chord_id))
+                    }
+                    PendingChordState::Pending(None) => {
+                        // No satisfied chord,
+                        //  so, the key behaves as the passthrough key.
+                        Some(ChordResolution::Passthrough)
+                    }
+                    PendingChordState::Resolved(ChordResolution::Passthrough) => {
+                        Some(ChordResolution::Passthrough)
+                    }
+                    PendingChordState::Resolved(ChordResolution::Chord(_)) => {
+                        panic!("illegal state")
+                    }
+                }
             }
             key::Event::Input(input::Event::Press {
                 keymap_index: pressed_keymap_index,
@@ -657,7 +746,10 @@ impl PendingKeyState {
                     panic!();
                 }
 
-                self.check_resolution(context)
+                match self.check_resolution(context) {
+                    PendingChordState::Resolved(resolution) => Some(resolution),
+                    PendingChordState::Pending(_) => None,
+                }
             }
             key::Event::Input(input::Event::Release {
                 keymap_index: released_keymap_index,
@@ -756,7 +848,7 @@ mod tests {
         let actual_res = pks.handle_event((&context).into(), keymap_index, chord_press.into());
 
         // Assert: resolved aux key should have no events, should have (resolved) no output.
-        let expected_res = Some(ChordResolution::Chord);
+        let expected_res = Some(ChordResolution::Chord(0));
         assert_eq!(expected_res, actual_res);
     }
 
