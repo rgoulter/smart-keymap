@@ -751,8 +751,9 @@ mod tests {
         let mut pks: PendingKeyState = PendingKeyState::new((&context).into(), keymap_index);
 
         // Act: handle a key press, for an index that completes (satisfies unambiguously) the chord.
-        let chord_press = input::Event::Press { keymap_index: 1 }.into();
-        let actual_res = pks.handle_event((&context).into(), keymap_index, chord_press);
+        let chord_press = input::Event::Press { keymap_index: 1 };
+        context.handle_event(key::Event::Input(chord_press));
+        let actual_res = pks.handle_event((&context).into(), keymap_index, chord_press.into());
 
         // Assert: resolved aux key should have no events, should have (resolved) no output.
         let expected_res = Some(ChordResolution::Chord);
