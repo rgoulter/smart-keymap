@@ -1417,11 +1417,11 @@ let validators = import "validators.ncl" in
               let chords_fragment =
                 config.chorded.chords
                 |> std.array.map (fun indices =>
-                  "Some(crate::key::chorded::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}]))"
+                  "crate::key::chorded::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}])"
                 )
                 |> std.string.join ","
               in
-              "chords: [%{chords_fragment}],"
+              "chords: crate::slice::Slice::from_slice(&[%{chords_fragment}]),"
             else
               ""
           in
