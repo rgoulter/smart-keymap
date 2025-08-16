@@ -61,37 +61,17 @@ pub struct Config {
     pub timeout: u16,
 
     /// The keymap chords.
-    #[serde(deserialize_with = "deserialize_chords")]
-    pub chords: [Option<ChordIndices>; MAX_CHORDS],
+    pub chords: Slice<ChordIndices, MAX_CHORDS>,
 }
 
 fn default_timeout() -> u16 {
     DEFAULT_CONFIG.timeout
 }
 
-/// Deserialize chords for [Config].
-fn deserialize_chords<'de, D>(
-    deserializer: D,
-) -> Result<[Option<ChordIndices>; MAX_CHORDS], D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let mut v: heapless::Vec<Option<heapless::Vec<u16, MAX_CHORD_SIZE>>, MAX_CHORDS> =
-        Deserialize::deserialize(deserializer)?;
-
-    while !v.is_full() {
-        v.push(None).unwrap();
-    }
-
-    v.into_array()
-        .map(|a| a.map(|ch_op| ch_op.map(|ch| ch.into())))
-        .map_err(|_| serde::de::Error::custom("unable to deserialize"))
-}
-
 /// Default config.
 pub const DEFAULT_CONFIG: Config = Config {
     timeout: 200,
-    chords: [None; MAX_CHORDS],
+    chords: Slice::from_slice(&[]),
 };
 
 impl Default for Config {
@@ -132,8 +112,8 @@ impl Context {
         self.config
             .chords
             .iter()
-            .filter_map(|&c| c)
             .filter(|c| indices.iter().all(|&i| c.has_index(i)))
+            .cloned()
             .collect()
     }
 
@@ -758,7 +738,7 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS, with chord 01.
         let mut context = key::composite::Context::from_config(composite::Config {
             chorded: Config {
-                chords: [Some(ChordIndices::from_slice(&[0, 1])), None, None, None],
+                chords: Slice::from_slice(&[ChordIndices::from_slice(&[0, 1])]),
                 ..DEFAULT_CONFIG
             },
             ..composite::DEFAULT_CONFIG
