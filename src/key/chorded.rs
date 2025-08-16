@@ -251,30 +251,50 @@ where
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
         key::KeyEvents<K::Event>,
     ) {
+        let chorded_ctx: &Context = context.into();
+
         let keymap_index: u16 = key_path[0];
         let pks = PendingKeyState::new(context.into(), keymap_index);
 
         let chord_resolution = pks.check_resolution(context.into());
 
         if let PendingChordState::Resolved(resolution) = chord_resolution {
-            let (i, key) = match resolution {
+            let maybe_pathel_key = match resolution {
                 ChordResolution::Chord(resolved_chord_id) => {
-                    if let Some((_, k)) = self
-                        .chords
-                        .iter()
-                        .find(|(ch_id, _)| *ch_id == resolved_chord_id)
+                    // Whether the resolved chord is associated with this key.
+                    // (i.e. the resolved chord's primary keymap index is this keymap index).
+                    if let Some(resolved_chord_indices) =
+                        chorded_ctx.config.chords.get(resolved_chord_id as usize)
                     {
-                        (resolved_chord_id, k)
+                        if resolved_chord_indices.as_slice()[0] == keymap_index {
+                            if let Some((_, k)) = self
+                                .chords
+                                .iter()
+                                .find(|(ch_id, _)| *ch_id == resolved_chord_id)
+                            {
+                                Some((resolved_chord_id, k))
+                            } else {
+                                panic!("check_resolution has invalid chord id")
+                            }
+                        } else {
+                            None
+                        }
                     } else {
-                        panic!("check_resolution returned resolution with invalid chord id")
+                        panic!("check_resolution has invalid chord id")
                     }
                 }
-                ChordResolution::Passthrough => (0, &self.passthrough),
+                ChordResolution::Passthrough => Some((0, &self.passthrough)),
             };
 
-            let (pkr, pke) = key.new_pressed_key(context, key_path);
-            // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-            (pkr.add_path_item(1 + i as u16), pke)
+            if let Some((i, k)) = maybe_pathel_key {
+                let (pkr, pke) = k.new_pressed_key(context, key_path);
+                // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
+                (pkr.add_path_item(1 + i as u16), pke)
+            } else {
+                let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                let pke = key::KeyEvents::no_events();
+                (pkr, pke)
+            }
         } else {
             let pkr = key::PressedKeyResult::Pending(key_path, pks.into());
 
