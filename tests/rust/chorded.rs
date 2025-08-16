@@ -3,6 +3,7 @@ mod tap_hold;
 use smart_keymap::input;
 use smart_keymap::key;
 use smart_keymap::keymap;
+use smart_keymap::slice::Slice;
 use smart_keymap::tuples;
 
 use keymap::DistinctReports;
@@ -33,12 +34,7 @@ const KEYS: Keys2<CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
 
 const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
     chorded: chorded::Config {
-        chords: [
-            Some(chorded::ChordIndices::from_slice(&[0, 1])),
-            None,
-            None,
-            None,
-        ],
+        chords: Slice::from_slice(&[chorded::ChordIndices::from_slice(&[0, 1])]),
         ..chorded::DEFAULT_CONFIG
     },
     ..composite::DEFAULT_CONFIG
@@ -244,12 +240,7 @@ fn press_chord_4_acts_as_chord() {
     ));
     let context: Ctx = key::composite::Context::from_config(composite::Config {
         chorded: chorded::Config {
-            chords: [
-                Some(chorded::ChordIndices::from_slice(&[0, 1, 2, 3])),
-                None,
-                None,
-                None,
-            ],
+            chords: Slice::from_slice(&[chorded::ChordIndices::from_slice(&[0, 1, 2, 3])]),
             ..chorded::DEFAULT_CONFIG
         },
         ..composite::DEFAULT_CONFIG
