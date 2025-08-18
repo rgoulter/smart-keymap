@@ -616,9 +616,7 @@ impl<
 
                     // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
 
-                    let ch_r_ev = key::chorded::Event::ChordResolved(
-                        key::chorded::ChordResolution::Passthrough,
-                    );
+                    let ch_r_ev = Event::ChordResolved(ChordResolution::Passthrough);
                     let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
                         keymap_index,
                         ch_r_ev.into(),
