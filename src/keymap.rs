@@ -413,6 +413,21 @@ impl<
                 Some(key::PressedKeyResult::Pending(kp, pks)) => {
                     *key_path = kp;
                     *pending_key_state = pks;
+
+                    // Since the pending key state resolved into another pending key state,
+                    //  we re-queue all the input events that had been received.
+                    let orig_input_queue = core::mem::take(&mut self.input_queue);
+                    while let Some(ev) = queued_events.pop() {
+                        match ev {
+                            key::Event::Input(input_ev) => {
+                                self.input_queue.enqueue(input_ev).unwrap();
+                            }
+                            _ => {}
+                        }
+                    }
+                    orig_input_queue.iter().for_each(|&ev| {
+                        self.input_queue.enqueue(ev).unwrap();
+                    });
                 }
                 None => {}
             }
