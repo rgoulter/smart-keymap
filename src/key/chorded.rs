@@ -433,7 +433,7 @@ impl<
                                         .iter()
                                         .find(|(ch_id, _)| *ch_id == resolved_chord_id)
                                     {
-                                        Some((resolved_chord_id, k))
+                                        Some((1 + resolved_chord_id, k))
                                     } else {
                                         panic!("event's chord resolution has invalid chord id")
                                     }
@@ -456,7 +456,7 @@ impl<
                     if let Some((i, nk)) = maybe_pathel_and_key {
                         let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
                         // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                        let pkr = pkr.add_path_item(1 + i as u16);
+                        let pkr = pkr.add_path_item(i as u16);
 
                         pke.add_event(sch_ev);
 
