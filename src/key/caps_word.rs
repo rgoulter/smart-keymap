@@ -177,3 +177,9 @@ impl key::Key for Key {
         self
     }
 }
+
+impl Default for Key {
+    fn default() -> Self {
+        Self::new()
+    }
+}
