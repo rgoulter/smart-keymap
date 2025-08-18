@@ -18,7 +18,7 @@ pub type LayerIndex = usize;
 pub type LayerBitset = u32;
 
 /// The maximum number of layers that can be represented in a [LayerBitset].
-pub const MAX_BITSET_LAYER: usize = 8 * core::mem::size_of::<LayerBitset>();
+pub const MAX_BITSET_LAYER: usize = 8 * core::mem::size_of::<LayerBitset>() - 1;
 
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
@@ -226,8 +226,7 @@ impl Context {
                 self.active_layers.deactivate(layer);
             }
             LayerEvent::LayersSet(layer_set) => {
-                // 32 because the bitset is a u32
-                let max_layer = LAYER_COUNT.min(32);
+                let max_layer = LAYER_COUNT.min(MAX_BITSET_LAYER + 1);
 
                 // layer 0 is always active.
                 for li in 1..max_layer {
