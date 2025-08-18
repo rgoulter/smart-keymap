@@ -132,7 +132,7 @@ impl<
                     td_pks.handle_event(context.into(), keymap_index, td_ev);
 
                 if let Some(TapDanceResolution(idx)) = maybe_resolution {
-                    let nk = (&self.definitions[idx as usize]).as_ref().unwrap();
+                    let nk = self.definitions[idx as usize].as_ref().unwrap();
 
                     let (pkr, pke) = nk.new_pressed_key(context, key_path);
                     // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
@@ -144,7 +144,7 @@ impl<
                     let definition_count = self.definitions.iter().filter(|o| o.is_some()).count();
                     if td_pks.press_count as usize >= definition_count - 1 {
                         let idx = definition_count - 1;
-                        let nk = (&self.definitions[idx]).as_ref().unwrap();
+                        let nk = self.definitions[idx].as_ref().unwrap();
                         let (pkr, pke) = nk.new_pressed_key(context, key_path);
                         // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
                         let pkr = pkr.add_path_item(idx as u16);
