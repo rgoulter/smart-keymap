@@ -70,7 +70,18 @@ let MEDIA_ = 7 in
             _ _ _ _
             X X _ _
           "% |> CH.indices,
-          key = K.C, # XXX ... and num
+          key = K.C
+            & {
+              layered = [
+                K.NO,
+                K.NO,
+                K.NO,
+                K.N9,
+                K.NO,
+                K.NO,
+                K.NO,
+              ],
+            },
         },
         {
           indices = m%"
@@ -84,14 +95,36 @@ let MEDIA_ = 7 in
             X X _ _
             _ _ _ _
           "% |> CH.indices,
-          key = K.F, # XXX ... and num
+          key = K.F
+            & {
+              layered = [
+                K.NO,
+                K.NO,
+                K.NO,
+                K.N7,
+                K.NO,
+                K.NO,
+                K.NO,
+              ],
+            },
         },
         {
           indices = m%"
             _ X X _
             _ _ _ _
           "% |> CH.indices,
-          key = K.G, # XXX ... and num
+          key = K.G
+            & {
+              layered = [
+                K.NO,
+                K.NO,
+                K.NO,
+                K.N8,
+                K.NO,
+                K.NO,
+                K.NO,
+              ],
+            },
         },
         {
           indices = m%"
@@ -154,7 +187,18 @@ let MEDIA_ = 7 in
             _ _ _ _
             _ X X _
           "% |> CH.indices,
-          key = K.U, # XXX ... and num
+          key = K.U
+            & {
+              layered = [
+                K.NO,
+                K.NO,
+                K.NO,
+                K.N0,
+                K.NO,
+                K.NO,
+                K.NO,
+              ],
+            },
         },
         {
           indices = m%"
