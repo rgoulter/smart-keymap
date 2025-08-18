@@ -544,8 +544,11 @@ where
 
                     (pkr, pke)
                 }
-                // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
-                ChordResolution::Passthrough => self.passthrough.new_pressed_key(context, key_path),
+                ChordResolution::Passthrough => {
+                    let (pkr, pke) = self.passthrough.new_pressed_key(context, key_path);
+                    let pkr = pkr.add_path_item(0); // 0 = passthrough key
+                    (pkr, pke)
+                }
             }
         } else {
             let pkr = key::PressedKeyResult::Pending(key_path, pks.into());
@@ -613,8 +616,7 @@ impl<
                 if let Some(ChordResolution::Passthrough) = ch_state {
                     let nk = &self.passthrough;
                     let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
-
-                    // n.b. no need to add to key path; chorded aux_key only nests the passthrough key.
+                    let pkr = pkr.add_path_item(0); // 0 = passthrough key
 
                     let ch_r_ev = Event::ChordResolved(ChordResolution::Passthrough);
                     let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
@@ -657,7 +659,8 @@ impl<
     > {
         match path {
             [] => self,
-            _ => self.passthrough.lookup(path),
+            [0, path @ ..] => self.passthrough.lookup(path),
+            _ => panic!("illegal path"),
         }
     }
 }
