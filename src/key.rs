@@ -499,6 +499,12 @@ impl<Ctx: Debug, Ev: Copy + Debug> KeyState for NoOpKeyState<Ctx, Ev> {
     type Event = Ev;
 }
 
+impl<Ctx, Ev> Default for NoOpKeyState<Ctx, Ev> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Errors for [TryFrom] implementations.
 #[allow(unused)]
 pub enum EventError {
