@@ -18,13 +18,17 @@ let MEDIA_ = 7 in
     let CH = import "chording.ncl" in
     [
         # Set Layer chords
-        # XXX: will need to be able to set *back* to base
         {
           indices = m%"
             X _ X _
             _ X _ _
           "% |> CH.indices,
-          key = K.layer_mod.set_active_layers_to [MOUSE_],
+          key = K.layer_mod.set_active_layers_to [MOUSE_]
+            & {
+              layered =
+                let B = K.layer_mod.set_active_layers_to [BASE_] in
+                [B, B, B, B, B, B, B],
+            },
         },
 
         {
@@ -32,7 +36,12 @@ let MEDIA_ = 7 in
             _ X _ _
             X _ X _
           "% |> CH.indices,
-          key = K.layer_mod.set_active_layers_to [NAV_],
+          key = K.layer_mod.set_active_layers_to [NAV_]
+            & {
+              layered =
+                let B = K.layer_mod.set_active_layers_to [BASE_] in
+                [B, B, B, B, B, B, B],
+            },
         },
 
         {
@@ -40,7 +49,12 @@ let MEDIA_ = 7 in
             X _ _ X
             X _ _ X
           "% |> CH.indices,
-          key = K.layer_mod.set_active_layers_to [BT_],
+          key = K.layer_mod.set_active_layers_to [BT_]
+            & {
+              layered =
+                let B = K.layer_mod.set_active_layers_to [BASE_] in
+                [B, B, B, B, B, B, B],
+            },
         },
 
         # Base (& Num) chords
