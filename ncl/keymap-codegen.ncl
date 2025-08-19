@@ -1554,22 +1554,27 @@ let validators = import "validators.ncl" in
         std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
       in
       let num_layers =
-        keys
-        |> std.array.fold_left
-          (fun max_num_layers key =>
-            let num_layers =
-              key
-              |> match {
-                { layered, .. } => std.array.length layered,
-                _ => 0,
-              }
-            in
-            if num_layers > max_num_layers then
-              num_layers
-            else
-              max_num_layers
-          )
-          0
+        let max_layered_lengths =
+          std.array.map
+            (fun k =>
+              let cv = key.codegen_values k in
+              key.traverse
+                (fun acc cv =>
+                  cv
+                  |> match {
+                    { nested = { layered, .. }, .. } =>
+                      let len = std.array.length layered in
+                      if len > acc then len else acc,
+                    _ => acc,
+                  }
+                )
+                0
+                cv
+            )
+            keys
+        in
+        # Compute the max over all
+        std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let codegen_values =
