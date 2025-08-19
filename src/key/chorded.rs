@@ -280,20 +280,27 @@ impl Context {
 /// The primary key is the key with the lowest index in the chord,
 ///  and has the key used for the resolved chord.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key<K: Copy> {
+pub struct Key<CK: Copy, K: Copy = CK> {
     /// The chorded key
-    pub chords: Slice<(ChordId, K), MAX_OVERLAPPING_CHORD_SIZE>,
+    pub chords: Slice<(ChordId, CK), MAX_OVERLAPPING_CHORD_SIZE>,
     /// The passthrough key
     pub passthrough: K,
 }
 
-impl<K: Copy + key::Key> Key<K>
+impl<
+        CK: Copy + key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+        K: Copy + key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+        Ctx: Copy,
+        Ev: Debug + Copy + PartialEq,
+        PKS,
+        KS,
+    > Key<CK, K>
 where
-    for<'c> &'c K::Context: Into<&'c Context>,
-    K::Event: TryInto<Event>,
-    K::Event: From<Event>,
-    K::PendingKeyState: From<PendingKeyState>,
-    K::KeyState: From<key::NoOpKeyState<K::Context, K::Event>>,
+    for<'c> &'c Ctx: Into<&'c Context>,
+    Ev: TryInto<Event>,
+    Ev: From<Event>,
+    PKS: From<PendingKeyState>,
+    KS: From<key::NoOpKeyState<CK::Context, CK::Event>>,
 {
     /// Constructs new pressed key.
     pub fn new_pressed_key(
@@ -301,8 +308,8 @@ where
         context: &K::Context,
         key_path: key::KeyPath,
     ) -> (
-        key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
-        key::KeyEvents<K::Event>,
+        key::PressedKeyResult<CK::PendingKeyState, CK::KeyState>,
+        key::KeyEvents<CK::Event>,
     ) {
         let chorded_ctx: &Context = context.into();
 
@@ -312,7 +319,10 @@ where
         let chord_resolution = pks.check_resolution();
 
         if let PendingChordState::Resolved(resolution) = chord_resolution {
-            let maybe_pathel_key = match resolution {
+            let maybe_pathel_key: Option<(
+                u8,
+                &dyn key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+            )> = match resolution {
                 ChordResolution::Chord(resolved_chord_id) => {
                     // Whether the resolved chord is associated with this key.
                     // (i.e. the resolved chord's primary keymap index is this keymap index).
