@@ -819,9 +819,19 @@ impl PendingKeyState {
                 keymap_index: released_keymap_index,
             }) => {
                 if released_keymap_index == keymap_index {
-                    // This key state resolves to "Passthrough",
-                    //  since it has been released before resolving as chord.
-                    Some(ChordResolution::Passthrough)
+                    let maybe_satisfied_chord_id = self
+                        .satisfied_chord()
+                        .map(|chord_state| chord_state.index as u8);
+
+                    match maybe_satisfied_chord_id {
+                        Some(satisfied_chord_id) => {
+                            Some(ChordResolution::Chord(satisfied_chord_id))
+                        }
+
+                        // This key state resolves to "Passthrough",
+                        //  since it has been released before any chord is satisfied.
+                        None => Some(ChordResolution::Passthrough),
+                    }
                 } else {
                     None
                 }
