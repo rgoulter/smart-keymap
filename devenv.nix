@@ -36,6 +36,7 @@
     pkgs.lldb
     pkgs.nickel
     pkgs.nls
+    pkgs.picotool
     pkgs.rust-cbindgen
     pkgs.yaml-language-server
     uf2conv
