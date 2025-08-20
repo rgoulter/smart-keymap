@@ -112,7 +112,7 @@ pub enum PressedKeyResult<PKS, KS> {
     /// Unresolved key state. (e.g. tap-hold or chorded keys when first pressed).
     Pending(KeyPath, PKS),
     /// Resolved key state.
-    Resolved(KS),
+    Resolved(KS), // TODO PKR: replace this with KeyPath?
 }
 
 /// Constructs key path with the given keymap index.
@@ -190,6 +190,7 @@ pub trait Key: Debug {
         key_path: KeyPath,
         event: Event<Self::Event>,
     ) -> (
+        // TODO PKR: change this to involve KeyPath?
         Option<PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
         KeyEvents<Self::Event>,
     );

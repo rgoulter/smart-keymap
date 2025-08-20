@@ -340,6 +340,7 @@ where
             };
 
             if let Some((i, k)) = maybe_pathel_key {
+                // TODO PKR
                 let (pkr, pke) = k.new_pressed_key(context, key_path);
                 // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
                 (pkr.add_path_item(i as u16), pke)
@@ -454,6 +455,7 @@ impl<
                     ));
 
                     if let Some((i, nk)) = maybe_pathel_and_key {
+                        // TODO PKR
                         let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
                         // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
                         let pkr = pkr.add_path_item(i as u16);
@@ -545,6 +547,7 @@ where
                     (pkr, pke)
                 }
                 ChordResolution::Passthrough => {
+                    // TODO PKR
                     let (pkr, pke) = self.passthrough.new_pressed_key(context, key_path);
                     let pkr = pkr.add_path_item(0); // 0 = passthrough key
                     (pkr, pke)
@@ -614,6 +617,7 @@ impl<
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let ch_state = ch_pks.handle_event(keymap_index, ch_ev);
                 if let Some(ChordResolution::Passthrough) = ch_state {
+                    // TODO PKR
                     let nk = &self.passthrough;
                     let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
                     let pkr = pkr.add_path_item(0); // 0 = passthrough key
