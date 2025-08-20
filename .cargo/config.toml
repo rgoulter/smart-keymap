@@ -8,7 +8,7 @@ rustflags = [
 
 [target.thumbv6m-none-eabi]
 
-runner = "elf2uf2-rs -d"
+runner = "picotool load --update --verify --execute -t elf"
 
 rustflags = [
   "-C", "link-arg=--library-path=ld/rp2040",
