@@ -325,7 +325,7 @@ where
                                 .iter()
                                 .find(|(ch_id, _)| *ch_id == resolved_chord_id)
                             {
-                                Some((resolved_chord_id, k))
+                                Some((1 + resolved_chord_id, k))
                             } else {
                                 panic!("check_resolution has invalid chord id")
                             }
@@ -342,7 +342,7 @@ where
             if let Some((i, k)) = maybe_pathel_key {
                 let (pkr, pke) = k.new_pressed_key(context, key_path);
                 // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                (pkr.add_path_item(1 + i as u16), pke)
+                (pkr.add_path_item(i as u16), pke)
             } else {
                 let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
                 let pke = key::KeyEvents::no_events();
