@@ -1,3 +1,4 @@
+mod over_layered_tap_hold;
 mod overlapping;
 mod overlapping_aux;
 mod overlapping_simultaneous;
