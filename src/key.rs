@@ -107,6 +107,7 @@ impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
 }
 
 /// Pressed Key which may be pending, or a resolved key state.
+#[derive(Debug)]
 pub enum PressedKeyResult<PKS, KS> {
     /// Unresolved key state. (e.g. tap-hold or chorded keys when first pressed).
     Pending(KeyPath, PKS),
