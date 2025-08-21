@@ -136,7 +136,7 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
     pub fn add_path_item(self, item: u16) -> Self {
         match self {
             PressedKeyResult::Pending(mut key_path, pks) => {
-                key_path.push(item).unwrap();
+                key_path.insert(1, item).unwrap();
                 PressedKeyResult::Pending(key_path, pks)
             }
             pkr => pkr,
