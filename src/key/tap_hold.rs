@@ -104,6 +104,7 @@ impl<K: key::Key> Key<K> {
                     let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
                     (pk, pke)
                 } else {
+                    // TODO PKR
                     // Keymap has not been idle for long enough;
                     // immediately resolve as tap.
                     self.tap.new_pressed_key(context, key_path)
@@ -177,6 +178,7 @@ impl<
             if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
                 if let Some(th_state) = th_state {
+                    // TODO PKR
                     let (i, nk) = match th_state {
                         key::tap_hold::TapHoldState::Tap => (0, &self.tap),
                         key::tap_hold::TapHoldState::Hold => (1, &self.hold),

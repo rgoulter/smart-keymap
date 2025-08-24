@@ -402,6 +402,7 @@ impl<
                 key_path.clone(),
                 ev.into(),
             );
+            // TODO PKR (process_input): PKS.handle_ev will return Option<KeyPath> ... call npk with that.
 
             pke.into_iter()
                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
@@ -456,6 +457,7 @@ impl<
                     let mut key_path = key::KeyPath::new();
                     key_path.push(keymap_index).unwrap();
                     let (pk, pke) = key.new_pressed_key(&self.context, key_path);
+                    // TODO PKR: npk pkr (pk) ... not just 'pending'|'resolved', but now also 'NPK'.
 
                     pke.into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
@@ -548,6 +550,7 @@ impl<
             let pending_key = pending_key.lookup(&key_path[1..]);
             let (ks, pke) =
                 pending_key.handle_event(pending_key_state, &self.context, key_path.clone(), ev);
+            // TODO PKR (handle_event): PKS.handle_ev will return Option<KeyPath> ... call npk with that.
 
             pke.into_iter()
                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
