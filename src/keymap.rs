@@ -293,7 +293,7 @@ impl<
         }) = self.pending_key_state.take()
         {
             // Cancel events which were scheduled for the (pending) key.
-            let keymap_index = key_path[0];
+            let keymap_index = key_path.keymap_index();
             self.event_scheduler
                 .cancel_events_for_keymap_index(keymap_index);
 
@@ -394,7 +394,7 @@ impl<
         {
             queued_events.push(ev.into()).unwrap();
 
-            let pending_key = &self.key_definitions[key_path[0] as usize];
+            let pending_key = &self.key_definitions[key_path.keymap_index() as usize];
             let pending_key = pending_key.lookup(&key_path[1..]);
             let (ks, pke) = pending_key.handle_event(
                 pending_key_state,
@@ -453,8 +453,7 @@ impl<
                 {
                     let key = &self.key_definitions[keymap_index as usize];
 
-                    let mut key_path = key::KeyPath::new();
-                    key_path.push(keymap_index).unwrap();
+                    let key_path = key::key_path(keymap_index);
                     let (pk, pke) = key.new_pressed_key(&self.context, key_path);
 
                     pke.into_iter()
@@ -544,7 +543,7 @@ impl<
             ..
         }) = &mut self.pending_key_state
         {
-            let pending_key = &self.key_definitions[key_path[0] as usize];
+            let pending_key = &self.key_definitions[key_path.keymap_index() as usize];
             let pending_key = pending_key.lookup(&key_path[1..]);
             let (ks, pke) =
                 pending_key.handle_event(pending_key_state, &self.context, key_path.clone(), ev);
