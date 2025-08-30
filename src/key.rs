@@ -34,7 +34,28 @@ pub const MAX_KEY_EVENTS: usize = 4;
 pub const MAX_KEY_PATH_LEN: usize = 4;
 
 /// Sequence of indices into a key map.
-pub type KeyPath = heapless::Vec<u16, MAX_KEY_PATH_LEN>;
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct KeyPath(heapless::Vec<u16, MAX_KEY_PATH_LEN>);
+
+impl KeyPath {
+    /// Returns the keymap index (the first item in the path).
+    pub fn keymap_index(&self) -> u16 {
+        self.0[0]
+    }
+
+    /// Adds an item to the KeyPath.
+    pub fn add_path_item(&mut self, item: u16) {
+        self.0.insert(1, item).unwrap();
+    }
+}
+
+impl core::ops::Deref for KeyPath {
+    type Target = [u16];
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 /// Events emitted when a [Key] is pressed.
 #[derive(Debug, PartialEq, Eq)]
@@ -117,9 +138,9 @@ pub enum PressedKeyResult<PKS, KS> {
 
 /// Constructs key path with the given keymap index.
 pub fn key_path(keymap_index: u16) -> KeyPath {
-    let mut key_path = KeyPath::new();
-    key_path.push(keymap_index).unwrap();
-    key_path
+    let mut vec = heapless::Vec::new();
+    vec.push(keymap_index).unwrap();
+    KeyPath(vec)
 }
 
 impl<PKS, KS> PressedKeyResult<PKS, KS> {
@@ -136,7 +157,7 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
     pub fn add_path_item(self, item: u16) -> Self {
         match self {
             PressedKeyResult::Pending(mut key_path, pks) => {
-                key_path.insert(1, item).unwrap();
+                key_path.add_path_item(item);
                 PressedKeyResult::Pending(key_path, pks)
             }
             pkr => pkr,
