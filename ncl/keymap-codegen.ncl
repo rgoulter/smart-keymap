@@ -1408,8 +1408,8 @@ let validators = import "validators.ncl" in
       codegen_module.traverse f acc cv,
   },
 
-  keymap_rs
-    | doc "Text contents of the keymap.rs generated from the keymap.json"
+  rust_expressions
+    | doc "Record of rust expressions generated from keymap.json"
     =
       let { config, keys } =
         json_keymap
@@ -1619,7 +1619,8 @@ let validators = import "validators.ncl" in
         else
           0
       in
-      m%"
+      {
+        keymap_module = m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
     /// Config used by tap-hold keys.
@@ -1678,5 +1679,10 @@ pub mod init {
         %{key_exprs}
     ));
 }
-"%
+"%,
+      },
+
+  keymap_rs
+    | doc "Text contents of the keymap.rs generated from the keymap.json"
+    = rust_expressions.keymap_module,
 }
