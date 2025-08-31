@@ -1627,7 +1627,7 @@ let validators = import "validators.ncl" in
             tap_hold: %{tap_hold_config_expr},
             ..crate::key::composite::DEFAULT_CONFIG
         }"%,
-        context = "crate::key::composite::Context::from_config(CONFIG)",
+        context = "crate::key::composite::Context::from_config(%{config})",
         key_definitions = "%{keys_id}::new((%{key_exprs}))",
         keymap_module = m%"
 /// Types and initial data used for constructing [KEYMAP].
