@@ -81,6 +81,57 @@ pub fn nickel_keymap_rs_for_keymap_path(
     }
 }
 
+/// Evaluates the Nickel expr for a keymap, returning the keymap expression.
+pub fn nickel_keymap_expr_for_keymap_ncl(ncl_import_path: &str, keymap_ncl: &str) -> NickelResult {
+    let spawn_nickel_result = Command::new("nickel")
+        .args([
+            "export",
+            "--format=raw",
+            &format!("--import-path={}", ncl_import_path),
+            "--field=rust_expressions.keymap",
+        ])
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => Err(NickelError::NickelNotFound),
+            _ => panic!("Failed to spawn nickel: {:?}", e),
+        });
+
+    match spawn_nickel_result {
+        Ok(mut nickel_command) => {
+            let child_stdin = nickel_command.stdin.as_mut().unwrap();
+            child_stdin
+                .write_all(
+                    format!(
+                        r#"(import "keymap-codegen.ncl") & (import "keymap-ncl-to-json.ncl") & ({})"#,
+                        keymap_ncl
+                    )
+                    .as_bytes(),
+                )
+                .unwrap_or_else(|e| panic!("Failed to write to stdin: {:?}", e));
+
+            match nickel_command.wait_with_output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        String::from_utf8(output.stdout)
+                            .map_err(|e| panic!("Failed to decode UTF-8: {:?}", e))
+                    } else {
+                        let nickel_error_message = String::from_utf8(output.stderr)
+                            .unwrap_or_else(|e| panic!("Failed to decode UTF-8: {:?}", e));
+                        Err(NickelError::EvalError(nickel_error_message))
+                    }
+                }
+                Err(io_e) => {
+                    panic!("Unhandled IO error: {:?}", io_e)
+                }
+            }
+        }
+        Err(e) => Err(e?),
+    }
+}
+
 /// Evaluates the Nickel expr for a board, returning the board.rs contents.
 pub fn nickel_board_rs_for_board_path(
     NickelEvalInputs {
