@@ -45,7 +45,24 @@ pub mod init {
     pub use crate::key::composite::Key;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = crate::key::composite::Context::from_config(CONFIG);
+    pub const CONTEXT: Context =
+        crate::key::composite::Context::from_config(crate::key::composite::Config {
+            chorded: crate::key::chorded::Config {
+                chords: crate::slice::Slice::from_slice(&[
+                    crate::key::chorded::ChordIndices::from_slice(&[26, 27]),
+                    crate::key::chorded::ChordIndices::from_slice(&[32, 33]),
+                ]),
+                ..crate::key::chorded::DEFAULT_CONFIG
+            },
+            sticky: crate::key::sticky::DEFAULT_CONFIG,
+            tap_dance: crate::key::tap_dance::DEFAULT_CONFIG,
+            tap_hold: crate::key::tap_hold::Config {
+                interrupt_response: crate::key::tap_hold::InterruptResponse::HoldOnKeyTap,
+
+                ..crate::key::tap_hold::DEFAULT_CONFIG
+            },
+            ..crate::key::composite::DEFAULT_CONFIG
+        });
 
     crate::tuples::define_keys!(48);
 
