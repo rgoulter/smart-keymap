@@ -7,14 +7,14 @@ let validators = import "validators.ncl" in
     timeout | optional | Number,
   },
 
-  StickyActivationJson =
+  StickyActivationJson_ =
     std.contract.from_validator (
       validators.is_elem_of [
         "OnStickyKeyRelease"
       ]
     ),
 
-  StickyReleaseJson =
+  StickyReleaseJson_ =
     std.contract.from_validator (
       validators.is_elem_of [
         "OnModifiedKeyRelease",
@@ -25,10 +25,10 @@ let validators = import "validators.ncl" in
   StickyConfigJson = {
     activation
       | optional
-      | StickyActivationJson,
+      | StickyActivationJson_,
     release
       | optional
-      | StickyReleaseJson,
+      | StickyReleaseJson_,
   },
 
   TapDanceConfigJson = {
