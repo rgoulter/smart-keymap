@@ -306,7 +306,7 @@ where
     ) {
         let chorded_ctx: &Context = context.into();
 
-        let keymap_index: u16 = key_path[0];
+        let keymap_index = key_path.keymap_index();
         let pks = PendingKeyState::new(context.into(), keymap_index);
 
         let chord_resolution = pks.check_resolution();
@@ -411,7 +411,7 @@ impl<
         Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
         key::KeyEvents<Self::Event>,
     ) {
-        let keymap_index: u16 = key_path[0];
+        let keymap_index = key_path.keymap_index();
         let ch_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(ch_pks) = ch_pks_res {
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
@@ -531,7 +531,7 @@ where
         key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
         key::KeyEvents<K::Event>,
     ) {
-        let keymap_index: u16 = key_path[0];
+        let keymap_index = key_path.keymap_index();
         let pks = PendingKeyState::new(context.into(), keymap_index);
 
         let chord_resolution = pks.check_resolution();
@@ -608,7 +608,7 @@ impl<
         Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
         key::KeyEvents<Self::Event>,
     ) {
-        let keymap_index = key_path[0];
+        let keymap_index = key_path.keymap_index();
         let ch_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(ch_pks) = ch_pks_res {
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {

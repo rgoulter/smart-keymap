@@ -71,7 +71,7 @@ impl<K: key::Key> Key<K> {
         Event: Into<K::Event>,
         PendingKeyState: Into<K::PendingKeyState>,
     {
-        let keymap_index: u16 = key_path[0];
+        let keymap_index: u16 = key_path.keymap_index();
 
         let td_pks = PendingKeyState::new();
         let pk = key::PressedKeyResult::Pending(key_path, td_pks.into());
@@ -124,7 +124,7 @@ impl<
         Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
         key::KeyEvents<Self::Event>,
     ) {
-        let keymap_index = key_path[0];
+        let keymap_index = key_path.keymap_index();
         let td_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(td_pks) = td_pks_res {
             if let Ok(td_ev) = event.try_into_key_event(|e| e.try_into()) {

@@ -105,7 +105,7 @@ impl key::Key for ModifierKey {
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        let keymap_index: u16 = key_path[0];
+        let keymap_index: u16 = key_path.keymap_index();
         let (m_ks, lmod_ev) = self.new_pressed_key();
         let pks = key::PressedKeyResult::Resolved(m_ks.into());
         let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev)).into_events();
