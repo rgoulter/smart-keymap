@@ -1482,7 +1482,7 @@ let validators = import "validators.ncl" in
       let tap_dance_config_expr =
         if std.record.has_field "tap_dance" config then
           let timeout_field_fragment =
-            if std.record.has_field "timeout" config.dance then
+            if std.record.has_field "timeout" config.tap_dance then
               "timeout: %{std.to_string config.tap_dance.timeout},"
             else
               ""
