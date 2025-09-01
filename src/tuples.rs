@@ -50,6 +50,8 @@ impl<
 
 // Use seq_macro's seq! to generate Keys2, Keys3, etc.
 
+#[macro_export]
+/// Defines tuple structs KeysN for N keys, where N is the given expression.
 macro_rules! define_keys {
     ($n:expr) => {
         paste::paste! {
@@ -58,13 +60,13 @@ macro_rules! define_keys {
                 #[derive(core::fmt::Debug)]
                 pub struct [<Keys $n>]<
                     #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+                        K~I: $crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
                     )*
                     Ctx,
                     Ev,
                     PKS,
                     KS,
-                    const M: usize = { crate::key::MAX_KEY_EVENTS },
+                    const M: usize = { $crate::key::MAX_KEY_EVENTS },
                 >(
                     #(
                         K~I,
@@ -73,7 +75,7 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + Copy,
+                        K~I: $crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + Copy,
                     )*
                     Ctx,
                     Ev,
@@ -101,7 +103,7 @@ macro_rules! define_keys {
 
                 impl<
                     #(
-                        K~I: crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + 'static,
+                        K~I: $crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS> + 'static,
                     )*
                     Ctx,
                     Ev,
@@ -113,7 +115,7 @@ macro_rules! define_keys {
                     Ctx, Ev, PKS, KS, M
                     >
                 {
-                    type Output = dyn crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>;
+                    type Output = dyn $crate::key::Key<Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>;
 
                     fn index(&self, idx: usize) -> &Self::Output {
                         match idx {
@@ -129,7 +131,7 @@ macro_rules! define_keys {
     };
 }
 
-pub(crate) use define_keys;
+pub use define_keys;
 
 define_keys!(2);
 
