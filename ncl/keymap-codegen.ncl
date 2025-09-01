@@ -105,10 +105,10 @@ let validators = import "validators.ncl" in
         }
       )
     in
-    (impl_for "base" "crate::key::composite::BaseKey" base_impls)
-    & (impl_for "tap_hold" "crate::key::composite::TapHoldKey" tap_hold_impls)
-    & (impl_for "layered" "crate::key::composite::LayeredKey" layered_impls)
-    & (impl_for "chorded" "crate::key::composite::ChordedKey" chorded_impls),
+    (impl_for "base" "smart_keymap::key::composite::BaseKey" base_impls)
+    & (impl_for "tap_hold" "smart_keymap::key::composite::TapHoldKey" tap_hold_impls)
+    & (impl_for "layered" "smart_keymap::key::composite::LayeredKey" layered_impls)
+    & (impl_for "chorded" "smart_keymap::key::composite::ChordedKey" chorded_impls),
 
   keyboard_modifiers = {
     JsonValue = std.contract.from_validator json_value_validator,
@@ -117,7 +117,7 @@ let validators = import "validators.ncl" in
 
     is_json_value = fun k => 'Ok == json_value_validator k,
 
-    expr = fun b => "crate::key::KeyboardModifiers::from_byte(%{std.to_string b})",
+    expr = fun b => "smart_keymap::key::KeyboardModifiers::from_byte(%{std.to_string b})",
   },
 
   checks.check_keyboard = {
@@ -140,13 +140,13 @@ let validators = import "validators.ncl" in
           check_key_type = {
             actual = cv.key_type,
             expected = {
-              as_rust_type_path = "crate::key::keyboard::Key",
-              key_type = "crate::key::keyboard::Key",
+              as_rust_type_path = "smart_keymap::key::keyboard::Key",
+              key_type = "smart_keymap::key::keyboard::Key",
             },
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::keyboard::Key::new(4)",
+            expected = "smart_keymap::key::keyboard::Key::new(4)",
           },
         },
     },
@@ -176,7 +176,7 @@ let validators = import "validators.ncl" in
       codegen_values = fun k =>
         {
           key_type = {
-            key_type = "crate::key::keyboard::Key",
+            key_type = "smart_keymap::key::keyboard::Key",
             as_rust_type_path = key_type,
           },
           key_impl = {
@@ -186,17 +186,17 @@ let validators = import "validators.ncl" in
             k
             |> match {
               { key_code } =>
-                "crate::key::keyboard::Key::new(%{std.to_string key_code})",
+                "smart_keymap::key::keyboard::Key::new(%{std.to_string key_code})",
               { modifiers } =>
-                "crate::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
+                "smart_keymap::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
               { key_code, modifiers } =>
-                "crate::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
+                "smart_keymap::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
             },
           json_value = k,
         },
 
       lift_to = fun key_impl cv =>
-        if key_impl.base == "crate::key::composite::BaseKey" then
+        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
           cv |> composite.base_key.keyboard
         else
           cv,
@@ -221,18 +221,18 @@ let validators = import "validators.ncl" in
       codegen_values = fun k =>
         {
           key_type = {
-            key_type = "crate::key::caps_word::Key",
+            key_type = "smart_keymap::key::caps_word::Key",
             as_rust_type_path = key_type,
           },
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::caps_word::Key::new()",
+          rust_expr = "smart_keymap::key::caps_word::Key::new()",
           json_value = k,
         },
 
       lift_to = fun key_impl cv =>
-        if key_impl.base == "crate::key::composite::BaseKey" then
+        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
           cv |> composite.base_key.caps_word
         else
           cv,
@@ -275,43 +275,43 @@ let validators = import "validators.ncl" in
           { Default = layer_index } =>
             {
               key_type = {
-                key_type = "crate::key::layered::ModifierKey",
+                key_type = "smart_keymap::key::layered::ModifierKey",
                 as_rust_type_path = key_type,
               },
               key_impl = {
                 base = key_type.key_type,
               },
-              rust_expr = "crate::key::layered::ModifierKey::default(%{std.to_string layer_index})",
+              rust_expr = "smart_keymap::key::layered::ModifierKey::default(%{std.to_string layer_index})",
               json_value = k,
             },
           { Hold = layer_index } =>
             {
               key_type = {
-                key_type = "crate::key::layered::ModifierKey",
+                key_type = "smart_keymap::key::layered::ModifierKey",
                 as_rust_type_path = key_type,
               },
               key_impl = {
                 base = key_type.key_type,
               },
-              rust_expr = "crate::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
+              rust_expr = "smart_keymap::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
               json_value = k,
             },
           { SetActiveLayers = active_layers_bitset } =>
             {
               key_type = {
-                key_type = "crate::key::layered::ModifierKey",
+                key_type = "smart_keymap::key::layered::ModifierKey",
                 as_rust_type_path = key_type,
               },
               key_impl = {
                 base = key_type.key_type,
               },
-              rust_expr = "crate::key::layered::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
+              rust_expr = "smart_keymap::key::layered::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
               json_value = k,
             },
         },
 
       lift_to = fun key_impl cv =>
-        if key_impl.base == "crate::key::composite::BaseKey" then
+        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
           cv |> composite.base_key.layer_modifier
         else
           cv,
@@ -346,7 +346,7 @@ let validators = import "validators.ncl" in
       codegen_values = fun k @ { keymap_callback } =>
         {
           key_type = {
-            key_type = "crate::key::callback::Key",
+            key_type = "smart_keymap::key::callback::Key",
             as_rust_type_path = key_type,
           },
           key_impl = {
@@ -357,15 +357,15 @@ let validators = import "validators.ncl" in
               keymap_callback
               |> match {
                 { Custom = [i, j] } =>
-                  "crate::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
-                _ => "crate::keymap::KeymapCallback::%{keymap_callback}"
+                  "smart_keymap::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
+                _ => "smart_keymap::keymap::KeymapCallback::%{keymap_callback}"
               }
-            in "crate::key::callback::Key::new(%{cb_expr})",
+            in "smart_keymap::key::callback::Key::new(%{cb_expr})",
           json_value = k,
         },
 
       lift_to = fun key_impl cv =>
-        if key_impl.base == "crate::key::composite::BaseKey" then
+        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
           cv |> composite.base_key.keymap_callback
         else
           cv,
@@ -394,7 +394,7 @@ let validators = import "validators.ncl" in
       codegen_values = fun k =>
         {
           key_type = {
-            key_type = "crate::key::sticky::Key",
+            key_type = "smart_keymap::key::sticky::Key",
             as_rust_type_path = key_type,
           },
           key_impl = {
@@ -404,13 +404,13 @@ let validators = import "validators.ncl" in
             k
             |> match {
               { sticky_modifiers } =>
-                "crate::key::sticky::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
+                "smart_keymap::key::sticky::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
             },
           json_value = k,
         },
 
       lift_to = fun key_impl cv =>
-        if key_impl.base == "crate::key::composite::BaseKey" then
+        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
           cv |> composite.base_key.sticky
         else
           cv,
@@ -436,18 +436,18 @@ let validators = import "validators.ncl" in
       codegen_values = fun k @ { custom } =>
         {
           key_type = {
-            key_type = "crate::key::custom::Key",
+            key_type = "smart_keymap::key::custom::Key",
             as_rust_type_path = key_type,
           },
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::custom::Key::new(%{std.to_string custom})",
+          rust_expr = "smart_keymap::key::custom::Key::new(%{std.to_string custom})",
           json_value = k,
         },
 
       lift_to = fun key_impl cv =>
-        if key_impl.base == "crate::key::composite::BaseKey" then
+        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
           cv |> composite.base_key.custom
         else
           cv,
@@ -471,12 +471,12 @@ let validators = import "validators.ncl" in
     wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
-        "crate::key::keyboard::Key" => cv,
-        "crate::key::layered::ModifierKey" => cv,
-        "crate::key::caps_word::Key" => cv,
-        "crate::key::callback::Key" => cv,
-        "crate::key::sticky::Key" => cv,
-        "crate::key::custom::Key" => cv,
+        "smart_keymap::key::keyboard::Key" => cv,
+        "smart_keymap::key::layered::ModifierKey" => cv,
+        "smart_keymap::key::caps_word::Key" => cv,
+        "smart_keymap::key::callback::Key" => cv,
+        "smart_keymap::key::sticky::Key" => cv,
+        "smart_keymap::key::custom::Key" => cv,
         cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
       },
   },
@@ -508,7 +508,7 @@ let validators = import "validators.ncl" in
             definitions = definitions_cv |> std.array.map (fun cv => cv |> key.lift_to target_type),
           },
           key_type = {
-            key_type = "crate::key::tap_dance::Key",
+            key_type = "smart_keymap::key::tap_dance::Key",
             nested_key_type = (std.array.first nested.definitions).key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
@@ -516,7 +516,7 @@ let validators = import "validators.ncl" in
           rust_expr =
             let definitions_expr = nested.definitions |> std.array.map (fun cv => cv.rust_expr) in
             let definitions_slice_expr = "&[%{definitions_expr |> std.string.join ", "}]" in
-            "crate::key::tap_dance::Key::from_definitions(%{definitions_slice_expr})",
+            "smart_keymap::key::tap_dance::Key::from_definitions(%{definitions_slice_expr})",
           json_value = k,
         },
 
@@ -560,11 +560,11 @@ let validators = import "validators.ncl" in
         {
           check_key_type = {
             actual = cv.key_type.as_rust_type_path,
-            expected = "crate::key::tap_hold::Key<crate::key::keyboard::Key>",
+            expected = "smart_keymap::key::tap_hold::Key<smart_keymap::key::keyboard::Key>",
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::tap_hold::Key::new(crate::key::keyboard::Key::new(4), crate::key::keyboard::Key::new(224))",
+            expected = "smart_keymap::key::tap_hold::Key::new(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224))",
           },
         },
     },
@@ -600,7 +600,7 @@ let validators = import "validators.ncl" in
             hold = hold_cv |> key.lift_to target_type,
           },
           key_type = {
-            key_type = "crate::key::tap_hold::Key",
+            key_type = "smart_keymap::key::tap_hold::Key",
             nested_key_type = nested.tap.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
@@ -608,7 +608,7 @@ let validators = import "validators.ncl" in
           rust_expr =
             let hold_expr = nested.hold.rust_expr in
             let tap_expr = nested.tap.rust_expr in
-            "crate::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
+            "smart_keymap::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
           json_value = k,
         },
 
@@ -643,9 +643,9 @@ let validators = import "validators.ncl" in
     wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
-        "crate::key::tap_dance::Key" =>
+        "smart_keymap::key::tap_dance::Key" =>
           cv |> composite.tap_hold_key.tap_dance_,
-        "crate::key::tap_hold::Key" =>
+        "smart_keymap::key::tap_hold::Key" =>
           cv |> composite.tap_hold_key.tap_hold_,
         _ =>
           cv |> tap_hold_nestable.wrap |> composite.tap_hold_.wrap,
@@ -681,11 +681,11 @@ let validators = import "validators.ncl" in
         {
           check_key_type = {
             actual = cv.key_type.as_rust_type_path,
-            expected = "crate::key::layered::LayeredKey<crate::key::composite::TapHold<crate::key::keyboard::Key>>",
+            expected = "smart_keymap::key::layered::LayeredKey<smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>>",
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::layered::LayeredKey::new(crate::key::composite::TapHold(crate::key::keyboard::Key::new(4)), [None,Some(crate::key::composite::TapHold(crate::key::keyboard::Key::new(6)))])",
+            expected = "smart_keymap::key::layered::LayeredKey::new(smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(4)), [None,Some(smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(6)))])",
           },
         },
 
@@ -707,11 +707,11 @@ let validators = import "validators.ncl" in
         {
           check_key_type = {
             actual = cv.key_type.as_rust_type_path,
-            expected = "crate::key::layered::LayeredKey<crate::key::composite::TapHoldKey<crate::key::keyboard::Key>>",
+            expected = "smart_keymap::key::layered::LayeredKey<smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>>",
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::layered::LayeredKey::new(crate::key::composite::TapHoldKey::TapHold(crate::key::tap_hold::Key::new(crate::key::keyboard::Key::new(4), crate::key::keyboard::Key::new(224))), [None,Some(crate::key::composite::TapHoldKey::Pass(crate::key::keyboard::Key::new(6)))])",
+            expected = "smart_keymap::key::layered::LayeredKey::new(smart_keymap::key::composite::TapHoldKey::TapHold(smart_keymap::key::tap_hold::Key::new(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224))), [None,Some(smart_keymap::key::composite::TapHoldKey::Pass(smart_keymap::key::keyboard::Key::new(6)))])",
           },
         },
     },
@@ -768,7 +768,7 @@ let validators = import "validators.ncl" in
               |> std.array.map (fun cv => if cv != null then cv |> key.lift_to target_type else null),
           },
           key_type = {
-            key_type = "crate::key::layered::LayeredKey",
+            key_type = "smart_keymap::key::layered::LayeredKey",
             nested_key_type = nested.base.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
           },
@@ -780,7 +780,7 @@ let validators = import "validators.ncl" in
               |> std.array.map (fun cv => if cv == null then "None" else "Some(%{cv.rust_expr})")
               |> std.string.join ","
             in
-            "crate::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+            "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
           json_value = k,
         },
 
@@ -822,7 +822,7 @@ let validators = import "validators.ncl" in
     wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
-        "crate::key::layered::LayeredKey" =>
+        "smart_keymap::key::layered::LayeredKey" =>
           cv |> composite.layered_key.layered_,
         _ =>
           cv |> layered_nestable.wrap |> composite.layered_.wrap,
@@ -861,7 +861,7 @@ let validators = import "validators.ncl" in
             passthrough = passthrough_cv |> key.lift_to target_type,
           },
           key_type = {
-            key_type = "crate::key::chorded::Key",
+            key_type = "smart_keymap::key::chorded::Key",
             nested_key_type = nested.passthrough.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
@@ -878,7 +878,7 @@ let validators = import "validators.ncl" in
             }]"%
             in
             let passthrough_expr = nested.passthrough.rust_expr in
-            "crate::key::chorded::Key::new(%{chords_expr}, %{passthrough_expr})",
+            "smart_keymap::key::chorded::Key::new(%{chords_expr}, %{passthrough_expr})",
           json_value = k,
         },
 
@@ -929,7 +929,7 @@ let validators = import "validators.ncl" in
             passthrough = passthrough_cv,
           },
           key_type = {
-            key_type = "crate::key::chorded::AuxiliaryKey",
+            key_type = "smart_keymap::key::chorded::AuxiliaryKey",
             nested_key_type = nested.passthrough.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
@@ -940,7 +940,7 @@ let validators = import "validators.ncl" in
             },
           rust_expr =
             let passthrough_expr = nested.passthrough.rust_expr in
-            "crate::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
+            "smart_keymap::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
           json_value = k,
         },
 
@@ -974,11 +974,11 @@ let validators = import "validators.ncl" in
         {
           check_key_type = {
             actual = cv.key_type.as_rust_type_path,
-            expected = "crate::key::composite::BaseKey",
+            expected = "smart_keymap::key::composite::BaseKey",
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4))",
+            expected = "smart_keymap::key::composite::BaseKey::Keyboard(smart_keymap::key::keyboard::Key::new(4))",
           },
         },
     },
@@ -993,11 +993,11 @@ let validators = import "validators.ncl" in
         {
           check_key_type = {
             actual = cv.key_type.as_rust_type_path,
-            expected = "crate::key::composite::TapHoldKey<crate::key::composite::BaseKey>",
+            expected = "smart_keymap::key::composite::TapHoldKey<smart_keymap::key::composite::BaseKey>",
           },
           check_rust_expr = {
             actual = cv.rust_expr,
-            expected = "crate::key::composite::TapHoldKey::Pass(crate::key::composite::BaseKey::Keyboard(crate::key::keyboard::Key::new(4)))",
+            expected = "smart_keymap::key::composite::TapHoldKey::Pass(smart_keymap::key::composite::BaseKey::Keyboard(smart_keymap::key::keyboard::Key::new(4)))",
           },
         },
     },
@@ -1009,76 +1009,76 @@ let validators = import "validators.ncl" in
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::BaseKey",
+            key_type = "smart_keymap::key::composite::BaseKey",
             as_rust_type_path = key_type,
             variant = "LayerModifier",
           },
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::composite::BaseKey::LayerModifier(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::BaseKey::LayerModifier(%{nested.rust_expr})",
         },
 
       keymap_callback = fun cv =>
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::BaseKey",
+            key_type = "smart_keymap::key::composite::BaseKey",
             as_rust_type_path = key_type,
             variant = "Callback",
           },
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::composite::BaseKey::Callback(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::BaseKey::Callback(%{nested.rust_expr})",
         },
 
       keyboard = fun cv =>
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::BaseKey",
+            key_type = "smart_keymap::key::composite::BaseKey",
             as_rust_type_path = key_type,
             variant = "Keyboard",
           },
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::composite::BaseKey::Keyboard(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::BaseKey::Keyboard(%{nested.rust_expr})",
         },
 
       caps_word = fun cv =>
         {
           nested = cv,
           key_type = {
-            as_rust_type_path = "crate::key::composite::BaseKey",
-            key_type = "crate::key::composite::BaseKey",
+            as_rust_type_path = "smart_keymap::key::composite::BaseKey",
+            key_type = "smart_keymap::key::composite::BaseKey",
           },
-          rust_expr = "crate::key::composite::BaseKey::CapsWord(%{cv.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::BaseKey::CapsWord(%{cv.rust_expr})",
         },
 
       sticky = fun cv =>
         {
           nested = cv,
           key_type = {
-            as_rust_type_path = "crate::key::composite::BaseKey",
-            key_type = "crate::key::composite::BaseKey",
+            as_rust_type_path = "smart_keymap::key::composite::BaseKey",
+            key_type = "smart_keymap::key::composite::BaseKey",
           },
-          rust_expr = "crate::key::composite::BaseKey::Sticky(%{cv.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::BaseKey::Sticky(%{cv.rust_expr})",
         },
 
       custom = fun cv =>
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::BaseKey",
+            key_type = "smart_keymap::key::composite::BaseKey",
             as_rust_type_path = key_type,
             variant = "Custom",
           },
           key_impl = {
             base = key_type.key_type,
           },
-          rust_expr = "crate::key::composite::BaseKey::Custom(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::BaseKey::Custom(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl cv =>
@@ -1096,7 +1096,7 @@ let validators = import "validators.ncl" in
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::TapHoldKey",
+            key_type = "smart_keymap::key::composite::TapHoldKey",
             nested_key_type = nested.key_type.nested_key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "TapDance",
@@ -1106,14 +1106,14 @@ let validators = import "validators.ncl" in
             & {
               tap_hold = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::TapHoldKey::TapDance(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::TapHoldKey::TapDance(%{nested.rust_expr})",
         },
 
       tap_hold_ = fun cv =>
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::TapHoldKey",
+            key_type = "smart_keymap::key::composite::TapHoldKey",
             nested_key_type = nested.key_type.nested_key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "TapHold",
@@ -1123,14 +1123,14 @@ let validators = import "validators.ncl" in
             & {
               tap_hold = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::TapHoldKey::TapHold(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::TapHoldKey::TapHold(%{nested.rust_expr})",
         },
 
       passthrough = fun cv =>
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::TapHoldKey",
+            key_type = "smart_keymap::key::composite::TapHoldKey",
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Pass",
@@ -1140,7 +1140,7 @@ let validators = import "validators.ncl" in
             & {
               tap_hold = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::TapHoldKey::Pass(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::TapHoldKey::Pass(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
@@ -1163,7 +1163,7 @@ let validators = import "validators.ncl" in
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::TapHold",
+            key_type = "smart_keymap::key::composite::TapHold",
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
           },
@@ -1172,11 +1172,11 @@ let validators = import "validators.ncl" in
             & {
               tap_hold = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::TapHold(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::TapHold(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
-        if key_impl.tap_hold == "crate::key::composite::TapHoldKey" then
+        if key_impl.tap_hold == "smart_keymap::key::composite::TapHoldKey" then
           # Lift the key impl. of the nested key,
           #  and construct as a TapHoldKey::Pass variant.
           nested_ |> key.lift_to key_impl |> tap_hold_key.passthrough
@@ -1195,7 +1195,7 @@ let validators = import "validators.ncl" in
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::LayeredKey",
+            key_type = "smart_keymap::key::composite::LayeredKey",
             nested_key_type = nested.key_type.nested_key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Layered",
@@ -1205,14 +1205,14 @@ let validators = import "validators.ncl" in
             & {
               layered = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::LayeredKey::Layered(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::LayeredKey::Layered(%{nested.rust_expr})",
         },
 
       passthrough = fun cv =>
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::LayeredKey",
+            key_type = "smart_keymap::key::composite::LayeredKey",
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
             variant = "Pass",
@@ -1222,7 +1222,7 @@ let validators = import "validators.ncl" in
             & {
               layered = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::LayeredKey::Pass(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::LayeredKey::Pass(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
@@ -1244,7 +1244,7 @@ let validators = import "validators.ncl" in
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::Layered",
+            key_type = "smart_keymap::key::composite::Layered",
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
           },
@@ -1253,11 +1253,11 @@ let validators = import "validators.ncl" in
             & {
               layered = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::Layered(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::Layered(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
-        if key_impl.layered == "crate::key::composite::LayeredKey" then
+        if key_impl.layered == "smart_keymap::key::composite::LayeredKey" then
           # Lift the key impl. of the nested key,
           #  and construct as a LayeredKey::Pass variant.
           nested_ |> key.lift_to key_impl |> layered_key.passthrough
@@ -1276,7 +1276,7 @@ let validators = import "validators.ncl" in
         {
           nested = cv,
           key_type = {
-            key_type = "crate::key::composite::Chorded",
+            key_type = "smart_keymap::key::composite::Chorded",
             nested_key_type = nested.key_type,
             as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
           },
@@ -1285,11 +1285,11 @@ let validators = import "validators.ncl" in
             & {
               chorded = key_type.key_type,
             },
-          rust_expr = "crate::key::composite::Chorded(%{nested.rust_expr})",
+          rust_expr = "smart_keymap::key::composite::Chorded(%{nested.rust_expr})",
         },
 
       lift_to = fun key_impl { nested = nested_, ..cv } =>
-        if key_impl.chorded == "crate::key::composite::Chorded" then
+        if key_impl.chorded == "smart_keymap::key::composite::Chorded" then
           std.fail_with "not implemented"
         else
           cv & { nested = key.lift_to key_impl nested_ },
@@ -1315,9 +1315,9 @@ let validators = import "validators.ncl" in
     lift_to_key = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
-        "crate::key::chorded::Key" =>
+        "smart_keymap::key::chorded::Key" =>
           cv,
-        "crate::key::chorded::AuxiliaryKey" =>
+        "smart_keymap::key::chorded::AuxiliaryKey" =>
           cv,
         _ =>
           cv |> chorded_nestable.wrap |> chorded_.wrap,
@@ -1362,22 +1362,22 @@ let validators = import "validators.ncl" in
     codegen_module_for_codegen_value = fun cv @ { key_type = { key_type, .. }, .. } =>
       key_type
       |> match {
-        "crate::key::keyboard::Key" => keyboard,
-        "crate::key::caps_word::Key" => caps_word,
-        "crate::key::layered::ModifierKey" => layer_modifier,
-        "crate::key::callback::Key" => keymap_callback,
-        "crate::key::sticky::Key" => sticky,
-        "crate::key::custom::Key" => custom,
-        "crate::key::tap_dance::Key" => tap_dance,
-        "crate::key::tap_hold::Key" => tap_hold,
-        "crate::key::layered::LayeredKey" => layered,
-        "crate::key::chorded::Key" => chorded,
-        "crate::key::chorded::AuxiliaryKey" => chorded_aux,
-        "crate::key::composite::BaseKey" => composite.base_key,
-        "crate::key::composite::TapHoldKey" => composite.tap_hold_key,
-        "crate::key::composite::TapHold" => composite.tap_hold_,
-        "crate::key::composite::LayeredKey" => composite.layered_key,
-        "crate::key::composite::Layered" => composite.layered_,
+        "smart_keymap::key::keyboard::Key" => keyboard,
+        "smart_keymap::key::caps_word::Key" => caps_word,
+        "smart_keymap::key::layered::ModifierKey" => layer_modifier,
+        "smart_keymap::key::callback::Key" => keymap_callback,
+        "smart_keymap::key::sticky::Key" => sticky,
+        "smart_keymap::key::custom::Key" => custom,
+        "smart_keymap::key::tap_dance::Key" => tap_dance,
+        "smart_keymap::key::tap_hold::Key" => tap_hold,
+        "smart_keymap::key::layered::LayeredKey" => layered,
+        "smart_keymap::key::chorded::Key" => chorded,
+        "smart_keymap::key::chorded::AuxiliaryKey" => chorded_aux,
+        "smart_keymap::key::composite::BaseKey" => composite.base_key,
+        "smart_keymap::key::composite::TapHoldKey" => composite.tap_hold_key,
+        "smart_keymap::key::composite::TapHold" => composite.tap_hold_,
+        "smart_keymap::key::composite::LayeredKey" => composite.layered_key,
+        "smart_keymap::key::composite::Layered" => composite.layered_,
         cv => std.fail_with "bad codegen_values for key.codegen_module_for_codegen_value: %{cv |> std.serialize 'Json}",
       },
 
@@ -1385,19 +1385,19 @@ let validators = import "validators.ncl" in
       let impl =
         key_type
         |> match {
-          "crate::key::keyboard::Key" => keyboard,
-          "crate::key::caps_word::Key" => caps_word,
-          "crate::key::layered::ModifierKey" => layer_modifier,
-          "crate::key::callback::Key" => keymap_callback,
-          "crate::key::sticky::Key" => sticky,
-          "crate::key::custom::Key" => custom,
-          "crate::key::chorded::Key" => chorded,
-          "crate::key::chorded::AuxiliaryKey" => chorded_aux,
-          "crate::key::composite::BaseKey" => composite.base_key,
-          "crate::key::composite::TapHoldKey" => composite.tap_hold_key,
-          "crate::key::composite::TapHold" => composite.tap_hold_,
-          "crate::key::composite::LayeredKey" => composite.layered_key,
-          "crate::key::composite::Layered" => composite.layered_,
+          "smart_keymap::key::keyboard::Key" => keyboard,
+          "smart_keymap::key::caps_word::Key" => caps_word,
+          "smart_keymap::key::layered::ModifierKey" => layer_modifier,
+          "smart_keymap::key::callback::Key" => keymap_callback,
+          "smart_keymap::key::sticky::Key" => sticky,
+          "smart_keymap::key::custom::Key" => custom,
+          "smart_keymap::key::chorded::Key" => chorded,
+          "smart_keymap::key::chorded::AuxiliaryKey" => chorded_aux,
+          "smart_keymap::key::composite::BaseKey" => composite.base_key,
+          "smart_keymap::key::composite::TapHoldKey" => composite.tap_hold_key,
+          "smart_keymap::key::composite::TapHold" => composite.tap_hold_,
+          "smart_keymap::key::composite::LayeredKey" => composite.layered_key,
+          "smart_keymap::key::composite::Layered" => composite.layered_,
           cv => std.fail_with "bad codegen_values for key.lift_to: %{cv |> std.serialize 'Json}",
         }
       in
@@ -1430,35 +1430,35 @@ let validators = import "validators.ncl" in
               let chords_fragment =
                 config.chorded.chords
                 |> std.array.map (fun indices =>
-                  "crate::key::chorded::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}])"
+                  "smart_keymap::key::chorded::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}])"
                 )
                 |> std.string.join ","
               in
-              "chords: crate::slice::Slice::from_slice(&[%{chords_fragment}]),"
+              "chords: smart_keymap::slice::Slice::from_slice(&[%{chords_fragment}]),"
             else
               ""
           in
           m%"
-          crate::key::chorded::Config {
+          smart_keymap::key::chorded::Config {
               %{timeout_field_fragment}
               %{chords_field_fragment}
-              ..crate::key::chorded::DEFAULT_CONFIG
+              ..smart_keymap::key::chorded::DEFAULT_CONFIG
           }
         "%
         else
-          "crate::key::chorded::DEFAULT_CONFIG"
+          "smart_keymap::key::chorded::DEFAULT_CONFIG"
       in
       let sticky_config_expr =
         if std.record.has_field "sticky" config then
           let activation_field_fragment =
             if std.record.has_field "activation" config.sticky then
-              "activation: crate::key::sticky::StickyKeyActivation::%{config.sticky.activation},"
+              "activation: smart_keymap::key::sticky::StickyKeyActivation::%{config.sticky.activation},"
             else
               ""
           in
           let release_field_fragment =
             if std.record.has_field "release" config.sticky then
-              "release: crate::key::sticky::StickyKeyRelease::%{config.sticky.release},"
+              "release: smart_keymap::key::sticky::StickyKeyRelease::%{config.sticky.release},"
             else
               ""
           in
@@ -1466,18 +1466,18 @@ let validators = import "validators.ncl" in
             [
               activation_field_fragment,
               release_field_fragment,
-              "..crate::key::sticky::DEFAULT_CONFIG"
+              "..smart_keymap::key::sticky::DEFAULT_CONFIG"
             ]
             |> std.array.filter ((!=) "")
             |> std.string.join "\n"
           in
           m%"
-            crate::key::sticky::Config {
+            smart_keymap::key::sticky::Config {
                 %{config_fragment}
             }
           "%
         else
-          "crate::key::sticky::DEFAULT_CONFIG"
+          "smart_keymap::key::sticky::DEFAULT_CONFIG"
       in
       let tap_dance_config_expr =
         if std.record.has_field "tap_dance" config then
@@ -1488,13 +1488,13 @@ let validators = import "validators.ncl" in
               ""
           in
           m%"
-            crate::key::tap_dance::Config {
+            smart_keymap::key::tap_dance::Config {
                 %{timeout_field_fragment}
-                ..crate::key::tap_dance::DEFAULT_CONFIG
+                ..smart_keymap::key::tap_dance::DEFAULT_CONFIG
             }
           "%
         else
-          "crate::key::tap_dance::DEFAULT_CONFIG"
+          "smart_keymap::key::tap_dance::DEFAULT_CONFIG"
       in
       let tap_hold_config_expr =
         if std.record.has_field "tap_hold" config then
@@ -1506,7 +1506,7 @@ let validators = import "validators.ncl" in
           in
           let interrupt_response_field_fragment =
             if std.record.has_field "interrupt_response" config.tap_hold then
-              "interrupt_response: crate::key::tap_hold::InterruptResponse::%{config.tap_hold.interrupt_response},"
+              "interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::%{config.tap_hold.interrupt_response},"
             else
               ""
           in
@@ -1517,15 +1517,15 @@ let validators = import "validators.ncl" in
               ""
           in
           m%"
-            crate::key::tap_hold::Config {
+            smart_keymap::key::tap_hold::Config {
                 %{timeout_field_fragment}
                 %{interrupt_response_field_fragment}
                 %{required_idle_time_field_fragment}
-                ..crate::key::tap_hold::DEFAULT_CONFIG
+                ..smart_keymap::key::tap_hold::DEFAULT_CONFIG
             }
           "%
         else
-          "crate::key::tap_hold::DEFAULT_CONFIG"
+          "smart_keymap::key::tap_hold::DEFAULT_CONFIG"
       in
       let keymap_len = std.array.length keys in
       let max_tap_dance_definitions =
@@ -1620,22 +1620,24 @@ let validators = import "validators.ncl" in
           0
       in
       {
-        config = m%"crate::key::composite::Config {
+        config = m%"smart_keymap::key::composite::Config {
             chorded: %{chorded_config_expr},
             sticky: %{sticky_config_expr},
             tap_dance: %{tap_dance_config_expr},
             tap_hold: %{tap_hold_config_expr},
-            ..crate::key::composite::DEFAULT_CONFIG
+            ..smart_keymap::key::composite::DEFAULT_CONFIG
         }"%,
-        context = "crate::key::composite::Context::from_config(%{config})",
+        context = "smart_keymap::key::composite::Context::from_config(%{config})",
         key_definitions = "%{keys_id}::new((%{key_exprs}))",
         keymap_module = m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    /// Config used by tap-hold keys.
-    pub const CONFIG: crate::key::composite::Config = %{config};
+    use crate as smart_keymap;
 
-    /// Number of layers supported by the [crate::key::layered] implementation.
+    /// Config used by tap-hold keys.
+    pub const CONFIG: smart_keymap::key::composite::Config = %{config};
+
+    /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYER_COUNT: usize = %{std.to_string num_layers};
 
     /// The maximum number of keys in a chord.
@@ -1650,20 +1652,20 @@ pub mod init {
     /// The tap-dance definitions.
     pub const MAX_TAP_DANCE_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
 
-    pub use crate::key::composite::Context;
+    pub use smart_keymap::key::composite::Context;
 
-    pub use crate::key::composite::Event;
+    pub use smart_keymap::key::composite::Event;
 
-    pub use crate::key::composite::PendingKeyState;
+    pub use smart_keymap::key::composite::PendingKeyState;
 
-    pub use crate::key::composite::KeyState;
+    pub use smart_keymap::key::composite::KeyState;
 
-    pub use crate::key::composite::Key;
+    pub use smart_keymap::key::composite::Key;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = %{context};
 
-    crate::tuples::define_keys!(%{std.to_string keymap_len});
+    smart_keymap::tuples::define_keys!(%{std.to_string keymap_len});
 
     /// Alias for a [tuples] KeysN type, as generated by keymap.ncl.
     pub type KeyDefinitionsType = %{keys_id}<
@@ -1675,7 +1677,7 @@ pub mod init {
     >;
 
     /// Alias for the [keymap::Keymap] type.
-    pub type Keymap = crate::keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
+    pub type Keymap = smart_keymap::keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
 
     /// A [tuples] KeysN value with keys, as generated by keymap.ncl.
     pub const KEY_DEFINITIONS: KeyDefinitionsType = %{key_definitions};
