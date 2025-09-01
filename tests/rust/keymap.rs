@@ -23,7 +23,7 @@ fn basic_keymap_expression() {
         use smart_keymap::key::composite::Event;
         use smart_keymap::key::composite::KeyState;
         use smart_keymap::key::composite::PendingKeyState;
-        use smart_keymap::tuples::Keys1;
+        smart_keymap::tuples::define_keys!(1);
         type KeyDefinitionsType = Keys1<
             smart_keymap::key::composite::Chorded<
                 smart_keymap::key::composite::Layered<
