@@ -1629,6 +1629,27 @@ let validators = import "validators.ncl" in
         }"%,
         context = "smart_keymap::key::composite::Context::from_config(%{config})",
         key_definitions = "%{keys_id}::new((%{key_exprs}))",
+        keymap = m%"
+{
+    use smart_keymap::key::composite::Context;
+    use smart_keymap::key::composite::Event;
+    use smart_keymap::key::composite::KeyState;
+    use smart_keymap::key::composite::PendingKeyState;
+    smart_keymap::tuples::define_keys!(%{std.to_string keymap_len});
+    type KeyDefinitionsType = %{keys_id}<
+        %{key_types},
+        Context,
+        Event,
+        PendingKeyState,
+        KeyState,
+    >;
+    type Keymap = smart_keymap::keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
+    const KEY_DEFINITIONS: KeyDefinitionsType = %{key_definitions};
+    const CONTEXT: Context = %{context};
+
+    Keymap::new(KEY_DEFINITIONS, CONTEXT)
+}
+"%,
         keymap_module = m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
