@@ -1,74 +1,29 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::slice::Slice;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{chorded, composite, keyboard};
-use tuples::Keys4;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-type CK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
-type AK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
-
-// 4-key keymap
-//   A B C D
-// chords:
-// 0: X - - X => M=0x10
-// 1: X X - X => M=0x11
-// 2: - - X X => N=0x12
-
-const KEYS: Keys4<CK, AK, CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-    composite::ChordedKey::Chorded(chorded::Key::new(
-        &[
-            (
-                0,
-                composite::Layered(composite::TapHold(keyboard::Key::new(0x10))),
-            ),
-            (
-                1,
-                composite::Layered(composite::TapHold(keyboard::Key::new(0x11))),
-            ),
-        ],
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
-    )),
-    composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-        composite::TapHold(keyboard::Key::new(0x05)),
-    ))),
-    composite::ChordedKey::Chorded(chorded::Key::new(
-        &[(
-            2,
-            composite::Layered(composite::TapHold(keyboard::Key::new(0x12))),
-        )],
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x06))),
-    )),
-    composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-        composite::TapHold(keyboard::Key::new(0x07)),
-    ))),
-));
-
-const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
-    chorded: chorded::Config {
-        chords: Slice::from_slice(&[
-            chorded::ChordIndices::from_slice(&[0, 3]),
-            chorded::ChordIndices::from_slice(&[0, 1, 3]),
-            chorded::ChordIndices::from_slice(&[2, 3]),
-        ]),
-        ..chorded::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn overlap_aux_press_ad_results_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X _ _ X" |> CH.indices, key = K.M, },
+                    { indices = "X X _ X" |> CH.indices, key = K.N, },
+                    { indices = "_ _ X X" |> CH.indices, key = K.O, },
+                ],
+                keys = [
+                    K.A, K.B, K.C, K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -93,7 +48,22 @@ fn overlap_aux_press_ad_results_chord() {
 #[test]
 fn overlap_aux_press_cd_results_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X _ _ X" |> CH.indices, key = K.M, },
+                    { indices = "X X _ X" |> CH.indices, key = K.N, },
+                    { indices = "_ _ X X" |> CH.indices, key = K.O, },
+                ],
+                keys = [
+                    K.A, K.B, K.C, K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -118,7 +88,22 @@ fn overlap_aux_press_cd_results_chord() {
 #[test]
 fn overlap_aux_press_abd_results_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X _ _ X" |> CH.indices, key = K.M, },
+                    { indices = "X X _ X" |> CH.indices, key = K.N, },
+                    { indices = "_ _ X X" |> CH.indices, key = K.O, },
+                ],
+                keys = [
+                    K.A, K.B, K.C, K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

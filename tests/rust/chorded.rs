@@ -6,49 +6,28 @@ mod tap_hold;
 mod tap_hold_over_tap_hold;
 
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::slice::Slice;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{chorded, composite, keyboard};
-use tuples::Keys2;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-type CK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
-type AK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys2<CK, AK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::ChordedKey::Chorded(chorded::Key::new(
-        &[(
-            0,
-            composite::Layered(composite::TapHold(keyboard::Key::new(0x06))),
-        )],
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
-    )),
-    composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-        composite::TapHold(keyboard::Key::new(0x05)),
-    ))),
-));
-
-const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
-    chorded: chorded::Config {
-        chords: Slice::from_slice(&[chorded::ChordIndices::from_slice(&[0, 1])]),
-        ..chorded::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn tap_auxiliary_key_acts_as_passthrough() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -75,7 +54,19 @@ fn tap_auxiliary_key_acts_as_passthrough() {
 #[test]
 fn tap_chorded_key_acts_as_passthrough() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -102,7 +93,19 @@ fn tap_chorded_key_acts_as_passthrough() {
 #[test]
 fn press_chord_acts_as_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -129,7 +132,19 @@ fn press_chord_acts_as_chord() {
 #[test]
 fn press_chord_alt_order_acts_as_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -157,7 +172,19 @@ fn press_chord_alt_order_acts_as_chord() {
 #[test]
 fn nested_tap_chord_acts_as_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -191,7 +218,19 @@ fn nested_tap_chord_acts_as_chord() {
 #[test]
 fn rolling_tap_chord_acts_as_chord() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -225,32 +264,19 @@ fn rolling_tap_chord_acts_as_chord() {
 #[test]
 fn press_chord_4_acts_as_chord() {
     // Assemble
-    let keys: tuples::Keys4<CK, AK, AK, AK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-        composite::ChordedKey::Chorded(chorded::Key::new(
-            &[(
-                0,
-                composite::Layered(composite::TapHold(keyboard::Key::new(0x08))),
-            )],
-            composite::Layered(composite::TapHold(keyboard::Key::new(0x04))),
-        )),
-        composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-            composite::TapHold(keyboard::Key::new(0x05)),
-        ))),
-        composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-            composite::TapHold(keyboard::Key::new(0x06)),
-        ))),
-        composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-            composite::TapHold(keyboard::Key::new(0x07)),
-        ))),
-    ));
-    let context: Ctx = key::composite::Context::from_config(composite::Config {
-        chorded: chorded::Config {
-            chords: Slice::from_slice(&[chorded::ChordIndices::from_slice(&[0, 1, 2, 3])]),
-            ..chorded::DEFAULT_CONFIG
-        },
-        ..composite::DEFAULT_CONFIG
-    });
-    let mut keymap = Keymap::new(keys, context);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1, 2, 3], key = K.E, },
+                ],
+                keys = [
+                    K.A, K.B, K.C, K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -283,7 +309,19 @@ fn press_chord_4_acts_as_chord() {
 #[test]
 fn release_and_repress_chorded_after_hold_chord_acts_as_passthrough() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -318,7 +356,19 @@ fn release_and_repress_chorded_after_hold_chord_acts_as_passthrough() {
 #[test]
 fn release_and_repress_aux_after_hold_chord_acts_as_passthrough() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

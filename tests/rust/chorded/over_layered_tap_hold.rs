@@ -1,71 +1,28 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::slice::Slice;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{chorded, composite, keyboard, layered, tap_hold};
-use tuples::Keys4;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-type CK = composite::ChordedKey<composite::LayeredKey<composite::TapHoldKey<keyboard::Key>>>;
-type AK = composite::ChordedKey<composite::Layered<composite::TapHold<keyboard::Key>>>;
-type LK = composite::Chorded<composite::LayeredKey<composite::TapHold<keyboard::Key>>>;
-type MK = composite::Chorded<composite::Layered<composite::TapHold<layered::ModifierKey>>>;
-
-// 4 keys:
-//   0: Layers: [{ tap: A, hold: lctrl }, { tap: F, hold: lshift }],
-//   1: B
-//   2: Layers: [C, D]
-//   3: Set Default (Layer 1)
-// chord [01] = { E }
-const KEYS: Keys4<CK, AK, LK, MK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-    composite::ChordedKey::Chorded(chorded::Key::new(
-        &[(
-            0,
-            composite::LayeredKey::Pass(composite::TapHoldKey::Pass(keyboard::Key::new(0x08))),
-        )],
-        composite::LayeredKey::Layered(layered::LayeredKey::new(
-            composite::TapHoldKey::TapHold(tap_hold::Key::new(
-                keyboard::Key::new(0x04),
-                keyboard::Key::new(0xE2),
-            )),
-            [Some(composite::TapHoldKey::TapHold(tap_hold::Key::new(
-                keyboard::Key::new(0x09),
-                keyboard::Key::new(0xE2),
-            )))],
-        )),
-    )),
-    composite::ChordedKey::Auxiliary(chorded::AuxiliaryKey::new(composite::Layered(
-        composite::TapHold(keyboard::Key::new(0x05)),
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHold(keyboard::Key::new(0x06)),
-        [Some(composite::TapHold(keyboard::Key::new(0x07)))],
-    ))),
-    composite::Chorded(composite::Layered(composite::TapHold(
-        layered::ModifierKey::Default(1),
-    ))),
-));
-
-const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
-    chorded: chorded::Config {
-        chords: Slice::from_slice(&[chorded::ChordIndices::from_slice(&[0, 1])]),
-        ..chorded::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn tap_key_after_tapping_chord_on_default_layer() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X X _ _" |> CH.indices, key = K.E, },
+                ],
+                layers = [
+                    [K.A & K.hold K.LeftCtrl, K.B, K.C, K.layer_mod.set_default 1],
+                    [K.F & K.hold K.LeftShift, K.TTTT, K.D, K.TTTT],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -110,7 +67,21 @@ fn tap_key_after_tapping_chord_on_default_layer() {
 #[test]
 fn tap_key_after_tapping_chord_on_layer_1() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X X _ _" |> CH.indices, key = K.E, },
+                ],
+                layers = [
+                    [K.A & K.hold K.LeftCtrl, K.B, K.C, K.layer_mod.set_default 1],
+                    [K.F & K.hold K.LeftShift, K.TTTT, K.D, K.TTTT],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -161,7 +132,21 @@ fn tap_key_after_tapping_chord_on_layer_1() {
 #[test]
 fn tap_chorded_key_passes_through_as_tap() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X X _ _" |> CH.indices, key = K.E, },
+                ],
+                layers = [
+                    [K.A & K.hold K.LeftCtrl, K.B, K.C, K.layer_mod.set_default 1],
+                    [K.F & K.hold K.LeftShift, K.TTTT, K.D, K.TTTT],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -192,7 +177,21 @@ fn tap_chorded_key_passes_through_as_tap() {
 #[test]
 fn tap_key_after_tapping_chorded_key_on_layer_1() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let CH = import "chording.ncl" in
+            {
+                chords = [
+                    { indices = "X X _ _" |> CH.indices, key = K.E, },
+                ],
+                layers = [
+                    [K.A & K.hold K.LeftCtrl, K.B, K.C, K.layer_mod.set_default 1],
+                    [K.F & K.hold K.LeftShift, K.TTTT, K.D, K.TTTT],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

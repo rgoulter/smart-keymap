@@ -2,38 +2,23 @@ mod set_active_layers;
 mod tap_hold;
 
 use smart_keymap::input;
-use smart_keymap::key;
-use smart_keymap::keymap;
-use smart_keymap::tuples;
 
-use keymap::Keymap;
-
-use key::{composite, keyboard, layered};
-use tuples::Keys2;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-type MK = composite::Chorded<composite::Layered<composite::TapHold<layered::ModifierKey>>>;
-type LK = composite::Chorded<composite::LayeredKey<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys2<MK, LK, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::Layered(composite::TapHold(
-        layered::ModifierKey::Hold(1),
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHold(keyboard::Key::new(0x04)),
-        [Some(composite::TapHold(keyboard::Key::new(0x05)))],
-    ))),
-));
-
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
+use smart_keymap_macros::keymap;
 
 #[test]
 fn press_base_key_when_no_layers_active() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.hold 1, K.A],
+                    [K.TTTT, K.B],
+                ],
+            }
+        "#
+    );
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
@@ -47,7 +32,17 @@ fn press_base_key_when_no_layers_active() {
 #[test]
 fn press_active_layer_when_layer_mod_held() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.hold 1, K.A],
+                    [K.TTTT, K.B],
+                ],
+            }
+        "#
+    );
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -65,7 +60,17 @@ fn press_active_layer_when_layer_mod_held() {
 #[test]
 fn press_retained_when_layer_mod_released() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.hold 1, K.A],
+                    [K.TTTT, K.B],
+                ],
+            }
+        "#
+    );
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -87,7 +92,17 @@ fn press_retained_when_layer_mod_released() {
 #[test]
 fn uses_base_when_pressed_after_layer_mod_released() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.hold 1, K.A],
+                    [K.TTTT, K.B],
+                ],
+            }
+        "#
+    );
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });

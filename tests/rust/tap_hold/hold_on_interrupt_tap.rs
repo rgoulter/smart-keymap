@@ -1,46 +1,25 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, tap_hold};
-use tuples::{Keys2, Keys4};
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-
-type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
-type K1 = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-        tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        },
-    ))),
-    composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-        0x05,
-    )))),
-));
-
-const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
-    tap_hold: tap_hold::Config {
-        interrupt_response: tap_hold::InterruptResponse::HoldOnKeyTap,
-        ..tap_hold::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn rolled_presses_resolves_tap() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -76,7 +55,18 @@ fn rolled_presses_resolves_tap() {
 #[test]
 fn interrupting_tap_resolves_hold() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -119,27 +109,20 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
     // - Release C
 
     // Assemble
-    let keys: Keys4<K0, K0, K1, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x04),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x05),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x06,
-        )))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x07,
-        )))),
-    ));
-    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B & K.hold K.LeftCtrl,
+                    K.C,
+                    K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -194,30 +177,20 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
     // - Release TH(C)
 
     // Assemble
-    let keys: Keys4<K0, K0, K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x04),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x05),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x06),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x07,
-        )))),
-    ));
-    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B & K.hold K.LeftCtrl,
+                    K.C & K.hold K.LeftCtrl,
+                    K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -270,27 +243,20 @@ fn tap_th_after_rolling_th_kbd() {
     // - Release TH(C)
 
     // Assemble
-    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x04),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x05,
-        )))),
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x06),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x07,
-        )))),
-    ));
-    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                    K.C & K.hold K.LeftCtrl,
+                    K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -341,27 +307,20 @@ fn tap_th_then_tap_th() {
     // - Release TH(C)
 
     // Assemble
-    let keys: Keys4<K0, K1, K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x04),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x05,
-        )))),
-        composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-            tap_hold::Key {
-                tap: keyboard::Key::new(0x06),
-                hold: keyboard::Key::new(0xE0),
-            },
-        ))),
-        composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-            0x07,
-        )))),
-    ));
-    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                    K.C & K.hold K.LeftCtrl,
+                    K.D,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

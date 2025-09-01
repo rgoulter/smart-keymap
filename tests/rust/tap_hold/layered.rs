@@ -1,35 +1,9 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, layered, tap_hold};
-use tuples::Keys2;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-
-type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<composite::BaseKey>>>;
-type K1 = composite::Chorded<composite::LayeredKey<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-        tap_hold::Key {
-            tap: composite::BaseKey::Keyboard(keyboard::Key::new(0x09)),
-            hold: composite::BaseKey::LayerModifier(layered::ModifierKey::Hold(1)),
-        },
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHold(keyboard::Key::new(0x04)),
-        [Some(composite::TapHold(keyboard::Key::new(0x05)))],
-    ))),
-));
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
 fn press_active_layer_when_hold_layer_mod_held() {
@@ -39,7 +13,23 @@ fn press_active_layer_when_hold_layer_mod_held() {
     // - In order to have { tap: Keyboard, hold: LayerMod },
     //    we need to use the aggregate composite::Key
     //    as the nested key type.
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [
+                        K.F & K.hold(K.layer_mod.hold(1)),
+                        K.A
+                    ],
+                    [
+                        K.TTTT,
+                        K.B
+                    ],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -71,7 +61,23 @@ fn press_active_layer_when_hold_layer_mod_held() {
 #[test]
 fn uses_base_when_pressed_after_hold_layer_mod_released() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [
+                        K.F & K.hold(K.layer_mod.hold(1)),
+                        K.A
+                    ],
+                    [
+                        K.TTTT,
+                        K.B
+                    ],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // 1. Press the tap-hold key

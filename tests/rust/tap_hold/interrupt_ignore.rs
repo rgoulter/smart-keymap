@@ -1,39 +1,24 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, tap_hold};
-use tuples::Keys2;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-
-type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
-type K1 = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-        tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        },
-    ))),
-    composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-        0x05,
-    )))),
-));
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
 fn rolled_presses() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -72,14 +57,17 @@ fn rolled_presses_desc_keycodes() {
     const K_G: u8 = 0x0A;
     const K_O: u8 = 0x12;
 
-    let keys: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-        key::composite::Chorded(composite::Layered::tap_hold(tap_hold::Key {
-            tap: keyboard::Key::new(K_O),
-            hold: keyboard::Key::new(0xE0),
-        })),
-        key::composite::Chorded(composite::Layered::keyboard(keyboard::Key::new(K_G))),
-    ));
-    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                keys = [
+                    K.O & K.hold K.LeftCtrl,
+                    K.G,
+                ],
+            }
+        "#
+    );
 
     {
         let mut actual_reports = DistinctReports::new();

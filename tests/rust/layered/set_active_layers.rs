@@ -1,44 +1,24 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, layered};
-use tuples::Keys4;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-type MK = composite::Chorded<composite::Layered<composite::TapHold<layered::ModifierKey>>>;
-type LK = composite::Chorded<composite::LayeredKey<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys4<MK, MK, LK, LK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-    composite::Chorded(composite::Layered(composite::TapHold(
-        layered::ModifierKey::set_active_layers(&[1]),
-    ))),
-    composite::Chorded(composite::Layered(composite::TapHold(
-        layered::ModifierKey::set_active_layers(&[0]),
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHold(keyboard::Key::new(0x04)),
-        [Some(composite::TapHold(keyboard::Key::new(0x05)))],
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHold(keyboard::Key::new(0x07)),
-        [Some(composite::TapHold(keyboard::Key::new(0x06)))],
-    ))),
-));
-
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
 fn tap_set_active_layers_activates_layers() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.set_active_layers_to [1], K.layer_mod.set_active_layers_to [0], K.A, K.D],
+                    [K.TTTT, K.TTTT, K.B, K.C],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -81,24 +61,17 @@ fn tap_set_active_layers_activates_layers() {
 #[test]
 fn press_set_active_layers_activates_layers() {
     // Assemble
-    type K = composite::Chorded<composite::LayeredKey<composite::TapHold<composite::BaseKey>>>;
-    let keys: tuples::Keys2<K, K, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-        composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-            composite::TapHold(composite::BaseKey::LayerModifier(
-                layered::ModifierKey::set_active_layers(&[1]),
-            )),
-            [Some(composite::TapHold(composite::BaseKey::LayerModifier(
-                layered::ModifierKey::set_active_layers(&[0]),
-            )))],
-        ))),
-        composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-            composite::TapHold(composite::BaseKey::Keyboard(keyboard::Key::new(0x04))),
-            [Some(composite::TapHold(composite::BaseKey::Keyboard(
-                keyboard::Key::new(0x05),
-            )))],
-        ))),
-    ));
-    let mut keymap = Keymap::new(keys, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.set_active_layers_to [1], K.A],
+                    [K.layer_mod.set_active_layers_to [0], K.B],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
