@@ -124,7 +124,7 @@ impl<K: key::Key> Key<K> {
         context: &Context,
         key_path: key::KeyPath,
     ) -> (PendingKeyState, key::ScheduledEvent<Event>) {
-        let keymap_index: u16 = key_path[0];
+        let keymap_index: u16 = key_path.keymap_index();
         let timeout_ev = Event::TapHoldTimeout;
         (
             PendingKeyState::new(),
@@ -171,7 +171,7 @@ impl<
         Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
         key::KeyEvents<Self::Event>,
     ) {
-        let keymap_index = key_path[0];
+        let keymap_index = key_path.keymap_index();
         let th_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(th_pks) = th_pks_res {
             if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {

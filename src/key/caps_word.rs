@@ -146,7 +146,7 @@ impl key::Key for Key {
         key::KeyEvents<Self::Event>,
     ) {
         let caps_word_context = context.into();
-        let keymap_index: u16 = key_path[0];
+        let keymap_index: u16 = key_path.keymap_index();
         let pke = self.new_pressed_key(caps_word_context, keymap_index);
         let pks = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
         (pks, pke.into_events())
