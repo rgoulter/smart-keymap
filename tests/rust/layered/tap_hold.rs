@@ -1,44 +1,24 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, layered, tap_hold};
-use tuples::Keys2;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-
-type K0 = composite::Chorded<composite::LayeredKey<composite::TapHoldKey<keyboard::Key>>>;
-type K1 = composite::Chorded<composite::LayeredKey<composite::TapHoldKey<keyboard::Key>>>;
-
-const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0x05),
-        }),
-        [None; 1],
-    ))),
-    composite::Chorded(composite::LayeredKey::Layered(layered::LayeredKey::new(
-        composite::TapHoldKey::TapHold(tap_hold::Key {
-            tap: keyboard::Key::new(0x06),
-            hold: keyboard::Key::new(0x07),
-        }),
-        [None; 1],
-    ))),
-));
-const CONTEXT: Ctx = composite::DEFAULT_CONTEXT;
 
 #[test]
 fn key_taps() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.A & K.hold K.B, K.C & K.hold K.D],
+                    [K.TTTT, K.TTTT],
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

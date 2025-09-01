@@ -1,34 +1,24 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::composite::{Context, Event, KeyState, PendingKeyState};
-use key::{composite, keyboard, tap_hold};
-use tuples::Keys1;
-
-type K = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
-const KEYS: Keys1<K, Context, Event, PendingKeyState, KeyState> = Keys1::new((composite::Chorded(
-    composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-        tap: keyboard::Key::new(0x04),
-        hold: keyboard::Key::new(0xE0),
-    })),
-),));
-const CONTEXT: Context = composite::Context::from_config(composite::Config {
-    tap_hold: tap_hold::Config {
-        timeout: 200,
-        ..tap_hold::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn keymap_ms_per_tick_affects_tap_hold_timeout() {
     // Assemble -- set ms_per_tick to 100
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.timeout = 200,
+                keys = [
+                    K.A & K.hold K.LeftCtrl
+                ],
+            }
+        "#
+    );
     keymap.set_ms_per_tick(100);
 
     let mut actual_reports = DistinctReports::new();

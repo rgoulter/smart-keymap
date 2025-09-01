@@ -1,46 +1,25 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, tap_hold};
-use tuples::Keys2;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-
-type K0 = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
-type K1 = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys2<K0, K1, Ctx, Ev, PKS, KS> = tuples::Keys2::new((
-    composite::Chorded(composite::Layered(composite::TapHoldKey::TapHold(
-        tap_hold::Key {
-            tap: keyboard::Key::new(0x04),
-            hold: keyboard::Key::new(0xE0),
-        },
-    ))),
-    composite::Chorded(composite::Layered(composite::TapHold(keyboard::Key::new(
-        0x05,
-    )))),
-));
-
-const CONTEXT: Ctx = key::composite::Context::from_config(composite::Config {
-    tap_hold: tap_hold::Config {
-        interrupt_response: tap_hold::InterruptResponse::HoldOnKeyPress,
-        ..tap_hold::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn rolled_presses_resolves_hold() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyPress",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -76,7 +55,18 @@ fn rolled_presses_resolves_hold() {
 #[test]
 fn interrupting_press_resolves_hold() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.interrupt_response = "HoldOnKeyPress",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

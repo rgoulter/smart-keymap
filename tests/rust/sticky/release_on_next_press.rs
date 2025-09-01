@@ -1,48 +1,27 @@
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::{composite, keyboard, sticky};
-use tuples::Keys4;
-
-type Ctx = composite::Context;
-type Ev = composite::Event;
-type PKS = composite::PendingKeyState;
-type KS = composite::KeyState;
-type SK = composite::Chorded<composite::Layered<composite::TapHold<sticky::Key>>>;
-type K = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
-
-const KEYS: Keys4<SK, K, K, SK, Ctx, Ev, PKS, KS> = tuples::Keys4::new((
-    composite::Chorded(composite::Layered(composite::TapHold(sticky::Key::new(
-        key::KeyboardModifiers::LEFT_SHIFT,
-    )))),
-    composite::Chorded(
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x04))), // A
-    ),
-    composite::Chorded(
-        composite::Layered(composite::TapHold(keyboard::Key::new(0x38))), // Slash
-    ),
-    composite::Chorded(composite::Layered(composite::TapHold(sticky::Key::new(
-        key::KeyboardModifiers::LEFT_CTRL,
-    )))),
-));
-
-const CONTEXT: Ctx = composite::Context::from_config(composite::Config {
-    sticky: sticky::Config {
-        release: sticky::StickyKeyRelease::OnNextKeyPress,
-        ..sticky::DEFAULT_CONFIG
-    },
-    ..composite::DEFAULT_CONFIG
-});
 
 #[test]
 fn tap_sticky_mod_modifies_next_keyboard_key() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.sticky.release = "OnNextKeyPress",
+                keys = [
+                    K.sticky K.LeftShift,
+                    K.A,
+                    K.Slash,
+                    K.sticky K.LeftCtrl,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -73,7 +52,20 @@ fn tap_sticky_mod_modifies_next_keyboard_key() {
 #[test]
 fn tap_sticky_mod_modifies_only_next_keyboard_key() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.sticky.release = "OnNextKeyPress",
+                keys = [
+                    K.sticky K.LeftShift,
+                    K.A,
+                    K.Slash,
+                    K.sticky K.LeftCtrl,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -112,7 +104,20 @@ fn tap_sticky_mod_modifies_only_next_keyboard_key() {
 #[test]
 fn tap_sticky_mod_acts_as_regular_mod_when_interrupted_by_key() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.sticky.release = "OnNextKeyPress",
+                keys = [
+                    K.sticky K.LeftShift,
+                    K.A,
+                    K.Slash,
+                    K.sticky K.LeftCtrl,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -150,7 +155,20 @@ fn tap_sticky_mod_acts_as_regular_mod_when_interrupted_by_key() {
 #[test]
 fn tap_multiple_sticky_mod_modifies_next_keyboard_key() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.sticky.release = "OnNextKeyPress",
+                keys = [
+                    K.sticky K.LeftShift,
+                    K.A,
+                    K.Slash,
+                    K.sticky K.LeftCtrl,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -189,7 +207,20 @@ fn tap_multiple_sticky_mod_modifies_next_keyboard_key() {
 #[test]
 fn tap_sticky_mod_releases_on_next_key_press() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.sticky.release = "OnNextKeyPress",
+                keys = [
+                    K.sticky K.LeftShift,
+                    K.A,
+                    K.Slash,
+                    K.sticky K.LeftCtrl,
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act

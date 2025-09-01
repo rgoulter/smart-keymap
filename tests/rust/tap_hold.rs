@@ -5,30 +5,25 @@ mod layered;
 mod required_idle_time;
 
 use smart_keymap::input;
-use smart_keymap::key;
 use smart_keymap::keymap;
-use smart_keymap::tuples;
+
+use smart_keymap_macros::keymap;
 
 use keymap::DistinctReports;
-use keymap::Keymap;
-
-use key::composite::{Context, Event, KeyState, PendingKeyState};
-use key::{composite, keyboard, tap_hold};
-use tuples::Keys1;
-
-type K = composite::Chorded<composite::Layered<composite::TapHoldKey<keyboard::Key>>>;
-const KEYS: Keys1<K, Context, Event, PendingKeyState, KeyState> = Keys1::new((composite::Chorded(
-    composite::Layered(composite::TapHoldKey::TapHold(tap_hold::Key {
-        tap: keyboard::Key::new(0x04),
-        hold: keyboard::Key::new(0xE0),
-    })),
-),));
-const CONTEXT: Context = composite::DEFAULT_CONTEXT;
 
 #[test]
 fn key_tapped() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                keys = [
+                    K.A & K.hold K.LeftCtrl
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -56,7 +51,16 @@ fn key_tapped() {
 #[test]
 fn key_uninterrupted_tap_is_reported() {
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                keys = [
+                    K.A & K.hold K.LeftCtrl
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
@@ -85,7 +89,16 @@ fn key_unaffected_by_prev_key_release() {
     //  we do not want the first Timeout to affect the second key press.
 
     // Assemble
-    let mut keymap = Keymap::new(KEYS, CONTEXT);
+    let mut keymap = keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                keys = [
+                    K.A & K.hold K.LeftCtrl
+                ],
+            }
+        "#
+    );
     let mut actual_reports = DistinctReports::new();
 
     // Act
