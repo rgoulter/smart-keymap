@@ -3,6 +3,7 @@
 members = [
     "keyberon-smart-keyboard",
     "rp2040-rtic-smart-keyboard",
+    "smart-keymap-macros",
     "smart-keymap-nickel-helper",
     "smart_keymap",
     "stm32-embassy-smart-keyboard",
@@ -50,6 +51,7 @@ cucumber = "0.21"
 ron = "0.8"
 futures = "0.3"
 
+smart-keymap-macros = { path = "./smart-keymap-macros" }
 smart-keymap-nickel-helper = { path = "./smart-keymap-nickel-helper" }
 
 [build-dependencies]
