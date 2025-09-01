@@ -1,0 +1,21 @@
+[package]
+name = "smart-keymap-macros"
+version = "0.1.0"
+license = "MIT OR Apache-2.0"
+edition = "2021"
+build = "build.rs"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+paste = "1.0"
+proc-macro2 = "1.0"
+quote = "1.0"
+seq-macro = "0.3"
+smart-keymap = { path = ".." }
+smart-keymap-nickel-helper = { path = "../smart-keymap-nickel-helper" }
+syn = "2.0"
+
+[dev-dependencies]
+trybuild = "1.0"
