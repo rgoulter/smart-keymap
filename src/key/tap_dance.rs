@@ -120,10 +120,7 @@ impl<
         context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         let keymap_index = key_path.keymap_index();
         let td_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(td_pks) = td_pks_res {
@@ -132,24 +129,25 @@ impl<
                     td_pks.handle_event(context.into(), keymap_index, td_ev);
 
                 if let Some(TapDanceResolution(idx)) = maybe_resolution {
-                    let nk = self.definitions[idx as usize].as_ref().unwrap();
-
-                    let (pkr, pke) = nk.new_pressed_key(context, key_path);
                     // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
-                    let pkr = pkr.add_path_item(idx as u16);
+                    let new_key_path = key_path.add_path_item(idx as u16);
 
-                    (Some(pkr), pke)
+                    (
+                        Some(key::NewPressedKey::key_path(new_key_path)),
+                        pke.into_events(),
+                    )
                 } else {
                     // check td_pks press_count against key definitions
                     let definition_count = self.definitions.iter().filter(|o| o.is_some()).count();
                     if td_pks.press_count as usize >= definition_count - 1 {
                         let idx = definition_count - 1;
-                        let nk = self.definitions[idx].as_ref().unwrap();
-                        let (pkr, pke) = nk.new_pressed_key(context, key_path);
                         // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
-                        let pkr = pkr.add_path_item(idx as u16);
+                        let new_key_path = key_path.add_path_item(idx as u16);
 
-                        (Some(pkr), pke)
+                        (
+                            Some(key::NewPressedKey::key_path(new_key_path)),
+                            pke.into_events(),
+                        )
                     } else {
                         (None, pke.into_events())
                     }

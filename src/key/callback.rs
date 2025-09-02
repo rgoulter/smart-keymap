@@ -47,10 +47,7 @@ impl key::Key for Key {
         _context: &Self::Context,
         _key_path: key::KeyPath,
         _event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 

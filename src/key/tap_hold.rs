@@ -106,7 +106,14 @@ impl<K: key::Key> Key<K> {
                 } else {
                     // Keymap has not been idle for long enough;
                     // immediately resolve as tap.
-                    self.tap.new_pressed_key(context, key_path)
+                    // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
+                    let tap_key_path = key_path.add_path_item(0);
+                    (
+                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
+                            tap_key_path,
+                        )),
+                        key::KeyEvents::no_events(),
+                    )
                 }
             }
             None => {
@@ -167,25 +174,24 @@ impl<
         context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         let keymap_index = key_path.keymap_index();
         let th_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(th_pks) = th_pks_res {
             if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
                 if let Some(th_state) = th_state {
-                    let (i, nk) = match th_state {
-                        key::tap_hold::TapHoldState::Tap => (0, &self.tap),
-                        key::tap_hold::TapHoldState::Hold => (1, &self.hold),
+                    let i = match th_state {
+                        key::tap_hold::TapHoldState::Tap => 0,
+                        key::tap_hold::TapHoldState::Hold => 1,
                     };
-                    let (pkr, pke) = nk.new_pressed_key(context, key_path);
                     // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-                    let pkr = pkr.add_path_item(i);
+                    let new_key_path = key_path.add_path_item(i);
 
-                    (Some(pkr), pke)
+                    (
+                        Some(key::NewPressedKey::key_path(new_key_path)),
+                        key::KeyEvents::no_events(),
+                    )
                 } else {
                     (None, key::KeyEvents::no_events())
                 }

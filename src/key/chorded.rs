@@ -320,12 +320,12 @@ where
                         chorded_ctx.config.chords.get(resolved_chord_id as usize)
                     {
                         if resolved_chord_indices.as_slice()[0] == keymap_index {
-                            if let Some((_, k)) = self
+                            if let Some((_, _k)) = self
                                 .chords
                                 .iter()
                                 .find(|(ch_id, _)| *ch_id == resolved_chord_id)
                             {
-                                Some((1 + resolved_chord_id, k))
+                                Some(1 + resolved_chord_id)
                             } else {
                                 panic!("check_resolution has invalid chord id")
                             }
@@ -336,13 +336,18 @@ where
                         panic!("check_resolution has invalid chord id")
                     }
                 }
-                ChordResolution::Passthrough => Some((0, &self.passthrough)),
+                ChordResolution::Passthrough => Some(0),
             };
 
-            if let Some((i, k)) = maybe_pathel_key {
-                let (pkr, pke) = k.new_pressed_key(context, key_path);
+            if let Some(i) = maybe_pathel_key {
                 // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                (pkr.add_path_item(i as u16), pke)
+                let new_key_path = key_path.add_path_item(i as u16);
+                let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
+                    new_key_path,
+                ));
+                let pke = key::KeyEvents::no_events();
+
+                (pkr, pke)
             } else {
                 let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
                 let pke = key::KeyEvents::no_events();
@@ -407,10 +412,7 @@ impl<
         context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         let keymap_index = key_path.keymap_index();
         let ch_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(ch_pks) = ch_pks_res {
@@ -428,12 +430,12 @@ impl<
                                 chorded_ctx.config.chords.get(resolved_chord_id as usize)
                             {
                                 if resolved_chord_indices.as_slice()[0] == keymap_index {
-                                    if let Some((_, k)) = self
+                                    if let Some((_, _k)) = self
                                         .chords
                                         .iter()
                                         .find(|(ch_id, _)| *ch_id == resolved_chord_id)
                                     {
-                                        Some((1 + resolved_chord_id, k))
+                                        Some(1 + resolved_chord_id)
                                     } else {
                                         panic!("event's chord resolution has invalid chord id")
                                     }
@@ -444,7 +446,7 @@ impl<
                                 panic!("event's chord resolution has invalid chord id")
                             }
                         }
-                        ChordResolution::Passthrough => Some((0, &self.passthrough)),
+                        ChordResolution::Passthrough => Some(0),
                     };
 
                     let ch_r_ev = Event::ChordResolved(ch_state);
@@ -453,18 +455,16 @@ impl<
                         ch_r_ev.into(),
                     ));
 
-                    if let Some((i, nk)) = maybe_pathel_and_key {
-                        let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
+                    if let Some(i) = maybe_pathel_and_key {
                         // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                        let pkr = pkr.add_path_item(i as u16);
+                        let new_key_path = key_path.add_path_item(i as u16);
 
-                        pke.add_event(sch_ev);
-
-                        (Some(pkr), pke)
-                    } else {
-                        let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
                         let pke = key::KeyEvents::scheduled_event(sch_ev);
-                        (Some(pkr), pke)
+
+                        (Some(key::NewPressedKey::key_path(new_key_path)), pke)
+                    } else {
+                        let pke = key::KeyEvents::scheduled_event(sch_ev);
+                        (Some(key::NewPressedKey::no_op()), pke)
                     }
                 } else {
                     (None, key::KeyEvents::no_events())
@@ -545,8 +545,11 @@ where
                     (pkr, pke)
                 }
                 ChordResolution::Passthrough => {
-                    let (pkr, pke) = self.passthrough.new_pressed_key(context, key_path);
-                    let pkr = pkr.add_path_item(0); // 0 = passthrough key
+                    let new_key_path = key_path.add_path_item(0); // 0 = passthrough key
+                    let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
+                        new_key_path,
+                    ));
+                    let pke = key::KeyEvents::no_events();
                     (pkr, pke)
                 }
             }
@@ -601,42 +604,32 @@ impl<
     fn handle_event(
         &self,
         pending_state: &mut Self::PendingKeyState,
-        context: &Self::Context,
+        _context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         let keymap_index = key_path.keymap_index();
         let ch_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
         if let Ok(ch_pks) = ch_pks_res {
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let ch_state = ch_pks.handle_event(keymap_index, ch_ev);
                 if let Some(ChordResolution::Passthrough) = ch_state {
-                    let nk = &self.passthrough;
-                    let (pkr, mut pke) = nk.new_pressed_key(context, key_path);
-                    let pkr = pkr.add_path_item(0); // 0 = passthrough key
+                    let new_key_path = key_path.add_path_item(0); // 0 = passthrough key
 
                     let ch_r_ev = Event::ChordResolved(ChordResolution::Passthrough);
                     let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(
                         keymap_index,
                         ch_r_ev.into(),
                     ));
-                    pke.add_event(sch_ev);
+                    let pke = key::KeyEvents::scheduled_event(sch_ev);
 
-                    (Some(pkr), pke)
+                    (Some(key::NewPressedKey::key_path(new_key_path)), pke)
                 } else if let Some(ChordResolution::Chord(resolved_chord_id)) = ch_state {
                     let ch_r_ev = Event::ChordResolved(ChordResolution::Chord(resolved_chord_id));
                     let pke =
                         key::KeyEvents::event(key::Event::key_event(keymap_index, ch_r_ev.into()));
 
-                    (
-                        Some(key::PressedKeyResult::Resolved(
-                            key::NoOpKeyState::new().into(),
-                        )),
-                        pke,
-                    )
+                    (Some(key::NewPressedKey::no_op()), pke)
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
