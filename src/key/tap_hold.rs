@@ -107,7 +107,7 @@ impl<K: key::Key> Key<K> {
                     // Keymap has not been idle for long enough;
                     // immediately resolve as tap.
                     // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-                    let tap_key_path = key_path.add_path_item(0);
+                    let tap_key_path = key_path.append_path_item(0);
                     (
                         key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
                             tap_key_path,
@@ -186,7 +186,7 @@ impl<
                         key::tap_hold::TapHoldState::Hold => 1,
                     };
                     // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-                    let new_key_path = key_path.add_path_item(i);
+                    let new_key_path = key_path.append_path_item(i);
 
                     (
                         Some(key::NewPressedKey::key_path(new_key_path)),
