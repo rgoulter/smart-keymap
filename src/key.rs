@@ -46,7 +46,7 @@ impl KeyPath {
     /// Adds an item to the KeyPath.
     pub fn add_path_item(&self, item: u16) -> KeyPath {
         let mut kp = self.clone();
-        kp.0.insert(1, item).unwrap();
+        kp.0.push(item).unwrap();
         kp
     }
 }
