@@ -370,7 +370,7 @@ where
 
         // PRESSED KEY PATH: add Layer (0 = base, n = layer_index)
         let (pkr, pke) = passthrough_key.new_pressed_key(context, key_path);
-        (pkr.add_path_item(layer as u16), pke)
+        (pkr.append_path_item(layer as u16), pke)
     }
 }
 

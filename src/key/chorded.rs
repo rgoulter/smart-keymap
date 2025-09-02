@@ -341,7 +341,7 @@ where
 
             if let Some(i) = maybe_pathel_key {
                 // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                let new_key_path = key_path.add_path_item(i as u16);
+                let new_key_path = key_path.append_path_item(i as u16);
                 let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
                     new_key_path,
                 ));
@@ -457,7 +457,7 @@ impl<
 
                     if let Some(i) = maybe_pathel_and_key {
                         // PRESSED KEY PATH: add Chord (0 = passthrough, 1 = 1+chord_id)
-                        let new_key_path = key_path.add_path_item(i as u16);
+                        let new_key_path = key_path.append_path_item(i as u16);
 
                         let pke = key::KeyEvents::scheduled_event(sch_ev);
 
@@ -545,7 +545,7 @@ where
                     (pkr, pke)
                 }
                 ChordResolution::Passthrough => {
-                    let new_key_path = key_path.add_path_item(0); // 0 = passthrough key
+                    let new_key_path = key_path.append_path_item(0); // 0 = passthrough key
                     let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
                         new_key_path,
                     ));
@@ -614,7 +614,7 @@ impl<
             if let Ok(ch_ev) = event.try_into_key_event(|e| e.try_into()) {
                 let ch_state = ch_pks.handle_event(keymap_index, ch_ev);
                 if let Some(ChordResolution::Passthrough) = ch_state {
-                    let new_key_path = key_path.add_path_item(0); // 0 = passthrough key
+                    let new_key_path = key_path.append_path_item(0); // 0 = passthrough key
 
                     let ch_r_ev = Event::ChordResolved(ChordResolution::Passthrough);
                     let sch_ev = key::ScheduledEvent::immediate(key::Event::key_event(

@@ -130,7 +130,7 @@ impl<
 
                 if let Some(TapDanceResolution(idx)) = maybe_resolution {
                     // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
-                    let new_key_path = key_path.add_path_item(idx as u16);
+                    let new_key_path = key_path.append_path_item(idx as u16);
 
                     (
                         Some(key::NewPressedKey::key_path(new_key_path)),
@@ -142,7 +142,7 @@ impl<
                     if td_pks.press_count as usize >= definition_count - 1 {
                         let idx = definition_count - 1;
                         // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
-                        let new_key_path = key_path.add_path_item(idx as u16);
+                        let new_key_path = key_path.append_path_item(idx as u16);
 
                         (
                             Some(key::NewPressedKey::key_path(new_key_path)),
