@@ -129,11 +129,34 @@ impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
     }
 }
 
+/// Newtype for invoking new_pressed_key on the key at the given [KeyPath].
+#[derive(Debug)]
+pub enum NewPressedKey {
+    /// Invoke new_pressed_key on the key at the given [KeyPath].
+    Key(KeyPath),
+    /// For keys which do nothing when pressed.
+    NoOp,
+}
+
+impl NewPressedKey {
+    /// Constructs a NewPressedKey value.
+    pub fn key_path(key_path: KeyPath) -> Self {
+        NewPressedKey::Key(key_path)
+    }
+
+    /// Constructs a NoOp NewPressedKey value.
+    pub fn no_op() -> Self {
+        NewPressedKey::NoOp
+    }
+}
+
 /// Pressed Key which may be pending, or a resolved key state.
 #[derive(Debug)]
 pub enum PressedKeyResult<PKS, KS> {
     /// Unresolved key state. (e.g. tap-hold or chorded keys when first pressed).
     Pending(KeyPath, PKS),
+    /// Resolved as a new pressed key.
+    NewPressedKey(NewPressedKey),
     /// Resolved key state.
     Resolved(KS),
 }
@@ -211,10 +234,7 @@ pub trait Key: Debug {
         context: &Self::Context,
         key_path: KeyPath,
         event: Event<Self::Event>,
-    ) -> (
-        Option<PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        KeyEvents<Self::Event>,
-    );
+    ) -> (Option<NewPressedKey>, KeyEvents<Self::Event>);
 
     /// Return a reference to the key for the given path.
     fn lookup(

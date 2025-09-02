@@ -69,10 +69,7 @@ impl<K: TapHoldNestable> key::Key for TapHoldKey<K> {
         context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         match self {
             TapHoldKey::TapDance(key) => key.handle_event(pending_state, context, key_path, event),
             TapHoldKey::TapHold(key) => key.handle_event(pending_state, context, key_path, event),
@@ -118,10 +115,7 @@ impl<K: TapHoldNestable> key::Key for TapHold<K> {
         context: &Self::Context,
         key_path: key::KeyPath,
         event: key::Event<Self::Event>,
-    ) -> (
-        Option<key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>>,
-        key::KeyEvents<Self::Event>,
-    ) {
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         let TapHold(key) = self;
         key.handle_event(pending_state, context, key_path, event)
     }
