@@ -420,7 +420,7 @@ impl<
         KeyState = Self::KeyState,
     > {
         match path {
-            [] => panic!(),
+            [] => self,
             [0, path @ ..] => self.base.lookup(path),
             [layer_index, path @ ..] => self.layered[(layer_index - 1) as usize]
                 .as_ref()
