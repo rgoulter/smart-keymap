@@ -148,8 +148,8 @@ impl key::Key for Key {
         let caps_word_context = context.into();
         let keymap_index: u16 = key_path.keymap_index();
         let pke = self.new_pressed_key(caps_word_context, keymap_index);
-        let pks = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
-        (pks, pke.into_events())
+        let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp);
+        (pkr, pke.into_events())
     }
 
     fn handle_event(

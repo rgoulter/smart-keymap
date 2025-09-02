@@ -293,7 +293,6 @@ where
     K::Event: TryInto<Event>,
     K::Event: From<Event>,
     K::PendingKeyState: From<PendingKeyState>,
-    K::KeyState: From<key::NoOpKeyState<K::Context, K::Event>>,
 {
     /// Constructs new pressed key.
     pub fn new_pressed_key(
@@ -349,7 +348,7 @@ where
 
                 (pkr, pke)
             } else {
-                let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp);
                 let pke = key::KeyEvents::no_events();
                 (pkr, pke)
             }
@@ -520,7 +519,6 @@ where
     K::Event: TryInto<Event>,
     K::Event: From<Event>,
     K::PendingKeyState: From<PendingKeyState>,
-    K::KeyState: From<key::NoOpKeyState<K::Context, K::Event>>,
 {
     /// Constructs new pressed key.
     pub fn new_pressed_key(
@@ -539,7 +537,7 @@ where
         if let PendingChordState::Resolved(resolution) = chord_resolution {
             match resolution {
                 ChordResolution::Chord(_resolved_chord_id) => {
-                    let pkr = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+                    let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp);
                     let pke = key::KeyEvents::no_events();
 
                     (pkr, pke)

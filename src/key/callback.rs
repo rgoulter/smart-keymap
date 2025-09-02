@@ -35,10 +35,10 @@ impl key::Key for Key {
         key::KeyEvents<Self::Event>,
     ) {
         let &Key { keymap_callback } = self;
-        let pks = key::PressedKeyResult::Resolved(key::NoOpKeyState::new().into());
+        let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp);
         let km_ev = crate::keymap::KeymapEvent::Callback(keymap_callback);
         let pke = key::KeyEvents::event(key::Event::Keymap(km_ev));
-        (pks, pke)
+        (pkr, pke)
     }
 
     fn handle_event(
