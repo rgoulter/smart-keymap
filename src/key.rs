@@ -44,8 +44,10 @@ impl KeyPath {
     }
 
     /// Adds an item to the KeyPath.
-    pub fn add_path_item(&mut self, item: u16) {
-        self.0.insert(1, item).unwrap();
+    pub fn add_path_item(&self, item: u16) -> KeyPath {
+        let mut kp = self.clone();
+        kp.0.insert(1, item).unwrap();
+        kp
     }
 }
 
@@ -156,9 +158,8 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
     /// Adds an item to the KeyPath if the pressed key result is pending.
     pub fn add_path_item(self, item: u16) -> Self {
         match self {
-            PressedKeyResult::Pending(mut key_path, pks) => {
-                key_path.add_path_item(item);
-                PressedKeyResult::Pending(key_path, pks)
+            PressedKeyResult::Pending(key_path, pks) => {
+                PressedKeyResult::Pending(key_path.add_path_item(item), pks)
             }
             pkr => pkr,
         }
