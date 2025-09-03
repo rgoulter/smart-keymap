@@ -5,24 +5,24 @@ use serde::{Deserialize, Serialize};
 
 use crate::input;
 
-/// Keymap Callback keys
-pub mod callback;
-/// CapsWord key(s).
-pub mod caps_word;
-/// Chorded keys. (Chording functionality).
-pub mod chorded;
-/// Custom keys.
-pub mod custom;
+// /// Keymap Callback keys
+// pub mod callback;
+// /// CapsWord key(s).
+// pub mod caps_word;
+// /// Chorded keys. (Chording functionality).
+// pub mod chorded;
+// /// Custom keys.
+// pub mod custom;
 /// HID Keyboard keys.
 pub mod keyboard;
-/// Layered keys. (Layering functionality).
-pub mod layered;
-/// Sticky Modifier keys.
-pub mod sticky;
-/// Tap-Dance keys.
-pub mod tap_dance;
-/// Tap-Hold keys.
-pub mod tap_hold;
+// /// Layered keys. (Layering functionality).
+// pub mod layered;
+// /// Sticky Modifier keys.
+// pub mod sticky;
+// /// Tap-Dance keys.
+// pub mod tap_dance;
+// /// Tap-Hold keys.
+// pub mod tap_hold;
 
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
