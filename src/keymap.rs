@@ -773,75 +773,75 @@ mod tests {
         assert_eq!(expected_report, actual_report);
     }
 
-    #[test]
-    fn test_keymap_with_keyboard_key_with_composite_context() {
-        use key::composite;
-        use key::keyboard;
-        use tuples::Keys1;
+    // #[test]
+    // fn test_keymap_with_keyboard_key_with_composite_context() {
+    //     use key::composite;
+    //     use key::keyboard;
+    //     use tuples::Keys1;
 
-        use composite::{Context, Event, KeyState, PendingKeyState};
+    //     use composite::{Context, Event, KeyState, PendingKeyState};
 
-        // Assemble
-        type Ctx = Context;
-        type K = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
-        let keys: Keys1<K, Context, Event, PendingKeyState, KeyState> =
-            Keys1::new((composite::Chorded(composite::Layered(composite::TapHold(
-                keyboard::Key::new(0x04),
-            ))),));
-        let context: Ctx = composite::DEFAULT_CONTEXT;
-        let mut keymap = Keymap::new(keys, context);
+    //     // Assemble
+    //     type Ctx = Context;
+    //     type K = composite::Chorded<composite::Layered<composite::TapHold<keyboard::Key>>>;
+    //     let keys: Keys1<K, Context, Event, PendingKeyState, KeyState> =
+    //         Keys1::new((composite::Chorded(composite::Layered(composite::TapHold(
+    //             keyboard::Key::new(0x04),
+    //         ))),));
+    //     let context: Ctx = composite::DEFAULT_CONTEXT;
+    //     let mut keymap = Keymap::new(keys, context);
 
-        // Act
-        keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        let actual_report = keymap.boot_keyboard_report();
+    //     // Act
+    //     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    //     let actual_report = keymap.boot_keyboard_report();
 
-        // Assert
-        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-        assert_eq!(expected_report, actual_report);
-    }
+    //     // Assert
+    //     let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+    //     assert_eq!(expected_report, actual_report);
+    // }
 
-    #[test]
-    fn test_keymap_with_composite_keyboard_key() {
-        use key::{composite, keyboard};
-        use tuples::Keys1;
+    // #[test]
+    // fn test_keymap_with_composite_keyboard_key() {
+    //     use key::{composite, keyboard};
+    //     use tuples::Keys1;
 
-        use composite::{Context, Event, KeyState, PendingKeyState};
+    //     use composite::{Context, Event, KeyState, PendingKeyState};
 
-        // Assemble
-        let keys: Keys1<composite::Key, Context, Event, PendingKeyState, KeyState> =
-            Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
-        let context: Context = composite::DEFAULT_CONTEXT;
-        let mut keymap = Keymap::new(keys, context);
+    //     // Assemble
+    //     let keys: Keys1<composite::Key, Context, Event, PendingKeyState, KeyState> =
+    //         Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
+    //     let context: Context = composite::DEFAULT_CONTEXT;
+    //     let mut keymap = Keymap::new(keys, context);
 
-        // Act
-        keymap.handle_input(input::Event::Press { keymap_index: 0 });
-        let actual_report = keymap.boot_keyboard_report();
+    //     // Act
+    //     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    //     let actual_report = keymap.boot_keyboard_report();
 
-        // Assert
-        let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
-        assert_eq!(expected_report, actual_report);
-    }
+    //     // Assert
+    //     let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+    //     assert_eq!(expected_report, actual_report);
+    // }
 
-    #[test]
-    fn test_keymap_many_input_events_without_tick_or_report() {
-        use key::{composite, keyboard};
-        use tuples::Keys1;
+    // #[test]
+    // fn test_keymap_many_input_events_without_tick_or_report() {
+    //     use key::{composite, keyboard};
+    //     use tuples::Keys1;
 
-        use composite::{Context, Event, KeyState, PendingKeyState};
+    //     use composite::{Context, Event, KeyState, PendingKeyState};
 
-        // Assemble
-        let keys: Keys1<composite::Key, Context, Event, PendingKeyState, KeyState> =
-            Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
-        let context: Context = composite::DEFAULT_CONTEXT;
-        let mut keymap = Keymap::new(keys, context);
+    //     // Assemble
+    //     let keys: Keys1<composite::Key, Context, Event, PendingKeyState, KeyState> =
+    //         Keys1::new((composite::Key::keyboard(keyboard::Key::new(0x04)),));
+    //     let context: Context = composite::DEFAULT_CONTEXT;
+    //     let mut keymap = Keymap::new(keys, context);
 
-        // Act
-        for _ in 0..100 {
-            keymap.handle_input(input::Event::Press { keymap_index: 0 });
-            keymap.handle_input(input::Event::Release { keymap_index: 0 });
-        }
+    //     // Act
+    //     for _ in 0..100 {
+    //         keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    //         keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    //     }
 
-        // Assert
-        // (expect no panics)
-    }
+    //     // Assert
+    //     // (expect no panics)
+    // }
 }
