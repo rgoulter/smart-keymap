@@ -189,15 +189,18 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
     }
 }
 
-/// The interface for `Key` behaviour.
+/// The interface for key `System` behaviour.
 ///
-/// A `Key` has an associated [Context], `Event`, and [KeyState].
+/// A `System` has an associated `Ref`, [Context], `Event`, and [KeyState].
 ///
 /// The generic `PK` is used as the type of the `PressedKey` that the `Key`
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait Key: Debug {
+pub trait System: Debug {
+    /// Used to identify the key definition in the keymap.
+    type Ref: Copy;
+
     /// The associated [Context] is used to provide state that
     ///  may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
@@ -221,7 +224,7 @@ pub trait Key: Debug {
     fn new_pressed_key(
         &self,
         context: &Self::Context,
-        key_path: KeyPath,
+        key_ref: Self::Ref,
     ) -> (
         PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
         KeyEvents<Self::Event>,
@@ -232,20 +235,9 @@ pub trait Key: Debug {
         &self,
         pending_state: &mut Self::PendingKeyState,
         context: &Self::Context,
-        key_path: KeyPath,
+        key_ref: Self::Ref,
         event: Event<Self::Event>,
     ) -> (Option<NewPressedKey>, KeyEvents<Self::Event>);
-
-    /// Return a reference to the key for the given path.
-    fn lookup(
-        &self,
-        path: &[u16],
-    ) -> &dyn Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    >;
 }
 
 /// Used to provide state that may affect behaviour when pressing the key.
