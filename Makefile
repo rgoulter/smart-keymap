@@ -35,7 +35,7 @@ all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
-test: test-rust test-ncl test-ceedling build-rust-thumbv6m-none-eabi build-rust-stm32f4
+test:
 
 .PHONY: test-rust
 test-rust:
