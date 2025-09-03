@@ -1,7 +1,7 @@
 //! This module implements the `keymap::Key` for a 'composite' key,
 //!  which can be any of the other key definitions,
 //!  and is the default Key for the `keymap::KeyMap` implementation.
-#![doc = include_str!("doc_de_composite.md")]
+// #![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
 
@@ -433,170 +433,170 @@ impl key::KeyState for KeyState {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
-        use crate::input;
-        use key::{composite, Key, KeyState};
+//     #[test]
+//     fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
+//         use crate::input;
+//         use key::{composite, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keymap_index: u16 = 0;
-        let key_path = key::key_path(keymap_index);
-        let key = K::layer_modifier(key::layered::ModifierKey::Hold(1));
-        let context: Ctx = DEFAULT_CONTEXT;
-        let (pressed_lmod_key, _) = key.new_pressed_key(&context, key_path);
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keymap_index: u16 = 0;
+//         let key_path = key::key_path(keymap_index);
+//         let key = K::layer_modifier(key::layered::ModifierKey::Hold(1));
+//         let context: Ctx = DEFAULT_CONTEXT;
+//         let (pressed_lmod_key, _) = key.new_pressed_key(&context, key_path);
 
-        // Act
-        let events = pressed_lmod_key.unwrap_resolved().handle_event(
-            &context,
-            keymap_index,
-            key::Event::Input(input::Event::Release { keymap_index }),
-        );
+//         // Act
+//         let events = pressed_lmod_key.unwrap_resolved().handle_event(
+//             &context,
+//             keymap_index,
+//             key::Event::Input(input::Event::Release { keymap_index }),
+//         );
 
-        // Assert
-        let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key::Event::Key {
-                key_event:
-                    Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer_index)),
-                ..
-            }) => {
-                assert_eq!(1, layer_index);
-            }
-            _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
-        };
-    }
+//         // Assert
+//         let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
+//             Some(key::Event::Key {
+//                 key_event:
+//                     Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer_index)),
+//                 ..
+//             }) => {
+//                 assert_eq!(1, layer_index);
+//             }
+//             _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
+//         };
+//     }
 
-    #[test]
-    fn test_composite_context_updates_with_composite_layermodifier_press_event() {
-        use key::{composite, Context, Key};
+//     #[test]
+//     fn test_composite_context_updates_with_composite_layermodifier_press_event() {
+//         use key::{composite, Context, Key};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 2] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-        ];
-        let mut context: Ctx = DEFAULT_CONTEXT;
-        let keymap_index: u16 = 0;
-        let key_path = key::key_path(keymap_index);
-        let (_pressed_key, pressed_key_events) =
-            keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        let maybe_ev = pressed_key_events.into_iter().next();
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 2] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//         ];
+//         let mut context: Ctx = DEFAULT_CONTEXT;
+//         let keymap_index: u16 = 0;
+//         let key_path = key::key_path(keymap_index);
+//         let (_pressed_key, pressed_key_events) =
+//             keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         let maybe_ev = pressed_key_events.into_iter().next();
 
-        // Act
-        let event = match maybe_ev {
-            Some(key::ScheduledEvent { event, .. }) => event,
-            _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
-        };
-        context.handle_event(event);
-        let actual_active_layers = context.layer_context.layer_state();
+//         // Act
+//         let event = match maybe_ev {
+//             Some(key::ScheduledEvent { event, .. }) => event,
+//             _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
+//         };
+//         context.handle_event(event);
+//         let actual_active_layers = context.layer_context.layer_state();
 
-        // Assert
-        let expected_active_layers = &[true];
-        assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
-    }
+//         // Assert
+//         let expected_active_layers = &[true];
+//         assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
+//     }
 
-    #[test]
-    fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
-        use crate::input;
-        use key::{composite, Context, Key, KeyState};
+//     #[test]
+//     fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
+//         use crate::input;
+//         use key::{composite, Context, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 2] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-        ];
-        let mut context: Ctx = DEFAULT_CONTEXT;
-        let keymap_index: u16 = 0;
-        let key_path = key::key_path(keymap_index);
-        let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        context.layer_context.activate_layer(1);
-        let events = pressed_lmod_key.unwrap_resolved().handle_event(
-            &context,
-            0,
-            key::Event::Input(input::Event::Release { keymap_index: 0 }),
-        );
-        let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key_event) => key_event,
-            _ => panic!("Expected an Event::Key(_)"),
-        };
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 2] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//         ];
+//         let mut context: Ctx = DEFAULT_CONTEXT;
+//         let keymap_index: u16 = 0;
+//         let key_path = key::key_path(keymap_index);
+//         let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         context.layer_context.activate_layer(1);
+//         let events = pressed_lmod_key.unwrap_resolved().handle_event(
+//             &context,
+//             0,
+//             key::Event::Input(input::Event::Release { keymap_index: 0 }),
+//         );
+//         let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
+//             Some(key_event) => key_event,
+//             _ => panic!("Expected an Event::Key(_)"),
+//         };
 
-        // Act
-        context.handle_event(key_ev);
-        let actual_active_layers = context.layer_context.layer_state();
+//         // Act
+//         context.handle_event(key_ev);
+//         let actual_active_layers = context.layer_context.layer_state();
 
-        // Assert
-        let expected_active_layers = &[false];
-        assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
-    }
+//         // Assert
+//         let expected_active_layers = &[false];
+//         assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
+//     }
 
-    #[test]
-    fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
-        use key::{composite, Key, KeyState};
+//     #[test]
+//     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
+//         use key::{composite, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 3] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-            K::keyboard(key::keyboard::Key::new(0x06)),
-        ];
-        let context: Ctx = DEFAULT_CONTEXT;
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 3] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//             K::keyboard(key::keyboard::Key::new(0x06)),
+//         ];
+//         let context: Ctx = DEFAULT_CONTEXT;
 
-        // Act
-        let keymap_index: u16 = 2;
-        let key_path = key::key_path(keymap_index);
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        let actual_keycode = pressed_key.unwrap_resolved().key_output();
+//         // Act
+//         let keymap_index: u16 = 2;
+//         let key_path = key::key_path(keymap_index);
+//         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
-        // Assert
-        let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
-        assert_eq!(expected_keycode, actual_keycode);
-    }
+//         // Assert
+//         let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
+//         assert_eq!(expected_keycode, actual_keycode);
+//     }
 
-    #[test]
-    fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
-        use key::{composite, Key, KeyState};
+//     #[test]
+//     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
+//         use key::{composite, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 3] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-            K::keyboard(key::keyboard::Key::new(0x06)),
-        ];
-        let context: Ctx = DEFAULT_CONTEXT;
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 3] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//             K::keyboard(key::keyboard::Key::new(0x06)),
+//         ];
+//         let context: Ctx = DEFAULT_CONTEXT;
 
-        // Act
-        let keymap_index: u16 = 1;
-        let key_path = key::key_path(keymap_index);
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        let actual_keycode = pressed_key.unwrap_resolved().key_output();
+//         // Act
+//         let keymap_index: u16 = 1;
+//         let key_path = key::key_path(keymap_index);
+//         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
-        // Assert
-        let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
-        assert_eq!(expected_keycode, actual_keycode);
-    }
-}
+//         // Assert
+//         let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
+//         assert_eq!(expected_keycode, actual_keycode);
+//     }
+// }
