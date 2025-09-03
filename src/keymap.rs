@@ -219,7 +219,7 @@ impl<
 }
 
 impl<
-        R: Debug,
+        R: Copy + Debug,
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
         Ev: Copy + Debug,
         PKS: Debug,
@@ -484,54 +484,53 @@ impl<
                 input::Event::Press { keymap_index }
                     if !self.has_pressed_input_with_keymap_index(keymap_index) =>
                 {
-                    let mut maybe_key_path = Some(key::key_path(keymap_index));
+                    let mut maybe_key_ref = Some(self.key_refs[keymap_index as usize]);
 
-                    while let Some(key_path) = maybe_key_path.take() {
-                        todo!("tbi: process_input, for new input press");
+                    while let Some(key_ref) = maybe_key_ref.take() {
+                        let (pkr, pke) = self.key_system.new_pressed_key(&self.context, key_ref);
 
-                        // let key = &self.key_refs[key_path.keymap_index() as usize]
-                        //     .lookup(&key_path[1..]);
+                        pke.into_iter()
+                            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
-                        // let (pkr, pke) = key.new_pressed_key(&self.context, key_path);
+                        match pkr {
+                            key::PressedKeyResult::Resolved(key_state) => {
+                                self.pressed_inputs
+                                    .push(input::PressedInput::pressed_key(key_state, keymap_index))
+                                    .unwrap();
 
-                        // pke.into_iter()
-                        //     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                                // The resolved key state has output. Emit this as an event.
+                                if let Some(key_output) = key_state.key_output() {
+                                    let km_ev = KeymapEvent::ResolvedKeyOutput {
+                                        keymap_index,
+                                        key_output,
+                                    };
+                                    self.handle_event(key::Event::Keymap(km_ev));
+                                }
+                            }
+                            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(
+                                new_key_path,
+                            )) => {
+                                todo!("tbi: process_input, for NewPressedKey::Key (use Ref instead of path)");
 
-                        // match pkr {
-                        //     key::PressedKeyResult::Resolved(key_state) => {
-                        //         self.pressed_inputs
-                        //             .push(input::PressedInput::pressed_key(key_state, keymap_index))
-                        //             .unwrap();
+                                // maybe_key_ref = Some(new_key_path);
+                            }
+                            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp) => {
+                                todo!("tbi: process_input, NoOpKeyState");
 
-                        //         // The resolved key state has output. Emit this as an event.
-                        //         if let Some(key_output) = key_state.key_output() {
-                        //             let km_ev = KeymapEvent::ResolvedKeyOutput {
-                        //                 keymap_index,
-                        //                 key_output,
-                        //             };
-                        //             self.handle_event(key::Event::Keymap(km_ev));
-                        //         }
-                        //     }
-                        //     key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(
-                        //         new_key_path,
-                        //     )) => {
-                        //         maybe_key_path = Some(new_key_path);
-                        //     }
-                        //     key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp) => {
-                        //         let key_state: KS = key::NoOpKeyState::new().into();
+                                // let key_state: KS = key::NoOpKeyState::new().into();
 
-                        //         self.pressed_inputs
-                        //             .push(input::PressedInput::pressed_key(key_state, keymap_index))
-                        //             .unwrap();
-                        //     }
-                        //     key::PressedKeyResult::Pending(key_path, pending_key_state) => {
-                        //         self.pending_key_state = Some(PendingState {
-                        //             key_path,
-                        //             pending_key_state,
-                        //             queued_events: heapless::Vec::new(),
-                        //         });
-                        //     }
-                        // }
+                                // self.pressed_inputs
+                                //     .push(input::PressedInput::pressed_key(key_state, keymap_index))
+                                //     .unwrap();
+                            }
+                            key::PressedKeyResult::Pending(key_path, pending_key_state) => {
+                                self.pending_key_state = Some(PendingState {
+                                    key_path,
+                                    pending_key_state,
+                                    queued_events: heapless::Vec::new(),
+                                });
+                            }
+                        }
                     }
                 }
                 input::Event::Release { keymap_index } => {
@@ -750,8 +749,6 @@ impl<
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    use crate::tuples;
 
     #[test]
     fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {

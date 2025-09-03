@@ -1,12 +1,14 @@
-mod caps_word;
-mod chorded;
-mod custom;
-mod layered;
-mod sticky;
-mod tap_dance;
-mod tap_hold;
+// mod caps_word;
+// mod chorded;
+// mod custom;
+// mod layered;
+// mod sticky;
+// mod tap_dance;
+// mod tap_hold;
 
-mod ms_per_tick;
+// mod ms_per_tick;
+
+use smart_keymap::key::keyboard::Key;
 
 #[test]
 fn basic_keymap_expression() {
@@ -19,45 +21,31 @@ fn basic_keymap_expression() {
     use keymap::DistinctReports;
 
     let mut keymap = {
-        use smart_keymap::key::composite::Context;
-        use smart_keymap::key::composite::Event;
-        use smart_keymap::key::composite::KeyState;
-        use smart_keymap::key::composite::PendingKeyState;
-        smart_keymap::tuples::define_keys!(1);
-        type KeyDefinitionsType = Keys1<
-            smart_keymap::key::composite::Chorded<
-                smart_keymap::key::composite::Layered<
-                    smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-                >,
-            >,
-            Context,
-            Event,
-            PendingKeyState,
-            KeyState,
-        >;
+        use smart_keymap::key::keyboard as key_system;
+        use key_system::Ref;
+        use key_system::Context;
+        use key_system::Event;
+        use key_system::KeyState;
+        use key_system::PendingKeyState;
+        use key_system::System;
+        const KEY_COUNT: usize = 1;
         type Keymap = smart_keymap::keymap::Keymap<
+            Ref,
             Context,
             Event,
             PendingKeyState,
             KeyState,
-            KeyDefinitionsType,
+            System,
+            KEY_COUNT
         >;
-        const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((
-            smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-                smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(4)),
-            )),
-        ));
-        const CONTEXT: Context = smart_keymap::key::composite::Context::from_config(
-            smart_keymap::key::composite::Config {
-                chorded: smart_keymap::key::chorded::DEFAULT_CONFIG,
-                sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-                tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
-                tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
-                ..smart_keymap::key::composite::DEFAULT_CONFIG
-            },
+        const KEY_REFS: [Ref; KEY_COUNT] = [
+            Ref::KeyCode(0x04),
+        ];
+        const CONTEXT: Context = Context::from_config(
+            key_system::DEFAULT_CONFIG,
         );
 
-        Keymap::new(KEY_DEFINITIONS, CONTEXT)
+        Keymap::new(KEY_REFS, CONTEXT, key_system::System)
     };
     let mut actual_reports = DistinctReports::new();
 
@@ -82,45 +70,45 @@ fn basic_keymap_expression() {
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
-#[test]
-fn basic_keymap_expression_macro() {
-    // This test demonstrates using smart_keymap::keymap::Keymap directly,
-    //  by using the keymap! macro.
+// #[test]
+// fn basic_keymap_expression_macro() {
+//     // This test demonstrates using smart_keymap::keymap::Keymap directly,
+//     //  by using the keymap! macro.
 
-    // Assemble
-    use smart_keymap::input;
-    use smart_keymap::keymap;
+//     // Assemble
+//     use smart_keymap::input;
+//     use smart_keymap::keymap;
 
-    use keymap::DistinctReports;
+//     use keymap::DistinctReports;
 
-    let mut keymap = smart_keymap_macros::keymap!(
-        r#"
-        {
-            keys = [
-                { key_code = 4 },
-            ],
-        }
-        "#
-    );
-    let mut actual_reports = DistinctReports::new();
+//     let mut keymap = smart_keymap_macros::keymap!(
+//         r#"
+//         {
+//             keys = [
+//                 { key_code = 4 },
+//             ],
+//         }
+//         "#
+//     );
+//     let mut actual_reports = DistinctReports::new();
 
-    // Act -- tap 'a'
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+//     // Act -- tap 'a'
+//     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+//     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+//     keymap.handle_input(input::Event::Release { keymap_index: 0 });
+//     actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+//     while keymap.has_scheduled_events() {
+//         keymap.tick();
+//         actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+//     }
 
-    // Assert -- tap-hold key immediately resolves as 'tap'
-    #[rustfmt::skip]
-    let expected_reports: &[[u8; 8]] = &[
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-    ];
-    assert_eq!(expected_reports, actual_reports.reports());
-}
+//     // Assert -- tap-hold key immediately resolves as 'tap'
+//     #[rustfmt::skip]
+//     let expected_reports: &[[u8; 8]] = &[
+//         [0, 0, 0, 0, 0, 0, 0, 0],
+//         [0, 0, 0x04, 0, 0, 0, 0, 0],
+//         [0, 0, 0, 0, 0, 0, 0, 0],
+//     ];
+//     assert_eq!(expected_reports, actual_reports.reports());
+// }

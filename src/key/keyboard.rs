@@ -4,7 +4,8 @@ use serde::Deserialize;
 
 use crate::key;
 
-#[derive(Deserialize, Clone, Copy, PartialEq)]
+/// Reference for a keyboard key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
     /// A key code without modifiers.
     KeyCode(u8),
@@ -95,8 +96,18 @@ pub struct Context {
 }
 
 impl Context {
+    /// Constructs a context from the given config
     pub const fn from_config(_config: Config) -> Context {
         Context {}
+    }
+}
+
+impl key::Context for Context {
+    type Event = Event;
+
+    /// Used to update the [Context]'s state.
+    fn handle_event(&mut self, _event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        key::KeyEvents::no_events()
     }
 }
 
@@ -109,6 +120,7 @@ impl crate::keymap::SetKeymapContext for Context {
 pub struct Event;
 
 /// The pending key state type for keyboard keys. (No pending state).
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PendingKeyState;
 
 /// The [key::System] implementation for keyboard keys.

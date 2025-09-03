@@ -28,9 +28,9 @@ crate-type = ["lib"]
 name = "sizes"
 required-features = ["std"]
 
-# [[test]]
-# name = "rust-integration"
-# path = "tests/rust/keymap.rs"
+[[test]]
+name = "rust-integration"
+path = "tests/rust/keymap.rs"
 
 # [[test]]
 # name = "cucumber-keymap"
