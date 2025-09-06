@@ -8,8 +8,6 @@
 
 // mod ms_per_tick;
 
-use smart_keymap::key::keyboard::Key;
-
 #[test]
 fn basic_keymap_expression() {
     // This test demonstrates using smart_keymap::keymap::Keymap directly.
@@ -21,13 +19,13 @@ fn basic_keymap_expression() {
     use keymap::DistinctReports;
 
     let mut keymap = {
-        use smart_keymap::key::keyboard as key_system;
-        use key_system::Ref;
         use key_system::Context;
         use key_system::Event;
         use key_system::KeyState;
         use key_system::PendingKeyState;
+        use key_system::Ref;
         use key_system::System;
+        use smart_keymap::key::keyboard as key_system;
         const KEY_COUNT: usize = 1;
         type Keymap = smart_keymap::keymap::Keymap<
             Ref,
@@ -36,14 +34,10 @@ fn basic_keymap_expression() {
             PendingKeyState,
             KeyState,
             System,
-            KEY_COUNT
+            KEY_COUNT,
         >;
-        const KEY_REFS: [Ref; KEY_COUNT] = [
-            Ref::KeyCode(0x04),
-        ];
-        const CONTEXT: Context = Context::from_config(
-            key_system::DEFAULT_CONFIG,
-        );
+        const KEY_REFS: [Ref; KEY_COUNT] = [Ref::KeyCode(0x04)];
+        const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
 
         Keymap::new(KEY_REFS, CONTEXT, key_system::System)
     };
