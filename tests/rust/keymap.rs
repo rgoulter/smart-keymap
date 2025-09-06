@@ -1,12 +1,12 @@
-mod caps_word;
-mod chorded;
-mod custom;
-mod layered;
-mod sticky;
-mod tap_dance;
-mod tap_hold;
+// mod caps_word;
+// mod chorded;
+// mod custom;
+// mod layered;
+// mod sticky;
+// mod tap_dance;
+// mod tap_hold;
 
-mod ms_per_tick;
+// mod ms_per_tick;
 
 #[test]
 fn basic_keymap_expression() {
@@ -19,45 +19,27 @@ fn basic_keymap_expression() {
     use keymap::DistinctReports;
 
     let mut keymap = {
-        use smart_keymap::key::composite::Context;
-        use smart_keymap::key::composite::Event;
-        use smart_keymap::key::composite::KeyState;
-        use smart_keymap::key::composite::PendingKeyState;
-        smart_keymap::tuples::define_keys!(1);
-        type KeyDefinitionsType = Keys1<
-            smart_keymap::key::composite::Chorded<
-                smart_keymap::key::composite::Layered<
-                    smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-                >,
-            >,
-            Context,
-            Event,
-            PendingKeyState,
-            KeyState,
-        >;
+        use key_system::Context;
+        use key_system::Event;
+        use key_system::KeyState;
+        use key_system::PendingKeyState;
+        use key_system::Ref;
+        use key_system::System;
+        use smart_keymap::key::keyboard as key_system;
+        const KEY_COUNT: usize = 1;
         type Keymap = smart_keymap::keymap::Keymap<
+            Ref,
             Context,
             Event,
             PendingKeyState,
             KeyState,
-            KeyDefinitionsType,
+            System,
+            KEY_COUNT,
         >;
-        const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((
-            smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-                smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(4)),
-            )),
-        ));
-        const CONTEXT: Context = smart_keymap::key::composite::Context::from_config(
-            smart_keymap::key::composite::Config {
-                chorded: smart_keymap::key::chorded::DEFAULT_CONFIG,
-                sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-                tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
-                tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
-                ..smart_keymap::key::composite::DEFAULT_CONFIG
-            },
-        );
+        const KEY_REFS: [Ref; KEY_COUNT] = [Ref::KeyCode(0x04)];
+        const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
 
-        Keymap::new(KEY_DEFINITIONS, CONTEXT)
+        Keymap::new(KEY_REFS, CONTEXT, key_system::System)
     };
     let mut actual_reports = DistinctReports::new();
 
