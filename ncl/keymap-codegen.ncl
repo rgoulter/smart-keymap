@@ -1559,18 +1559,18 @@ let validators = import "validators.ncl" in
         std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
-      let codegen_values =
+      let composite_codegen_values =
         key_cvs
         |> std.array.map composite.lift_to_key
       in
       let key_types =
-        codegen_values
+        composite_codegen_values
         |> std.array.map (fun { key_type, .. } => key_type)
         |> std.array.map (fun { as_rust_type_path, .. } => as_rust_type_path)
         |> std.string.join ","
       in
       let key_exprs =
-        codegen_values
+        composite_codegen_values
         |> std.array.map (fun k => "%{k.rust_expr},")
         |> std.string.join ""
       in
