@@ -1612,25 +1612,34 @@ let validators = import "validators.ncl" in
         }"%,
         context = "smart_keymap::key::composite::Context::from_config(%{config})",
         key_definitions = "%{keys_id}::new((%{key_exprs}))",
+        key_refs = "",
         keymap = m%"
 {
-    use smart_keymap::key::composite::Context;
-    use smart_keymap::key::composite::Event;
-    use smart_keymap::key::composite::KeyState;
-    use smart_keymap::key::composite::PendingKeyState;
-    smart_keymap::tuples::define_keys!(%{std.to_string keymap_len});
-    type KeyDefinitionsType = %{keys_id}<
-        %{key_types},
+    use smart_keymap::key::keyboard as key_system;
+    use key_system::Ref;
+    use key_system::Context;
+    use key_system::Event;
+    use key_system::KeyState;
+    use key_system::PendingKeyState;
+    use key_system::System;
+    const KEY_COUNT: usize = 1;
+    type Keymap = smart_keymap::keymap::Keymap<
+        Ref,
         Context,
         Event,
         PendingKeyState,
         KeyState,
+        System,
+        KEY_COUNT
     >;
-    type Keymap = smart_keymap::keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
-    const KEY_DEFINITIONS: KeyDefinitionsType = %{key_definitions};
-    const CONTEXT: Context = %{context};
+    const KEY_REFS: [Ref; KEY_COUNT] = [
+        Ref::KeyCode(0x04),
+    ];
+    const CONTEXT: Context = Context::from_config(
+        key_system::DEFAULT_CONFIG,
+    );
 
-    Keymap::new(KEY_DEFINITIONS, CONTEXT)
+    Keymap::new(KEY_REFS, CONTEXT, key_system::System)
 }
 "%,
         keymap_module = m%"
