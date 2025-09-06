@@ -1400,6 +1400,7 @@ let validators = import "validators.ncl" in
           config | default = {},
         }
       in
+      let key_cvs = std.array.map key.codegen_values keys in
       let chorded_config_expr =
         if std.record.has_field "chorded" config then
           let timeout_field_fragment =
@@ -1516,8 +1517,7 @@ let validators = import "validators.ncl" in
         #  compute max length of any tap dance definitions.
         let max_td_defs =
           std.array.map
-            (fun k =>
-              let cv = key.codegen_values k in
+            (fun cv =>
               key.traverse
                 (fun acc cv =>
                   cv
@@ -1531,7 +1531,7 @@ let validators = import "validators.ncl" in
                 0
                 cv
             )
-            keys
+            key_cvs
         in
         # Compute the max over all
         std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
@@ -1539,8 +1539,7 @@ let validators = import "validators.ncl" in
       let num_layers =
         let max_layered_lengths =
           std.array.map
-            (fun k =>
-              let cv = key.codegen_values k in
+            (fun cv =>
               key.traverse
                 (fun acc cv =>
                   cv
@@ -1554,15 +1553,14 @@ let validators = import "validators.ncl" in
                 0
                 cv
             )
-            keys
+            key_cvs
         in
         # Compute the max over all
         std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let codegen_values =
-        keys
-        |> std.array.map key.codegen_values
+        key_cvs
         |> std.array.map composite.lift_to_key
       in
       let key_types =
