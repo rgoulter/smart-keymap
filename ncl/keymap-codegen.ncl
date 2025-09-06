@@ -1359,49 +1359,32 @@ let validators = import "validators.ncl" in
       k => std.fail_with "bad json_value for key: %{k |> std.serialize 'Json}",
     },
 
+    codegen_module_for_key_type = match {
+      "smart_keymap::key::keyboard::Key" => keyboard,
+      "smart_keymap::key::caps_word::Key" => caps_word,
+      "smart_keymap::key::layered::ModifierKey" => layer_modifier,
+      "smart_keymap::key::callback::Key" => keymap_callback,
+      "smart_keymap::key::sticky::Key" => sticky,
+      "smart_keymap::key::custom::Key" => custom,
+      "smart_keymap::key::tap_dance::Key" => tap_dance,
+      "smart_keymap::key::tap_hold::Key" => tap_hold,
+      "smart_keymap::key::layered::LayeredKey" => layered,
+      "smart_keymap::key::chorded::Key" => chorded,
+      "smart_keymap::key::chorded::AuxiliaryKey" => chorded_aux,
+      "smart_keymap::key::composite::BaseKey" => composite.base_key,
+      "smart_keymap::key::composite::TapHoldKey" => composite.tap_hold_key,
+      "smart_keymap::key::composite::TapHold" => composite.tap_hold_,
+      "smart_keymap::key::composite::LayeredKey" => composite.layered_key,
+      "smart_keymap::key::composite::Layered" => composite.layered_,
+      cv => std.fail_with "bad codegen_values for key.codegen_module_for_codegen_value: %{cv |> std.serialize 'Json}",
+    },
+
     codegen_module_for_codegen_value = fun cv @ { key_type = { key_type, .. }, .. } =>
-      key_type
-      |> match {
-        "smart_keymap::key::keyboard::Key" => keyboard,
-        "smart_keymap::key::caps_word::Key" => caps_word,
-        "smart_keymap::key::layered::ModifierKey" => layer_modifier,
-        "smart_keymap::key::callback::Key" => keymap_callback,
-        "smart_keymap::key::sticky::Key" => sticky,
-        "smart_keymap::key::custom::Key" => custom,
-        "smart_keymap::key::tap_dance::Key" => tap_dance,
-        "smart_keymap::key::tap_hold::Key" => tap_hold,
-        "smart_keymap::key::layered::LayeredKey" => layered,
-        "smart_keymap::key::chorded::Key" => chorded,
-        "smart_keymap::key::chorded::AuxiliaryKey" => chorded_aux,
-        "smart_keymap::key::composite::BaseKey" => composite.base_key,
-        "smart_keymap::key::composite::TapHoldKey" => composite.tap_hold_key,
-        "smart_keymap::key::composite::TapHold" => composite.tap_hold_,
-        "smart_keymap::key::composite::LayeredKey" => composite.layered_key,
-        "smart_keymap::key::composite::Layered" => composite.layered_,
-        cv => std.fail_with "bad codegen_values for key.codegen_module_for_codegen_value: %{cv |> std.serialize 'Json}",
-      },
+      codegen_module_for_key_type key_type,
 
     lift_to = fun key_impl cv @ { key_type = { key_type, .. }, .. } =>
-      let impl =
-        key_type
-        |> match {
-          "smart_keymap::key::keyboard::Key" => keyboard,
-          "smart_keymap::key::caps_word::Key" => caps_word,
-          "smart_keymap::key::layered::ModifierKey" => layer_modifier,
-          "smart_keymap::key::callback::Key" => keymap_callback,
-          "smart_keymap::key::sticky::Key" => sticky,
-          "smart_keymap::key::custom::Key" => custom,
-          "smart_keymap::key::chorded::Key" => chorded,
-          "smart_keymap::key::chorded::AuxiliaryKey" => chorded_aux,
-          "smart_keymap::key::composite::BaseKey" => composite.base_key,
-          "smart_keymap::key::composite::TapHoldKey" => composite.tap_hold_key,
-          "smart_keymap::key::composite::TapHold" => composite.tap_hold_,
-          "smart_keymap::key::composite::LayeredKey" => composite.layered_key,
-          "smart_keymap::key::composite::Layered" => composite.layered_,
-          cv => std.fail_with "bad codegen_values for key.lift_to: %{cv |> std.serialize 'Json}",
-        }
-      in
-      impl.lift_to key_impl cv,
+      let codegen_module = codegen_module_for_codegen_value cv in
+      codegen_module.lift_to key_impl cv,
 
     traverse = fun f acc cv =>
       let codegen_module = codegen_module_for_codegen_value cv in
