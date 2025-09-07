@@ -69,6 +69,8 @@ let validators = import "validators.ncl" in
     | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
     | KeymapJson,
 
+  json_deserializable_keymap = json_keymap,
+
   # Given an array of codegen_values,
   #  return the 'wrapper type' that unifies all the values.
   #
