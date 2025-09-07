@@ -32,10 +32,10 @@ required-features = ["std"]
 name = "rust-integration"
 path = "tests/rust/keymap.rs"
 
-# [[test]]
-# name = "cucumber-keymap"
-# path = "tests/cucumber/keymap.rs"
-# harness = false
+[[test]]
+name = "cucumber-keymap"
+path = "tests/cucumber/keymap.rs"
+harness = false
 
 [dependencies]
 heapless = { version = "0.8", features = ["serde"] }
