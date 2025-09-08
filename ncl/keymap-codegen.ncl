@@ -69,25 +69,27 @@ let validators = import "validators.ncl" in
     | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
     | KeymapJson,
 
+  key_codegen_values =
+    json_keymap.keys
+    |> std.array.map key.codegen_values,
+
+  key_data_and_refs =
+    key_codegen_values
+    |> std.array.fold_left
+      (fun { key_data, key_refs = refs } cv =>
+        let { key_data = kd, ref = r } = key.data_and_ref key_data cv in
+        {
+          key_data = kd,
+          key_refs = refs @ [r],
+        }
+      )
+      { key_data = {}, key_refs = [] },
+
   # DocstringKeymap in cucumber keymap tests.
   json_deserializable_keymap = {
     config = json_keymap.config,
-
     key_refs =
-      let { key_data, key_refs } =
-        json_keymap.keys
-        |> std.array.map key.codegen_values
-        |> std.array.fold_left
-          (fun { key_data, key_refs = refs } cv =>
-            let { key_data = kd, ref = r } = key.data_and_ref key_data cv in
-            {
-              key_data = kd,
-              key_refs = refs @ [r],
-            }
-          )
-          { key_data = {}, key_refs = [] }
-      in
-      key_refs |> std.array.map (fun { json, .. } => json),
+      key_data_and_refs.key_refs |> std.array.map (fun { json, .. } => json),
   },
 
   # Given an array of codegen_values,
@@ -1449,7 +1451,6 @@ let validators = import "validators.ncl" in
           config | default = {},
         }
       in
-      let key_cvs = std.array.map key.codegen_values keys in
       let chorded_config_expr =
         if std.record.has_field "chorded" config then
           let timeout_field_fragment =
@@ -1580,7 +1581,7 @@ let validators = import "validators.ncl" in
                 0
                 cv
             )
-            key_cvs
+            key_codegen_values
         in
         # Compute the max over all
         std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
@@ -1602,14 +1603,14 @@ let validators = import "validators.ncl" in
                 0
                 cv
             )
-            key_cvs
+            key_codegen_values
         in
         # Compute the max over all
         std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let composite_codegen_values =
-        key_cvs
+        key_codegen_values
         |> std.array.map composite.lift_to_key
       in
       let key_types =
@@ -1649,18 +1650,7 @@ let validators = import "validators.ncl" in
         else
           0
       in
-      let { key_data, key_refs } =
-        std.array.fold_left
-          (fun { key_data, key_refs = refs } cv =>
-            let { key_data = kd, ref = r } = key.data_and_ref key_data cv in
-            {
-              key_data = kd,
-              key_refs = refs @ [r],
-            }
-          )
-          { key_data = {}, key_refs = [] }
-          key_cvs
-      in
+      let { key_data, key_refs } = key_data_and_refs in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
         config = m%"smart_keymap::key::composite::Config {
