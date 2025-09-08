@@ -69,7 +69,26 @@ let validators = import "validators.ncl" in
     | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
     | KeymapJson,
 
-  json_deserializable_keymap = json_keymap,
+  # DocstringKeymap in cucumber keymap tests.
+  json_deserializable_keymap = {
+    config = json_keymap.config,
+
+    key_refs =
+      let { key_data, key_refs } =
+        json_keymap.keys
+        |> std.array.map key.codegen_values
+        |> std.array.fold_left
+          (fun { key_data, key_refs = refs } cv =>
+            let { key_data = kd, ref = r } = key.data_and_ref key_data cv in
+            {
+              key_data = kd,
+              key_refs = refs @ [r],
+            }
+          )
+          { key_data = {}, key_refs = [] }
+      in
+      key_refs |> std.array.map (fun { json, .. } => json),
+  },
 
   # Given an array of codegen_values,
   #  return the 'wrapper type' that unifies all the values.
@@ -213,6 +232,7 @@ let validators = import "validators.ncl" in
             {
               key_data = data_,
               ref = {
+                json = { KeyCode = key_code },
                 rust_expr = "smart_keymap::key::keyboard::Ref::KeyCode(%{std.to_string key_code})",
               },
             },
@@ -220,6 +240,7 @@ let validators = import "validators.ncl" in
             {
               key_data = data_,
               ref = {
+                json = { Modifier = modifiers },
                 rust_expr = "smart_keymap::key::keyboard::Ref::Modifier(%{std.to_string modifiers})",
               },
             },
