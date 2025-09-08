@@ -234,16 +234,18 @@ let validators = import "validators.ncl" in
             {
               key_data = data_,
               ref = {
-                json = { KeyCode = key_code },
-                rust_expr = "smart_keymap::key::keyboard::Ref::KeyCode(%{std.to_string key_code})",
+                variant = "KeyCode",
+                json = { "%{variant}" = key_code },
+                rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string key_code})",
               },
             },
           { modifiers } =>
             {
               key_data = data_,
               ref = {
-                json = { Modifier = modifiers },
-                rust_expr = "smart_keymap::key::keyboard::Ref::Modifier(%{std.to_string modifiers})",
+                variant = "Modifier",
+                json = { "%{variant}" = modifiers },
+                rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string modifiers})",
               },
             },
           { key_code, modifiers } =>
