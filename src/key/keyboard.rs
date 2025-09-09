@@ -10,7 +10,7 @@ pub enum Ref {
     /// A key code without modifiers.
     KeyCode(u8),
     /// A modifiers.
-    Modifier(u8),
+    Modifiers(u8),
     /// A key code with modifiers.
     KeyCodeAndModifier(u8),
 }
@@ -160,7 +160,7 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
                 let pke = key::KeyEvents::no_events();
                 (pks, pke)
             }
-            Ref::Modifier(m) => {
+            Ref::Modifiers(m) => {
                 todo!()
             }
             Ref::KeyCodeAndModifier(kc) => {
