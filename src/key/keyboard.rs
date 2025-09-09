@@ -124,9 +124,20 @@ pub struct PendingKeyState;
 
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System;
+pub struct System<const DATA_LEN: usize = 0> {
+    key_data: [Key; DATA_LEN],
+}
 
-impl key::System for System {
+impl<const DATA_LEN: usize> System<DATA_LEN> {
+    /// Constructs a new [System] with the given key data.
+    ///
+    /// The key data is for keys with both key codes and modifiers.
+    pub const fn new(key_data: [Key; DATA_LEN]) -> Self {
+        Self { key_data }
+    }
+}
+
+impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;

@@ -39,7 +39,7 @@ fn basic_keymap_expression() {
         const KEY_REFS: [Ref; KEY_COUNT] = [Ref::KeyCode(0x04)];
         const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
 
-        Keymap::new(KEY_REFS, CONTEXT, key_system::System)
+        Keymap::new(KEY_REFS, CONTEXT, key_system::System::new([]))
     };
     let mut actual_reports = DistinctReports::new();
 

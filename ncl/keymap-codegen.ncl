@@ -1653,6 +1653,7 @@ let validators = import "validators.ncl" in
           0
       in
       let { key_data, key_refs } = key_data_and_refs in
+      let key_system_expr = "key_system::System::new([])" in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
         config = m%"smart_keymap::key::composite::Config {
@@ -1689,7 +1690,7 @@ let validators = import "validators.ncl" in
         key_system::DEFAULT_CONFIG,
     );
 
-    Keymap::new(KEY_REFS, CONTEXT, key_system::System)
+    Keymap::new(KEY_REFS, CONTEXT, %{key_system_expr})
 }
 "%,
         keymap_module = m%"
