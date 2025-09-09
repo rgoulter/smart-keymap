@@ -249,7 +249,25 @@ let validators = import "validators.ncl" in
               },
             },
           { key_code, modifiers } =>
-            std.fail_with "not implemented: keyboard.data_and_ref with key_code and modifiers",
+            let new_index = std.array.length data_ in
+            let new_key = {
+              rust_expr = m%"
+                smart_keymap::key::keyboard::Key {
+                  key_code: %{std.to_string key_code},
+                  modifiers: %{keyboard_modifiers.expr modifiers},
+                }
+              "%,
+            }
+            in
+            let { keyboard = keyboard_, ..other_data } = data_ & { keyboard | default = [] } in
+            {
+              key_data = other_data & { keyboard = std.array.update new_key keyboard_ },
+              ref = {
+                variant = "KeyCodeAndModifier",
+                json = { "%{variant}" = modifiers },
+                rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string new_index})",
+              },
+            },
         },
     },
 
@@ -1653,7 +1671,15 @@ let validators = import "validators.ncl" in
           0
       in
       let { key_data, key_refs } = key_data_and_refs in
-      let key_system_expr = "key_system::System::new([])" in
+      let keyboard_system_expr =
+        let keyboard_data = (key_data & { keyboard | default = [] }).keyboard in
+        m%"
+        smart_keymap::key::keyboard::System::new([
+          %{keyboard_data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}
+        ])
+      "%
+      in
+      let key_system_expr = keyboard_system_expr in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
         config = m%"smart_keymap::key::composite::Config {
