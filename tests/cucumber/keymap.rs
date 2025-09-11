@@ -132,8 +132,12 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
             let keymap_result: serde_json::Result<DocstringKeymap> = serde_json::from_str(&json);
             match keymap_result {
                 Ok(keymap) => {
-                    let key_refs = keymap.key_refs.try_into().expect("DocstringKeymap should have exact number of keys");
-                    let context = key::keyboard::Context::from_config(key::keyboard::DEFAULT_CONFIG);
+                    let key_refs = keymap
+                        .key_refs
+                        .try_into()
+                        .expect("DocstringKeymap should have exact number of keys");
+                    let context =
+                        key::keyboard::Context::from_config(key::keyboard::DEFAULT_CONFIG);
                     let system = smart_keymap::key::keyboard::System;
                     keymap::Keymap::new(key_refs, context, system)
                 }
