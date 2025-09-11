@@ -1,4 +1,4 @@
-#![doc = include_str!("doc_de_keyboard.md")]
+// #![doc = include_str!("doc_de_keyboard.md")]
 
 use serde::Deserialize;
 
