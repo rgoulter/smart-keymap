@@ -55,7 +55,7 @@ pub const DEFAULT_CONFIG: Config = Config {};
 
 /// Context for keyboard keys. (No context).
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Context {}
+pub struct Context;
 
 impl Context {
     /// Constructs a context from the given config
