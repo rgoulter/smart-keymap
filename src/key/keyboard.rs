@@ -47,43 +47,6 @@ impl core::fmt::Debug for Key {
     }
 }
 
-impl Key {
-    /// Constructs a key with the given key_code.
-    pub const fn new(key_code: u8) -> Self {
-        let modifiers = key::KeyboardModifiers::new();
-        Key {
-            key_code,
-            modifiers,
-        }
-    }
-
-    /// Constructs a key with the given key_code and modifiers.
-    pub const fn new_with_modifiers(key_code: u8, modifiers: key::KeyboardModifiers) -> Self {
-        Key {
-            key_code,
-            modifiers,
-        }
-    }
-
-    /// Constructs a key with the given modifiers.
-    pub const fn from_modifiers(modifiers: key::KeyboardModifiers) -> Self {
-        Key {
-            key_code: 0x00,
-            modifiers,
-        }
-    }
-
-    /// Gets the key code from [Key].
-    pub fn key_code(&self) -> u8 {
-        self.key_code
-    }
-
-    /// Constructs a pressed key state
-    pub fn new_pressed_key(&self) -> KeyState {
-        KeyState(*self)
-    }
-}
-
 /// Config for keyboard keys. (No config).
 pub struct Config;
 
@@ -152,21 +115,10 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        match key_ref {
-            Ref::KeyCode(kc) => {
-                let k = Key::new(kc);
-                let k_ks = k.new_pressed_key();
-                let pks = key::PressedKeyResult::Resolved(k_ks.into());
-                let pke = key::KeyEvents::no_events();
-                (pks, pke)
-            }
-            Ref::Modifiers(m) => {
-                todo!()
-            }
-            Ref::KeyCodeAndModifier(kc) => {
-                todo!()
-            }
-        }
+        let k_ks = KeyState;
+        let pks = key::PressedKeyResult::Resolved(k_ks.into());
+        let pke = key::KeyEvents::no_events();
+        (pks, pke)
     }
 
     fn update_pending_state(
@@ -207,21 +159,4 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
 
 /// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct KeyState(Key);
-
-impl KeyState {
-    /// Keyboard key always has a key_output.
-    pub fn key_output(&self) -> key::KeyOutput {
-        let KeyState(key) = self;
-        key::KeyOutput::from_key_code_with_modifiers(key.key_code, key.modifiers)
-    }
-}
-
-impl key::KeyState for KeyState {
-    type Context = Context;
-    type Event = Event;
-
-    fn key_output(&self) -> Option<key::KeyOutput> {
-        Some(self.key_output())
-    }
-}
+pub struct KeyState;
