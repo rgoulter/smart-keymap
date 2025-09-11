@@ -138,7 +138,7 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
                         .expect("DocstringKeymap should have exact number of keys");
                     let context =
                         key::keyboard::Context::from_config(key::keyboard::DEFAULT_CONFIG);
-                    let system = smart_keymap::key::keyboard::System;
+                    let system = smart_keymap::key::keyboard::System::new([]);
                     keymap::Keymap::new(key_refs, context, system)
                 }
                 Err(e) => {
