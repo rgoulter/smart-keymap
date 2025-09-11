@@ -187,11 +187,21 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        todo!()
+        key::KeyEvents::no_events()
     }
 
-    fn key_output(&self, _ref: &Self::Ref, _key_state: &Self::KeyState) -> Option<key::KeyOutput> {
-        todo!()
+    fn key_output(
+        &self,
+        key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        match key_ref {
+            Ref::KeyCode(kc) => Some(key::KeyOutput::from_key_code(*kc)),
+            Ref::Modifiers(m) => Some(key::KeyOutput::from_key_modifiers(
+                key::KeyboardModifiers::from_byte(*m),
+            )),
+            Ref::KeyCodeAndModifier(_) => todo!(),
+        }
     }
 }
 
