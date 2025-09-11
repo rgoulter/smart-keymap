@@ -461,7 +461,14 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        todo!() // TODO
+        match key_ref {
+            Ref::Keyboard(key_ref) => {
+                let (pkr, pke) = self
+                    .keyboard
+                    .new_pressed_key(&key::keyboard::Context, key_ref);
+                todo!()
+            }
+        }
     }
 
     fn update_pending_state(
