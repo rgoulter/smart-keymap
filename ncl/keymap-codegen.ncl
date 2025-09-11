@@ -250,7 +250,8 @@ let validators = import "validators.ncl" in
               },
             },
           { key_code, modifiers } =>
-            let new_index = std.array.length data_ in
+            let { keyboard = keyboard_, ..other_data } = data_ & { keyboard | default = [] } in
+            let new_index = std.array.length keyboard_ in
             let new_key = {
               json = {
                 include key_code,
@@ -264,7 +265,6 @@ let validators = import "validators.ncl" in
               "%,
             }
             in
-            let { keyboard = keyboard_, ..other_data } = data_ & { keyboard | default = [] } in
             {
               key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
               ref = {
