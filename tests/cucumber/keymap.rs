@@ -135,7 +135,9 @@ struct DocstringKeymap {
 }
 
 fn system_from_key_data(mut key_data: KeyData) -> System {
-    key_data.keyboard.resize_with(32, Default::default);
+    key_data
+        .keyboard
+        .resize_with(smart_keymap::init::KEYBOARD_DATA_LEN, Default::default);
     let keyboard_data = key_data.keyboard.try_into().unwrap();
     System::new(keyboard_data)
 }
