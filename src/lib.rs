@@ -97,7 +97,8 @@ pub mod init {
 
     pub use key_system::KeyState;
 
-    pub use key_system::System;
+    /// System implementation for the keymap.
+    pub type System = crate::key::keyboard::System<32>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
