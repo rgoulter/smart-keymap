@@ -223,7 +223,7 @@ impl<
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
         Ev: Copy + Debug,
         PKS: Debug,
-        KS: Copy + Debug + key::KeyState<Context = Ctx, Event = Ev>,
+        KS: Copy + Debug,
         S: key::System<Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
         const N: usize,
     > Keymap<R, Ctx, Ev, PKS, KS, S, N>
