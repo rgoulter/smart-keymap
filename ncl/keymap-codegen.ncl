@@ -269,7 +269,7 @@ let validators = import "validators.ncl" in
               key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
               ref = {
                 variant = "KeyCodeAndModifier",
-                json = { "%{variant}" = modifiers },
+                json = { "%{variant}" = new_index },
                 rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string new_index})",
               },
             },
