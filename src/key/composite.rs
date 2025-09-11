@@ -383,55 +383,55 @@ impl From<key::keyboard::KeyState> for KeyState {
 //     }
 // }
 
-impl key::KeyState for KeyState {
-    type Context = Context;
-    type Event = Event;
+// impl key::KeyState for KeyState {
+//     type Context = Context;
+//     type Event = Event;
 
-    fn handle_event(
-        &mut self,
-        context: &Self::Context,
-        keymap_index: u16,
-        event: key::Event<Self::Event>,
-    ) -> key::KeyEvents<Self::Event> {
-        match self {
-            KeyState::Keyboard(_) => key::KeyEvents::no_events(),
-            // KeyState::LayerModifier(ks) => {
-            //     if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
-            //         let l_ev = ks.handle_event(keymap_index, ev);
-            //         if let Some(l_ev) = l_ev {
-            //             let c_ev = Event::LayerModification(l_ev);
-            //             key::KeyEvents::event(key::Event::key_event(keymap_index, c_ev))
-            //         } else {
-            //             key::KeyEvents::no_events()
-            //         }
-            //     } else {
-            //         key::KeyEvents::no_events()
-            //     }
-            // }
-            // KeyState::Sticky(ks) => {
-            //     if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
-            //         let ctx = context.into();
-            //         let ke = ks.handle_event(ctx, keymap_index, ev);
-            //         ke.into_events()
-            //     } else {
-            //         key::KeyEvents::no_events()
-            //     }
-            // }
-            KeyState::NoOp => key::KeyEvents::no_events(),
-            // KeyState::Custom(_) => key::KeyEvents::no_events(),
-        }
-    }
+//     fn handle_event(
+//         &mut self,
+//         context: &Self::Context,
+//         keymap_index: u16,
+//         event: key::Event<Self::Event>,
+//     ) -> key::KeyEvents<Self::Event> {
+//         match self {
+//             KeyState::Keyboard(_) => key::KeyEvents::no_events(),
+//             // KeyState::LayerModifier(ks) => {
+//             //     if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+//             //         let l_ev = ks.handle_event(keymap_index, ev);
+//             //         if let Some(l_ev) = l_ev {
+//             //             let c_ev = Event::LayerModification(l_ev);
+//             //             key::KeyEvents::event(key::Event::key_event(keymap_index, c_ev))
+//             //         } else {
+//             //             key::KeyEvents::no_events()
+//             //         }
+//             //     } else {
+//             //         key::KeyEvents::no_events()
+//             //     }
+//             // }
+//             // KeyState::Sticky(ks) => {
+//             //     if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+//             //         let ctx = context.into();
+//             //         let ke = ks.handle_event(ctx, keymap_index, ev);
+//             //         ke.into_events()
+//             //     } else {
+//             //         key::KeyEvents::no_events()
+//             //     }
+//             // }
+//             KeyState::NoOp => key::KeyEvents::no_events(),
+//             // KeyState::Custom(_) => key::KeyEvents::no_events(),
+//         }
+//     }
 
-    fn key_output(&self) -> Option<key::KeyOutput> {
-        match self {
-            KeyState::Keyboard(ks) => Some(ks.key_output()),
-            // KeyState::LayerModifier(_) => None,
-            // KeyState::Sticky(ks) => ks.key_output(),
-            KeyState::NoOp => None,
-            // KeyState::Custom(ks) => Some(ks.key_output()),
-        }
-    }
-}
+//     fn key_output(&self) -> Option<key::KeyOutput> {
+//         match self {
+//             KeyState::Keyboard(ks) => todo!(),
+//             // KeyState::LayerModifier(_) => None,
+//             // KeyState::Sticky(ks) => ks.key_output(),
+//             KeyState::NoOp => None,
+//             // KeyState::Custom(ks) => Some(ks.key_output()),
+//         }
+//     }
+// }
 
 // #[cfg(test)]
 // mod tests {
