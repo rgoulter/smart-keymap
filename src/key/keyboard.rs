@@ -169,7 +169,7 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
         }
     }
 
-    fn handle_event(
+    fn update_pending_state(
         &self,
         _pending_state: &mut Self::PendingKeyState,
         _context: &Self::Context,

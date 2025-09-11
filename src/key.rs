@@ -231,7 +231,7 @@ pub trait System: Debug {
     );
 
     /// Update the given pending key state with the given impl.
-    fn handle_event(
+    fn update_pending_state(
         &self,
         pending_state: &mut Self::PendingKeyState,
         context: &Self::Context,
