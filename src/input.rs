@@ -29,44 +29,30 @@ pub enum Event {
 
 /// A struct for associating a [crate::key::Key] with a [crate::key::KeyState].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PressedKey<S> {
+pub struct PressedKey<R, S> {
     /// The index of the pressed key in some keymap.
     pub keymap_index: u16,
+    /// The Ref to the key data of the key state.
+    pub key_ref: R,
     /// The pressed key state.
     pub key_state: S,
 }
 
-impl<Ctx, Ev, S: crate::key::KeyState<Context = Ctx, Event = Ev>> PressedKey<S> {
-    /// Convenience passthrough to key_state handle_event.
-    pub fn handle_event(
-        &mut self,
-        context: &Ctx,
-        event: crate::key::Event<Ev>,
-    ) -> crate::key::KeyEvents<Ev> {
-        self.key_state
-            .handle_event(context, self.keymap_index, event)
-    }
-
-    /// Convenience passthrough to key_state key_output.
-    pub fn key_output(&self) -> Option<key::KeyOutput> {
-        self.key_state.key_output()
-    }
-}
-
 /// State resulting from [Event].
 #[derive(Debug, Clone, Copy)]
-pub enum PressedInput<PK> {
+pub enum PressedInput<KR, KS> {
     /// Physically pressed key.
-    Key(PressedKey<PK>),
+    Key(PressedKey<KR, KS>),
     /// Virtually pressed key, and its keycode.
     Virtual(key::KeyOutput),
 }
 
-impl<PK> PressedInput<PK> {
+impl<KR, KS> PressedInput<KR, KS> {
     /// Constructor for a [PressedInput::Key].
-    pub fn pressed_key(key_state: PK, keymap_index: u16) -> Self {
+    pub fn pressed_key(keymap_index: u16, key_ref: KR, key_state: KS) -> Self {
         Self::Key(PressedKey {
             keymap_index,
+            key_ref,
             key_state,
         })
     }

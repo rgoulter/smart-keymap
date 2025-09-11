@@ -182,7 +182,7 @@ pub struct Keymap<R, Ctx, Ev: Debug, PKS, KS, S, const N: usize> {
     key_refs: [R; N],
     key_system: S,
     context: Ctx,
-    pressed_inputs: heapless::Vec<input::PressedInput<KS>, { MAX_PRESSED_KEYS }>,
+    pressed_inputs: heapless::Vec<input::PressedInput<R, KS>, { MAX_PRESSED_KEYS }>,
     event_scheduler: EventScheduler<Ev>,
     ms_per_tick: u8,
     idle_time: u32,
@@ -289,7 +289,7 @@ impl<
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
-    fn resolve_pending_key_state(&mut self, key_state: KS) {
+    fn resolve_pending_key_state(&mut self, key_ref: R, key_state: KS) {
         if let Some(PendingState {
             key_path,
             queued_events,
@@ -303,7 +303,11 @@ impl<
 
             // Add the pending state's pressed key to pressed inputs
             self.pressed_inputs
-                .push(input::PressedInput::pressed_key(key_state, keymap_index))
+                .push(input::PressedInput::pressed_key(
+                    keymap_index,
+                    key_ref,
+                    key_state,
+                ))
                 .unwrap();
 
             // Schedule each of the queued events,
@@ -352,7 +356,7 @@ impl<
             self.handle_pending_events();
 
             // The resolved key state has output. Emit this as an event.
-            if let Some(key_output) = key_state.key_output() {
+            if let Some(key_output) = self.key_system.key_output(&key_ref, &key_state) {
                 let km_ev = KeymapEvent::ResolvedKeyOutput {
                     keymap_index,
                     key_output,
@@ -467,9 +471,20 @@ impl<
         } else {
             // Update each of the pressed keys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
-                if let input::PressedInput::Key(pressed_key) = pi {
-                    pressed_key
-                        .handle_event(&self.context, ev.into())
+                if let input::PressedInput::Key(input::PressedKey {
+                    key_ref,
+                    mut key_state,
+                    keymap_index,
+                }) = pi
+                {
+                    self.key_system
+                        .update_state(
+                            &mut key_state,
+                            &key_ref,
+                            &self.context,
+                            *keymap_index,
+                            ev.into(),
+                        )
                         .into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                 }
@@ -495,11 +510,17 @@ impl<
                         match pkr {
                             key::PressedKeyResult::Resolved(key_state) => {
                                 self.pressed_inputs
-                                    .push(input::PressedInput::pressed_key(key_state, keymap_index))
+                                    .push(input::PressedInput::pressed_key(
+                                        keymap_index,
+                                        key_ref,
+                                        key_state,
+                                    ))
                                     .unwrap();
 
                                 // The resolved key state has output. Emit this as an event.
-                                if let Some(key_output) = key_state.key_output() {
+                                if let Some(key_output) =
+                                    self.key_system.key_output(&key_ref, &key_state)
+                                {
                                     let km_ev = KeymapEvent::ResolvedKeyOutput {
                                         keymap_index,
                                         key_output,
@@ -660,12 +681,13 @@ impl<
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
             if let input::PressedInput::Key(input::PressedKey {
-                key_state,
+                mut key_state,
+                key_ref,
                 keymap_index,
             }) = pi
             {
-                key_state
-                    .handle_event(&self.context, *keymap_index, ev)
+                self.key_system
+                    .update_state(&mut key_state, &key_ref, &self.context, *keymap_index, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
@@ -717,7 +739,9 @@ impl<
     /// Returns the the pressed key outputs.
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key(pressed_key) => pressed_key.key_output(),
+            input::PressedInput::Key(input::PressedKey {
+                key_ref, key_state, ..
+            }) => self.key_system.key_output(&key_ref, &key_state),
             &input::PressedInput::Virtual(key_output) => Some(key_output),
         });
 
