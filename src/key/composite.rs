@@ -13,6 +13,7 @@ use crate::{key, keymap};
 pub type PressedKeyResult = key::PressedKeyResult<PendingKeyState, KeyState>;
 
 /// Reference for a composite key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
     Keyboard(key::keyboard::Ref),
 }
