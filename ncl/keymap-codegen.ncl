@@ -90,6 +90,7 @@ let validators = import "validators.ncl" in
     config = json_keymap.config,
     key_refs =
       key_data_and_refs.key_refs |> std.array.map (fun { json, .. } => json),
+    key_data = key_data_and_refs.key_data,
   },
 
   # Given an array of codegen_values,
