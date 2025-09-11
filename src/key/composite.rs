@@ -439,6 +439,61 @@ impl From<key::keyboard::KeyState> for KeyState {
 //     }
 // }
 
+/// The [key::System] implementation for keyboard keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<const DATA_LEN_KEYBOARD: usize> {
+    /// The keyboard key system.
+    pub keyboard: key::keyboard::System<DATA_LEN_KEYBOARD>,
+}
+
+impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
+    type Ref = Ref;
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        _context: &Self::Context,
+        key_ref: Ref,
+    ) -> (
+        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        todo!() // TODO
+    }
+
+    fn update_pending_state(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _context: &Self::Context,
+        _key_ref: Ref,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+        todo!() // TODO
+    }
+
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        todo!() // TODO
+    }
+
+    fn key_output(
+        &self,
+        key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        todo!() // TODO
+    }
+}
+
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
