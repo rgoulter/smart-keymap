@@ -152,7 +152,15 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
             Ref::Modifiers(m) => Some(key::KeyOutput::from_key_modifiers(
                 key::KeyboardModifiers::from_byte(*m),
             )),
-            Ref::KeyCodeAndModifier(_) => todo!(),
+            Ref::KeyCodeAndModifier(idx) => {
+                let Key {
+                    key_code,
+                    modifiers,
+                } = self.key_data[*idx as usize];
+                Some(key::KeyOutput::from_key_code_with_modifiers(
+                    key_code, modifiers,
+                ))
+            }
         }
     }
 }
