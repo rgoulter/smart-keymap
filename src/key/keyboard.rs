@@ -16,7 +16,7 @@ pub enum Ref {
 }
 
 /// A key for HID Keyboard usage codes.
-#[derive(Deserialize, Clone, Copy, PartialEq)]
+#[derive(Deserialize, Clone, Copy, PartialEq, Default)]
 pub struct Key {
     #[serde(default)]
     key_code: u8,
