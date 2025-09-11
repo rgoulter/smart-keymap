@@ -90,7 +90,7 @@ let validators = import "validators.ncl" in
     config = json_keymap.config,
     key_refs =
       key_data_and_refs.key_refs |> std.array.map (fun { json, .. } => json),
-    key_data = key_data_and_refs.key_data,
+    key_data = key_data_and_refs.key_data |> std.record.map_values (std.array.map (fun { json, .. } => json)),
   },
 
   # Given an array of codegen_values,
@@ -252,6 +252,10 @@ let validators = import "validators.ncl" in
           { key_code, modifiers } =>
             let new_index = std.array.length data_ in
             let new_key = {
+              json = {
+                include key_code,
+                include modifiers,
+              },
               rust_expr = m%"
                 smart_keymap::key::keyboard::Key {
                   key_code: %{std.to_string key_code},
