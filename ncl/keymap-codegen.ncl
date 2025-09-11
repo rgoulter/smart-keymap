@@ -262,7 +262,7 @@ let validators = import "validators.ncl" in
             in
             let { keyboard = keyboard_, ..other_data } = data_ & { keyboard | default = [] } in
             {
-              key_data = other_data & { keyboard = std.array.update new_key keyboard_ },
+              key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
               ref = {
                 variant = "KeyCodeAndModifier",
                 json = { "%{variant}" = modifiers },
