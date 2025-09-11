@@ -12,6 +12,11 @@ use crate::{key, keymap};
 /// Type alias for result from new_pressed_key.
 pub type PressedKeyResult = key::PressedKeyResult<PendingKeyState, KeyState>;
 
+/// Reference for a composite key.
+pub enum Ref {
+    Keyboard(key::keyboard::Ref),
+}
+
 /// Config used for constructing initial context
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
