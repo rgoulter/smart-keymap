@@ -178,6 +178,21 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
     ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
         panic!()
     }
+
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        todo!()
+    }
+
+    fn key_output(&self, _ref: &Self::Ref, _key_state: &Self::KeyState) -> Option<key::KeyOutput> {
+        todo!()
+    }
 }
 
 /// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).

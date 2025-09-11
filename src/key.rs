@@ -238,6 +238,23 @@ pub trait System: Debug {
         key_ref: Self::Ref,
         event: Event<Self::Event>,
     ) -> (Option<NewPressedKey>, KeyEvents<Self::Event>);
+
+    /// Used to update the [KeyState]'s state, and possibly yield event(s).
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: Event<Self::Event>,
+    ) -> KeyEvents<Self::Event> {
+        KeyEvents::no_events()
+    }
+
+    /// Output for the pressed key state.
+    fn key_output(&self, _ref: &Self::Ref, _key_state: &Self::KeyState) -> Option<KeyOutput> {
+        None
+    }
 }
 
 /// Used to provide state that may affect behaviour when pressing the key.
