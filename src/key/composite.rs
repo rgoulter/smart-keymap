@@ -501,12 +501,23 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         key_state: &mut Self::KeyState,
         key_ref: &Self::Ref,
         _context: &Self::Context,
-        _keymap_index: u16,
-        _event: key::Event<Self::Event>,
+        keymap_index: u16,
+        event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
         match (key_ref, key_state) {
-            (Ref::Keyboard(_r), KeyState::Keyboard(_ks)) => {
-                key::KeyEvents::no_events() // key::keyboard has no event processing
+            (Ref::Keyboard(r), KeyState::Keyboard(mut ks)) => {
+                if let Ok(e) = event.try_into_key_event(TryInto::try_into) {
+                    let pke = self.keyboard.update_state(
+                        &mut ks,
+                        r,
+                        &key::keyboard::Context,
+                        keymap_index,
+                        e,
+                    );
+                    pke.map_events(|_ev| panic!("key::keyboard never emits events"))
+                } else {
+                    key::KeyEvents::no_events()
+                }
             }
             (_, _) => panic!("Mismatched key_ref and key_state variants"),
         }
