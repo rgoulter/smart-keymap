@@ -515,7 +515,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         &self,
         key_state: &mut Self::KeyState,
         key_ref: &Self::Ref,
-        _context: &Self::Context,
+        context: &Self::Context,
         keymap_index: u16,
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
@@ -525,7 +525,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
                     let pke = self.keyboard.update_state(
                         &mut key_state,
                         key_ref,
-                        &key::keyboard::Context,
+                        context.into(),
                         keymap_index,
                         event,
                     );
