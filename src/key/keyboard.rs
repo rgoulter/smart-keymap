@@ -85,6 +85,10 @@ pub struct Event;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PendingKeyState;
 
+/// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KeyState;
+
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<const DATA_LEN: usize> {
@@ -164,7 +168,3 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
         }
     }
 }
-
-/// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct KeyState;
