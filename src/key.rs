@@ -187,6 +187,19 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
             pkr => pkr,
         }
     }
+
+    /// Maps the PressedKeyResult into a new type.
+    pub fn map<TPKS, TKS>(
+        self,
+        f: fn(PKS) -> TPKS,
+        g: fn(KS) -> TKS,
+    ) -> PressedKeyResult<TPKS, TKS> {
+        match self {
+            PressedKeyResult::Pending(kp, pks) => PressedKeyResult::Pending(kp, f(pks)),
+            PressedKeyResult::NewPressedKey(npk) => PressedKeyResult::NewPressedKey(npk),
+            PressedKeyResult::Resolved(ks) => PressedKeyResult::Resolved(g(ks)),
+        }
+    }
 }
 
 /// The interface for key `System` behaviour.
