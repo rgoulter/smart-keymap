@@ -466,7 +466,13 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
                 let (pkr, pke) = self
                     .keyboard
                     .new_pressed_key(&key::keyboard::Context, key_ref);
-                todo!()
+                (
+                    pkr.map(
+                        |_pks| panic!("key::keyboard has no pending state"),
+                        KeyState::Keyboard,
+                    ),
+                    pke.map_events(|_e| panic!("key::keyboard never emits events")),
+                )
             }
         }
     }
@@ -483,21 +489,29 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
 
     fn update_state(
         &self,
-        _key_state: &mut Self::KeyState,
-        _ref: &Self::Ref,
+        key_state: &mut Self::KeyState,
+        key_ref: &Self::Ref,
         _context: &Self::Context,
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        todo!() // TODO
+        match (key_ref, key_state) {
+            (Ref::Keyboard(_r), KeyState::Keyboard(_ks)) => {
+                key::KeyEvents::no_events() // key::keyboard has no event processing
+            }
+            (_, _) => panic!("Mismatched key_ref and key_state variants"),
+        }
     }
 
     fn key_output(
         &self,
         key_ref: &Self::Ref,
-        _key_state: &Self::KeyState,
+        key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        todo!() // TODO
+        match (key_ref, key_state) {
+            (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
+            (_, _) => panic!("Mismatched key_ref and key_state variants"),
+        }
     }
 }
 
