@@ -83,7 +83,13 @@ let validators = import "validators.ncl" in
           key_refs = refs @ [r],
         }
       )
-      { key_data = {}, key_refs = [] },
+      { key_data = {}, key_refs = [] }
+    |> (fun { key_data, key_refs = refs } =>
+      {
+        include key_data,
+        key_refs = refs |> std.array.map composite.ref.wrap,
+      }
+    ),
 
   # DocstringKeymap in cucumber keymap tests.
   json_deserializable_keymap = {
