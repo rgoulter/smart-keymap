@@ -127,6 +127,12 @@ impl<'c> From<&'c Context> for &'c keymap::KeymapContext {
     }
 }
 
+impl<'c> From<&'c Context> for &'c key::keyboard::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::keyboard::Context
+    }
+}
+
 // impl<'c> From<&'c Context> for &'c key::caps_word::Context {
 //     fn from(ctx: &'c Context) -> Self {
 //         &ctx.caps_word_context
