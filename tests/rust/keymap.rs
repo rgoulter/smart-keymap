@@ -25,7 +25,7 @@ fn basic_keymap_expression() {
         use key_system::PendingKeyState;
         use key_system::Ref;
         use key_system::System;
-        use smart_keymap::key::keyboard as key_system;
+        use smart_keymap::key::composite as key_system;
         const KEY_COUNT: usize = 1;
         type Keymap = smart_keymap::keymap::Keymap<
             Ref,
@@ -33,13 +33,21 @@ fn basic_keymap_expression() {
             Event,
             PendingKeyState,
             KeyState,
-            System,
+            System<0>,
             KEY_COUNT,
         >;
-        const KEY_REFS: [Ref; KEY_COUNT] = [Ref::KeyCode(0x04)];
+        const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
+            smart_keymap::key::keyboard::Ref::KeyCode(0x04),
+        )];
         const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
 
-        Keymap::new(KEY_REFS, CONTEXT, key_system::System::new([]))
+        Keymap::new(
+            KEY_REFS,
+            CONTEXT,
+            smart_keymap::key::composite::System {
+                keyboard: smart_keymap::key::keyboard::System::new([]),
+            },
+        )
     };
     let mut actual_reports = DistinctReports::new();
 
