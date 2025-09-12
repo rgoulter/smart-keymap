@@ -215,6 +215,15 @@ pub enum Event {
 //         Event::TapHold(ev)
 //     }
 // }
+//
+
+impl TryFrom<Event> for key::keyboard::Event {
+    type Error = key::EventError;
+
+    fn try_from(_ev: Event) -> Result<Self, Self::Error> {
+        Err(key::EventError::UnmappableEvent)
+    }
+}
 
 // impl TryFrom<Event> for key::caps_word::Event {
 //     type Error = key::EventError;
