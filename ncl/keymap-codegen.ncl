@@ -1081,6 +1081,20 @@ let validators = import "validators.ncl" in
   },
 
   composite = {
+    ref = {
+      wrap = fun ref @ { module, json, rust_expr, .. } =>
+        module
+        |> match {
+          "smart_keymap::key::keyboard" =>
+            {
+              module = "smart_keymap::key::composite",
+              json = { Keyboard = ref.json },
+              rust_expr = "%{module}::Ref::Keyboard(%{ref.rust_expr})",
+            },
+          _ => std.fail_with "bad composite.ref.wrap: %{std.serialize ref 'Json}",
+        },
+    },
+
     base_key = {
       layer_modifier = fun cv =>
         {
