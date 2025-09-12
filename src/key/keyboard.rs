@@ -87,7 +87,7 @@ pub struct PendingKeyState;
 
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<const DATA_LEN: usize = 0> {
+pub struct System<const DATA_LEN: usize> {
     key_data: [Key; DATA_LEN],
 }
 
