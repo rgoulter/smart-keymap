@@ -308,6 +308,12 @@ pub enum PendingKeyState {
     // Chorded(key::chorded::PendingKeyState),
 }
 
+impl From<key::keyboard::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::keyboard::PendingKeyState) -> Self {
+        panic!("key::keyboard has no pending state")
+    }
+}
+
 // impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
 //     fn from(pks: key::tap_dance::PendingKeyState) -> Self {
 //         PendingKeyState::TapDance(pks)
