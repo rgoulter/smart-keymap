@@ -20,28 +20,15 @@ fn basic_keymap_expression() {
 
     let mut keymap = {
         use key_system::Context;
-        use key_system::Event;
-        use key_system::KeyState;
-        use key_system::PendingKeyState;
         use key_system::Ref;
-        use key_system::System;
         use smart_keymap::key::composite as key_system;
         const KEY_COUNT: usize = 1;
-        type Keymap = smart_keymap::keymap::Keymap<
-            Ref,
-            Context,
-            Event,
-            PendingKeyState,
-            KeyState,
-            System<0>,
-            KEY_COUNT,
-        >;
         const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
             smart_keymap::key::keyboard::Ref::KeyCode(0x04),
         )];
         const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
 
-        Keymap::new(
+        smart_keymap::keymap::Keymap::new(
             KEY_REFS,
             CONTEXT,
             smart_keymap::key::composite::System {
