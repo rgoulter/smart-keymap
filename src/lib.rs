@@ -63,11 +63,11 @@ pub mod slice;
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    // use crate::key::composite;
+    use crate::key::composite;
     use crate::key::keyboard;
     use crate::keymap;
 
-    use keyboard as key_system;
+    use composite as key_system;
 
     /// Config used to construct initial context.
     pub const CONFIG: key_system::Config = key_system::DEFAULT_CONFIG;
@@ -101,7 +101,7 @@ pub mod init {
     pub const KEYBOARD_DATA_LEN: usize = 32;
 
     /// System implementation for the keymap.
-    pub type System = crate::key::keyboard::System<KEYBOARD_DATA_LEN>;
+    pub type System = crate::key::composite::System<KEYBOARD_DATA_LEN>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
@@ -114,7 +114,7 @@ pub mod init {
         keymap::Keymap<Ref, Context, Event, PendingKeyState, KeyState, System, KEY_COUNT>;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_DEFINITIONS: [Ref; KEY_COUNT] = [keyboard::Ref::KeyCode(0x04)];
+    pub const KEY_DEFINITIONS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
 }
 
 #[cfg(custom_keymap)]
