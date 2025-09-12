@@ -1709,7 +1709,11 @@ let validators = import "validators.ncl" in
         ])
       "%
       in
-      let key_system_expr = keyboard_system_expr in
+      let key_system_expr = m%"
+        smart_keymap::key::composite::System {
+          keyboard: %{keyboard_system_expr},
+        }
+      "% in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
         config = m%"smart_keymap::key::composite::Config {
