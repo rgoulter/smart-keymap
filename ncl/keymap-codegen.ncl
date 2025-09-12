@@ -181,6 +181,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::keyboard",
+
       # c.f. doc_de_keyboard.md.
       json_value_validator =
         validators.record.validator {
