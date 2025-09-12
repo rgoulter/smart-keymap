@@ -21,8 +21,8 @@ pub mod keyboard;
 // pub mod sticky;
 // /// Tap-Dance keys.
 // pub mod tap_dance;
-// /// Tap-Hold keys.
-// pub mod tap_hold;
+/// Tap-Hold keys.
+pub mod tap_hold;
 
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
