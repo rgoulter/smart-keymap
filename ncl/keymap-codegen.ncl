@@ -237,18 +237,20 @@ let validators = import "validators.ncl" in
             {
               key_data = data_,
               ref = {
+                include module,
                 variant = "KeyCode",
                 json = { "%{variant}" = key_code },
-                rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string key_code})",
+                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string key_code})",
               },
             },
           { modifiers } =>
             {
               key_data = data_,
               ref = {
+                include module,
                 variant = "Modifiers",
                 json = { "%{variant}" = modifiers },
-                rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string modifiers})",
+                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string modifiers})",
               },
             },
           { key_code, modifiers } =>
@@ -260,7 +262,7 @@ let validators = import "validators.ncl" in
                 include modifiers,
               },
               rust_expr = m%"
-                smart_keymap::key::keyboard::Key {
+                %{module}::Key {
                   key_code: %{std.to_string key_code},
                   modifiers: %{keyboard_modifiers.expr modifiers},
                 }
@@ -270,9 +272,10 @@ let validators = import "validators.ncl" in
             {
               key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
               ref = {
+                include module,
                 variant = "KeyCodeAndModifier",
                 json = { "%{variant}" = new_index },
-                rust_expr = "smart_keymap::key::keyboard::Ref::%{variant}(%{std.to_string new_index})",
+                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
               },
             },
         },
