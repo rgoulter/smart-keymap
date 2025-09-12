@@ -486,7 +486,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
                         |_pks| panic!("key::keyboard has no pending state"),
                         KeyState::Keyboard,
                     ),
-                    pke.map_events(|_e| panic!("key::keyboard never emits events")),
+                    pke.map_events(Into::into),
                 )
             }
         }
@@ -520,7 +520,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
                         keymap_index,
                         e,
                     );
-                    pke.map_events(|_ev| panic!("key::keyboard never emits events"))
+                    pke.map_events(Into::into)
                 } else {
                     key::KeyEvents::no_events()
                 }
