@@ -488,10 +488,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
                     .keyboard
                     .new_pressed_key(&key::keyboard::Context, key_ref);
                 (
-                    pkr.map(
-                        |_pks| panic!("key::keyboard has no pending state"),
-                        KeyState::Keyboard,
-                    ),
+                    pkr.map(Into::into, KeyState::Keyboard),
                     pke.map_events(Into::into),
                 )
             }
