@@ -1728,7 +1728,7 @@ let validators = import "validators.ncl" in
         key_refs = key_refs_expr,
         keymap = m%"
 {
-    use smart_keymap::key::keyboard as key_system;
+    use smart_keymap::key::composite as key_system;
     use key_system::Ref;
     use key_system::Context;
     use key_system::Event;
@@ -1736,21 +1736,12 @@ let validators = import "validators.ncl" in
     use key_system::PendingKeyState;
     use key_system::System;
     const KEY_COUNT: usize = %{keymap_len};
-    type Keymap = smart_keymap::keymap::Keymap<
-        Ref,
-        Context,
-        Event,
-        PendingKeyState,
-        KeyState,
-        System,
-        KEY_COUNT
-    >;
     const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
     const CONTEXT: Context = Context::from_config(
         key_system::DEFAULT_CONFIG,
     );
 
-    Keymap::new(KEY_REFS, CONTEXT, %{key_system_expr})
+    smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{key_system_expr})
 }
 "%,
         keymap_module = m%"
