@@ -180,6 +180,12 @@ pub enum Event {
     // LayerModification(key::layered::LayerEvent),
 }
 
+impl From<key::keyboard::Event> for Event {
+    fn from(_ev: key::keyboard::Event) -> Self {
+        panic!("key::keyboard never emits events")
+    }
+}
+
 // impl From<key::caps_word::Event> for Event {
 //     fn from(ev: key::caps_word::Event) -> Self {
 //         Event::CapsWord(ev)
