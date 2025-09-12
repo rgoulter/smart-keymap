@@ -514,14 +514,14 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
         match (key_ref, key_state) {
-            (Ref::Keyboard(r), KeyState::Keyboard(mut ks)) => {
-                if let Ok(e) = event.try_into_key_event(TryInto::try_into) {
+            (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
                     let pke = self.keyboard.update_state(
-                        &mut ks,
-                        r,
+                        &mut key_state,
+                        key_ref,
                         &key::keyboard::Context,
                         keymap_index,
-                        e,
+                        event,
                     );
                     pke.map_events(Into::into)
                 } else {
