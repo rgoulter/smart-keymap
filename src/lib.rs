@@ -35,10 +35,11 @@
 //!
 //! # Implementation Overview
 //!
-//! The heart of the library is the [key] module, and its
-//! [key::Key], [key::Context], [key::KeyState] traits.
+//! The heart of the library is the [key] module,
+//! and its [key::System] trait.
 //!
-//! These provide the interface with which 'smart keys' are implemented.
+//! Implementors are then aggregated by [key::composite],
+//! which is used by the [keymap] module.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
