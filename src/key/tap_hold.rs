@@ -10,7 +10,7 @@ use crate::keymap;
 
 /// Reference for a tap_hold key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Ref(u8);
+pub struct Ref(pub u8);
 
 /// A key with tap-hold functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
