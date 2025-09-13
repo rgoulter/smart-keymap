@@ -291,7 +291,7 @@ where
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
-    fn resolve_pending_key_state(&mut self, _key_ref: R, key_state: KS) {
+    fn resolve_pending_key_state(&mut self, key_state: KS) {
         if let Some(PendingState {
             keymap_index,
             key_ref,
@@ -396,81 +396,79 @@ where
 
     fn process_input(&mut self, ev: input::Event) {
         if let Some(PendingState {
-            keymap_index: _,
-            key_ref: _,
-            pending_key_state: _,
+            keymap_index,
+            key_ref,
+            pending_key_state,
             queued_events,
             ..
         }) = &mut self.pending_key_state
         {
             queued_events.push(ev.into()).unwrap();
 
-            // let pending_key_ref = &self.key_refs[key_path.keymap_index() as usize];
+            let (mut maybe_npk, pke) = self.key_system.update_pending_state(
+                pending_key_state,
+                *keymap_index,
+                &self.context,
+                *key_ref,
+                ev.into(),
+            );
 
-            todo!("tbi: process_input, for Some pending_key_state");
+            pke.into_iter()
+                .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
-            // let pending_key = pending_key_ref.lookup(&key_path[1..]);
+            while let Some(npk) = maybe_npk.take() {
+                let pkr = match npk {
+                    key::NewPressedKey::Key(new_key_ref) => {
+                        let (pkr, pke) = self.key_system.new_pressed_key(
+                            *keymap_index,
+                            &self.context,
+                            new_key_ref,
+                        );
+                        pke.into_iter()
+                            .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                        pkr
+                    }
+                    key::NewPressedKey::NoOp => {
+                        let no_op_ks: KS = key::NoOpKeyState.into();
+                        key::PressedKeyResult::Resolved(no_op_ks)
+                    }
+                };
 
-            // let (mut maybe_npk, pke) = pending_key.handle_event(
-            //     pending_key_state,
-            //     &self.context,
-            //     key_path.clone(),
-            //     ev.into(),
-            // );
+                match pkr {
+                    key::PressedKeyResult::Resolved(ks) => {
+                        self.resolve_pending_key_state(ks);
+                        break;
+                    }
+                    key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(new_key_path)) => {
+                        maybe_npk = Some(key::NewPressedKey::Key(new_key_path));
+                    }
+                    key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp) => {
+                        self.resolve_pending_key_state(key::NoOpKeyState.into());
+                        break;
+                    }
+                    key::PressedKeyResult::Pending(pks) => {
+                        todo!()
 
-            // pke.into_iter()
-            //     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
+                        // *key_path = kp;
+                        // *pending_key_state = pks;
 
-            // while let Some(npk) = maybe_npk.take() {
-            //     let pkr = match npk {
-            //         key::NewPressedKey::Key(new_key_path) => {
-            //             let new_key = &self.key_refs[new_key_path.keymap_index() as usize];
-            //             let new_key = new_key.lookup(&new_key_path[1..]);
-            //             let (pkr, pke) =
-            //                 new_key.new_pressed_key(&self.context, new_key_path.clone());
-            //             pke.into_iter()
-            //                 .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
-            //             pkr
-            //         }
-            //         key::NewPressedKey::NoOp => {
-            //             let no_op_ks: KS = key::NoOpKeyState::new().into();
-            //             key::PressedKeyResult::Resolved(no_op_ks)
-            //         }
-            //     };
-
-            //     match pkr {
-            //         key::PressedKeyResult::Resolved(ks) => {
-            //             self.resolve_pending_key_state(ks);
-            //             break;
-            //         }
-            //         key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(new_key_path)) => {
-            //             maybe_npk = Some(key::NewPressedKey::Key(new_key_path));
-            //         }
-            //         key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp) => {
-            //             self.resolve_pending_key_state(key::NoOpKeyState::new().into());
-            //             break;
-            //         }
-            //         key::PressedKeyResult::Pending(kp, pks) => {
-            //             *key_path = kp;
-            //             *pending_key_state = pks;
-
-            //             // Since the pending key state resolved into another pending key state,
-            //             //  we re-queue all the input events that had been received.
-            //             let orig_input_queue = core::mem::take(&mut self.input_queue);
-            //             while let Some(ev) = queued_events.pop() {
-            //                 match ev {
-            //                     key::Event::Input(input_ev) => {
-            //                         self.input_queue.enqueue(input_ev).unwrap();
-            //                     }
-            //                     _ => {}
-            //                 }
-            //             }
-            //             orig_input_queue.iter().for_each(|&ev| {
-            //                 self.input_queue.enqueue(ev).unwrap();
-            //             });
-            //         }
-            //     }
-            // }
+                        // // Since the pending key state resolved into another pending key state,
+                        // //  we re-queue all the input events that had been received.
+                        // let orig_input_queue = core::mem::take(&mut self.input_queue);
+                        // while let Some(ev) = queued_events.pop() {
+                        //     match ev {
+                        //         key::Event::Input(input_ev) => {
+                        //             self.input_queue.enqueue(input_ev).unwrap();
+                        //         }
+                        //         _ => {}
+                        //     }
+                        // }
+                        // orig_input_queue.iter().for_each(|&ev| {
+                        //     self.input_queue.enqueue(ev).unwrap();
+                        // });
+                    }
+                }
+            }
         } else {
             // Update each of the pressed keys with the event.
             self.pressed_inputs.iter_mut().for_each(|pi| {
