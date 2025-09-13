@@ -12,6 +12,8 @@ use crate::{key, keymap};
 pub enum Ref {
     /// [key::keyboard::Ref] variant.
     Keyboard(key::keyboard::Ref),
+    /// [key::tap_hold::Ref] variant.
+    TapHold(key::tap_hold::Ref),
 }
 
 /// Aggregate config.
@@ -26,9 +28,9 @@ pub struct Config {
     // /// The tap dance configuration.
     // #[serde(default)]
     // pub tap_dance: key::tap_dance::Config,
-    // /// The tap hold configuration.
-    // #[serde(default)]
-    // pub tap_hold: key::tap_hold::Config,
+    /// The tap hold configuration.
+    #[serde(default)]
+    pub tap_hold: key::tap_hold::Config,
 }
 
 /// The default config.
@@ -36,7 +38,7 @@ pub const DEFAULT_CONFIG: Config = Config {
     // chorded: key::chorded::DEFAULT_CONFIG,
     // sticky: key::sticky::DEFAULT_CONFIG,
     // tap_dance: key::tap_dance::DEFAULT_CONFIG,
-    // tap_hold: key::tap_hold::DEFAULT_CONFIG,
+    tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
 /// An aggregate context for [key::Context]s.
@@ -47,7 +49,7 @@ pub struct Context {
     // chorded_context: key::chorded::Context,
     // layer_context: key::layered::Context,
     // tap_dance_context: key::tap_dance::Context,
-    // tap_hold_context: key::tap_hold::Context,
+    tap_hold: key::tap_hold::Context,
     // sticky_context: key::sticky::Context,
 }
 
@@ -59,17 +61,17 @@ pub const DEFAULT_CONTEXT: Context = Context {
     // layer_context: key::layered::DEFAULT_CONTEXT,
     // sticky_context: key::sticky::DEFAULT_CONTEXT,
     // tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
-    // tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
+    tap_hold: key::tap_hold::DEFAULT_CONTEXT,
 };
 
 impl Context {
     /// Constructs a [Context] from the given [Config].
-    pub const fn from_config(_config: Config) -> Self {
+    pub const fn from_config(config: Config) -> Self {
         Self {
             // chorded_context: key::chorded::Context::from_config(config.chorded),
             // sticky_context: key::sticky::Context::from_config(config.sticky),
             // tap_dance_context: key::tap_dance::Context::from_config(config.tap_dance),
-            // tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
+            tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
             ..DEFAULT_CONTEXT
         }
     }
@@ -177,8 +179,8 @@ pub enum Event {
     // Sticky(key::sticky::Event),
     // /// A tap-dance event.
     // TapDance(key::tap_dance::Event),
-    // /// A tap-hold event.
-    // TapHold(key::tap_hold::Event),
+    /// A tap-hold event.
+    TapHold(key::tap_hold::Event),
     // /// A layer modification event.
     // LayerModification(key::layered::LayerEvent),
 }
@@ -219,12 +221,11 @@ impl From<key::keyboard::Event> for Event {
 //     }
 // }
 
-// impl From<key::tap_hold::Event> for Event {
-//     fn from(ev: key::tap_hold::Event) -> Self {
-//         Event::TapHold(ev)
-//     }
-// }
-//
+impl From<key::tap_hold::Event> for Event {
+    fn from(ev: key::tap_hold::Event) -> Self {
+        Event::TapHold(ev)
+    }
+}
 
 impl TryFrom<Event> for key::keyboard::Event {
     type Error = key::EventError;
@@ -289,24 +290,24 @@ impl TryFrom<Event> for key::keyboard::Event {
 //     }
 // }
 
-// impl TryFrom<Event> for key::tap_hold::Event {
-//     type Error = key::EventError;
+impl TryFrom<Event> for key::tap_hold::Event {
+    type Error = key::EventError;
 
-//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
-//         match ev {
-//             Event::TapHold(ev) => Ok(ev),
-//             _ => Err(key::EventError::UnmappableEvent),
-//         }
-//     }
-// }
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::TapHold(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
 
 /// Aggregate enum for pending key state.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PendingKeyState {
     // /// Pending key state for [key::tap_dance::PendingKeyState].
     // TapDance(key::tap_dance::PendingKeyState),
-    // /// Pending key state for [key::tap_hold::PendingKeyState].
-    // TapHold(key::tap_hold::PendingKeyState),
+    /// Pending key state for [key::tap_hold::PendingKeyState].
+    TapHold(key::tap_hold::PendingKeyState),
     // /// Pending key state for [key::chorded::PendingKeyState].
     // Chorded(key::chorded::PendingKeyState),
 }
@@ -323,11 +324,11 @@ impl From<key::keyboard::PendingKeyState> for PendingKeyState {
 //     }
 // }
 
-// impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
-//     fn from(pks: key::tap_hold::PendingKeyState) -> Self {
-//         PendingKeyState::TapHold(pks)
-//     }
-// }
+impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::tap_hold::PendingKeyState) -> Self {
+        PendingKeyState::TapHold(pks)
+    }
+}
 
 // impl From<key::chorded::PendingKeyState> for PendingKeyState {
 //     fn from(pks: key::chorded::PendingKeyState) -> Self {
@@ -346,16 +347,16 @@ impl From<key::keyboard::PendingKeyState> for PendingKeyState {
 //     }
 // }
 
-// impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::PendingKeyState {
-//     type Error = ();
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::PendingKeyState {
+    type Error = ();
 
-//     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-//         match pks {
-//             PendingKeyState::TapHold(pks) => Ok(pks),
-//             _ => Err(()),
-//         }
-//     }
-// }
+    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+        match pks {
+            PendingKeyState::TapHold(pks) => Ok(pks),
+            _ => Err(()),
+        }
+    }
+}
 
 // impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
 //     type Error = ();
@@ -465,12 +466,16 @@ impl From<key::keyboard::KeyState> for KeyState {
 
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<const DATA_LEN_KEYBOARD: usize> {
+pub struct System<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> {
     /// The keyboard key system.
     pub keyboard: key::keyboard::System<DATA_LEN_KEYBOARD>,
+    /// The tap_hold key system.
+    pub tap_hold: key::tap_hold::System<Ref, DATA_LEN_TAP_HOLD>,
 }
 
-impl<const DATA_LEN_KEYBOARD: usize> key::System<Ref> for System<DATA_LEN_KEYBOARD> {
+impl<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> key::System<Ref>
+    for System<DATA_LEN_KEYBOARD, DATA_LEN_TAP_HOLD>
+{
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -480,7 +485,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System<Ref> for System<DATA_LEN_KEYBOA
     fn new_pressed_key(
         &self,
         keymap_index: u16,
-        _context: &Self::Context,
+        context: &Self::Context,
         key_ref: Ref,
     ) -> (
         key::PressedKeyResult<Ref, Self::PendingKeyState, Self::KeyState>,
@@ -496,18 +501,43 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System<Ref> for System<DATA_LEN_KEYBOA
                     pke.map_events(Into::into),
                 )
             }
+            Ref::TapHold(key_ref) => {
+                let (pkr, pke) =
+                    self.tap_hold
+                        .new_pressed_key(keymap_index, &context.tap_hold, key_ref);
+                (
+                    pkr.map(Into::into, |_| panic!()),
+                    pke.map_events(Into::into),
+                )
+            }
         }
     }
 
     fn update_pending_state(
         &self,
-        _pending_state: &mut Self::PendingKeyState,
-        _keymap_index: u16,
-        _context: &Self::Context,
-        _key_ref: Ref,
-        _event: key::Event<Self::Event>,
+        pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
+        event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
-        todo!() // TODO
+        match (key_ref, pending_state) {
+            (Ref::TapHold(key_ref), PendingKeyState::TapHold(pending_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                    let (maybe_npk, pke) = self.tap_hold.update_pending_state(
+                        pending_state,
+                        keymap_index,
+                        &context.tap_hold,
+                        key_ref,
+                        event,
+                    );
+                    (maybe_npk, pke.map_events(Into::into))
+                } else {
+                    (None, key::KeyEvents::no_events())
+                }
+            }
+            (_, _) => panic!("Mismatched key_ref and key_state variants"),
+        }
     }
 
     fn update_state(

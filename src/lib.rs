@@ -98,11 +98,11 @@ pub mod init {
 
     pub use key_system::KeyState;
 
-    /// Max number of keyboard system data entries.
-    pub const KEYBOARD_DATA_LEN: usize = 32;
+    /// Max number of data entries for each system.
+    pub const DATA_LEN: usize = 32;
 
     /// System implementation for the keymap.
-    pub type System = crate::key::composite::System<KEYBOARD_DATA_LEN>;
+    pub type System = crate::key::composite::System<DATA_LEN, DATA_LEN>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
