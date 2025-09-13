@@ -658,6 +658,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::tap_hold",
+
       # c.f. doc_de_tap_hold.md.
       # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
       json_value_validator =
