@@ -1,5 +1,4 @@
 use core::fmt::Debug;
-use core::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
 
@@ -550,25 +549,7 @@ pub trait KeyState: Debug {
 
 /// A NoOp key state, for keys which do nothing when pressed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct NoOpKeyState<Ctx, Ev>(PhantomData<(Ctx, Ev)>);
-
-impl<Ctx, Ev> NoOpKeyState<Ctx, Ev> {
-    /// Constructs a NoOpKeyState value.
-    pub const fn new() -> Self {
-        NoOpKeyState(PhantomData)
-    }
-}
-
-impl<Ctx: Debug, Ev: Copy + Debug> KeyState for NoOpKeyState<Ctx, Ev> {
-    type Context = Ctx;
-    type Event = Ev;
-}
-
-impl<Ctx, Ev> Default for NoOpKeyState<Ctx, Ev> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+pub struct NoOpKeyState;
 
 /// Errors for [TryFrom] implementations.
 #[allow(unused)]

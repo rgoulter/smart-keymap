@@ -384,8 +384,8 @@ pub enum KeyState {
     // Custom(key::custom::KeyState),
 }
 
-impl From<key::NoOpKeyState<Context, Event>> for KeyState {
-    fn from(_: key::NoOpKeyState<Context, Event>) -> Self {
+impl From<key::NoOpKeyState> for KeyState {
+    fn from(_: key::NoOpKeyState) -> Self {
         KeyState::NoOp
     }
 }
