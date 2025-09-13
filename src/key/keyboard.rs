@@ -129,6 +129,7 @@ impl<R, const DATA_LEN: usize> key::System<R> for System<DATA_LEN> {
     fn update_pending_state(
         &self,
         _pending_state: &mut Self::PendingKeyState,
+        _keymap_index: u16,
         _context: &Self::Context,
         _key_ref: Ref,
         _event: key::Event<Self::Event>,

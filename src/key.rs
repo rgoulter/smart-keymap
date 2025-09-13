@@ -238,6 +238,7 @@ pub trait System<R>: Debug {
     fn update_pending_state(
         &self,
         pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
         context: &Self::Context,
         key_ref: Self::Ref,
         event: Event<Self::Event>,

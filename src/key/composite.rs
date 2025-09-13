@@ -502,6 +502,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System<Ref> for System<DATA_LEN_KEYBOA
     fn update_pending_state(
         &self,
         _pending_state: &mut Self::PendingKeyState,
+        _keymap_index: u16,
         _context: &Self::Context,
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
