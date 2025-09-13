@@ -69,7 +69,35 @@ let validators = import "validators.ncl" in
     | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
     | KeymapJson,
 
-  json_deserializable_keymap = json_keymap,
+  key_codegen_values =
+    json_keymap.keys
+    |> std.array.map key.codegen_values,
+
+  key_data_and_refs =
+    key_codegen_values
+    |> std.array.fold_left
+      (fun { key_data, key_refs = refs } cv =>
+        let { key_data = kd, ref = r } = key.data_and_ref key_data cv in
+        {
+          key_data = kd,
+          key_refs = refs @ [r],
+        }
+      )
+      { key_data = {}, key_refs = [] }
+    |> (fun { key_data, key_refs = refs } =>
+      {
+        include key_data,
+        key_refs = refs |> std.array.map composite.ref.wrap,
+      }
+    ),
+
+  # DocstringKeymap in cucumber keymap tests.
+  json_deserializable_keymap = {
+    config = json_keymap.config,
+    key_refs =
+      key_data_and_refs.key_refs |> std.array.map (fun { json, .. } => json),
+    key_data = key_data_and_refs.key_data |> std.record.map_values (std.array.map (fun { json, .. } => json)),
+  },
 
   # Given an array of codegen_values,
   #  return the 'wrapper type' that unifies all the values.
@@ -159,6 +187,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::keyboard",
+
       # c.f. doc_de_keyboard.md.
       json_value_validator =
         validators.record.validator {
@@ -204,6 +234,57 @@ let validators = import "validators.ncl" in
           cv,
 
       traverse = fun f acc cv => f acc cv,
+
+      data_and_ref = fun key_data cv @ { json_value = k, .. } =>
+        let data_ = key_data in
+        k
+        |> match {
+          { key_code } =>
+            {
+              key_data = data_,
+              ref = {
+                include module,
+                variant = "KeyCode",
+                json = { "%{variant}" = key_code },
+                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string key_code})",
+              },
+            },
+          { modifiers } =>
+            {
+              key_data = data_,
+              ref = {
+                include module,
+                variant = "Modifiers",
+                json = { "%{variant}" = modifiers },
+                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string modifiers})",
+              },
+            },
+          { key_code, modifiers } =>
+            let { keyboard = keyboard_, ..other_data } = data_ & { keyboard | default = [] } in
+            let new_index = std.array.length keyboard_ in
+            let new_key = {
+              json = {
+                include key_code,
+                include modifiers,
+              },
+              rust_expr = m%"
+                %{module}::Key {
+                  key_code: %{std.to_string key_code},
+                  modifiers: %{keyboard_modifiers.expr modifiers},
+                }
+              "%,
+            }
+            in
+            {
+              key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
+              ref = {
+                include module,
+                variant = "KeyCodeAndModifier",
+                json = { "%{variant}" = new_index },
+                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+              },
+            },
+        },
     },
 
   caps_word
@@ -577,6 +658,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::tap_hold",
+
       # c.f. doc_de_tap_hold.md.
       # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
       json_value_validator =
@@ -629,6 +712,36 @@ let validators = import "validators.ncl" in
         let acc = f acc cv in
         let acc = key.traverse f acc cv.nested.tap in
         key.traverse f acc cv.nested.hold,
+
+      data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
+        let { key_data, ref = tap_ref } = key.data_and_ref key_data tap_cv in
+        let tap_ref = tap_ref |> composite.ref.wrap in
+        let { key_data, ref = hold_ref } = key.data_and_ref key_data hold_cv in
+        let hold_ref = hold_ref |> composite.ref.wrap in
+        let data_ = key_data in
+        let { tap_hold = tap_hold_, ..other_data } = data_ & { tap_hold | default = [] } in
+        let new_index = std.array.length tap_hold_ in
+        let new_key = {
+          json = {
+            tap = tap_ref.json,
+            hold = hold_ref.json,
+          },
+          rust_expr = m%"
+            %{module}::Key {
+              tap: %{tap_ref.rust_expr},
+              hold: %{hold_ref.rust_expr},
+            }
+          "%,
+        }
+        in
+        {
+          key_data = other_data & { tap_hold = std.array.append new_key tap_hold_ },
+          ref = {
+            include module,
+            json = new_index,
+            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+          },
+        },
     },
 
   # Related to key::composite::LayeredNestable trait.
@@ -1006,6 +1119,28 @@ let validators = import "validators.ncl" in
   },
 
   composite = {
+    ref = {
+      wrap = fun ref @ { module, json, rust_expr, .. } =>
+        module
+        |> match {
+          "smart_keymap::key::keyboard" =>
+            {
+              module = "smart_keymap::key::composite",
+              variant = "Keyboard",
+              json = { "%{variant}" = ref.json },
+              rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
+            },
+          "smart_keymap::key::tap_hold" =>
+            {
+              module = "smart_keymap::key::composite",
+              variant = "TapHold",
+              json = { "%{variant}" = ref.json },
+              rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
+            },
+          _ => std.fail_with "bad composite.ref.wrap: %{std.serialize ref 'Json}",
+        },
+    },
+
     base_key = {
       layer_modifier = fun cv =>
         {
@@ -1391,6 +1526,10 @@ let validators = import "validators.ncl" in
     traverse = fun f acc cv =>
       let codegen_module = codegen_module_for_codegen_value cv in
       codegen_module.traverse f acc cv,
+
+    data_and_ref = fun key_data cv =>
+      let codegen_module = codegen_module_for_codegen_value cv in
+      codegen_module.data_and_ref key_data cv,
   },
 
   rust_expressions
@@ -1402,7 +1541,6 @@ let validators = import "validators.ncl" in
           config | default = {},
         }
       in
-      let key_cvs = std.array.map key.codegen_values keys in
       let chorded_config_expr =
         if std.record.has_field "chorded" config then
           let timeout_field_fragment =
@@ -1533,7 +1671,7 @@ let validators = import "validators.ncl" in
                 0
                 cv
             )
-            key_cvs
+            key_codegen_values
         in
         # Compute the max over all
         std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
@@ -1555,14 +1693,14 @@ let validators = import "validators.ncl" in
                 0
                 cv
             )
-            key_cvs
+            key_codegen_values
         in
         # Compute the max over all
         std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let composite_codegen_values =
-        key_cvs
+        key_codegen_values
         |> std.array.map composite.lift_to_key
       in
       let key_types =
@@ -1602,35 +1740,59 @@ let validators = import "validators.ncl" in
         else
           0
       in
+      let { key_data, key_refs } = key_data_and_refs in
+      let keyboard_system_expr =
+        let keyboard_data = (key_data & { keyboard | default = [] }).keyboard in
+        m%"
+        smart_keymap::key::keyboard::System::new([
+          %{keyboard_data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}
+        ])
+      "%
+      in
+      let tap_hold_system_expr =
+        let tap_hold_data = (key_data & { tap_hold | default = [] }).tap_hold in
+        m%"
+        smart_keymap::key::tap_hold::System::new([
+          %{tap_hold_data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}
+        ])
+      "%
+      in
+      let key_system_expr = m%"
+        smart_keymap::key::composite::System {
+          keyboard: %{keyboard_system_expr},
+          tap_hold: %{tap_hold_system_expr},
+        }
+      "% in
+      let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
+        # config = m%"smart_keymap::key::composite::Config {
+        #     chorded: %{chorded_config_expr},
+        #     sticky: %{sticky_config_expr},
+        #     tap_dance: %{tap_dance_config_expr},
+        #     tap_hold: %{tap_hold_config_expr},
+        #     ..smart_keymap::key::composite::DEFAULT_CONFIG
+        # }"%,
         config = m%"smart_keymap::key::composite::Config {
-            chorded: %{chorded_config_expr},
-            sticky: %{sticky_config_expr},
-            tap_dance: %{tap_dance_config_expr},
             tap_hold: %{tap_hold_config_expr},
             ..smart_keymap::key::composite::DEFAULT_CONFIG
         }"%,
         context = "smart_keymap::key::composite::Context::from_config(%{config})",
         key_definitions = "%{keys_id}::new((%{key_exprs}))",
+        key_refs = key_refs_expr,
         keymap = m%"
 {
-    use smart_keymap::key::composite::Context;
-    use smart_keymap::key::composite::Event;
-    use smart_keymap::key::composite::KeyState;
-    use smart_keymap::key::composite::PendingKeyState;
-    smart_keymap::tuples::define_keys!(%{std.to_string keymap_len});
-    type KeyDefinitionsType = %{keys_id}<
-        %{key_types},
-        Context,
-        Event,
-        PendingKeyState,
-        KeyState,
-    >;
-    type Keymap = smart_keymap::keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
-    const KEY_DEFINITIONS: KeyDefinitionsType = %{key_definitions};
+    use smart_keymap::key::composite as key_system;
+    use key_system::Ref;
+    use key_system::Context;
+    use key_system::Event;
+    use key_system::KeyState;
+    use key_system::PendingKeyState;
+    use key_system::System;
+    const KEY_COUNT: usize = %{keymap_len};
+    const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
     const CONTEXT: Context = %{context};
 
-    Keymap::new(KEY_DEFINITIONS, CONTEXT)
+    smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{key_system_expr})
 }
 "%,
         keymap_module = m%"

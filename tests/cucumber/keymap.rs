@@ -14,11 +14,7 @@ use smart_keymap_nickel_helper::{
     NickelError,
 };
 
-use key::composite::{Context, Event, KeyState, PendingKeyState};
-
-type Key = key::composite::Key;
-
-type Keymap = keymap::Keymap<Context, Event, PendingKeyState, KeyState, Vec<Key>>;
+use smart_keymap::init::{Context, Keymap, Ref, System};
 
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"
@@ -124,10 +120,28 @@ impl Default for KeymapWorld {
     }
 }
 
+#[derive(Deserialize, Default)]
+struct KeyData {
+    #[serde(default)]
+    keyboard: Vec<key::keyboard::Key>,
+}
+
 #[derive(Deserialize)]
 struct DocstringKeymap {
     config: key::composite::Config,
-    keys: Vec<Key>,
+    key_refs: Vec<Ref>,
+    #[serde(default)]
+    key_data: KeyData,
+}
+
+fn system_from_key_data(mut key_data: KeyData) -> System {
+    key_data
+        .keyboard
+        .resize_with(smart_keymap::init::DATA_LEN, Default::default);
+    let keyboard_data = key_data.keyboard.try_into().unwrap();
+    System {
+        keyboard: smart_keymap::key::keyboard::System::new(keyboard_data),
+    }
 }
 
 fn load_keymap(keymap_ncl: &str) -> Keymap {
@@ -136,9 +150,13 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
             let keymap_result: serde_json::Result<DocstringKeymap> = serde_json::from_str(&json);
             match keymap_result {
                 Ok(keymap) => {
-                    let dyn_keys = keymap.keys.into_iter().collect();
-                    let context = key::composite::Context::from_config(keymap.config);
-                    keymap::Keymap::new(dyn_keys, context)
+                    let key_refs = keymap
+                        .key_refs
+                        .try_into()
+                        .expect("DocstringKeymap should have exact number of keys");
+                    let context = Context::from_config(keymap.config);
+                    let system = system_from_key_data(keymap.key_data);
+                    keymap::Keymap::new(key_refs, context, system)
                 }
                 Err(e) => {
                     panic!(

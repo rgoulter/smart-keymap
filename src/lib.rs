@@ -35,10 +35,11 @@
 //!
 //! # Implementation Overview
 //!
-//! The heart of the library is the [key] module, and its
-//! [key::Key], [key::Context], [key::KeyState] traits.
+//! The heart of the library is the [key] module,
+//! and its [key::System] trait.
 //!
-//! These provide the interface with which 'smart keys' are implemented.
+//! Implementors are then aggregated by [key::composite],
+//! which is used by the [keymap] module.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -52,8 +53,6 @@ pub mod input;
 pub mod key;
 /// Keymap implementation.
 pub mod keymap;
-/// Keys1, Keys2, etc. tuple structs for defining keymaps.
-pub mod tuples;
 
 /// Split keyboard support.
 pub mod split;
@@ -65,12 +64,14 @@ pub mod slice;
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate::key::{composite, keyboard};
+    use crate::key::composite;
+    use crate::key::keyboard;
     use crate::keymap;
-    use crate::tuples::Keys1;
+
+    use composite as key_system;
 
     /// Config used to construct initial context.
-    pub const CONFIG: crate::key::composite::Config = crate::key::composite::DEFAULT_CONFIG;
+    pub const CONFIG: key_system::Config = key_system::DEFAULT_CONFIG;
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
@@ -87,28 +88,34 @@ pub mod init {
     /// The tap-dance definitions.
     pub const MAX_TAP_DANCE_DEFINITIONS: usize = 3;
 
-    pub use composite::Context;
+    pub use key_system::Ref;
 
-    pub use composite::Event;
+    pub use key_system::Context;
 
-    pub use composite::PendingKeyState;
+    pub use key_system::Event;
 
-    pub use composite::KeyState;
+    pub use key_system::PendingKeyState;
 
-    pub use composite::Key;
+    pub use key_system::KeyState;
+
+    /// Max number of data entries for each system.
+    pub const DATA_LEN: usize = 32;
+
+    /// System implementation for the keymap.
+    pub type System = crate::key::composite::System<DATA_LEN, DATA_LEN>;
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = composite::Context::from_config(CONFIG);
+    pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
 
-    /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
-    pub type KeyDefinitionsType = Keys1<Key, Context, Event, PendingKeyState, KeyState>;
+    /// The number of keys in the keymap.
+    pub const KEY_COUNT: usize = 1;
 
     /// Alias for the [keymap::Keymap] type.
-    pub type Keymap = keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
+    pub type Keymap =
+        keymap::Keymap<Ref, Context, Event, PendingKeyState, KeyState, System, KEY_COUNT>;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_DEFINITIONS: KeyDefinitionsType =
-        Keys1::new((Key::keyboard(keyboard::Key::new(0x04)),));
+    pub const KEY_DEFINITIONS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
 }
 
 #[cfg(custom_keymap)]

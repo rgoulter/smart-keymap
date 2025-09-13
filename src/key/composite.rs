@@ -1,7 +1,5 @@
-//! This module implements the `keymap::Key` for a 'composite' key,
-//!  which can be any of the other key definitions,
-//!  and is the default Key for the `keymap::KeyMap` implementation.
-#![doc = include_str!("doc_de_composite.md")]
+//! This module aggregates various [key::System] implementations.
+// #![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
 
@@ -9,46 +7,27 @@ use serde::Deserialize;
 
 use crate::{key, keymap};
 
-mod base;
-mod chorded;
-mod layered;
-mod tap_hold;
+/// Aggregate enum for key references.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum Ref {
+    /// [key::keyboard::Ref] variant.
+    Keyboard(key::keyboard::Ref),
+    /// [key::tap_hold::Ref] variant.
+    TapHold(key::tap_hold::Ref),
+}
 
-pub use base::BaseKey;
-pub use chorded::{Chorded, ChordedKey, ChordedNestable};
-pub use layered::{Layered, LayeredKey, LayeredNestable};
-pub use tap_hold::{TapHold, TapHoldKey, TapHoldNestable};
-
-/// Type alias for composite key types.
-///
-/// Composite key is defined as a tree of key nodes:
-///
-///   ```text
-///   Base    := LayerModifier | Keyboard
-///
-///   TapHold := TapHold<Base> | Base
-///
-///   Layered := Layered<TapHold> | TapHold
-///
-///   Chorded := Chorded<Layered> | AuxChorded<Layered> | Layered
-///   ```
-pub type Key = ChordedKey<LayeredKey<TapHoldKey<BaseKey>>>;
-
-/// Type alias for result from new_pressed_key.
-pub type PressedKeyResult = key::PressedKeyResult<PendingKeyState, KeyState>;
-
-/// Config used for constructing initial context
+/// Aggregate config.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
-    /// The chorded configuration.
-    #[serde(default)]
-    pub chorded: key::chorded::Config,
-    /// The sticky modifier configuration
-    #[serde(default)]
-    pub sticky: key::sticky::Config,
-    /// The tap dance configuration.
-    #[serde(default)]
-    pub tap_dance: key::tap_dance::Config,
+    // /// The chorded configuration.
+    // #[serde(default)]
+    // pub chorded: key::chorded::Config,
+    // /// The sticky modifier configuration
+    // #[serde(default)]
+    // pub sticky: key::sticky::Config,
+    // /// The tap dance configuration.
+    // #[serde(default)]
+    // pub tap_dance: key::tap_dance::Config,
     /// The tap hold configuration.
     #[serde(default)]
     pub tap_hold: key::tap_hold::Config,
@@ -56,9 +35,9 @@ pub struct Config {
 
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
-    chorded: key::chorded::DEFAULT_CONFIG,
-    sticky: key::sticky::DEFAULT_CONFIG,
-    tap_dance: key::tap_dance::DEFAULT_CONFIG,
+    // chorded: key::chorded::DEFAULT_CONFIG,
+    // sticky: key::sticky::DEFAULT_CONFIG,
+    // tap_dance: key::tap_dance::DEFAULT_CONFIG,
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
@@ -66,33 +45,33 @@ pub const DEFAULT_CONFIG: Config = Config {
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
     keymap_context: keymap::KeymapContext,
-    caps_word_context: key::caps_word::Context,
-    chorded_context: key::chorded::Context,
-    layer_context: key::layered::Context,
-    tap_dance_context: key::tap_dance::Context,
-    tap_hold_context: key::tap_hold::Context,
-    sticky_context: key::sticky::Context,
+    // caps_word_context: key::caps_word::Context,
+    // chorded_context: key::chorded::Context,
+    // layer_context: key::layered::Context,
+    // tap_dance_context: key::tap_dance::Context,
+    tap_hold: key::tap_hold::Context,
+    // sticky_context: key::sticky::Context,
 }
 
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
     keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
-    caps_word_context: key::caps_word::DEFAULT_CONTEXT,
-    chorded_context: key::chorded::DEFAULT_CONTEXT,
-    layer_context: key::layered::DEFAULT_CONTEXT,
-    sticky_context: key::sticky::DEFAULT_CONTEXT,
-    tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
-    tap_hold_context: key::tap_hold::DEFAULT_CONTEXT,
+    // caps_word_context: key::caps_word::DEFAULT_CONTEXT,
+    // chorded_context: key::chorded::DEFAULT_CONTEXT,
+    // layer_context: key::layered::DEFAULT_CONTEXT,
+    // sticky_context: key::sticky::DEFAULT_CONTEXT,
+    // tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
+    tap_hold: key::tap_hold::DEFAULT_CONTEXT,
 };
 
 impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
-            chorded_context: key::chorded::Context::from_config(config.chorded),
-            sticky_context: key::sticky::Context::from_config(config.sticky),
-            tap_dance_context: key::tap_dance::Context::from_config(config.tap_dance),
-            tap_hold_context: key::tap_hold::Context::from_config(config.tap_hold),
+            // chorded_context: key::chorded::Context::from_config(config.chorded),
+            // sticky_context: key::sticky::Context::from_config(config.sticky),
+            // tap_dance_context: key::tap_dance::Context::from_config(config.tap_dance),
+            tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
             ..DEFAULT_CONTEXT
         }
     }
@@ -107,28 +86,29 @@ impl Default for Context {
 
 impl key::Context for Context {
     type Event = Event;
-    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
-        let mut pke = key::KeyEvents::no_events();
+    fn handle_event(&mut self, _event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        // let mut pke = key::KeyEvents::no_events();
+        let pke = key::KeyEvents::no_events();
 
-        let caps_word_ev = self.caps_word_context.handle_event(event);
-        pke.extend(caps_word_ev);
+        // let caps_word_ev = self.caps_word_context.handle_event(event);
+        // pke.extend(caps_word_ev);
 
-        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
-            let sticky_ev = self.sticky_context.handle_event(e);
-            pke.extend(sticky_ev.into_events());
-        }
+        // if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+        //     let sticky_ev = self.sticky_context.handle_event(e);
+        //     pke.extend(sticky_ev.into_events());
+        // }
 
-        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
-            self.chorded_context.handle_event(e);
-        }
+        // if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+        //     self.chorded_context.handle_event(e);
+        // }
 
-        if let key::Event::Key {
-            key_event: Event::LayerModification(ev),
-            ..
-        } = event
-        {
-            self.layer_context.handle_event(ev);
-        }
+        // if let key::Event::Key {
+        //     key_event: Event::LayerModification(ev),
+        //     ..
+        // } = event
+        // {
+        //     self.layer_context.handle_event(ev);
+        // }
 
         pke
     }
@@ -137,6 +117,8 @@ impl key::Context for Context {
 impl keymap::SetKeymapContext for Context {
     fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
         self.keymap_context = context;
+
+        self.tap_hold.update_keymap_context(&context);
     }
 }
 
@@ -146,88 +128,100 @@ impl<'c> From<&'c Context> for &'c keymap::KeymapContext {
     }
 }
 
-impl<'c> From<&'c Context> for &'c key::caps_word::Context {
-    fn from(ctx: &'c Context) -> Self {
-        &ctx.caps_word_context
+impl<'c> From<&'c Context> for &'c key::keyboard::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::keyboard::Context
     }
 }
 
-impl<'c> From<&'c Context> for &'c key::chorded::Context {
-    fn from(ctx: &'c Context) -> Self {
-        &ctx.chorded_context
-    }
-}
+// impl<'c> From<&'c Context> for &'c key::caps_word::Context {
+//     fn from(ctx: &'c Context) -> Self {
+//         &ctx.caps_word_context
+//     }
+// }
 
-impl<'c> From<&'c Context> for &'c key::layered::Context {
-    fn from(ctx: &'c Context) -> Self {
-        &ctx.layer_context
-    }
-}
+// impl<'c> From<&'c Context> for &'c key::chorded::Context {
+//     fn from(ctx: &'c Context) -> Self {
+//         &ctx.chorded_context
+//     }
+// }
 
-impl<'c> From<&'c Context> for &'c key::sticky::Context {
-    fn from(ctx: &'c Context) -> Self {
-        &ctx.sticky_context
-    }
-}
+// impl<'c> From<&'c Context> for &'c key::layered::Context {
+//     fn from(ctx: &'c Context) -> Self {
+//         &ctx.layer_context
+//     }
+// }
 
-impl<'c> From<&'c Context> for &'c key::tap_dance::Context {
-    fn from(ctx: &'c Context) -> Self {
-        &ctx.tap_dance_context
-    }
-}
+// impl<'c> From<&'c Context> for &'c key::sticky::Context {
+//     fn from(ctx: &'c Context) -> Self {
+//         &ctx.sticky_context
+//     }
+// }
 
-impl<'c> From<&'c Context> for &'c key::tap_hold::Context {
-    fn from(ctx: &'c Context) -> Self {
-        &ctx.tap_hold_context
-    }
-}
+// impl<'c> From<&'c Context> for &'c key::tap_dance::Context {
+//     fn from(ctx: &'c Context) -> Self {
+//         &ctx.tap_dance_context
+//     }
+// }
+
+// impl<'c> From<&'c Context> for &'c key::tap_hold::Context {
+//     fn from(ctx: &'c Context) -> Self {
+//         &ctx.tap_hold_context
+//     }
+// }
 
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
-    /// A caps word event.
-    CapsWord(key::caps_word::Event),
-    /// A chorded event.
-    Chorded(key::chorded::Event),
-    /// A sticky modifier event.
-    Sticky(key::sticky::Event),
-    /// A tap-dance event.
-    TapDance(key::tap_dance::Event),
+    // /// A caps word event.
+    // CapsWord(key::caps_word::Event),
+    // /// A chorded event.
+    // Chorded(key::chorded::Event),
+    // /// A sticky modifier event.
+    // Sticky(key::sticky::Event),
+    // /// A tap-dance event.
+    // TapDance(key::tap_dance::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
-    /// A layer modification event.
-    LayerModification(key::layered::LayerEvent),
+    // /// A layer modification event.
+    // LayerModification(key::layered::LayerEvent),
 }
 
-impl From<key::caps_word::Event> for Event {
-    fn from(ev: key::caps_word::Event) -> Self {
-        Event::CapsWord(ev)
+impl From<key::keyboard::Event> for Event {
+    fn from(_ev: key::keyboard::Event) -> Self {
+        panic!("key::keyboard never emits events")
     }
 }
 
-impl From<key::chorded::Event> for Event {
-    fn from(ev: key::chorded::Event) -> Self {
-        Event::Chorded(ev)
-    }
-}
+// impl From<key::caps_word::Event> for Event {
+//     fn from(ev: key::caps_word::Event) -> Self {
+//         Event::CapsWord(ev)
+//     }
+// }
 
-impl From<key::layered::LayerEvent> for Event {
-    fn from(ev: key::layered::LayerEvent) -> Self {
-        Event::LayerModification(ev)
-    }
-}
+// impl From<key::chorded::Event> for Event {
+//     fn from(ev: key::chorded::Event) -> Self {
+//         Event::Chorded(ev)
+//     }
+// }
 
-impl From<key::sticky::Event> for Event {
-    fn from(ev: key::sticky::Event) -> Self {
-        Event::Sticky(ev)
-    }
-}
+// impl From<key::layered::LayerEvent> for Event {
+//     fn from(ev: key::layered::LayerEvent) -> Self {
+//         Event::LayerModification(ev)
+//     }
+// }
 
-impl From<key::tap_dance::Event> for Event {
-    fn from(ev: key::tap_dance::Event) -> Self {
-        Event::TapDance(ev)
-    }
-}
+// impl From<key::sticky::Event> for Event {
+//     fn from(ev: key::sticky::Event) -> Self {
+//         Event::Sticky(ev)
+//     }
+// }
+
+// impl From<key::tap_dance::Event> for Event {
+//     fn from(ev: key::tap_dance::Event) -> Self {
+//         Event::TapDance(ev)
+//     }
+// }
 
 impl From<key::tap_hold::Event> for Event {
     fn from(ev: key::tap_hold::Event) -> Self {
@@ -235,60 +229,68 @@ impl From<key::tap_hold::Event> for Event {
     }
 }
 
-impl TryFrom<Event> for key::caps_word::Event {
+impl TryFrom<Event> for key::keyboard::Event {
     type Error = key::EventError;
 
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::CapsWord(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
+    fn try_from(_ev: Event) -> Result<Self, Self::Error> {
+        Err(key::EventError::UnmappableEvent)
     }
 }
 
-impl TryFrom<Event> for key::chorded::Event {
-    type Error = key::EventError;
+// impl TryFrom<Event> for key::caps_word::Event {
+//     type Error = key::EventError;
 
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Chorded(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
+//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
+//         match ev {
+//             Event::CapsWord(ev) => Ok(ev),
+//             _ => Err(key::EventError::UnmappableEvent),
+//         }
+//     }
+// }
 
-impl TryFrom<Event> for key::layered::LayerEvent {
-    type Error = key::EventError;
+// impl TryFrom<Event> for key::chorded::Event {
+//     type Error = key::EventError;
 
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::LayerModification(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
+//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
+//         match ev {
+//             Event::Chorded(ev) => Ok(ev),
+//             _ => Err(key::EventError::UnmappableEvent),
+//         }
+//     }
+// }
 
-impl TryFrom<Event> for key::sticky::Event {
-    type Error = key::EventError;
+// impl TryFrom<Event> for key::layered::LayerEvent {
+//     type Error = key::EventError;
 
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Sticky(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
+//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
+//         match ev {
+//             Event::LayerModification(ev) => Ok(ev),
+//             _ => Err(key::EventError::UnmappableEvent),
+//         }
+//     }
+// }
 
-impl TryFrom<Event> for key::tap_dance::Event {
-    type Error = key::EventError;
+// impl TryFrom<Event> for key::sticky::Event {
+//     type Error = key::EventError;
 
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::TapDance(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
+//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
+//         match ev {
+//             Event::Sticky(ev) => Ok(ev),
+//             _ => Err(key::EventError::UnmappableEvent),
+//         }
+//     }
+// }
+
+// impl TryFrom<Event> for key::tap_dance::Event {
+//     type Error = key::EventError;
+
+//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
+//         match ev {
+//             Event::TapDance(ev) => Ok(ev),
+//             _ => Err(key::EventError::UnmappableEvent),
+//         }
+//     }
+// }
 
 impl TryFrom<Event> for key::tap_hold::Event {
     type Error = key::EventError;
@@ -301,22 +303,28 @@ impl TryFrom<Event> for key::tap_hold::Event {
     }
 }
 
-/// Aggregate enum for key state. (i.e. pressed key data).
+/// Aggregate enum for pending key state.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PendingKeyState {
-    /// Pending key state for [key::tap_dance::PendingKeyState].
-    TapDance(key::tap_dance::PendingKeyState),
+    // /// Pending key state for [key::tap_dance::PendingKeyState].
+    // TapDance(key::tap_dance::PendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
     TapHold(key::tap_hold::PendingKeyState),
-    /// Pending key state for [key::chorded::PendingKeyState].
-    Chorded(key::chorded::PendingKeyState),
+    // /// Pending key state for [key::chorded::PendingKeyState].
+    // Chorded(key::chorded::PendingKeyState),
 }
 
-impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::tap_dance::PendingKeyState) -> Self {
-        PendingKeyState::TapDance(pks)
+impl From<key::keyboard::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::keyboard::PendingKeyState) -> Self {
+        panic!("key::keyboard has no pending state")
     }
 }
+
+// impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
+//     fn from(pks: key::tap_dance::PendingKeyState) -> Self {
+//         PendingKeyState::TapDance(pks)
+//     }
+// }
 
 impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     fn from(pks: key::tap_hold::PendingKeyState) -> Self {
@@ -324,22 +332,22 @@ impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::chorded::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::chorded::PendingKeyState) -> Self {
-        PendingKeyState::Chorded(pks)
-    }
-}
+// impl From<key::chorded::PendingKeyState> for PendingKeyState {
+//     fn from(pks: key::chorded::PendingKeyState) -> Self {
+//         PendingKeyState::Chorded(pks)
+//     }
+// }
 
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_dance::PendingKeyState {
-    type Error = ();
+// impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_dance::PendingKeyState {
+//     type Error = ();
 
-    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-        match pks {
-            PendingKeyState::TapDance(pks) => Ok(pks),
-            _ => Err(()),
-        }
-    }
-}
+//     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+//         match pks {
+//             PendingKeyState::TapDance(pks) => Ok(pks),
+//             _ => Err(()),
+//         }
+//     }
+// }
 
 impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::PendingKeyState {
     type Error = ();
@@ -352,16 +360,16 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::Pendi
     }
 }
 
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
-    type Error = ();
+// impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
+//     type Error = ();
 
-    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-        match pks {
-            PendingKeyState::Chorded(pks) => Ok(pks),
-            _ => Err(()),
-        }
-    }
-}
+//     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+//         match pks {
+//             PendingKeyState::Chorded(pks) => Ok(pks),
+//             _ => Err(()),
+//         }
+//     }
+// }
 
 /// Aggregate enum for key state. (i.e. pressed key data).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -370,16 +378,16 @@ pub enum KeyState {
     NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
     /// Key state for [key::keyboard::KeyState].
     Keyboard(key::keyboard::KeyState),
-    /// Key state for [key::layered::ModifierKeyState].
-    LayerModifier(key::layered::ModifierKeyState),
-    /// Key state for [key::sticky::KeyState].
-    Sticky(key::sticky::KeyState),
-    /// Key state for [key::custom::KeyState].
-    Custom(key::custom::KeyState),
+    // /// Key state for [key::layered::ModifierKeyState].
+    // LayerModifier(key::layered::ModifierKeyState),
+    // /// Key state for [key::sticky::KeyState].
+    // Sticky(key::sticky::KeyState),
+    // /// Key state for [key::custom::KeyState].
+    // Custom(key::custom::KeyState),
 }
 
-impl From<key::NoOpKeyState<Context, Event>> for KeyState {
-    fn from(_: key::NoOpKeyState<Context, Event>) -> Self {
+impl From<key::NoOpKeyState> for KeyState {
+    fn from(_: key::NoOpKeyState) -> Self {
         KeyState::NoOp
     }
 }
@@ -390,238 +398,360 @@ impl From<key::keyboard::KeyState> for KeyState {
     }
 }
 
-impl From<key::layered::ModifierKeyState> for KeyState {
-    fn from(ks: key::layered::ModifierKeyState) -> Self {
-        KeyState::LayerModifier(ks)
-    }
+// impl From<key::layered::ModifierKeyState> for KeyState {
+//     fn from(ks: key::layered::ModifierKeyState) -> Self {
+//         KeyState::LayerModifier(ks)
+//     }
+// }
+
+// impl From<key::sticky::KeyState> for KeyState {
+//     fn from(ks: key::sticky::KeyState) -> Self {
+//         KeyState::Sticky(ks)
+//     }
+// }
+
+// impl From<key::custom::KeyState> for KeyState {
+//     fn from(ks: key::custom::KeyState) -> Self {
+//         KeyState::Custom(ks)
+//     }
+// }
+
+// impl key::KeyState for KeyState {
+//     type Context = Context;
+//     type Event = Event;
+
+//     fn handle_event(
+//         &mut self,
+//         context: &Self::Context,
+//         keymap_index: u16,
+//         event: key::Event<Self::Event>,
+//     ) -> key::KeyEvents<Self::Event> {
+//         match self {
+//             KeyState::Keyboard(_) => key::KeyEvents::no_events(),
+//             // KeyState::LayerModifier(ks) => {
+//             //     if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+//             //         let l_ev = ks.handle_event(keymap_index, ev);
+//             //         if let Some(l_ev) = l_ev {
+//             //             let c_ev = Event::LayerModification(l_ev);
+//             //             key::KeyEvents::event(key::Event::key_event(keymap_index, c_ev))
+//             //         } else {
+//             //             key::KeyEvents::no_events()
+//             //         }
+//             //     } else {
+//             //         key::KeyEvents::no_events()
+//             //     }
+//             // }
+//             // KeyState::Sticky(ks) => {
+//             //     if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
+//             //         let ctx = context.into();
+//             //         let ke = ks.handle_event(ctx, keymap_index, ev);
+//             //         ke.into_events()
+//             //     } else {
+//             //         key::KeyEvents::no_events()
+//             //     }
+//             // }
+//             KeyState::NoOp => key::KeyEvents::no_events(),
+//             // KeyState::Custom(_) => key::KeyEvents::no_events(),
+//         }
+//     }
+
+//     fn key_output(&self) -> Option<key::KeyOutput> {
+//         match self {
+//             KeyState::Keyboard(ks) => todo!(),
+//             // KeyState::LayerModifier(_) => None,
+//             // KeyState::Sticky(ks) => ks.key_output(),
+//             KeyState::NoOp => None,
+//             // KeyState::Custom(ks) => Some(ks.key_output()),
+//         }
+//     }
+// }
+
+/// Aggregate [key::System] implementation.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> {
+    /// The keyboard key system.
+    pub keyboard: key::keyboard::System<DATA_LEN_KEYBOARD>,
+    /// The tap_hold key system.
+    pub tap_hold: key::tap_hold::System<Ref, DATA_LEN_TAP_HOLD>,
 }
 
-impl From<key::sticky::KeyState> for KeyState {
-    fn from(ks: key::sticky::KeyState) -> Self {
-        KeyState::Sticky(ks)
-    }
-}
-
-impl From<key::custom::KeyState> for KeyState {
-    fn from(ks: key::custom::KeyState) -> Self {
-        KeyState::Custom(ks)
-    }
-}
-
-impl key::KeyState for KeyState {
+impl<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> key::System<Ref>
+    for System<DATA_LEN_KEYBOARD, DATA_LEN_TAP_HOLD>
+{
+    type Ref = Ref;
     type Context = Context;
     type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
 
-    fn handle_event(
-        &mut self,
+    fn new_pressed_key(
+        &self,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
+    ) -> (
+        key::PressedKeyResult<Ref, Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        match key_ref {
+            Ref::Keyboard(key_ref) => {
+                let (pkr, pke) =
+                    self.keyboard
+                        .new_pressed_key(keymap_index, &key::keyboard::Context, key_ref);
+                (
+                    pkr.map(Into::into, KeyState::Keyboard),
+                    pke.map_events(Into::into),
+                )
+            }
+            Ref::TapHold(key_ref) => {
+                let (pkr, pke) =
+                    self.tap_hold
+                        .new_pressed_key(keymap_index, &context.tap_hold, key_ref);
+                (
+                    pkr.map(Into::into, |_| panic!()),
+                    pke.map_events(Into::into),
+                )
+            }
+        }
+    }
+
+    fn update_pending_state(
+        &self,
+        pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
+        event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
+        match (key_ref, pending_state) {
+            (Ref::TapHold(key_ref), PendingKeyState::TapHold(pending_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                    let (maybe_npk, pke) = self.tap_hold.update_pending_state(
+                        pending_state,
+                        keymap_index,
+                        &context.tap_hold,
+                        key_ref,
+                        event,
+                    );
+                    (maybe_npk, pke.map_events(Into::into))
+                } else {
+                    (None, key::KeyEvents::no_events())
+                }
+            }
+            (_, _) => panic!("Mismatched key_ref and key_state variants"),
+        }
+    }
+
+    fn update_state(
+        &self,
+        key_state: &mut Self::KeyState,
+        key_ref: &Self::Ref,
         context: &Self::Context,
         keymap_index: u16,
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        match self {
-            KeyState::Keyboard(_) => key::KeyEvents::no_events(),
-            KeyState::LayerModifier(ks) => {
-                if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let l_ev = ks.handle_event(keymap_index, ev);
-                    if let Some(l_ev) = l_ev {
-                        let c_ev = Event::LayerModification(l_ev);
-                        key::KeyEvents::event(key::Event::key_event(keymap_index, c_ev))
-                    } else {
-                        key::KeyEvents::no_events()
-                    }
+        match (key_ref, key_state) {
+            (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                    let pke = <key::keyboard::System<DATA_LEN_KEYBOARD> as key::System<Ref>>::update_state(
+                        &self.keyboard,
+                        &mut key_state,
+                        key_ref,
+                        context.into(),
+                        keymap_index,
+                        event,
+                    );
+                    pke.map_events(Into::into)
                 } else {
                     key::KeyEvents::no_events()
                 }
             }
-            KeyState::Sticky(ks) => {
-                if let Ok(ev) = event.try_into_key_event(|e| e.try_into()) {
-                    let ctx = context.into();
-                    let ke = ks.handle_event(ctx, keymap_index, ev);
-                    ke.into_events()
-                } else {
-                    key::KeyEvents::no_events()
-                }
-            }
-            KeyState::NoOp => key::KeyEvents::no_events(),
-            KeyState::Custom(_) => key::KeyEvents::no_events(),
+            (_, _) => panic!("Mismatched key_ref and key_state variants"),
         }
     }
 
-    fn key_output(&self) -> Option<key::KeyOutput> {
-        match self {
-            KeyState::Keyboard(ks) => Some(ks.key_output()),
-            KeyState::LayerModifier(_) => None,
-            KeyState::Sticky(ks) => ks.key_output(),
-            KeyState::NoOp => None,
-            KeyState::Custom(ks) => Some(ks.key_output()),
+    fn key_output(
+        &self,
+        key_ref: &Self::Ref,
+        key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        match (key_ref, key_state) {
+            (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
+                <key::keyboard::System<DATA_LEN_KEYBOARD> as key::System<Ref>>::key_output(
+                    &self.keyboard,
+                    r,
+                    ks,
+                )
+            }
+            (_, _) => panic!("Mismatched key_ref and key_state variants"),
         }
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
 
-    #[test]
-    fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
-        use crate::input;
-        use key::{composite, Key, KeyState};
+//     #[test]
+//     fn test_composite_pressedkey_layerpressedmodifier_handles_release_event() {
+//         use crate::input;
+//         use key::{composite, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keymap_index: u16 = 0;
-        let key_path = key::key_path(keymap_index);
-        let key = K::layer_modifier(key::layered::ModifierKey::Hold(1));
-        let context: Ctx = DEFAULT_CONTEXT;
-        let (pressed_lmod_key, _) = key.new_pressed_key(&context, key_path);
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keymap_index: u16 = 0;
+//         let key_path = key::key_path(keymap_index);
+//         let key = K::layer_modifier(key::layered::ModifierKey::Hold(1));
+//         let context: Ctx = DEFAULT_CONTEXT;
+//         let (pressed_lmod_key, _) = key.new_pressed_key(&context, key_path);
 
-        // Act
-        let events = pressed_lmod_key.unwrap_resolved().handle_event(
-            &context,
-            keymap_index,
-            key::Event::Input(input::Event::Release { keymap_index }),
-        );
+//         // Act
+//         let events = pressed_lmod_key.unwrap_resolved().handle_event(
+//             &context,
+//             keymap_index,
+//             key::Event::Input(input::Event::Release { keymap_index }),
+//         );
 
-        // Assert
-        let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key::Event::Key {
-                key_event:
-                    Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer_index)),
-                ..
-            }) => {
-                assert_eq!(1, layer_index);
-            }
-            _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
-        };
-    }
+//         // Assert
+//         let _key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
+//             Some(key::Event::Key {
+//                 key_event:
+//                     Event::LayerModification(key::layered::LayerEvent::LayerDeactivated(layer_index)),
+//                 ..
+//             }) => {
+//                 assert_eq!(1, layer_index);
+//             }
+//             _ => panic!("Expected an Event::Key(LayerModification(LayerDeactivated(layer)))"),
+//         };
+//     }
 
-    #[test]
-    fn test_composite_context_updates_with_composite_layermodifier_press_event() {
-        use key::{composite, Context, Key};
+//     #[test]
+//     fn test_composite_context_updates_with_composite_layermodifier_press_event() {
+//         use key::{composite, Context, Key};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 2] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-        ];
-        let mut context: Ctx = DEFAULT_CONTEXT;
-        let keymap_index: u16 = 0;
-        let key_path = key::key_path(keymap_index);
-        let (_pressed_key, pressed_key_events) =
-            keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        let maybe_ev = pressed_key_events.into_iter().next();
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 2] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//         ];
+//         let mut context: Ctx = DEFAULT_CONTEXT;
+//         let keymap_index: u16 = 0;
+//         let key_path = key::key_path(keymap_index);
+//         let (_pressed_key, pressed_key_events) =
+//             keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         let maybe_ev = pressed_key_events.into_iter().next();
 
-        // Act
-        let event = match maybe_ev {
-            Some(key::ScheduledEvent { event, .. }) => event,
-            _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
-        };
-        context.handle_event(event);
-        let actual_active_layers = context.layer_context.layer_state();
+//         // Act
+//         let event = match maybe_ev {
+//             Some(key::ScheduledEvent { event, .. }) => event,
+//             _ => panic!("Expected Some(ScheduledEvent(Event::Key(_)))"),
+//         };
+//         context.handle_event(event);
+//         let actual_active_layers = context.layer_context.layer_state();
 
-        // Assert
-        let expected_active_layers = &[true];
-        assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
-    }
+//         // Assert
+//         let expected_active_layers = &[true];
+//         assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
+//     }
 
-    #[test]
-    fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
-        use crate::input;
-        use key::{composite, Context, Key, KeyState};
+//     #[test]
+//     fn test_composite_context_updates_with_composite_layerpressedmodifier_release_event() {
+//         use crate::input;
+//         use key::{composite, Context, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 2] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-        ];
-        let mut context: Ctx = DEFAULT_CONTEXT;
-        let keymap_index: u16 = 0;
-        let key_path = key::key_path(keymap_index);
-        let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        context.layer_context.activate_layer(1);
-        let events = pressed_lmod_key.unwrap_resolved().handle_event(
-            &context,
-            0,
-            key::Event::Input(input::Event::Release { keymap_index: 0 }),
-        );
-        let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
-            Some(key_event) => key_event,
-            _ => panic!("Expected an Event::Key(_)"),
-        };
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 2] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//         ];
+//         let mut context: Ctx = DEFAULT_CONTEXT;
+//         let keymap_index: u16 = 0;
+//         let key_path = key::key_path(keymap_index);
+//         let (pressed_lmod_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         context.layer_context.activate_layer(1);
+//         let events = pressed_lmod_key.unwrap_resolved().handle_event(
+//             &context,
+//             0,
+//             key::Event::Input(input::Event::Release { keymap_index: 0 }),
+//         );
+//         let key_ev = match events.into_iter().next().map(|sch_ev| sch_ev.event) {
+//             Some(key_event) => key_event,
+//             _ => panic!("Expected an Event::Key(_)"),
+//         };
 
-        // Act
-        context.handle_event(key_ev);
-        let actual_active_layers = context.layer_context.layer_state();
+//         // Act
+//         context.handle_event(key_ev);
+//         let actual_active_layers = context.layer_context.layer_state();
 
-        // Assert
-        let expected_active_layers = &[false];
-        assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
-    }
+//         // Assert
+//         let expected_active_layers = &[false];
+//         assert_eq!(expected_active_layers[0..1], actual_active_layers[0..1]);
+//     }
 
-    #[test]
-    fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
-        use key::{composite, Key, KeyState};
+//     #[test]
+//     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_keyboard_key_def() {
+//         use key::{composite, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 3] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-            K::keyboard(key::keyboard::Key::new(0x06)),
-        ];
-        let context: Ctx = DEFAULT_CONTEXT;
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 3] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//             K::keyboard(key::keyboard::Key::new(0x06)),
+//         ];
+//         let context: Ctx = DEFAULT_CONTEXT;
 
-        // Act
-        let keymap_index: u16 = 2;
-        let key_path = key::key_path(keymap_index);
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        let actual_keycode = pressed_key.unwrap_resolved().key_output();
+//         // Act
+//         let keymap_index: u16 = 2;
+//         let key_path = key::key_path(keymap_index);
+//         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
-        // Assert
-        let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
-        assert_eq!(expected_keycode, actual_keycode);
-    }
+//         // Assert
+//         let expected_keycode = Some(key::KeyOutput::from_key_code(0x06));
+//         assert_eq!(expected_keycode, actual_keycode);
+//     }
 
-    #[test]
-    fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
-        use key::{composite, Key, KeyState};
+//     #[test]
+//     fn test_composite_keyboard_pressed_key_has_key_code_for_composite_layered_key_def() {
+//         use key::{composite, Key, KeyState};
 
-        // Assemble
-        type Ctx = composite::Context;
-        type K = composite::Key;
-        let keys: [K; 3] = [
-            K::layer_modifier(key::layered::ModifierKey::Hold(1)),
-            K::layered(key::layered::LayeredKey::new(
-                key::keyboard::Key::new(0x04).into(),
-                [Some(key::keyboard::Key::new(0x05).into())],
-            )),
-            K::keyboard(key::keyboard::Key::new(0x06)),
-        ];
-        let context: Ctx = DEFAULT_CONTEXT;
+//         // Assemble
+//         type Ctx = composite::Context;
+//         type K = composite::Key;
+//         let keys: [K; 3] = [
+//             K::layer_modifier(key::layered::ModifierKey::Hold(1)),
+//             K::layered(key::layered::LayeredKey::new(
+//                 key::keyboard::Key::new(0x04).into(),
+//                 [Some(key::keyboard::Key::new(0x05).into())],
+//             )),
+//             K::keyboard(key::keyboard::Key::new(0x06)),
+//         ];
+//         let context: Ctx = DEFAULT_CONTEXT;
 
-        // Act
-        let keymap_index: u16 = 1;
-        let key_path = key::key_path(keymap_index);
-        let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
-        let actual_keycode = pressed_key.unwrap_resolved().key_output();
+//         // Act
+//         let keymap_index: u16 = 1;
+//         let key_path = key::key_path(keymap_index);
+//         let (pressed_key, _) = keys[keymap_index as usize].new_pressed_key(&context, key_path);
+//         let actual_keycode = pressed_key.unwrap_resolved().key_output();
 
-        // Assert
-        let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
-        assert_eq!(expected_keycode, actual_keycode);
-    }
-}
+//         // Assert
+//         let expected_keycode = Some(key::KeyOutput::from_key_code(0x04));
+//         assert_eq!(expected_keycode, actual_keycode);
+//     }
+// }

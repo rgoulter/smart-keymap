@@ -1,39 +1,38 @@
 use core::fmt::Debug;
-use core::marker::PhantomData;
 
 use serde::{Deserialize, Serialize};
 
 use crate::input;
 
-/// Keymap Callback keys
-pub mod callback;
-/// CapsWord key(s).
-pub mod caps_word;
-/// Chorded keys. (Chording functionality).
-pub mod chorded;
-/// Custom keys.
-pub mod custom;
+// /// Keymap Callback keys
+// pub mod callback;
+// /// CapsWord key(s).
+// pub mod caps_word;
+// /// Chorded keys. (Chording functionality).
+// pub mod chorded;
+// /// Custom keys.
+// pub mod custom;
 /// HID Keyboard keys.
 pub mod keyboard;
-/// Layered keys. (Layering functionality).
-pub mod layered;
-/// Sticky Modifier keys.
-pub mod sticky;
-/// Tap-Dance keys.
-pub mod tap_dance;
+// /// Layered keys. (Layering functionality).
+// pub mod layered;
+// /// Sticky Modifier keys.
+// pub mod sticky;
+// /// Tap-Dance keys.
+// pub mod tap_dance;
 /// Tap-Hold keys.
 pub mod tap_hold;
 
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
 
-/// The maximum number of key events that are emitted [Key] or [KeyState].
+/// The maximum number of key events that are emitted by [System] implementations.
 pub const MAX_KEY_EVENTS: usize = 4;
 
-/// The maximum length of a key path.
+/// The maximum length of a [KeyPath].
 pub const MAX_KEY_PATH_LEN: usize = 4;
 
-/// Sequence of indices into a key map.
+/// Path to a key in the keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyPath(heapless::Vec<u16, MAX_KEY_PATH_LEN>);
 
@@ -59,7 +58,7 @@ impl core::ops::Deref for KeyPath {
     }
 }
 
-/// Events emitted when a [Key] is pressed.
+/// Events emitted when a key is pressed.
 #[derive(Debug, PartialEq, Eq)]
 pub struct KeyEvents<E, const M: usize = { MAX_KEY_EVENTS }>(heapless::Vec<ScheduledEvent<E>, M>);
 
@@ -129,34 +128,42 @@ impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
     }
 }
 
-/// Newtype for invoking new_pressed_key on the key at the given [KeyPath].
+/// Newtype for invoking new_pressed_key on the key for the given ref.
 #[derive(Debug)]
-pub enum NewPressedKey {
-    /// Invoke new_pressed_key on the key at the given [KeyPath].
-    Key(KeyPath),
+pub enum NewPressedKey<R> {
+    /// Invoke new_pressed_key on the key at the given ref.
+    Key(R),
     /// For keys which do nothing when pressed.
     NoOp,
 }
 
-impl NewPressedKey {
+impl<R> NewPressedKey<R> {
     /// Constructs a NewPressedKey value.
-    pub fn key_path(key_path: KeyPath) -> Self {
-        NewPressedKey::Key(key_path)
+    pub fn key(key_ref: R) -> Self {
+        NewPressedKey::Key(key_ref)
     }
 
     /// Constructs a NoOp NewPressedKey value.
     pub fn no_op() -> Self {
         NewPressedKey::NoOp
     }
+
+    /// Maps the NewPressedKey into a new type.
+    pub fn map<TR>(self, f: fn(R) -> TR) -> NewPressedKey<TR> {
+        match self {
+            NewPressedKey::Key(r) => NewPressedKey::Key(f(r)),
+            NewPressedKey::NoOp => NewPressedKey::NoOp,
+        }
+    }
 }
 
 /// Pressed Key which may be pending, or a resolved key state.
 #[derive(Debug)]
-pub enum PressedKeyResult<PKS, KS> {
+pub enum PressedKeyResult<R, PKS, KS> {
     /// Unresolved key state. (e.g. tap-hold or chorded keys when first pressed).
-    Pending(KeyPath, PKS),
+    Pending(PKS),
     /// Resolved as a new pressed key.
-    NewPressedKey(NewPressedKey),
+    NewPressedKey(NewPressedKey<R>),
     /// Resolved key state.
     Resolved(KS),
 }
@@ -168,7 +175,7 @@ pub fn key_path(keymap_index: u16) -> KeyPath {
     KeyPath(vec)
 }
 
-impl<PKS, KS> PressedKeyResult<PKS, KS> {
+impl<R, PKS, KS> PressedKeyResult<R, PKS, KS> {
     /// Returns the Resolved variant, or else panics.
     #[cfg(feature = "std")]
     pub fn unwrap_resolved(self) -> KS {
@@ -178,26 +185,32 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
         }
     }
 
-    /// Adds an item to the KeyPath if the pressed key result is pending.
-    pub fn append_path_item(self, item: u16) -> Self {
+    /// Maps the PressedKeyResult into a new type.
+    pub fn map<TPKS, TKS>(
+        self,
+        f: fn(PKS) -> TPKS,
+        g: fn(KS) -> TKS,
+    ) -> PressedKeyResult<R, TPKS, TKS> {
         match self {
-            PressedKeyResult::Pending(key_path, pks) => {
-                PressedKeyResult::Pending(key_path.append_path_item(item), pks)
-            }
-            pkr => pkr,
+            PressedKeyResult::Pending(pks) => PressedKeyResult::Pending(f(pks)),
+            PressedKeyResult::NewPressedKey(npk) => PressedKeyResult::NewPressedKey(npk),
+            PressedKeyResult::Resolved(ks) => PressedKeyResult::Resolved(g(ks)),
         }
     }
 }
 
-/// The interface for `Key` behaviour.
+/// The interface for key `System` behaviour.
 ///
-/// A `Key` has an associated [Context], `Event`, and [KeyState].
+/// A `System` has an associated `Ref`, [Context], `Event`, and [KeyState].
 ///
 /// The generic `PK` is used as the type of the `PressedKey` that the `Key`
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait Key: Debug {
+pub trait System<R>: Debug {
+    /// Used to identify the key definition in the keymap.
+    type Ref: Copy;
+
     /// The associated [Context] is used to provide state that
     ///  may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
@@ -220,32 +233,40 @@ pub trait Key: Debug {
     ///  so that holding the key resolves as a hold).
     fn new_pressed_key(
         &self,
+        keymap_index: u16,
         context: &Self::Context,
-        key_path: KeyPath,
+        key_ref: Self::Ref,
     ) -> (
-        PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         KeyEvents<Self::Event>,
     );
 
     /// Update the given pending key state with the given impl.
-    fn handle_event(
+    fn update_pending_state(
         &self,
         pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
         context: &Self::Context,
-        key_path: KeyPath,
+        key_ref: Self::Ref,
         event: Event<Self::Event>,
-    ) -> (Option<NewPressedKey>, KeyEvents<Self::Event>);
+    ) -> (Option<NewPressedKey<R>>, KeyEvents<Self::Event>);
 
-    /// Return a reference to the key for the given path.
-    fn lookup(
+    /// Used to update the [KeyState]'s state, and possibly yield event(s).
+    fn update_state(
         &self,
-        path: &[u16],
-    ) -> &dyn Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    >;
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: Event<Self::Event>,
+    ) -> KeyEvents<Self::Event> {
+        KeyEvents::no_events()
+    }
+
+    /// Output for the pressed key state.
+    fn key_output(&self, _ref: &Self::Ref, _key_state: &Self::KeyState) -> Option<KeyOutput> {
+        None
+    }
 }
 
 /// Used to provide state that may affect behaviour when pressing the key.
@@ -528,25 +549,7 @@ pub trait KeyState: Debug {
 
 /// A NoOp key state, for keys which do nothing when pressed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct NoOpKeyState<Ctx, Ev>(PhantomData<(Ctx, Ev)>);
-
-impl<Ctx, Ev> NoOpKeyState<Ctx, Ev> {
-    /// Constructs a NoOpKeyState value.
-    pub const fn new() -> Self {
-        NoOpKeyState(PhantomData)
-    }
-}
-
-impl<Ctx: Debug, Ev: Copy + Debug> KeyState for NoOpKeyState<Ctx, Ev> {
-    type Context = Ctx;
-    type Event = Ev;
-}
-
-impl<Ctx, Ev> Default for NoOpKeyState<Ctx, Ev> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+pub struct NoOpKeyState;
 
 /// Errors for [TryFrom] implementations.
 #[allow(unused)]
@@ -562,13 +565,13 @@ type EventResult<T> = Result<T, EventError>;
 
 /// Events which are either input, or for a particular [Key::Event].
 ///
-/// It's useful for [Key] implementations to use [Event] with [Key::Event],
+/// It's useful for key implementations to use [Event] with [Key::Event],
 ///  and map [Key::Event] to and partially from [composite::Event].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event<T> {
     /// Keymap input events, such as physical key presses.
     Input(input::Event),
-    /// [Key] implementation specific events.
+    /// Key implementation specific events.
     Key {
         /// The keymap index the event was generated from.
         keymap_index: u16,
