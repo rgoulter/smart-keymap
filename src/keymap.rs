@@ -7,7 +7,6 @@ pub mod hid_keyboard_reporter;
 use core::cmp::PartialEq;
 use core::fmt::Debug;
 use core::marker::Copy;
-use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -116,8 +115,9 @@ impl KeymapOutput {
 }
 
 #[derive(Debug)]
-struct PendingState<Ev, PKS> {
-    key_path: key::KeyPath,
+struct PendingState<R, Ev, PKS> {
+    keymap_index: u16,
+    key_ref: R,
     pending_key_state: PKS,
     queued_events: heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
 }
@@ -187,7 +187,7 @@ pub struct Keymap<R, Ctx, Ev: Debug, PKS, KS, S, const N: usize> {
     ms_per_tick: u8,
     idle_time: u32,
     hid_reporter: HIDKeyboardReporter,
-    pending_key_state: Option<PendingState<Ev, PKS>>,
+    pending_key_state: Option<PendingState<R, Ev, PKS>>,
     input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
     input_queue_delay_counter: u8,
     callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
@@ -199,7 +199,7 @@ impl<
         Ev: Debug,
         PKS: Debug,
         KS: Debug,
-        S: key::System<Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+        S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
         const N: usize,
     > core::fmt::Debug for Keymap<R, Ctx, Ev, PKS, KS, S, N>
 {
@@ -224,7 +224,7 @@ impl<
         Ev: Copy + Debug,
         PKS: Debug,
         KS: Copy + Debug,
-        S: key::System<Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+        S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
         const N: usize,
     > Keymap<R, Ctx, Ev, PKS, KS, S, N>
 {
@@ -289,15 +289,15 @@ impl<
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
-    fn resolve_pending_key_state(&mut self, key_ref: R, key_state: KS) {
+    fn resolve_pending_key_state(&mut self, _key_ref: R, key_state: KS) {
         if let Some(PendingState {
-            key_path,
+            keymap_index,
+            key_ref,
             queued_events,
             ..
         }) = self.pending_key_state.take()
         {
             // Cancel events which were scheduled for the (pending) key.
-            let keymap_index = key_path.keymap_index();
             self.event_scheduler
                 .cancel_events_for_keymap_index(keymap_index);
 
@@ -394,15 +394,16 @@ impl<
 
     fn process_input(&mut self, ev: input::Event) {
         if let Some(PendingState {
-            key_path,
-            pending_key_state,
+            keymap_index: _,
+            key_ref: _,
+            pending_key_state: _,
             queued_events,
             ..
         }) = &mut self.pending_key_state
         {
             queued_events.push(ev.into()).unwrap();
 
-            let pending_key_ref = &self.key_refs[key_path.keymap_index() as usize];
+            // let pending_key_ref = &self.key_refs[key_path.keymap_index() as usize];
 
             todo!("tbi: process_input, for Some pending_key_state");
 
@@ -531,7 +532,7 @@ impl<
                                 }
                             }
                             key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(
-                                new_key_path,
+                                _new_key_path,
                             )) => {
                                 todo!("tbi: process_input, for NewPressedKey::Key (use Ref instead of path)");
 
@@ -546,9 +547,10 @@ impl<
                                 //     .push(input::PressedInput::pressed_key(key_state, keymap_index))
                                 //     .unwrap();
                             }
-                            key::PressedKeyResult::Pending(key_path, pending_key_state) => {
+                            key::PressedKeyResult::Pending(pending_key_state) => {
                                 self.pending_key_state = Some(PendingState {
-                                    key_path,
+                                    keymap_index,
+                                    key_ref,
                                     pending_key_state,
                                     queued_events: heapless::Vec::new(),
                                 });
@@ -611,13 +613,14 @@ impl<
 
         // pending state needs to handle events
         if let Some(PendingState {
-            key_path,
-            pending_key_state,
-            queued_events,
+            keymap_index: _,
+            key_ref: _,
+            pending_key_state: _,
+            queued_events: _,
             ..
         }) = &mut self.pending_key_state
         {
-            let pending_key_ref = &self.key_refs[key_path.keymap_index() as usize];
+            // let _pending_key_ref = &self.key_refs[key_path.keymap_index() as usize];
 
             todo!("tbi: handle_event, for Some pending_key_state");
 

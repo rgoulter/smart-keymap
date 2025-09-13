@@ -129,19 +129,19 @@ impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
     }
 }
 
-/// Newtype for invoking new_pressed_key on the key at the given [KeyPath].
+/// Newtype for invoking new_pressed_key on the key for the given ref.
 #[derive(Debug)]
-pub enum NewPressedKey {
-    /// Invoke new_pressed_key on the key at the given [KeyPath].
-    Key(KeyPath),
+pub enum NewPressedKey<R> {
+    /// Invoke new_pressed_key on the key at the given ref.
+    Key(R),
     /// For keys which do nothing when pressed.
     NoOp,
 }
 
-impl NewPressedKey {
+impl<R> NewPressedKey<R> {
     /// Constructs a NewPressedKey value.
-    pub fn key_path(key_path: KeyPath) -> Self {
-        NewPressedKey::Key(key_path)
+    pub fn key(key_ref: R) -> Self {
+        NewPressedKey::Key(key_ref)
     }
 
     /// Constructs a NoOp NewPressedKey value.
@@ -152,11 +152,11 @@ impl NewPressedKey {
 
 /// Pressed Key which may be pending, or a resolved key state.
 #[derive(Debug)]
-pub enum PressedKeyResult<PKS, KS> {
+pub enum PressedKeyResult<R, PKS, KS> {
     /// Unresolved key state. (e.g. tap-hold or chorded keys when first pressed).
-    Pending(KeyPath, PKS),
+    Pending(PKS),
     /// Resolved as a new pressed key.
-    NewPressedKey(NewPressedKey),
+    NewPressedKey(NewPressedKey<R>),
     /// Resolved key state.
     Resolved(KS),
 }
@@ -168,7 +168,7 @@ pub fn key_path(keymap_index: u16) -> KeyPath {
     KeyPath(vec)
 }
 
-impl<PKS, KS> PressedKeyResult<PKS, KS> {
+impl<R, PKS, KS> PressedKeyResult<R, PKS, KS> {
     /// Returns the Resolved variant, or else panics.
     #[cfg(feature = "std")]
     pub fn unwrap_resolved(self) -> KS {
@@ -178,24 +178,14 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
         }
     }
 
-    /// Adds an item to the KeyPath if the pressed key result is pending.
-    pub fn append_path_item(self, item: u16) -> Self {
-        match self {
-            PressedKeyResult::Pending(key_path, pks) => {
-                PressedKeyResult::Pending(key_path.append_path_item(item), pks)
-            }
-            pkr => pkr,
-        }
-    }
-
     /// Maps the PressedKeyResult into a new type.
     pub fn map<TPKS, TKS>(
         self,
         f: fn(PKS) -> TPKS,
         g: fn(KS) -> TKS,
-    ) -> PressedKeyResult<TPKS, TKS> {
+    ) -> PressedKeyResult<R, TPKS, TKS> {
         match self {
-            PressedKeyResult::Pending(kp, pks) => PressedKeyResult::Pending(kp, f(pks)),
+            PressedKeyResult::Pending(pks) => PressedKeyResult::Pending(f(pks)),
             PressedKeyResult::NewPressedKey(npk) => PressedKeyResult::NewPressedKey(npk),
             PressedKeyResult::Resolved(ks) => PressedKeyResult::Resolved(g(ks)),
         }
@@ -210,7 +200,7 @@ impl<PKS, KS> PressedKeyResult<PKS, KS> {
 ///  produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
-pub trait System: Debug {
+pub trait System<R>: Debug {
     /// Used to identify the key definition in the keymap.
     type Ref: Copy;
 
@@ -240,7 +230,7 @@ pub trait System: Debug {
         context: &Self::Context,
         key_ref: Self::Ref,
     ) -> (
-        PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         KeyEvents<Self::Event>,
     );
 
@@ -251,7 +241,7 @@ pub trait System: Debug {
         context: &Self::Context,
         key_ref: Self::Ref,
         event: Event<Self::Event>,
-    ) -> (Option<NewPressedKey>, KeyEvents<Self::Event>);
+    ) -> (Option<NewPressedKey<R>>, KeyEvents<Self::Event>);
 
     /// Used to update the [KeyState]'s state, and possibly yield event(s).
     fn update_state(

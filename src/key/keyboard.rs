@@ -104,7 +104,7 @@ impl<const DATA_LEN: usize> System<DATA_LEN> {
     }
 }
 
-impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
+impl<R, const DATA_LEN: usize> key::System<R> for System<DATA_LEN> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -117,7 +117,7 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
         _context: &Self::Context,
         _key_ref: Ref,
     ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
         let k_ks = KeyState;
@@ -132,7 +132,7 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
         _context: &Self::Context,
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 

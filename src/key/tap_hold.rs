@@ -273,7 +273,7 @@ impl<R, const DATA_LEN: usize> System<R, DATA_LEN> {
     }
 }
 
-impl<R: Debug, const DATA_LEN: usize> key::System for System<R, DATA_LEN> {
+impl<R: Debug, const DATA_LEN: usize> key::System<R> for System<R, DATA_LEN> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -282,11 +282,11 @@ impl<R: Debug, const DATA_LEN: usize> key::System for System<R, DATA_LEN> {
 
     fn new_pressed_key(
         &self,
-        keymap_index: u16,
-        context: &Self::Context,
-        key_ref: Ref,
+        _keymap_index: u16,
+        _context: &Self::Context,
+        _key_ref: Ref,
     ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
         todo!()
@@ -328,7 +328,7 @@ impl<R: Debug, const DATA_LEN: usize> key::System for System<R, DATA_LEN> {
         _context: &Self::Context,
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
         todo!()
 
         //         let keymap_index = key_path.keymap_index();

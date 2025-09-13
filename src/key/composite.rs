@@ -64,7 +64,7 @@ pub const DEFAULT_CONTEXT: Context = Context {
 
 impl Context {
     /// Constructs a [Context] from the given [Config].
-    pub const fn from_config(config: Config) -> Self {
+    pub const fn from_config(_config: Config) -> Self {
         Self {
             // chorded_context: key::chorded::Context::from_config(config.chorded),
             // sticky_context: key::sticky::Context::from_config(config.sticky),
@@ -84,8 +84,9 @@ impl Default for Context {
 
 impl key::Context for Context {
     type Event = Event;
-    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
-        let mut pke = key::KeyEvents::no_events();
+    fn handle_event(&mut self, _event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        // let mut pke = key::KeyEvents::no_events();
+        let pke = key::KeyEvents::no_events();
 
         // let caps_word_ev = self.caps_word_context.handle_event(event);
         // pke.extend(caps_word_ev);
@@ -469,7 +470,7 @@ pub struct System<const DATA_LEN_KEYBOARD: usize> {
     pub keyboard: key::keyboard::System<DATA_LEN_KEYBOARD>,
 }
 
-impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
+impl<const DATA_LEN_KEYBOARD: usize> key::System<Ref> for System<DATA_LEN_KEYBOARD> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -482,7 +483,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         _context: &Self::Context,
         key_ref: Ref,
     ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::PressedKeyResult<Ref, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
         match key_ref {
@@ -504,7 +505,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         _context: &Self::Context,
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+    ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
         todo!() // TODO
     }
 
@@ -519,7 +520,8 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         match (key_ref, key_state) {
             (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
-                    let pke = self.keyboard.update_state(
+                    let pke = <key::keyboard::System<DATA_LEN_KEYBOARD> as key::System<Ref>>::update_state(
+                        &self.keyboard,
                         &mut key_state,
                         key_ref,
                         context.into(),
@@ -541,7 +543,13 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
         key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
-            (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
+            (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
+                <key::keyboard::System<DATA_LEN_KEYBOARD> as key::System<Ref>>::key_output(
+                    &self.keyboard,
+                    r,
+                    ks,
+                )
+            }
             (_, _) => panic!("Mismatched key_ref and key_state variants"),
         }
     }
