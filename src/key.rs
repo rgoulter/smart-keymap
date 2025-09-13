@@ -27,13 +27,13 @@ pub mod tap_hold;
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
 
-/// The maximum number of key events that are emitted [Key] or [KeyState].
+/// The maximum number of key events that are emitted by [System] implementations.
 pub const MAX_KEY_EVENTS: usize = 4;
 
-/// The maximum length of a key path.
+/// The maximum length of a [KeyPath].
 pub const MAX_KEY_PATH_LEN: usize = 4;
 
-/// Sequence of indices into a key map.
+/// Path to a key in the keymap.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct KeyPath(heapless::Vec<u16, MAX_KEY_PATH_LEN>);
 
@@ -59,7 +59,7 @@ impl core::ops::Deref for KeyPath {
     }
 }
 
-/// Events emitted when a [Key] is pressed.
+/// Events emitted when a key is pressed.
 #[derive(Debug, PartialEq, Eq)]
 pub struct KeyEvents<E, const M: usize = { MAX_KEY_EVENTS }>(heapless::Vec<ScheduledEvent<E>, M>);
 
@@ -584,13 +584,13 @@ type EventResult<T> = Result<T, EventError>;
 
 /// Events which are either input, or for a particular [Key::Event].
 ///
-/// It's useful for [Key] implementations to use [Event] with [Key::Event],
+/// It's useful for key implementations to use [Event] with [Key::Event],
 ///  and map [Key::Event] to and partially from [composite::Event].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event<T> {
     /// Keymap input events, such as physical key presses.
     Input(input::Event),
-    /// [Key] implementation specific events.
+    /// Key implementation specific events.
     Key {
         /// The keymap index the event was generated from.
         keymap_index: u16,
