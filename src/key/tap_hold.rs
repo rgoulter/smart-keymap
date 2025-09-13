@@ -28,6 +28,16 @@ impl<R> Key<R> {
     }
 }
 
+#[cfg(feature = "std")]
+impl<R: Default> Default for Key<R> {
+    fn default() -> Self {
+        Key {
+            tap: R::default(),
+            hold: R::default(),
+        }
+    }
+}
+
 /// How the tap hold key should respond to interruptions (input events from other keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum InterruptResponse {

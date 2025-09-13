@@ -16,6 +16,13 @@ pub enum Ref {
     TapHold(key::tap_hold::Ref),
 }
 
+#[cfg(feature = "std")]
+impl Default for Ref {
+    fn default() -> Self {
+        Ref::Keyboard(key::keyboard::Ref::KeyCode(0))
+    }
+}
+
 /// Aggregate config.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
