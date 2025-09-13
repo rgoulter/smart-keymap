@@ -1,4 +1,4 @@
-// mod hold_on_interrupt_press;
+mod hold_on_interrupt_press;
 mod hold_on_interrupt_tap;
 mod interrupt_ignore;
 // mod layered;
