@@ -260,9 +260,8 @@ impl<R, const DATA_LEN: usize> System<R, DATA_LEN> {
     fn new_pending_key(
         &self,
         context: &Context,
-        key_path: key::KeyPath,
+        keymap_index: u16,
     ) -> (PendingKeyState, key::ScheduledEvent<Event>) {
-        let keymap_index: u16 = key_path.keymap_index();
         let timeout_ev = Event::TapHoldTimeout;
         (
             PendingKeyState::new(),
@@ -283,45 +282,44 @@ impl<R: Debug, const DATA_LEN: usize> key::System for System<R, DATA_LEN> {
 
     fn new_pressed_key(
         &self,
-        _context: &Self::Context,
-        _key_ref: Ref,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
         todo!()
 
-        //     let th_ctx: &Context = context.into();
-        //     match th_ctx.config.required_idle_time {
-        //         Some(required_idle_time) => {
-        //             let km_ctx: &keymap::KeymapContext = context.into();
-        //             if km_ctx.idle_time_ms >= required_idle_time as u32 {
-        //                 // Keymap has been idle long enough; use pending tap-hold key state.
-        //                 let (th_pks, sch_ev) = self.new_pending_key(th_ctx, key_path.clone());
-        //                 let pk = key::PressedKeyResult::Pending(key_path, th_pks.into());
-        //                 let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
-        //                 (pk, pke)
-        //             } else {
-        //                 // Keymap has not been idle for long enough;
-        //                 // immediately resolve as tap.
-        //                 // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-        //                 let tap_key_path = key_path.append_path_item(0);
-        //                 (
-        //                     key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
-        //                         tap_key_path,
-        //                     )),
-        //                     key::KeyEvents::no_events(),
-        //                 )
-        //             }
-        //         }
-        //         None => {
-        //             // Idle time not considered. Use pending tap-hold key state.
-        //             let (th_pks, sch_ev) = self.new_pending_key(th_ctx, key_path.clone());
+        // match context.config.required_idle_time {
+        //     Some(required_idle_time) => {
+        //         if context.idle_time_ms >= required_idle_time as u32 {
+        //             // Keymap has been idle long enough; use pending tap-hold key state.
+        //             let (th_pks, sch_ev) = self.new_pending_key(context, keymap_index);
         //             let pk = key::PressedKeyResult::Pending(key_path, th_pks.into());
         //             let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
         //             (pk, pke)
+        //         } else {
+        //             // Keymap has not been idle for long enough;
+        //             // immediately resolve as tap.
+        //             // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
+        //             let tap_key_path = key_path.append_path_item(0);
+        //             (
+        //                 key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
+        //                     tap_key_path,
+        //                 )),
+        //                 key::KeyEvents::no_events(),
+        //             )
         //         }
         //     }
+        //     None => {
+        //         // Idle time not considered. Use pending tap-hold key state.
+        //         let (th_pks, sch_ev) = self.new_pending_key(context, key_path.clone());
+        //         let pk = key::PressedKeyResult::Pending(key_path, th_pks.into());
+        //         let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+        //         (pk, pke)
+        //     }
+        // }
     }
 
     fn update_pending_state(

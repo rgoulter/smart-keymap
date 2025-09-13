@@ -236,6 +236,7 @@ pub trait System: Debug {
     ///  so that holding the key resolves as a hold).
     fn new_pressed_key(
         &self,
+        keymap_index: u16,
         context: &Self::Context,
         key_ref: Self::Ref,
     ) -> (

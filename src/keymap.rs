@@ -502,7 +502,9 @@ impl<
                     let mut maybe_key_ref = Some(self.key_refs[keymap_index as usize]);
 
                     while let Some(key_ref) = maybe_key_ref.take() {
-                        let (pkr, pke) = self.key_system.new_pressed_key(&self.context, key_ref);
+                        let (pkr, pke) =
+                            self.key_system
+                                .new_pressed_key(keymap_index, &self.context, key_ref);
 
                         pke.into_iter()
                             .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));

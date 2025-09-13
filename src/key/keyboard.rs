@@ -113,6 +113,7 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
 
     fn new_pressed_key(
         &self,
+        _keymap_index: u16,
         _context: &Self::Context,
         _key_ref: Ref,
     ) -> (

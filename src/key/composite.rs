@@ -478,6 +478,7 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
 
     fn new_pressed_key(
         &self,
+        keymap_index: u16,
         _context: &Self::Context,
         key_ref: Ref,
     ) -> (
@@ -486,9 +487,9 @@ impl<const DATA_LEN_KEYBOARD: usize> key::System for System<DATA_LEN_KEYBOARD> {
     ) {
         match key_ref {
             Ref::Keyboard(key_ref) => {
-                let (pkr, pke) = self
-                    .keyboard
-                    .new_pressed_key(&key::keyboard::Context, key_ref);
+                let (pkr, pke) =
+                    self.keyboard
+                        .new_pressed_key(keymap_index, &key::keyboard::Context, key_ref);
                 (
                     pkr.map(Into::into, KeyState::Keyboard),
                     pke.map_events(Into::into),
