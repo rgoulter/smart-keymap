@@ -148,6 +148,14 @@ impl<R> NewPressedKey<R> {
     pub fn no_op() -> Self {
         NewPressedKey::NoOp
     }
+
+    /// Maps the NewPressedKey into a new type.
+    pub fn map<TR>(self, f: fn(R) -> TR) -> NewPressedKey<TR> {
+        match self {
+            NewPressedKey::Key(r) => NewPressedKey::Key(f(r)),
+            NewPressedKey::NoOp => NewPressedKey::NoOp,
+        }
+    }
 }
 
 /// Pressed Key which may be pending, or a resolved key state.
