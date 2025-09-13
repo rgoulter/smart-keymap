@@ -86,6 +86,7 @@ impl Default for Config {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context {
     config: Config,
+    idle_time_ms: u32,
 }
 
 /// Default context.
@@ -94,7 +95,18 @@ pub const DEFAULT_CONTEXT: Context = Context::from_config(DEFAULT_CONFIG);
 impl Context {
     /// Constructs a context from the given config
     pub const fn from_config(config: Config) -> Context {
-        Context { config }
+        Context {
+            config,
+            idle_time_ms: 0,
+        }
+    }
+
+    /// Updates the context with the given keymap context.
+    pub fn update_keymap_context(
+        &mut self,
+        keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
+    ) {
+        self.idle_time_ms = *idle_time_ms;
     }
 }
 
