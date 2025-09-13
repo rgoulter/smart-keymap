@@ -712,6 +712,36 @@ let validators = import "validators.ncl" in
         let acc = f acc cv in
         let acc = key.traverse f acc cv.nested.tap in
         key.traverse f acc cv.nested.hold,
+
+      data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
+        let { key_data, ref = tap_ref } = key.data_and_ref key_data tap_cv in
+        let tap_ref = tap_ref |> composite.ref.wrap in
+        let { key_data, ref = hold_ref } = key.data_and_ref key_data hold_cv in
+        let hold_ref = hold_ref |> composite.ref.wrap in
+        let data_ = key_data in
+        let { tap_hold = tap_hold_, ..other_data } = data_ & { tap_hold | default = [] } in
+        let new_index = std.array.length tap_hold_ in
+        let new_key = {
+          json = {
+            tap = tap_ref.json,
+            hold = hold_ref.json,
+          },
+          rust_expr = m%"
+            %{module}::Key {
+              tap: %{tap_ref.rust_expr},
+              hold: %{hold_ref.rust_expr},
+            }
+          "%,
+        }
+        in
+        {
+          key_data = other_data & { tap_hold = std.array.append new_key tap_hold_ },
+          ref = {
+            include module,
+            json = new_index,
+            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+          },
+        },
     },
 
   # Related to key::composite::LayeredNestable trait.
