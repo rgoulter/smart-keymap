@@ -1,6 +1,4 @@
-//! This module implements the `keymap::Key` for a 'composite' key,
-//!  which can be any of the other key definitions,
-//!  and is the default Key for the `keymap::KeyMap` implementation.
+//! This module aggregates various [key::System] implementations.
 // #![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
@@ -9,16 +7,14 @@ use serde::Deserialize;
 
 use crate::{key, keymap};
 
-/// Type alias for result from new_pressed_key.
-pub type PressedKeyResult = key::PressedKeyResult<PendingKeyState, KeyState>;
-
-/// Reference for a composite key.
+/// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
+    /// [key::keyboard::Ref] variant.
     Keyboard(key::keyboard::Ref),
 }
 
-/// Config used for constructing initial context
+/// Aggregate config.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     // /// The chorded configuration.
@@ -303,7 +299,7 @@ impl TryFrom<Event> for key::keyboard::Event {
 //     }
 // }
 
-/// Aggregate enum for key state. (i.e. pressed key data).
+/// Aggregate enum for pending key state.
 #[derive(Debug, Clone, PartialEq)]
 pub enum PendingKeyState {
     // /// Pending key state for [key::tap_dance::PendingKeyState].
@@ -466,7 +462,7 @@ impl From<key::keyboard::KeyState> for KeyState {
 //     }
 // }
 
-/// The [key::System] implementation for keyboard keys.
+/// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<const DATA_LEN_KEYBOARD: usize> {
     /// The keyboard key system.
