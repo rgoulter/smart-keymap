@@ -227,6 +227,8 @@ impl<
         S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
         const N: usize,
     > Keymap<R, Ctx, Ev, PKS, KS, S, N>
+where
+    KS: From<key::NoOpKeyState>,
 {
     /// Constructs a new keymap with the given key definitions and context.
     pub const fn new(key_refs: [R; N], context: Ctx, key_system: S) -> Self {
