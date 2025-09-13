@@ -1126,8 +1126,16 @@ let validators = import "validators.ncl" in
           "smart_keymap::key::keyboard" =>
             {
               module = "smart_keymap::key::composite",
-              json = { Keyboard = ref.json },
-              rust_expr = "%{module}::Ref::Keyboard(%{ref.rust_expr})",
+              variant = "Keyboard",
+              json = { "%{variant}" = ref.json },
+              rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
+            },
+          "smart_keymap::key::tap_hold" =>
+            {
+              module = "smart_keymap::key::composite",
+              variant = "TapHold",
+              json = { "%{variant}" = ref.json },
+              rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
             },
           _ => std.fail_with "bad composite.ref.wrap: %{std.serialize ref 'Json}",
         },
