@@ -1765,10 +1765,14 @@ let validators = import "validators.ncl" in
       "% in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
+        # config = m%"smart_keymap::key::composite::Config {
+        #     chorded: %{chorded_config_expr},
+        #     sticky: %{sticky_config_expr},
+        #     tap_dance: %{tap_dance_config_expr},
+        #     tap_hold: %{tap_hold_config_expr},
+        #     ..smart_keymap::key::composite::DEFAULT_CONFIG
+        # }"%,
         config = m%"smart_keymap::key::composite::Config {
-            chorded: %{chorded_config_expr},
-            sticky: %{sticky_config_expr},
-            tap_dance: %{tap_dance_config_expr},
             tap_hold: %{tap_hold_config_expr},
             ..smart_keymap::key::composite::DEFAULT_CONFIG
         }"%,
@@ -1786,9 +1790,7 @@ let validators = import "validators.ncl" in
     use key_system::System;
     const KEY_COUNT: usize = %{keymap_len};
     const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
-    const CONTEXT: Context = Context::from_config(
-        key_system::DEFAULT_CONFIG,
-    );
+    const CONTEXT: Context = %{context};
 
     smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{key_system_expr})
 }
