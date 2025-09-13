@@ -33,6 +33,7 @@ fn basic_keymap_expression() {
             CONTEXT,
             smart_keymap::key::composite::System {
                 keyboard: smart_keymap::key::keyboard::System::new([]),
+                tap_hold: smart_keymap::key::tap_hold::System::new([]),
             },
         )
     };
