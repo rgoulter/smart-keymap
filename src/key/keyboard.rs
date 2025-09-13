@@ -7,11 +7,11 @@ use crate::key;
 /// Reference for a keyboard key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
-    /// A key code without modifiers.
+    /// A key code without modifiers. (Value is the HID usage code).
     KeyCode(u8),
-    /// A modifiers.
+    /// A modifiers. (Value is a bitfield of `key::KeyboardModifiers`).
     Modifiers(u8),
-    /// A key code with modifiers.
+    /// A key code with modifiers. (Value is the index into the key data array of [System]).
     KeyCodeAndModifier(u8),
 }
 
@@ -58,7 +58,7 @@ pub const DEFAULT_CONFIG: Config = Config {};
 pub struct Context;
 
 impl Context {
-    /// Constructs a context from the given config
+    /// Constructs a context from the given config.
     pub const fn from_config(_config: Config) -> Context {
         Context {}
     }
@@ -85,7 +85,7 @@ pub struct Event;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PendingKeyState;
 
-/// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
+/// Key state used by [System].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeyState;
 
@@ -114,7 +114,7 @@ impl<const DATA_LEN: usize> key::System for System<DATA_LEN> {
     fn new_pressed_key(
         &self,
         _context: &Self::Context,
-        key_ref: Ref,
+        _key_ref: Ref,
     ) -> (
         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
