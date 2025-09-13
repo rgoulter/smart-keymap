@@ -530,20 +530,20 @@ where
                                 }
                             }
                             key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(
-                                _new_key_path,
+                                new_key_ref,
                             )) => {
-                                todo!("tbi: process_input, for NewPressedKey::Key (use Ref instead of path)");
-
-                                // maybe_key_ref = Some(new_key_path);
+                                maybe_key_ref = Some(new_key_ref);
                             }
                             key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp) => {
-                                todo!("tbi: process_input, NoOpKeyState");
+                                let key_state: KS = key::NoOpKeyState.into();
 
-                                // let key_state: KS = key::NoOpKeyState::new().into();
-
-                                // self.pressed_inputs
-                                //     .push(input::PressedInput::pressed_key(key_state, keymap_index))
-                                //     .unwrap();
+                                self.pressed_inputs
+                                    .push(input::PressedInput::pressed_key(
+                                        keymap_index,
+                                        key_ref,
+                                        key_state,
+                                    ))
+                                    .unwrap();
                             }
                             key::PressedKeyResult::Pending(pending_key_state) => {
                                 self.pending_key_state = Some(PendingState {
