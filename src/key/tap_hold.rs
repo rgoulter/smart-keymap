@@ -321,40 +321,27 @@ impl<R: Copy + Debug, const DATA_LEN: usize> key::System<R> for System<R, DATA_L
 
     fn update_pending_state(
         &self,
-        _pending_state: &mut Self::PendingKeyState,
-        _keymap_index: u16,
-        _context: &Self::Context,
-        _key_ref: Ref,
-        _event: key::Event<Self::Event>,
+        pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
+        context: &Self::Context,
+        Ref(key_index): Ref,
+        event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        todo!()
+        let th_state = pending_state.handle_event(context.into(), keymap_index, event);
+        if let Some(th_state) = th_state {
+            let Key { tap, hold } = self.key_data[key_index as usize];
+            let new_key_ref = match th_state {
+                key::tap_hold::TapHoldState::Tap => tap,
+                key::tap_hold::TapHoldState::Hold => hold,
+            };
 
-        //         let keymap_index = key_path.keymap_index();
-        //         let th_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
-        //         if let Ok(th_pks) = th_pks_res {
-        //             if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {
-        //                 let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
-        //                 if let Some(th_state) = th_state {
-        //                     let i = match th_state {
-        //                         key::tap_hold::TapHoldState::Tap => 0,
-        //                         key::tap_hold::TapHoldState::Hold => 1,
-        //                     };
-        //                     // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-        //                     let new_key_path = key_path.append_path_item(i);
-
-        //                     (
-        //                         Some(key::NewPressedKey::key_path(new_key_path)),
-        //                         key::KeyEvents::no_events(),
-        //                     )
-        //                 } else {
-        //                     (None, key::KeyEvents::no_events())
-        //                 }
-        //             } else {
-        //                 (None, key::KeyEvents::no_events())
-        //             }
-        //         } else {
-        //             (None, key::KeyEvents::no_events())
-        //         }
+            (
+                Some(key::NewPressedKey::key(new_key_ref)),
+                key::KeyEvents::no_events(),
+            )
+        } else {
+            (None, key::KeyEvents::no_events())
+        }
     }
 
     fn update_state(
