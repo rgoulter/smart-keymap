@@ -419,6 +419,7 @@ where
             while let Some(npk) = maybe_npk.take() {
                 let pkr = match npk {
                     key::NewPressedKey::Key(new_key_ref) => {
+                        *key_ref = new_key_ref;
                         let (pkr, pke) = self.key_system.new_pressed_key(
                             *keymap_index,
                             &self.context,
@@ -447,25 +448,22 @@ where
                         break;
                     }
                     key::PressedKeyResult::Pending(pks) => {
-                        todo!()
+                        *pending_key_state = pks;
 
-                        // *key_path = kp;
-                        // *pending_key_state = pks;
-
-                        // // Since the pending key state resolved into another pending key state,
-                        // //  we re-queue all the input events that had been received.
-                        // let orig_input_queue = core::mem::take(&mut self.input_queue);
-                        // while let Some(ev) = queued_events.pop() {
-                        //     match ev {
-                        //         key::Event::Input(input_ev) => {
-                        //             self.input_queue.enqueue(input_ev).unwrap();
-                        //         }
-                        //         _ => {}
-                        //     }
-                        // }
-                        // orig_input_queue.iter().for_each(|&ev| {
-                        //     self.input_queue.enqueue(ev).unwrap();
-                        // });
+                        // Since the pending key state resolved into another pending key state,
+                        //  we re-queue all the input events that had been received.
+                        let orig_input_queue = core::mem::take(&mut self.input_queue);
+                        while let Some(ev) = queued_events.pop() {
+                            match ev {
+                                key::Event::Input(input_ev) => {
+                                    self.input_queue.enqueue(input_ev).unwrap();
+                                }
+                                _ => {}
+                            }
+                        }
+                        orig_input_queue.iter().for_each(|&ev| {
+                            self.input_queue.enqueue(ev).unwrap();
+                        });
                     }
                 }
             }
