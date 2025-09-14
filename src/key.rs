@@ -14,8 +14,8 @@ use crate::input;
 // pub mod custom;
 /// HID Keyboard keys.
 pub mod keyboard;
-// /// Layered keys. (Layering functionality).
-// pub mod layered;
+/// Layered keys. (Layering functionality).
+pub mod layered;
 // /// Sticky Modifier keys.
 // pub mod sticky;
 // /// Tap-Dance keys.
