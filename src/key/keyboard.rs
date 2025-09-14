@@ -1,5 +1,8 @@
 // #![doc = include_str!("doc_de_keyboard.md")]
 
+use core::fmt::Debug;
+use core::ops::Index;
+
 use serde::Deserialize;
 
 use crate::key;
@@ -91,20 +94,20 @@ pub struct KeyState;
 
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<const DATA_LEN: usize> {
-    key_data: [Key; DATA_LEN],
+pub struct System<Data: Index<usize, Output = Key>> {
+    key_data: Data,
 }
 
-impl<const DATA_LEN: usize> System<DATA_LEN> {
+impl<Data: Index<usize, Output = Key>> System<Data> {
     /// Constructs a new [System] with the given key data.
     ///
     /// The key data is for keys with both key codes and modifiers.
-    pub const fn new(key_data: [Key; DATA_LEN]) -> Self {
+    pub const fn new(key_data: Data) -> Self {
         Self { key_data }
     }
 }
 
-impl<R, const DATA_LEN: usize> key::System<R> for System<DATA_LEN> {
+impl<R, Data: Debug + Index<usize, Output = Key>> key::System<R> for System<Data> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;

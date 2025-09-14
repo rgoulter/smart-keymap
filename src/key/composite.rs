@@ -2,6 +2,7 @@
 // #![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -475,15 +476,20 @@ impl From<key::keyboard::KeyState> for KeyState {
 
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> {
+pub struct System<
+    KeyboardData: Index<usize, Output = key::keyboard::Key>,
+    TapHoldData: Index<usize, Output = key::tap_hold::Key<Ref>>,
+> {
     /// The keyboard key system.
-    pub keyboard: key::keyboard::System<DATA_LEN_KEYBOARD>,
+    pub keyboard: key::keyboard::System<KeyboardData>,
     /// The tap_hold key system.
-    pub tap_hold: key::tap_hold::System<Ref, DATA_LEN_TAP_HOLD>,
+    pub tap_hold: key::tap_hold::System<Ref, TapHoldData>,
 }
 
-impl<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> key::System<Ref>
-    for System<DATA_LEN_KEYBOARD, DATA_LEN_TAP_HOLD>
+impl<
+        KeyboardData: Debug + Index<usize, Output = key::keyboard::Key>,
+        TapHoldData: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>,
+    > key::System<Ref> for System<KeyboardData, TapHoldData>
 {
     type Ref = Ref;
     type Context = Context;
@@ -560,14 +566,15 @@ impl<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> key::System
         match (key_ref, key_state) {
             (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
-                    let pke = <key::keyboard::System<DATA_LEN_KEYBOARD> as key::System<Ref>>::update_state(
-                        &self.keyboard,
-                        &mut key_state,
-                        key_ref,
-                        context.into(),
-                        keymap_index,
-                        event,
-                    );
+                    let pke =
+                        <key::keyboard::System<KeyboardData> as key::System<Ref>>::update_state(
+                            &self.keyboard,
+                            &mut key_state,
+                            key_ref,
+                            context.into(),
+                            keymap_index,
+                            event,
+                        );
                     pke.map_events(Into::into)
                 } else {
                     key::KeyEvents::no_events()
@@ -584,7 +591,7 @@ impl<const DATA_LEN_KEYBOARD: usize, const DATA_LEN_TAP_HOLD: usize> key::System
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
-                <key::keyboard::System<DATA_LEN_KEYBOARD> as key::System<Ref>>::key_output(
+                <key::keyboard::System<KeyboardData> as key::System<Ref>>::key_output(
                     &self.keyboard,
                     r,
                     ks,

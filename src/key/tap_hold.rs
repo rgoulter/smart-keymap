@@ -1,6 +1,7 @@
 // #![doc = include_str!("doc_de_tap_hold.md")]
 
 use core::fmt::Debug;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -255,15 +256,15 @@ pub struct KeyState;
 
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<R, const DATA_LEN: usize> {
-    key_data: [Key<R>; DATA_LEN],
+pub struct System<R, Data: Index<usize, Output = Key<R>>> {
+    key_data: Data,
 }
 
-impl<R, const DATA_LEN: usize> System<R, DATA_LEN> {
+impl<R, Data: Index<usize, Output = Key<R>>> System<R, Data> {
     /// Constructs a new [System] with the given key data.
     ///
     /// The key data is for keys with both key codes and modifiers.
-    pub const fn new(key_data: [Key<R>; DATA_LEN]) -> Self {
+    pub const fn new(key_data: Data) -> Self {
         Self { key_data }
     }
 
@@ -283,7 +284,9 @@ impl<R, const DATA_LEN: usize> System<R, DATA_LEN> {
     }
 }
 
-impl<R: Copy + Debug, const DATA_LEN: usize> key::System<R> for System<R, DATA_LEN> {
+impl<R: Copy + Debug, Data: Debug + Index<usize, Output = Key<R>>> key::System<R>
+    for System<R, Data>
+{
     type Ref = Ref;
     type Context = Context;
     type Event = Event;

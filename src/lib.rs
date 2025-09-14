@@ -98,11 +98,10 @@ pub mod init {
 
     pub use key_system::KeyState;
 
+    pub use key_system::System;
+
     /// Max number of data entries for each system.
     pub const DATA_LEN: usize = 32;
-
-    /// System implementation for the keymap.
-    pub type System = crate::key::composite::System<DATA_LEN, DATA_LEN>;
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
@@ -111,8 +110,15 @@ pub mod init {
     pub const KEY_COUNT: usize = 1;
 
     /// Alias for the [keymap::Keymap] type.
-    pub type Keymap =
-        keymap::Keymap<[Ref; KEY_COUNT], Ref, Context, Event, PendingKeyState, KeyState, System>;
+    pub type Keymap = keymap::Keymap<
+        [Ref; KEY_COUNT],
+        Ref,
+        Context,
+        Event,
+        PendingKeyState,
+        KeyState,
+        System<[crate::key::keyboard::Key; DATA_LEN], [crate::key::tap_hold::Key<Ref>; DATA_LEN]>,
+    >;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
