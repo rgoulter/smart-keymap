@@ -256,16 +256,16 @@ pub struct KeyState;
 
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<R, Data: Index<usize, Output = Key<R>>> {
-    key_data: Data,
+pub struct System<R, Keys: Index<usize, Output = Key<R>>> {
+    keys: Keys,
 }
 
-impl<R, Data: Index<usize, Output = Key<R>>> System<R, Data> {
+impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
     /// Constructs a new [System] with the given key data.
     ///
     /// The key data is for keys with both key codes and modifiers.
-    pub const fn new(key_data: Data) -> Self {
-        Self { key_data }
+    pub const fn new(key_data: Keys) -> Self {
+        Self { keys: key_data }
     }
 
     fn new_pending_key(
@@ -284,8 +284,8 @@ impl<R, Data: Index<usize, Output = Key<R>>> System<R, Data> {
     }
 }
 
-impl<R: Copy + Debug, Data: Debug + Index<usize, Output = Key<R>>> key::System<R>
-    for System<R, Data>
+impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
+    for System<R, Keys>
 {
     type Ref = Ref;
     type Context = Context;
@@ -315,7 +315,7 @@ impl<R: Copy + Debug, Data: Debug + Index<usize, Output = Key<R>>> key::System<R
                     // immediately resolve as tap.
                     let Key {
                         tap: tap_key_ref, ..
-                    } = self.key_data[key_index as usize];
+                    } = self.keys[key_index as usize];
                     (
                         key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
                         key::KeyEvents::no_events(),
@@ -342,7 +342,7 @@ impl<R: Copy + Debug, Data: Debug + Index<usize, Output = Key<R>>> key::System<R
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
         let th_state = pending_state.handle_event(context.into(), keymap_index, event);
         if let Some(th_state) = th_state {
-            let Key { tap, hold } = self.key_data[key_index as usize];
+            let Key { tap, hold } = self.keys[key_index as usize];
             let new_key_ref = match th_state {
                 key::tap_hold::TapHoldState::Tap => tap,
                 key::tap_hold::TapHoldState::Hold => hold,

@@ -476,7 +476,7 @@ impl From<key::keyboard::KeyState> for KeyState {
 // }
 
 /// Convenience trait for the data storage types.
-pub trait Data {
+pub trait Keys {
     /// Type used by [key::keyboard::System].
     type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
     /// Type used by [key::tap_hold::System].
@@ -485,9 +485,9 @@ pub trait Data {
 
 /// Array-based data implementations.
 #[derive(Debug)]
-pub struct ArrayData<const KEYBOARD: usize, const TAP_HOLD: usize>;
+pub struct KeyArrays<const KEYBOARD: usize, const TAP_HOLD: usize>;
 
-impl<const KEYBOARD: usize, const TAP_HOLD: usize> Data for ArrayData<KEYBOARD, TAP_HOLD> {
+impl<const KEYBOARD: usize, const TAP_HOLD: usize> Keys for KeyArrays<KEYBOARD, TAP_HOLD> {
     type Keyboard = [key::keyboard::Key; KEYBOARD];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
 }
@@ -495,27 +495,27 @@ impl<const KEYBOARD: usize, const TAP_HOLD: usize> Data for ArrayData<KEYBOARD, 
 /// Vec-based data implementations.
 #[derive(Debug)]
 #[cfg(feature = "std")]
-pub struct VecData;
+pub struct KeyVecs;
 
 #[cfg(feature = "std")]
-impl Data for VecData {
+impl Keys for KeyVecs {
     type Keyboard = Vec<key::keyboard::Key>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
 }
 
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<D: Data> {
+pub struct System<D: Keys> {
     keyboard: key::keyboard::System<D::Keyboard>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
     marker: PhantomData<D>,
 }
 
-impl<const KEYBOARD: usize, const TAP_HOLD: usize> System<ArrayData<KEYBOARD, TAP_HOLD>> {
+impl<const KEYBOARD: usize, const TAP_HOLD: usize> System<KeyArrays<KEYBOARD, TAP_HOLD>> {
     /// Constructs a new [System].
     pub const fn array_based(
-        keyboard: key::keyboard::System<<ArrayData<KEYBOARD, TAP_HOLD> as Data>::Keyboard>,
-        tap_hold: key::tap_hold::System<Ref, <ArrayData<KEYBOARD, TAP_HOLD> as Data>::TapHold>,
+        keyboard: key::keyboard::System<<KeyArrays<KEYBOARD, TAP_HOLD> as Keys>::Keyboard>,
+        tap_hold: key::tap_hold::System<Ref, <KeyArrays<KEYBOARD, TAP_HOLD> as Keys>::TapHold>,
     ) -> Self {
         System {
             keyboard,
@@ -526,11 +526,11 @@ impl<const KEYBOARD: usize, const TAP_HOLD: usize> System<ArrayData<KEYBOARD, TA
 }
 
 #[cfg(feature = "std")]
-impl System<VecData> {
+impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
-        keyboard: key::keyboard::System<<VecData as Data>::Keyboard>,
-        tap_hold: key::tap_hold::System<Ref, <VecData as Data>::TapHold>,
+        keyboard: key::keyboard::System<<KeyVecs as Keys>::Keyboard>,
+        tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
     ) -> Self {
         System {
             keyboard,
@@ -540,7 +540,7 @@ impl System<VecData> {
     }
 }
 
-impl<D: Debug + Data> key::System<Ref> for System<D> {
+impl<K: Debug + Keys> key::System<Ref> for System<K> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -617,7 +617,7 @@ impl<D: Debug + Data> key::System<Ref> for System<D> {
             (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
                     let pke =
-                        <key::keyboard::System<D::Keyboard> as key::System<Ref>>::update_state(
+                        <key::keyboard::System<K::Keyboard> as key::System<Ref>>::update_state(
                             &self.keyboard,
                             &mut key_state,
                             key_ref,
@@ -641,7 +641,7 @@ impl<D: Debug + Data> key::System<Ref> for System<D> {
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
-                <key::keyboard::System<D::Keyboard> as key::System<Ref>>::key_output(
+                <key::keyboard::System<K::Keyboard> as key::System<Ref>>::key_output(
                     &self.keyboard,
                     r,
                     ks,

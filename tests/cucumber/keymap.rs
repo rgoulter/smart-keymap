@@ -16,7 +16,7 @@ use smart_keymap_nickel_helper::{
 
 use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
-type System = smart_keymap::key::composite::System<smart_keymap::key::composite::VecData>;
+type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
@@ -124,7 +124,7 @@ impl Default for KeymapWorld {
 }
 
 #[derive(Deserialize, Default)]
-struct KeyData {
+struct KeyVecs {
     #[serde(default)]
     keyboard: Vec<key::keyboard::Key>,
     #[serde(default)]
@@ -136,10 +136,10 @@ struct DocstringKeymap {
     config: key::composite::Config,
     key_refs: Vec<Ref>,
     #[serde(default)]
-    key_data: KeyData,
+    key_data: KeyVecs,
 }
 
-fn system_from_key_data(key_data: KeyData) -> System {
+fn system_from_key_data(key_data: KeyVecs) -> System {
     let keyboard_data = key_data.keyboard;
     let tap_hold_data = key_data.tap_hold;
     System::vec_based(

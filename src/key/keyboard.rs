@@ -94,20 +94,20 @@ pub struct KeyState;
 
 /// The [key::System] implementation for keyboard keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<Data: Index<usize, Output = Key>> {
-    key_data: Data,
+pub struct System<Keys: Index<usize, Output = Key>> {
+    keys: Keys,
 }
 
-impl<Data: Index<usize, Output = Key>> System<Data> {
+impl<Keys: Index<usize, Output = Key>> System<Keys> {
     /// Constructs a new [System] with the given key data.
     ///
     /// The key data is for keys with both key codes and modifiers.
-    pub const fn new(key_data: Data) -> Self {
-        Self { key_data }
+    pub const fn new(key_data: Keys) -> Self {
+        Self { keys: key_data }
     }
 }
 
-impl<R, Data: Debug + Index<usize, Output = Key>> key::System<R> for System<Data> {
+impl<R, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<Keys> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -165,7 +165,7 @@ impl<R, Data: Debug + Index<usize, Output = Key>> key::System<R> for System<Data
                 let Key {
                     key_code,
                     modifiers,
-                } = self.key_data[*idx as usize];
+                } = self.keys[*idx as usize];
                 Some(key::KeyOutput::from_key_code_with_modifiers(
                     key_code, modifiers,
                 ))
