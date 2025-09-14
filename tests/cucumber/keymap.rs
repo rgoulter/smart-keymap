@@ -16,8 +16,7 @@ use smart_keymap_nickel_helper::{
 
 use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
-type System =
-    smart_keymap::key::composite::System<Vec<key::keyboard::Key>, Vec<key::tap_hold::Key<Ref>>>;
+type System = smart_keymap::key::composite::System<smart_keymap::key::composite::VecData>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
@@ -141,12 +140,12 @@ struct DocstringKeymap {
 }
 
 fn system_from_key_data(key_data: KeyData) -> System {
-    let keyboard_data = key_data.keyboard.try_into().unwrap();
-    let tap_hold_data = key_data.tap_hold.try_into().unwrap();
-    System {
-        keyboard: smart_keymap::key::keyboard::System::new(keyboard_data),
-        tap_hold: smart_keymap::key::tap_hold::System::new(tap_hold_data),
-    }
+    let keyboard_data = key_data.keyboard;
+    let tap_hold_data = key_data.tap_hold;
+    System::vec_based(
+        smart_keymap::key::keyboard::System::new(keyboard_data),
+        smart_keymap::key::tap_hold::System::new(tap_hold_data),
+    )
 }
 
 fn load_keymap(keymap_ncl: &str) -> Keymap {

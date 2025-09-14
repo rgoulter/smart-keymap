@@ -2,6 +2,7 @@
 // #![doc = include_str!("doc_de_composite.md")]
 
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::Index;
 
 use serde::Deserialize;
@@ -474,23 +475,72 @@ impl From<key::keyboard::KeyState> for KeyState {
 //     }
 // }
 
-/// Aggregate [key::System] implementation.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<
-    KeyboardData: Index<usize, Output = key::keyboard::Key>,
-    TapHoldData: Index<usize, Output = key::tap_hold::Key<Ref>>,
-> {
-    /// The keyboard key system.
-    pub keyboard: key::keyboard::System<KeyboardData>,
-    /// The tap_hold key system.
-    pub tap_hold: key::tap_hold::System<Ref, TapHoldData>,
+/// Convenience trait for the data storage types.
+pub trait Data {
+    /// Type used by [key::keyboard::System].
+    type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
+    /// Type used by [key::tap_hold::System].
+    type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
 }
 
-impl<
-        KeyboardData: Debug + Index<usize, Output = key::keyboard::Key>,
-        TapHoldData: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>,
-    > key::System<Ref> for System<KeyboardData, TapHoldData>
-{
+/// Array-based data implementations.
+#[derive(Debug)]
+pub struct ArrayData<const KEYBOARD: usize, const TAP_HOLD: usize>;
+
+impl<const KEYBOARD: usize, const TAP_HOLD: usize> Data for ArrayData<KEYBOARD, TAP_HOLD> {
+    type Keyboard = [key::keyboard::Key; KEYBOARD];
+    type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
+}
+
+/// Vec-based data implementations.
+#[derive(Debug)]
+#[cfg(feature = "std")]
+pub struct VecData;
+
+#[cfg(feature = "std")]
+impl Data for VecData {
+    type Keyboard = Vec<key::keyboard::Key>;
+    type TapHold = Vec<key::tap_hold::Key<Ref>>;
+}
+
+/// Aggregate [key::System] implementation.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<D: Data> {
+    keyboard: key::keyboard::System<D::Keyboard>,
+    tap_hold: key::tap_hold::System<Ref, D::TapHold>,
+    marker: PhantomData<D>,
+}
+
+impl<const KEYBOARD: usize, const TAP_HOLD: usize> System<ArrayData<KEYBOARD, TAP_HOLD>> {
+    /// Constructs a new [System].
+    pub const fn array_based(
+        keyboard: key::keyboard::System<<ArrayData<KEYBOARD, TAP_HOLD> as Data>::Keyboard>,
+        tap_hold: key::tap_hold::System<Ref, <ArrayData<KEYBOARD, TAP_HOLD> as Data>::TapHold>,
+    ) -> Self {
+        System {
+            keyboard,
+            tap_hold,
+            marker: PhantomData,
+        }
+    }
+}
+
+#[cfg(feature = "std")]
+impl System<VecData> {
+    /// Constructs a new [System].
+    pub const fn vec_based(
+        keyboard: key::keyboard::System<<VecData as Data>::Keyboard>,
+        tap_hold: key::tap_hold::System<Ref, <VecData as Data>::TapHold>,
+    ) -> Self {
+        System {
+            keyboard,
+            tap_hold,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<D: Debug + Data> key::System<Ref> for System<D> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -567,7 +617,7 @@ impl<
             (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
                     let pke =
-                        <key::keyboard::System<KeyboardData> as key::System<Ref>>::update_state(
+                        <key::keyboard::System<D::Keyboard> as key::System<Ref>>::update_state(
                             &self.keyboard,
                             &mut key_state,
                             key_ref,
@@ -591,7 +641,7 @@ impl<
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
-                <key::keyboard::System<KeyboardData> as key::System<Ref>>::key_output(
+                <key::keyboard::System<D::Keyboard> as key::System<Ref>>::key_output(
                     &self.keyboard,
                     r,
                     ks,

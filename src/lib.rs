@@ -117,7 +117,7 @@ pub mod init {
         Event,
         PendingKeyState,
         KeyState,
-        System<[crate::key::keyboard::Key; DATA_LEN], [crate::key::tap_hold::Key<Ref>; DATA_LEN]>,
+        System<crate::key::composite::ArrayData<DATA_LEN, DATA_LEN>>,
     >;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.

@@ -31,10 +31,10 @@ fn basic_keymap_expression() {
         smart_keymap::keymap::Keymap::new(
             KEY_REFS,
             CONTEXT,
-            smart_keymap::key::composite::System {
-                keyboard: smart_keymap::key::keyboard::System::new([]),
-                tap_hold: smart_keymap::key::tap_hold::System::new([]),
-            },
+            smart_keymap::key::composite::System::array_based(
+                smart_keymap::key::keyboard::System::new([]),
+                smart_keymap::key::tap_hold::System::new([]),
+            ),
         )
     };
     let mut actual_reports = DistinctReports::new();
