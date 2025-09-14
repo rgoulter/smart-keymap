@@ -112,7 +112,7 @@ pub mod init {
 
     /// Alias for the [keymap::Keymap] type.
     pub type Keymap =
-        keymap::Keymap<Ref, Context, Event, PendingKeyState, KeyState, System, KEY_COUNT>;
+        keymap::Keymap<[Ref; KEY_COUNT], Ref, Context, Event, PendingKeyState, KeyState, System>;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
     pub const KEY_DEFINITIONS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];

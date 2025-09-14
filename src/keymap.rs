@@ -7,6 +7,7 @@ pub mod hid_keyboard_reporter;
 use core::cmp::PartialEq;
 use core::fmt::Debug;
 use core::marker::Copy;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -178,8 +179,8 @@ enum CallbackFunction {
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
-pub struct Keymap<R, Ctx, Ev: Debug, PKS, KS, S, const N: usize> {
-    key_refs: [R; N],
+pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
+    key_refs: I,
     key_system: S,
     context: Ctx,
     pressed_inputs: heapless::Vec<input::PressedInput<R, KS>, { MAX_PRESSED_KEYS }>,
@@ -194,14 +195,14 @@ pub struct Keymap<R, Ctx, Ev: Debug, PKS, KS, S, const N: usize> {
 }
 
 impl<
+        I: Debug + Index<usize, Output = R>,
         R: Debug,
         Ctx: Debug,
         Ev: Debug,
         PKS: Debug,
         KS: Debug,
         S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
-        const N: usize,
-    > core::fmt::Debug for Keymap<R, Ctx, Ev, PKS, KS, S, N>
+    > core::fmt::Debug for Keymap<I, R, Ctx, Ev, PKS, KS, S>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Keymap")
@@ -219,19 +220,19 @@ impl<
 }
 
 impl<
+        I: Debug + Index<usize, Output = R>,
         R: Copy + Debug,
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
         Ev: Copy + Debug,
         PKS: Debug,
         KS: Copy + Debug,
         S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
-        const N: usize,
-    > Keymap<R, Ctx, Ev, PKS, KS, S, N>
+    > Keymap<I, R, Ctx, Ev, PKS, KS, S>
 where
     KS: From<key::NoOpKeyState>,
 {
     /// Constructs a new keymap with the given key definitions and context.
-    pub const fn new(key_refs: [R; N], context: Ctx, key_system: S) -> Self {
+    pub const fn new(key_refs: I, context: Ctx, key_system: S) -> Self {
         Self {
             key_refs,
             key_system,
