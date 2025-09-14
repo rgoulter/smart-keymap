@@ -2,6 +2,7 @@
 
 use core::fmt::Debug;
 use core::marker::Copy;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -99,50 +100,6 @@ impl ModifierKey {
         }
     }
 }
-
-// impl key::Key for ModifierKey {
-//     type Context = crate::init::Context;
-//     type Event = crate::init::Event;
-//     type PendingKeyState = crate::init::PendingKeyState;
-//     type KeyState = crate::init::KeyState;
-
-//     fn new_pressed_key(
-//         &self,
-//         _context: &Self::Context,
-//         key_path: key::KeyPath,
-//     ) -> (
-//         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-//         key::KeyEvents<Self::Event>,
-//     ) {
-//         let keymap_index: u16 = key_path.keymap_index();
-//         let (m_ks, lmod_ev) = self.new_pressed_key();
-//         let pks = key::PressedKeyResult::Resolved(m_ks.into());
-//         let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev)).into_events();
-//         (pks, pke)
-//     }
-
-//     fn handle_event(
-//         &self,
-//         _pending_state: &mut Self::PendingKeyState,
-//         _context: &Self::Context,
-//         _key_path: key::KeyPath,
-//         _event: key::Event<Self::Event>,
-//     ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
-//         panic!()
-//     }
-
-//     fn lookup(
-//         &self,
-//         _path: &[u16],
-//     ) -> &dyn key::Key<
-//         Context = Self::Context,
-//         Event = Self::Event,
-//         PendingKeyState = Self::PendingKeyState,
-//         KeyState = Self::KeyState,
-//     > {
-//         self
-//     }
-// }
 
 impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
@@ -371,6 +328,129 @@ impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
     }
 }
 
+/// Events from [ModifierKey] which affect [Context].
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum LayerEvent {
+    /// Activates the given layer.
+    LayerActivated(LayerIndex),
+    /// Deactivates the given layer.
+    LayerDeactivated(LayerIndex),
+    /// Sets the active layers to the given set of layers.
+    LayersSet(LayerBitset),
+    /// Changes the default layer.
+    DefaultLayerSet(LayerIndex),
+}
+
+/// [crate::key::KeyState] of [ModifierKey].
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ModifierKeyState(ModifierKey);
+
+impl ModifierKeyState {
+    /// Handle the given event for the given key.
+    pub fn handle_event(
+        &mut self,
+        keymap_index: u16,
+        event: key::Event<LayerEvent>,
+    ) -> Option<LayerEvent> {
+        let ModifierKeyState(key) = self;
+        match key {
+            ModifierKey::Hold(layer) => match event {
+                key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                    if keymap_index == ki {
+                        Some(LayerEvent::LayerDeactivated(*layer))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
+            ModifierKey::SetActiveLayers(_layer_set) => None,
+            ModifierKey::Default(layer) => match event {
+                key::Event::Input(input::Event::Release { keymap_index: ki }) => {
+                    if keymap_index == ki {
+                        Some(LayerEvent::DefaultLayerSet(*layer))
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            },
+        }
+    }
+}
+
+/// The [key::System] implementation for layer system keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<
+    R: Copy + Debug + PartialEq,
+    ModifierKeys: Index<usize, Output = ModifierKey>,
+    LayeredKeys: Index<usize, Output = LayeredKey<R>>,
+> {
+    modifier_keys: ModifierKeys,
+    layered_keys: LayeredKeys,
+}
+
+impl<
+        R: Copy + Debug + PartialEq,
+        ModifierKeys: Index<usize, Output = ModifierKey>,
+        LayeredKeys: Index<usize, Output = LayeredKey<R>>,
+    > System<R, ModifierKeys, LayeredKeys>
+{
+    /// Constructs a new [System] with the given key data.
+    ///
+    /// The key data is for keys with both key codes and modifiers.
+    pub const fn new(modifier_keys: ModifierKeys, layered_keys: LayeredKeys) -> Self {
+        Self {
+            modifier_keys,
+            layered_keys,
+        }
+    }
+}
+
+// impl key::Key for ModifierKey {
+//     type Context = crate::init::Context;
+//     type Event = crate::init::Event;
+//     type PendingKeyState = crate::init::PendingKeyState;
+//     type KeyState = crate::init::KeyState;
+
+//     fn new_pressed_key(
+//         &self,
+//         _context: &Self::Context,
+//         key_path: key::KeyPath,
+//     ) -> (
+//         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+//         key::KeyEvents<Self::Event>,
+//     ) {
+//         let keymap_index: u16 = key_path.keymap_index();
+//         let (m_ks, lmod_ev) = self.new_pressed_key();
+//         let pks = key::PressedKeyResult::Resolved(m_ks.into());
+//         let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev)).into_events();
+//         (pks, pke)
+//     }
+
+//     fn handle_event(
+//         &self,
+//         _pending_state: &mut Self::PendingKeyState,
+//         _context: &Self::Context,
+//         _key_path: key::KeyPath,
+//         _event: key::Event<Self::Event>,
+//     ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+//         panic!()
+//     }
+
+//     fn lookup(
+//         &self,
+//         _path: &[u16],
+//     ) -> &dyn key::Key<
+//         Context = Self::Context,
+//         Event = Self::Event,
+//         PendingKeyState = Self::PendingKeyState,
+//         KeyState = Self::KeyState,
+//     > {
+//         self
+//     }
+// }
+
 // impl<
 //         K: key::Key<
 //                 Context = crate::init::Context,
@@ -427,56 +507,72 @@ impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
 //     }
 // }
 
-/// Events from [ModifierKey] which affect [Context].
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
-pub enum LayerEvent {
-    /// Activates the given layer.
-    LayerActivated(LayerIndex),
-    /// Deactivates the given layer.
-    LayerDeactivated(LayerIndex),
-    /// Sets the active layers to the given set of layers.
-    LayersSet(LayerBitset),
-    /// Changes the default layer.
-    DefaultLayerSet(LayerIndex),
-}
+// impl<R, Data: Debug + Index<usize, Output = Key>> key::System<R> for System<Data> {
+//     type Ref = Ref;
+//     type Context = Context;
+//     type Event = Event;
+//     type PendingKeyState = PendingKeyState;
+//     type KeyState = KeyState;
 
-/// [crate::key::KeyState] of [ModifierKey].
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ModifierKeyState(ModifierKey);
+//     fn new_pressed_key(
+//         &self,
+//         _keymap_index: u16,
+//         _context: &Self::Context,
+//         _key_ref: Ref,
+//     ) -> (
+//         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
+//         key::KeyEvents<Self::Event>,
+//     ) {
+//         let k_ks = KeyState;
+//         let pks = key::PressedKeyResult::Resolved(k_ks.into());
+//         let pke = key::KeyEvents::no_events();
+//         (pks, pke)
+//     }
 
-impl ModifierKeyState {
-    /// Handle the given event for the given key.
-    pub fn handle_event(
-        &mut self,
-        keymap_index: u16,
-        event: key::Event<LayerEvent>,
-    ) -> Option<LayerEvent> {
-        let ModifierKeyState(key) = self;
-        match key {
-            ModifierKey::Hold(layer) => match event {
-                key::Event::Input(input::Event::Release { keymap_index: ki }) => {
-                    if keymap_index == ki {
-                        Some(LayerEvent::LayerDeactivated(*layer))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
-            ModifierKey::SetActiveLayers(_layer_set) => None,
-            ModifierKey::Default(layer) => match event {
-                key::Event::Input(input::Event::Release { keymap_index: ki }) => {
-                    if keymap_index == ki {
-                        Some(LayerEvent::DefaultLayerSet(*layer))
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
-        }
-    }
-}
+//     fn update_pending_state(
+//         &self,
+//         _pending_state: &mut Self::PendingKeyState,
+//         _keymap_index: u16,
+//         _context: &Self::Context,
+//         _key_ref: Ref,
+//         _event: key::Event<Self::Event>,
+//     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
+//         panic!()
+//     }
+
+//     fn update_state(
+//         &self,
+//         _key_state: &mut Self::KeyState,
+//         _ref: &Self::Ref,
+//         _context: &Self::Context,
+//         _keymap_index: u16,
+//         _event: key::Event<Self::Event>,
+//     ) -> key::KeyEvents<Self::Event> {
+//         key::KeyEvents::no_events()
+//     }
+
+//     fn key_output(
+//         &self,
+//         key_ref: &Self::Ref,
+//         _key_state: &Self::KeyState,
+//     ) -> Option<key::KeyOutput> {
+//         match key_ref {
+//             Ref::KeyCode(kc) => Some(key::KeyOutput::from_key_code(*kc)),
+//             Ref::Modifiers(m) => Some(key::KeyOutput::from_key_modifiers(
+//                 key::KeyboardModifiers::from_byte(*m),
+//             )),
+//             Ref::KeyCodeAndModifier(idx) => {
+//                 let Key {
+//                     key_code,
+//                     modifiers,
+//                 } = self.key_data[*idx as usize];
+//                 Some(key::KeyOutput::from_key_code_with_modifiers(
+//                     key_code, modifiers,
+//                 ))
+//             }
+//         }
+//     }
+// }
 
 // #[cfg(test)]
 // mod tests {
