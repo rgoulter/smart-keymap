@@ -341,6 +341,10 @@ pub enum LayerEvent {
     DefaultLayerSet(LayerIndex),
 }
 
+/// Struct for layer system pending key state. (No pending state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PendingKeyState;
+
 /// [crate::key::KeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ModifierKeyState(ModifierKey);
@@ -507,72 +511,60 @@ impl<
 //     }
 // }
 
-// impl<R, Data: Debug + Index<usize, Output = Key>> key::System<R> for System<Data> {
-//     type Ref = Ref;
-//     type Context = Context;
-//     type Event = Event;
-//     type PendingKeyState = PendingKeyState;
-//     type KeyState = KeyState;
+impl<
+        R: Copy + Debug + PartialEq,
+        ModifierKeys: Debug + Index<usize, Output = ModifierKey>,
+        LayeredKeys: Debug + Index<usize, Output = LayeredKey<R>>,
+    > key::System<R> for System<R, ModifierKeys, LayeredKeys>
+{
+    type Ref = Ref;
+    type Context = Context;
+    type Event = LayerEvent;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = ModifierKeyState;
 
-//     fn new_pressed_key(
-//         &self,
-//         _keymap_index: u16,
-//         _context: &Self::Context,
-//         _key_ref: Ref,
-//     ) -> (
-//         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
-//         key::KeyEvents<Self::Event>,
-//     ) {
-//         let k_ks = KeyState;
-//         let pks = key::PressedKeyResult::Resolved(k_ks.into());
-//         let pke = key::KeyEvents::no_events();
-//         (pks, pke)
-//     }
+    fn new_pressed_key(
+        &self,
+        _keymap_index: u16,
+        _context: &Self::Context,
+        _key_ref: Ref,
+    ) -> (
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        todo!()
+    }
 
-//     fn update_pending_state(
-//         &self,
-//         _pending_state: &mut Self::PendingKeyState,
-//         _keymap_index: u16,
-//         _context: &Self::Context,
-//         _key_ref: Ref,
-//         _event: key::Event<Self::Event>,
-//     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-//         panic!()
-//     }
+    fn update_pending_state(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _keymap_index: u16,
+        _context: &Self::Context,
+        _key_ref: Ref,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
+        panic!()
+    }
 
-//     fn update_state(
-//         &self,
-//         _key_state: &mut Self::KeyState,
-//         _ref: &Self::Ref,
-//         _context: &Self::Context,
-//         _keymap_index: u16,
-//         _event: key::Event<Self::Event>,
-//     ) -> key::KeyEvents<Self::Event> {
-//         key::KeyEvents::no_events()
-//     }
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        todo!()
+    }
 
-//     fn key_output(
-//         &self,
-//         key_ref: &Self::Ref,
-//         _key_state: &Self::KeyState,
-//     ) -> Option<key::KeyOutput> {
-//         match key_ref {
-//             Ref::KeyCode(kc) => Some(key::KeyOutput::from_key_code(*kc)),
-//             Ref::Modifiers(m) => Some(key::KeyOutput::from_key_modifiers(
-//                 key::KeyboardModifiers::from_byte(*m),
-//             )),
-//             Ref::KeyCodeAndModifier(idx) => {
-//                 let Key {
-//                     key_code,
-//                     modifiers,
-//                 } = self.key_data[*idx as usize];
-//                 Some(key::KeyOutput::from_key_code_with_modifiers(
-//                     key_code, modifiers,
-//                 ))
-//             }
-//         }
-//     }
-// }
+    fn key_output(
+        &self,
+        key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        todo!()
+    }
+}
 
 // #[cfg(test)]
 // mod tests {
