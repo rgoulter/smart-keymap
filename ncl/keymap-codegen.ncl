@@ -889,10 +889,10 @@ let validators = import "validators.ncl" in
       is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { base, layered } =>
-        let base_cv = base |> key.codegen_values |> layered_nestable.wrap in
+        let base_cv = base |> key.codegen_values in
         let non_null_layered = std.array.filter ((!=) null) layered in
         let layered_cvs =
-          std.array.map (fun k => if k != null then k |> key.codegen_values |> layered_nestable.wrap else null) layered
+          std.array.map (fun k => if k != null then k |> key.codegen_values else null) layered
         in
         let nn_layered_cvs =
           std.array.filter ((!=) null) layered_cvs
@@ -902,10 +902,8 @@ let validators = import "validators.ncl" in
 
         {
           nested = {
-            base = base_cv |> key.lift_to target_type,
-            layered =
-              layered_cvs
-              |> std.array.map (fun cv => if cv != null then cv |> key.lift_to target_type else null),
+            base = base_cv,
+            layered = layered_cvs,
           },
           key_type = {
             key_type = "smart_keymap::key::layered::LayeredKey",
@@ -953,11 +951,11 @@ let validators = import "validators.ncl" in
           std.array.fold_left
             (fun { key_data, layered_refs = parts } cv =>
               if cv == null then
-                { key_data, layered_refs = std.array.append null parts }
+                { include key_data, layered_refs = std.array.append null parts }
               else
                 let { key_data, ref = layer_ref } = key.data_and_ref key_data cv in
                 let layer_ref = layer_ref |> composite.ref.wrap in
-                { key_data, layered_refs = std.array.append layer_ref parts }
+                { include key_data, layered_refs = std.array.append layer_ref parts }
             )
             { include key_data, layered_refs = [] }
             layered_cvs
@@ -970,14 +968,14 @@ let validators = import "validators.ncl" in
             layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
           },
           rust_expr = m%"
-            %{module}::LayeredKey {
-              base: %{base_ref.rust_expr},
-              layered: [%{
+            %{module}::LayeredKey::new(
+              %{base_ref.rust_expr},
+              [%{
                 layered_refs
                 |> std.array.map (fun layer_ref => if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})")
                 |> std.string.join ", "
               }],
-            }
+            )
           "%,
         }
         in
