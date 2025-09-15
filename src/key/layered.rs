@@ -317,9 +317,9 @@ impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
 
 impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
     /// Presses the key, using the highest active key, if any.
-    fn new_pressed_key(&self, context: &Context, key_path: key::KeyPath) -> key::NewPressedKey<R> {
+    fn new_pressed_key(&self, context: &Context) -> key::NewPressedKey<R> {
         let layer_context: &Context = context.into();
-        let (layer, passthrough_ref) = self
+        let (_layer, passthrough_ref) = self
             .layered
             .highest_active_key(layer_context.layer_state(), layer_context.default_layer)
             .unwrap_or((0, &self.base));
@@ -411,106 +411,6 @@ impl<
     }
 }
 
-// impl key::Key for ModifierKey {
-//     type Context = crate::init::Context;
-//     type Event = crate::init::Event;
-//     type PendingKeyState = crate::init::PendingKeyState;
-//     type KeyState = crate::init::KeyState;
-
-//     fn new_pressed_key(
-//         &self,
-//         _context: &Self::Context,
-//         key_path: key::KeyPath,
-//     ) -> (
-//         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-//         key::KeyEvents<Self::Event>,
-//     ) {
-//         let keymap_index: u16 = key_path.keymap_index();
-//         let (m_ks, lmod_ev) = self.new_pressed_key();
-//         let pks = key::PressedKeyResult::Resolved(m_ks.into());
-//         let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev)).into_events();
-//         (pks, pke)
-//     }
-
-//     fn handle_event(
-//         &self,
-//         _pending_state: &mut Self::PendingKeyState,
-//         _context: &Self::Context,
-//         _key_path: key::KeyPath,
-//         _event: key::Event<Self::Event>,
-//     ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
-//         panic!()
-//     }
-
-//     fn lookup(
-//         &self,
-//         _path: &[u16],
-//     ) -> &dyn key::Key<
-//         Context = Self::Context,
-//         Event = Self::Event,
-//         PendingKeyState = Self::PendingKeyState,
-//         KeyState = Self::KeyState,
-//     > {
-//         self
-//     }
-// }
-
-// impl<
-//         K: key::Key<
-//                 Context = crate::init::Context,
-//                 Event = crate::init::Event,
-//                 PendingKeyState = crate::init::PendingKeyState,
-//                 KeyState = crate::init::KeyState,
-//             > + Copy
-//             + PartialEq,
-//     > key::Key for LayeredKey<K>
-// {
-//     type Context = crate::init::Context;
-//     type Event = crate::init::Event;
-//     type PendingKeyState = crate::init::PendingKeyState;
-//     type KeyState = crate::init::KeyState;
-
-//     fn new_pressed_key(
-//         &self,
-//         context: &Self::Context,
-//         key_path: key::KeyPath,
-//     ) -> (
-//         key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-//         key::KeyEvents<Self::Event>,
-//     ) {
-//         self.new_pressed_key(context, key_path)
-//     }
-
-//     fn handle_event(
-//         &self,
-//         _pending_state: &mut Self::PendingKeyState,
-//         _context: &Self::Context,
-//         _key_path: key::KeyPath,
-//         _event: key::Event<Self::Event>,
-//     ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
-//         panic!()
-//     }
-
-//     fn lookup(
-//         &self,
-//         path: &[u16],
-//     ) -> &dyn key::Key<
-//         Context = Self::Context,
-//         Event = Self::Event,
-//         PendingKeyState = Self::PendingKeyState,
-//         KeyState = Self::KeyState,
-//     > {
-//         match path {
-//             [] => self,
-//             [0, path @ ..] => self.base.lookup(path),
-//             [layer_index, path @ ..] => self.layered[(layer_index - 1) as usize]
-//                 .as_ref()
-//                 .unwrap()
-//                 .lookup(path),
-//         }
-//     }
-// }
-
 impl<
         R: Copy + Debug + PartialEq,
         ModifierKeys: Debug + Index<usize, Output = ModifierKey>,
@@ -525,14 +425,30 @@ impl<
 
     fn new_pressed_key(
         &self,
-        _keymap_index: u16,
-        _context: &Self::Context,
-        _key_ref: Ref,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
     ) -> (
         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        todo!()
+        match key_ref {
+            Ref::Modifier(i) => {
+                let key = self.modifier_keys[i as usize];
+                let (m_ks, lmod_ev) = key.new_pressed_key();
+                let pks = key::PressedKeyResult::Resolved(m_ks);
+                let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev));
+                (pks, pke)
+            }
+            Ref::Layered(i) => {
+                let key = &self.layered_keys[i as usize];
+                let npk = key.new_pressed_key(context);
+                (
+                    key::PressedKeyResult::NewPressedKey(npk),
+                    key::KeyEvents::no_events(),
+                )
+            }
+        }
     }
 
     fn update_pending_state(
@@ -554,15 +470,15 @@ impl<
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        todo!()
+        key::KeyEvents::no_events()
     }
 
     fn key_output(
         &self,
-        key_ref: &Self::Ref,
+        _key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        todo!()
+        None
     }
 }
 
