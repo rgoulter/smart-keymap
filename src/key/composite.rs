@@ -97,7 +97,7 @@ impl Default for Context {
 
 impl key::Context for Context {
     type Event = Event;
-    fn handle_event(&mut self, _event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         // let mut pke = key::KeyEvents::no_events();
         let pke = key::KeyEvents::no_events();
 
@@ -113,13 +113,13 @@ impl key::Context for Context {
         //     self.chorded_context.handle_event(e);
         // }
 
-        // if let key::Event::Key {
-        //     key_event: Event::LayerModification(ev),
-        //     ..
-        // } = event
-        // {
-        //     self.layer_context.handle_event(ev);
-        // }
+        if let key::Event::Key {
+            key_event: Event::LayerModification(ev),
+            ..
+        } = event
+        {
+            self.layered.handle_event(ev);
+        }
 
         pke
     }
