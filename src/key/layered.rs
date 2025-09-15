@@ -464,13 +464,21 @@ impl<
 
     fn update_state(
         &self,
-        _key_state: &mut Self::KeyState,
-        _ref: &Self::Ref,
+        key_state: &mut Self::KeyState,
+        key_ref: &Self::Ref,
         _context: &Self::Context,
-        _keymap_index: u16,
-        _event: key::Event<Self::Event>,
+        keymap_index: u16,
+        event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        key::KeyEvents::no_events()
+        match key_ref {
+            Ref::Modifier(_key_ref) => {
+                let maybe_ev = key_state.handle_event(keymap_index, event);
+                maybe_ev.map_or(key::KeyEvents::no_events(), |ev| {
+                    key::KeyEvents::event(key::Event::key_event(keymap_index, ev))
+                })
+            }
+            _ => key::KeyEvents::no_events(),
+        }
     }
 
     fn key_output(
