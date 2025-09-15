@@ -227,7 +227,7 @@ pub trait Layers<R>: Copy + Debug {
         &self,
         layer_state: &LS,
         default_layer: Option<LayerIndex>,
-    ) -> Option<(LayerIndex, &R)>;
+    ) -> Option<(LayerIndex, R)>;
     /// Constructs layers; return Err if the iterable has more keys than Layers can store.
     fn from_iterable<I: IntoIterator<Item = Option<R>>>(keys: I) -> Result<Self, LayersError>;
 }
@@ -237,16 +237,16 @@ impl<R: Copy + Debug, const L: usize> Layers<R> for [Option<R>; L] {
         &self,
         layer_state: &LS,
         default_layer: Option<LayerIndex>,
-    ) -> Option<(LayerIndex, &R)> {
+    ) -> Option<(LayerIndex, R)> {
         for layer_index in layer_state.active_layers() {
             if self[layer_index - 1].is_some() {
-                return self[layer_index - 1].as_ref().map(|k| (layer_index, k));
+                return self[layer_index - 1].map(|k| (layer_index, k));
             }
         }
 
         match default_layer {
             Some(layer_index) if self[layer_index - 1].is_some() => {
-                self[layer_index - 1].as_ref().map(|k| (layer_index, k))
+                self[layer_index - 1].map(|k| (layer_index, k))
             }
             _ => None,
         }
@@ -322,9 +322,9 @@ impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
         let (_layer, passthrough_ref) = self
             .layered
             .highest_active_key(layer_context.layer_state(), layer_context.default_layer)
-            .unwrap_or((0, &self.base));
+            .unwrap_or((0, self.base));
 
-        key::NewPressedKey::key(*passthrough_ref)
+        key::NewPressedKey::key(passthrough_ref)
     }
 }
 
