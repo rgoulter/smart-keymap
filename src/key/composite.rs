@@ -16,6 +16,8 @@ pub enum Ref {
     Keyboard(key::keyboard::Ref),
     /// [key::tap_hold::Ref] variant.
     TapHold(key::tap_hold::Ref),
+    /// [key::layered::Ref] variant.
+    Layered(key::layered::Ref),
 }
 
 #[cfg(feature = "std")]
@@ -56,7 +58,7 @@ pub struct Context {
     keymap_context: keymap::KeymapContext,
     // caps_word_context: key::caps_word::Context,
     // chorded_context: key::chorded::Context,
-    // layer_context: key::layered::Context,
+    layered: key::layered::Context,
     // tap_dance_context: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
     // sticky_context: key::sticky::Context,
@@ -67,7 +69,7 @@ pub const DEFAULT_CONTEXT: Context = Context {
     keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
     // caps_word_context: key::caps_word::DEFAULT_CONTEXT,
     // chorded_context: key::chorded::DEFAULT_CONTEXT,
-    // layer_context: key::layered::DEFAULT_CONTEXT,
+    layered: key::layered::DEFAULT_CONTEXT,
     // sticky_context: key::sticky::DEFAULT_CONTEXT,
     // tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
     tap_hold: key::tap_hold::DEFAULT_CONTEXT,
@@ -155,11 +157,11 @@ impl<'c> From<&'c Context> for &'c key::keyboard::Context {
 //     }
 // }
 
-// impl<'c> From<&'c Context> for &'c key::layered::Context {
-//     fn from(ctx: &'c Context) -> Self {
-//         &ctx.layer_context
-//     }
-// }
+impl<'c> From<&'c Context> for &'c key::layered::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.layered
+    }
+}
 
 // impl<'c> From<&'c Context> for &'c key::sticky::Context {
 //     fn from(ctx: &'c Context) -> Self {
@@ -192,8 +194,8 @@ pub enum Event {
     // TapDance(key::tap_dance::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
-    // /// A layer modification event.
-    // LayerModification(key::layered::LayerEvent),
+    /// A layer modification event.
+    LayerModification(key::layered::LayerEvent),
 }
 
 impl From<key::keyboard::Event> for Event {
@@ -214,11 +216,11 @@ impl From<key::keyboard::Event> for Event {
 //     }
 // }
 
-// impl From<key::layered::LayerEvent> for Event {
-//     fn from(ev: key::layered::LayerEvent) -> Self {
-//         Event::LayerModification(ev)
-//     }
-// }
+impl From<key::layered::LayerEvent> for Event {
+    fn from(ev: key::layered::LayerEvent) -> Self {
+        Event::LayerModification(ev)
+    }
+}
 
 // impl From<key::sticky::Event> for Event {
 //     fn from(ev: key::sticky::Event) -> Self {
@@ -268,16 +270,16 @@ impl TryFrom<Event> for key::keyboard::Event {
 //     }
 // }
 
-// impl TryFrom<Event> for key::layered::LayerEvent {
-//     type Error = key::EventError;
+impl TryFrom<Event> for key::layered::LayerEvent {
+    type Error = key::EventError;
 
-//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
-//         match ev {
-//             Event::LayerModification(ev) => Ok(ev),
-//             _ => Err(key::EventError::UnmappableEvent),
-//         }
-//     }
-// }
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::LayerModification(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
 
 // impl TryFrom<Event> for key::sticky::Event {
 //     type Error = key::EventError;
@@ -341,6 +343,12 @@ impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     }
 }
 
+impl From<key::layered::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::layered::PendingKeyState) -> Self {
+        panic!("key::layered has no pending state")
+    }
+}
+
 // impl From<key::chorded::PendingKeyState> for PendingKeyState {
 //     fn from(pks: key::chorded::PendingKeyState) -> Self {
 //         PendingKeyState::Chorded(pks)
@@ -387,8 +395,8 @@ pub enum KeyState {
     NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
     /// Key state for [key::keyboard::KeyState].
     Keyboard(key::keyboard::KeyState),
-    // /// Key state for [key::layered::ModifierKeyState].
-    // LayerModifier(key::layered::ModifierKeyState),
+    /// Key state for [key::layered::ModifierKeyState].
+    LayerModifier(key::layered::ModifierKeyState),
     // /// Key state for [key::sticky::KeyState].
     // Sticky(key::sticky::KeyState),
     // /// Key state for [key::custom::KeyState].
@@ -407,11 +415,11 @@ impl From<key::keyboard::KeyState> for KeyState {
     }
 }
 
-// impl From<key::layered::ModifierKeyState> for KeyState {
-//     fn from(ks: key::layered::ModifierKeyState) -> Self {
-//         KeyState::LayerModifier(ks)
-//     }
-// }
+impl From<key::layered::ModifierKeyState> for KeyState {
+    fn from(ks: key::layered::ModifierKeyState) -> Self {
+        KeyState::LayerModifier(ks)
+    }
+}
 
 // impl From<key::sticky::KeyState> for KeyState {
 //     fn from(ks: key::sticky::KeyState) -> Self {
@@ -481,15 +489,32 @@ pub trait Keys {
     type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
     /// Type used by [key::tap_hold::System].
     type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
+    /// Type used by [key::layered::System].
+    type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
+    /// Type used by [key::layered::System].
+    type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref>>;
 }
 
 /// Array-based data implementations.
 #[derive(Debug)]
-pub struct KeyArrays<const KEYBOARD: usize, const TAP_HOLD: usize>;
+pub struct KeyArrays<
+    const KEYBOARD: usize,
+    const TAP_HOLD: usize,
+    const LAYER_MODIFIERS: usize,
+    const LAYERED: usize,
+>;
 
-impl<const KEYBOARD: usize, const TAP_HOLD: usize> Keys for KeyArrays<KEYBOARD, TAP_HOLD> {
+impl<
+        const KEYBOARD: usize,
+        const TAP_HOLD: usize,
+        const LAYER_MODIFIERS: usize,
+        const LAYERED: usize,
+    > Keys for KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED>
+{
     type Keyboard = [key::keyboard::Key; KEYBOARD];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
+    type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
+    type Layered = [key::layered::LayeredKey<Ref>; LAYERED];
 }
 
 /// Vec-based data implementations.
@@ -501,6 +526,8 @@ pub struct KeyVecs;
 impl Keys for KeyVecs {
     type Keyboard = Vec<key::keyboard::Key>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
+    type LayerModifiers = Vec<key::layered::ModifierKey>;
+    type Layered = Vec<key::layered::LayeredKey<Ref>>;
 }
 
 /// Aggregate [key::System] implementation.
@@ -508,18 +535,31 @@ impl Keys for KeyVecs {
 pub struct System<D: Keys> {
     keyboard: key::keyboard::System<D::Keyboard>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
+    layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
     marker: PhantomData<D>,
 }
 
-impl<const KEYBOARD: usize, const TAP_HOLD: usize> System<KeyArrays<KEYBOARD, TAP_HOLD>> {
+impl<
+        const KEYBOARD: usize,
+        const TAP_HOLD: usize,
+        const LAYER_MODIFIERS: usize,
+        const LAYERED: usize,
+    > System<KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED>>
+{
     /// Constructs a new [System].
     pub const fn array_based(
-        keyboard: key::keyboard::System<<KeyArrays<KEYBOARD, TAP_HOLD> as Keys>::Keyboard>,
-        tap_hold: key::tap_hold::System<Ref, <KeyArrays<KEYBOARD, TAP_HOLD> as Keys>::TapHold>,
+        keyboard: key::keyboard::System<[key::keyboard::Key; KEYBOARD]>,
+        tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
+        layered: key::layered::System<
+            Ref,
+            [key::layered::ModifierKey; LAYER_MODIFIERS],
+            [key::layered::LayeredKey<Ref>; LAYERED],
+        >,
     ) -> Self {
         System {
             keyboard,
             tap_hold,
+            layered,
             marker: PhantomData,
         }
     }
@@ -531,10 +571,16 @@ impl System<KeyVecs> {
     pub const fn vec_based(
         keyboard: key::keyboard::System<<KeyVecs as Keys>::Keyboard>,
         tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
+        layered: key::layered::System<
+            Ref,
+            <KeyVecs as Keys>::LayerModifiers,
+            <KeyVecs as Keys>::Layered,
+        >,
     ) -> Self {
         System {
             keyboard,
             tap_hold,
+            layered,
             marker: PhantomData,
         }
     }
@@ -570,6 +616,15 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 let (pkr, pke) =
                     self.tap_hold
                         .new_pressed_key(keymap_index, &context.tap_hold, key_ref);
+                (
+                    pkr.map(Into::into, |_| panic!()),
+                    pke.map_events(Into::into),
+                )
+            }
+            Ref::Layered(key_ref) => {
+                let (pkr, pke) =
+                    self.layered
+                        .new_pressed_key(keymap_index, &context.layered, key_ref);
                 (
                     pkr.map(Into::into, |_| panic!()),
                     pke.map_events(Into::into),
