@@ -685,6 +685,24 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     key::KeyEvents::no_events()
                 }
             }
+            (Ref::Layered(key_ref), KeyState::LayerModifier(mut key_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                    let pke =
+                        <key::layered::System<Ref, K::LayerModifiers, K::Layered> as key::System<
+                            Ref,
+                        >>::update_state(
+                            &self.layered,
+                            &mut key_state,
+                            key_ref,
+                            context.into(),
+                            keymap_index,
+                            event,
+                        );
+                    pke.map_events(Into::into)
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
             (_, _) => key::KeyEvents::no_events(),
         }
     }
