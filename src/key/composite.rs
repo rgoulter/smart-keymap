@@ -626,7 +626,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     self.layered
                         .new_pressed_key(keymap_index, &context.layered, key_ref);
                 (
-                    pkr.map(Into::into, |_| panic!()),
+                    pkr.map(Into::into, KeyState::LayerModifier),
                     pke.map_events(Into::into),
                 )
             }
@@ -685,7 +685,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     key::KeyEvents::no_events()
                 }
             }
-            (_, _) => panic!("Mismatched key_ref and key_state variants"),
+            (_, _) => key::KeyEvents::no_events(),
         }
     }
 
@@ -702,7 +702,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     ks,
                 )
             }
-            (_, _) => panic!("Mismatched key_ref and key_state variants"),
+            (_, _) => None,
         }
     }
 }
