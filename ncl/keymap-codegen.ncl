@@ -419,7 +419,7 @@ let validators = import "validators.ncl" in
           ref = {
             include module,
             variant = "Modifier",
-            json = new_index,
+            json = { "%{variant}" = new_index},
             rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
           },
         },
@@ -984,7 +984,7 @@ let validators = import "validators.ncl" in
           ref = {
             include module,
             variant = "Layered",
-            json = new_index,
+            json = { "%{variant}" = new_index},
             rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
           },
         },
