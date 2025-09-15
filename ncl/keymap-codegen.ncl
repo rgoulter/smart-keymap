@@ -418,8 +418,8 @@ let validators = import "validators.ncl" in
           key_data = other_data & { layer_modifiers = std.array.append new_key layer_modifiers_ },
           ref = {
             include module,
+            variant = "Modifier",
             json = new_index,
-            variant = cv.variant,
             rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
           },
         },
@@ -860,6 +860,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::layered",
+
       # c.f. doc_de_layered.md.
       # e.g.:
       # ```
@@ -943,6 +945,51 @@ let validators = import "validators.ncl" in
           (fun acc nested_cv => key.traverse f acc nested_cv)
           acc
           nn_layered_cvs,
+
+      data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
+        let { key_data, ref = base_ref } = key.data_and_ref key_data base_cv in
+        let base_ref = base_ref |> composite.ref.wrap in
+        let { key_data, layered_refs } =
+          std.array.fold_left
+            (fun { key_data, layered_refs = parts } cv =>
+              if cv == null then
+                { key_data, layered_refs = std.array.append null parts }
+              else
+                let { key_data, ref = layer_ref } = key.data_and_ref key_data cv in
+                let layer_ref = layer_ref |> composite.ref.wrap in
+                { key_data, layered_refs = std.array.append layer_ref parts }
+            )
+            { include key_data, layered_refs = [] }
+            layered_cvs
+        in
+        let { layered = layered_, ..other_data } = key_data & { layered | default = [] } in
+        let new_index = std.array.length layered_ in
+        let new_key = {
+          json = {
+            base = base_ref.json,
+            layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
+          },
+          rust_expr = m%"
+            %{module}::LayeredKey {
+              base: %{base_ref.rust_expr},
+              layered: [%{
+                layered_refs
+                |> std.array.map (fun layer_ref => if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})")
+                |> std.string.join ", "
+              }],
+            }
+          "%,
+        }
+        in
+        {
+          key_data = other_data & { layered = std.array.append new_key layered_ },
+          ref = {
+            include module,
+            variant = "Layered",
+            json = new_index,
+            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+          },
+        },
     },
 
   # Related to key::composite::ChordedNestable trait.
