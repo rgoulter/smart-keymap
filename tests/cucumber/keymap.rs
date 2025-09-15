@@ -129,6 +129,10 @@ struct KeyVecs {
     keyboard: Vec<key::keyboard::Key>,
     #[serde(default)]
     tap_hold: Vec<key::tap_hold::Key<Ref>>,
+    #[serde(default)]
+    layer_modifiers: Vec<key::layered::ModifierKey>,
+    #[serde(default)]
+    layered: Vec<key::layered::LayeredKey<Ref>>,
 }
 
 #[derive(Deserialize)]
@@ -139,12 +143,11 @@ struct DocstringKeymap {
     key_data: KeyVecs,
 }
 
-fn system_from_key_data(key_data: KeyVecs) -> System {
-    let keyboard_data = key_data.keyboard;
-    let tap_hold_data = key_data.tap_hold;
+fn system_from_key_data(keys: KeyVecs) -> System {
     System::vec_based(
-        smart_keymap::key::keyboard::System::new(keyboard_data),
-        smart_keymap::key::tap_hold::System::new(tap_hold_data),
+        smart_keymap::key::keyboard::System::new(keys.keyboard),
+        smart_keymap::key::tap_hold::System::new(keys.tap_hold),
+        smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
     )
 }
 
