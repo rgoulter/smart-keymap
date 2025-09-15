@@ -1757,12 +1757,28 @@ let validators = import "validators.ncl" in
         ])
       "%
       in
+      let layered_system_expr =
+        let layer_modifiers_data = (key_data & { layer_modifiers | default = [] }).layer_modifiers in
+        let layered_data = (key_data & { layered | default = [] }).layered in
+        m%"
+        smart_keymap::key::layered::System::new(
+          [
+            %{layer_modifiers_data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}
+          ],
+          [
+            %{layered_data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}
+          ],
+        )
+      "%
+      in
       let key_system_expr = m%"
         smart_keymap::key::composite::System::array_based(
           %{keyboard_system_expr},
           %{tap_hold_system_expr},
+          %{layered_system_expr},
         )
-      "% in
+      "%
+      in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       {
         # config = m%"smart_keymap::key::composite::Config {
