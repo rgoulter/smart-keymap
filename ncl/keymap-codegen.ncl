@@ -335,6 +335,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::layered",
+
       # c.f. doc_de_layered.md.
       # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer), SetActiveLayers([layer, ...]).
       json_value_validator =
@@ -364,6 +366,7 @@ let validators = import "validators.ncl" in
               key_impl = {
                 base = key_type.key_type,
               },
+              variant = "Default",
               rust_expr = "smart_keymap::key::layered::ModifierKey::default(%{std.to_string layer_index})",
               json_value = k,
             },
@@ -376,6 +379,7 @@ let validators = import "validators.ncl" in
               key_impl = {
                 base = key_type.key_type,
               },
+              variant = "Hold",
               rust_expr = "smart_keymap::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
               json_value = k,
             },
@@ -388,6 +392,7 @@ let validators = import "validators.ncl" in
               key_impl = {
                 base = key_type.key_type,
               },
+              variant = "SetActiveLayers",
               rust_expr = "smart_keymap::key::layered::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
               json_value = k,
             },
@@ -400,6 +405,24 @@ let validators = import "validators.ncl" in
           cv,
 
       traverse = fun f acc cv => f acc cv,
+
+      data_and_ref = fun key_data cv @ { json_value = k, .. } =>
+        let { layer_modifiers = layer_modifiers_, ..other_data } = key_data & { layer_modifiers | default = [] } in
+        let new_index = std.array.length layer_modifiers_ in
+        let new_key = {
+          json = k,
+          rust_expr = cv.rust_expr,
+        }
+        in
+        {
+          key_data = other_data & { layer_modifiers = std.array.append new_key layer_modifiers_ },
+          ref = {
+            include module,
+            json = new_index,
+            variant = cv.variant,
+            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+          },
+        },
     },
 
   keymap_callback
@@ -1121,23 +1144,20 @@ let validators = import "validators.ncl" in
   composite = {
     ref = {
       wrap = fun ref @ { module, json, rust_expr, .. } =>
-        module
-        |> match {
-          "smart_keymap::key::keyboard" =>
-            {
-              module = "smart_keymap::key::composite",
-              variant = "Keyboard",
-              json = { "%{variant}" = ref.json },
-              rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
-            },
-          "smart_keymap::key::tap_hold" =>
-            {
-              module = "smart_keymap::key::composite",
-              variant = "TapHold",
-              json = { "%{variant}" = ref.json },
-              rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
-            },
-          _ => std.fail_with "bad composite.ref.wrap: %{std.serialize ref 'Json}",
+        let variant =
+          module
+          |> match {
+            "smart_keymap::key::keyboard" => "Keyboard",
+            "smart_keymap::key::tap_hold" => "TapHold",
+            "smart_keymap::key::layered" => "Layered",
+            _ => std.fail_with "bad ref for composite.ref.wrap: %{std.serialize ref 'Json}",
+          }
+        in
+        {
+          include variant,
+          module = "smart_keymap::key::composite",
+          json = { "%{variant}" = ref.json },
+          rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
         },
     },
 
