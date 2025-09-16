@@ -1352,6 +1352,7 @@ let validators = import "validators.ncl" in
         # }"%,
         config = m%"smart_keymap::key::composite::Config {
             tap_hold: %{tap_hold_config_expr},
+            chorded: %{chorded_config_expr},
             ..smart_keymap::key::composite::DEFAULT_CONFIG
         }"%,
         context = "smart_keymap::key::composite::Context::from_config(%{config})",
