@@ -1,76 +1,94 @@
+use core::fmt::Debug;
+
 use serde::Deserialize;
 
 use crate::key;
 
-/// A key for HID Keyboard usage codes.
+/// Reference for a custom key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key {
-    custom: u8,
+pub struct Ref(pub u8);
+
+/// The context type for keymap callback keys. (No events).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Context;
+
+/// The event type for keymap callback keys. (No events).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Event;
+
+/// The pending key state type for keymap callback keys. (No pending state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PendingKeyState;
+
+/// Key state used by [System]. (No state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KeyState;
+
+/// The [key::System] implementation for custom keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System;
+
+impl System {
+    /// Constructs a new [System] with the given key data.
+    pub const fn new() -> Self {
+        Self
+    }
 }
 
-impl Key {
-    /// Constructs a key with the given custom key indices.
-    pub const fn new(i: u8) -> Self {
-        Key { custom: i }
-    }
-
-    /// Constructs a pressed key state
-    pub fn new_pressed_key(&self) -> KeyState {
-        KeyState(*self)
+impl Default for System {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
-impl key::Key for Key {
-    type Context = crate::init::Context;
-    type Event = crate::init::Event;
-    type PendingKeyState = crate::init::PendingKeyState;
-    type KeyState = crate::init::KeyState;
+impl<R> key::System<R> for System {
+    type Ref = Ref;
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
 
     fn new_pressed_key(
         &self,
+        _keymap_index: u16,
         _context: &Self::Context,
-        _key_path: key::KeyPath,
+        _key_ref: Ref,
     ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        let k_ks = self.new_pressed_key();
-        let pks = key::PressedKeyResult::Resolved(k_ks.into());
+        let pkr = key::PressedKeyResult::Resolved(KeyState);
         let pke = key::KeyEvents::no_events();
-        (pks, pke)
+        (pkr, pke)
     }
 
-    fn handle_event(
+    fn update_pending_state(
         &self,
         _pending_state: &mut Self::PendingKeyState,
+        _keymap_index: u16,
         _context: &Self::Context,
-        _key_path: key::KeyPath,
+        _key_ref: Ref,
         _event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 
-    fn lookup(
+    fn update_state(
         &self,
-        _path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        self
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        panic!()
     }
-}
 
-/// [crate::key::KeyState] for [Key]. (crate::key::keyboard pressed keys don't have state).
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct KeyState(Key);
-
-impl KeyState {
-    /// Custom key always has a key_output.
-    pub fn key_output(&self) -> key::KeyOutput {
-        let KeyState(key) = self;
-        key::KeyOutput::from_custom_code(key.custom)
+    fn key_output(
+        &self,
+        Ref(custom_code): &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        Some(key::KeyOutput::from_custom_code(*custom_code))
     }
 }

@@ -1,12 +1,16 @@
 use core::fmt::Debug;
+use core::ops::Index;
 
 use serde::Deserialize;
 
 use crate::input;
 use crate::key;
-use crate::keymap;
 
 pub use crate::init::MAX_TAP_DANCE_DEFINITIONS;
+
+/// Reference for a tap dance key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Ref(pub u8);
 
 /// Configuration settings for tap dance keys.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -32,20 +36,20 @@ impl Default for Config {
 
 /// A key with tap-dance functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key<K: key::Key> {
+pub struct Key<R> {
     /// Tap-Dance definitions.
-    definitions: [Option<K>; MAX_TAP_DANCE_DEFINITIONS],
+    definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS],
 }
 
-impl<K: key::Key + Copy> Key<K> {
+impl<R: Copy> Key<R> {
     /// Constructs a new tap-dance key.
-    pub const fn new(definitions: [Option<K>; MAX_TAP_DANCE_DEFINITIONS]) -> Key<K> {
+    pub const fn new(definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS]) -> Key<R> {
         Key { definitions }
     }
 
     /// Construct the tap-dance key from the given slice of keys.
-    pub const fn from_definitions(defs: &[K]) -> Self {
-        let mut definitions: [Option<K>; MAX_TAP_DANCE_DEFINITIONS] =
+    pub const fn from_definitions(defs: &[R]) -> Self {
+        let mut definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS] =
             [None; MAX_TAP_DANCE_DEFINITIONS];
         let mut idx = 0;
         while idx < definitions.len() && idx < defs.len() {
@@ -53,130 +57,6 @@ impl<K: key::Key + Copy> Key<K> {
             idx += 1;
         }
         Self::new(definitions)
-    }
-}
-
-impl<K: key::Key> Key<K> {
-    fn new_pressed_key(
-        &self,
-        context: &K::Context,
-        key_path: key::KeyPath,
-    ) -> (
-        key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
-        key::KeyEvents<K::Event>,
-    )
-    where
-        for<'ctx> &'ctx K::Context: Into<&'ctx Context>,
-        for<'ctx> &'ctx K::Context: Into<&'ctx keymap::KeymapContext>,
-        Event: Into<K::Event>,
-        PendingKeyState: Into<K::PendingKeyState>,
-    {
-        let keymap_index: u16 = key_path.keymap_index();
-
-        let td_pks = PendingKeyState::new();
-        let pk = key::PressedKeyResult::Pending(key_path, td_pks.into());
-
-        let &Context { config, .. } = context.into();
-        let timeout_ev = Event::NextPressTimeout(0);
-        let key_ev = key::Event::Key {
-            keymap_index,
-            key_event: timeout_ev,
-        };
-        let pke =
-            key::KeyEvents::scheduled_event(key::ScheduledEvent::after(config.timeout, key_ev));
-
-        (pk, pke.into_events())
-    }
-}
-
-impl<
-        K: key::Key<
-            Context = crate::init::Context,
-            Event = crate::init::Event,
-            PendingKeyState = crate::init::PendingKeyState,
-            KeyState = crate::init::KeyState,
-        >,
-    > key::Key for Key<K>
-{
-    type Context = crate::init::Context;
-    type Event = crate::init::Event;
-    type PendingKeyState = crate::init::PendingKeyState;
-    type KeyState = crate::init::KeyState;
-
-    fn new_pressed_key(
-        &self,
-        context: &Self::Context,
-        key_path: key::KeyPath,
-    ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-        key::KeyEvents<Self::Event>,
-    ) {
-        self.new_pressed_key(context, key_path.clone())
-    }
-
-    fn handle_event(
-        &self,
-        pending_state: &mut Self::PendingKeyState,
-        context: &Self::Context,
-        key_path: key::KeyPath,
-        event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
-        let keymap_index = key_path.keymap_index();
-        let td_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
-        if let Ok(td_pks) = td_pks_res {
-            if let Ok(td_ev) = event.try_into_key_event(|e| e.try_into()) {
-                let (maybe_resolution, pke) =
-                    td_pks.handle_event(context.into(), keymap_index, td_ev);
-
-                if let Some(TapDanceResolution(idx)) = maybe_resolution {
-                    // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
-                    let new_key_path = key_path.append_path_item(idx as u16);
-
-                    (
-                        Some(key::NewPressedKey::key_path(new_key_path)),
-                        pke.into_events(),
-                    )
-                } else {
-                    // check td_pks press_count against key definitions
-                    let definition_count = self.definitions.iter().filter(|o| o.is_some()).count();
-                    if td_pks.press_count as usize >= definition_count - 1 {
-                        let idx = definition_count - 1;
-                        // PRESSED KEY PATH: add Tap Dance item (index for the tap-dance definition)
-                        let new_key_path = key_path.append_path_item(idx as u16);
-
-                        (
-                            Some(key::NewPressedKey::key_path(new_key_path)),
-                            pke.into_events(),
-                        )
-                    } else {
-                        (None, pke.into_events())
-                    }
-                }
-            } else {
-                (None, key::KeyEvents::no_events())
-            }
-        } else {
-            (None, key::KeyEvents::no_events())
-        }
-    }
-
-    fn lookup(
-        &self,
-        path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        match path {
-            [] => self,
-            // idx = definition index
-            [idx, path @ ..] => match &self.definitions[*idx as usize] {
-                Some(key) => key.lookup(path),
-                None => panic!(),
-            },
-        }
     }
 }
 
@@ -256,5 +136,111 @@ impl PendingKeyState {
 
             _ => (None, key::KeyEvents::no_events()),
         }
+    }
+}
+
+/// The key state for System. (No state).
+#[derive(Debug, Clone, PartialEq)]
+pub struct KeyState;
+
+/// The [key::System] implementation for tap dance keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<R, Keys: Index<usize, Output = Key<R>>> {
+    keys: Keys,
+}
+
+impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
+    /// Constructs a new [System] with the given key data.
+    pub const fn new(key_data: Keys) -> Self {
+        Self { keys: key_data }
+    }
+}
+
+impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
+    for System<R, Keys>
+{
+    type Ref = Ref;
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        keymap_index: u16,
+        context: &Self::Context,
+        _key_ref: Ref,
+    ) -> (
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        let td_pks = PendingKeyState::new();
+        let pk = key::PressedKeyResult::Pending(td_pks);
+
+        let timeout_ev = Event::NextPressTimeout(0);
+        let key_ev = key::Event::Key {
+            keymap_index,
+            key_event: timeout_ev,
+        };
+        let pke = key::KeyEvents::scheduled_event(key::ScheduledEvent::after(
+            context.config.timeout,
+            key_ev,
+        ));
+
+        (pk, pke)
+    }
+
+    fn update_pending_state(
+        &self,
+        pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
+        context: &Self::Context,
+        Ref(key_index): Ref,
+        event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
+        let key = &self.keys[key_index as usize];
+        let (maybe_resolution, pke) = pending_state.handle_event(context, keymap_index, event);
+
+        if let Some(TapDanceResolution(idx)) = maybe_resolution {
+            let new_key_ref = key.definitions[idx as usize].unwrap();
+
+            (
+                Some(key::NewPressedKey::key(new_key_ref)),
+                pke.into_events(),
+            )
+        } else {
+            // check pending_state press_count against key definitions
+            let definition_count = key.definitions.iter().filter(|o| o.is_some()).count();
+            if pending_state.press_count as usize >= definition_count - 1 {
+                let idx = definition_count - 1;
+                let new_key_ref = key.definitions[idx].unwrap();
+
+                (
+                    Some(key::NewPressedKey::key(new_key_ref)),
+                    pke.into_events(),
+                )
+            } else {
+                (None, pke.into_events())
+            }
+        }
+    }
+
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        panic!() // tap dance has no key state
+    }
+
+    fn key_output(
+        &self,
+        _key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        panic!() // tap dance has no key state
     }
 }
