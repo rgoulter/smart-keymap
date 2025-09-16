@@ -14,6 +14,8 @@ use crate::{key, keymap};
 pub enum Ref {
     /// [key::keyboard::Ref] variant.
     Keyboard(key::keyboard::Ref),
+    /// [key::sticky::Ref] variant.
+    Sticky(key::sticky::Ref),
     /// [key::tap_hold::Ref] variant.
     TapHold(key::tap_hold::Ref),
     /// [key::layered::Ref] variant.
@@ -35,9 +37,9 @@ pub struct Config {
     /// The chorded configuration.
     #[serde(default)]
     pub chorded: key::chorded::Config,
-    // /// The sticky modifier configuration
-    // #[serde(default)]
-    // pub sticky: key::sticky::Config,
+    /// The sticky modifier configuration
+    #[serde(default)]
+    pub sticky: key::sticky::Config,
     // /// The tap dance configuration.
     // #[serde(default)]
     // pub tap_dance: key::tap_dance::Config,
@@ -49,7 +51,7 @@ pub struct Config {
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
     chorded: key::chorded::DEFAULT_CONFIG,
-    // sticky: key::sticky::DEFAULT_CONFIG,
+    sticky: key::sticky::DEFAULT_CONFIG,
     // tap_dance: key::tap_dance::DEFAULT_CONFIG,
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
@@ -63,7 +65,7 @@ pub struct Context {
     layered: key::layered::Context,
     // tap_dance_context: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
-    // sticky_context: key::sticky::Context,
+    sticky: key::sticky::Context,
 }
 
 /// The default context.
@@ -72,7 +74,7 @@ pub const DEFAULT_CONTEXT: Context = Context {
     // caps_word_context: key::caps_word::DEFAULT_CONTEXT,
     chorded: key::chorded::DEFAULT_CONTEXT,
     layered: key::layered::DEFAULT_CONTEXT,
-    // sticky_context: key::sticky::DEFAULT_CONTEXT,
+    sticky: key::sticky::DEFAULT_CONTEXT,
     // tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
     tap_hold: key::tap_hold::DEFAULT_CONTEXT,
 };
@@ -82,7 +84,7 @@ impl Context {
     pub const fn from_config(config: Config) -> Self {
         Self {
             chorded: key::chorded::Context::from_config(config.chorded),
-            // sticky_context: key::sticky::Context::from_config(config.sticky),
+            sticky: key::sticky::Context::from_config(config.sticky),
             // tap_dance_context: key::tap_dance::Context::from_config(config.tap_dance),
             tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
             ..DEFAULT_CONTEXT
@@ -100,16 +102,15 @@ impl Default for Context {
 impl key::Context for Context {
     type Event = Event;
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
-        // let mut pke = key::KeyEvents::no_events();
-        let pke = key::KeyEvents::no_events();
+        let mut pke = key::KeyEvents::no_events();
 
         // let caps_word_ev = self.caps_word_context.handle_event(event);
         // pke.extend(caps_word_ev);
 
-        // if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
-        //     let sticky_ev = self.sticky_context.handle_event(e);
-        //     pke.extend(sticky_ev.into_events());
-        // }
+        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+            let sticky_ev = self.sticky.handle_event(e);
+            pke.extend(sticky_ev.into_events());
+        }
 
         if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
             self.chorded.handle_event(e);
@@ -165,11 +166,11 @@ impl<'c> From<&'c Context> for &'c key::layered::Context {
     }
 }
 
-// impl<'c> From<&'c Context> for &'c key::sticky::Context {
-//     fn from(ctx: &'c Context) -> Self {
-//         &ctx.sticky_context
-//     }
-// }
+impl<'c> From<&'c Context> for &'c key::sticky::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.sticky
+    }
+}
 
 // impl<'c> From<&'c Context> for &'c key::tap_dance::Context {
 //     fn from(ctx: &'c Context) -> Self {
@@ -190,8 +191,8 @@ pub enum Event {
     // CapsWord(key::caps_word::Event),
     /// A chorded event.
     Chorded(key::chorded::Event),
-    // /// A sticky modifier event.
-    // Sticky(key::sticky::Event),
+    /// A sticky modifier event.
+    Sticky(key::sticky::Event),
     // /// A tap-dance event.
     // TapDance(key::tap_dance::Event),
     /// A tap-hold event.
@@ -218,11 +219,11 @@ impl From<key::layered::LayerEvent> for Event {
     }
 }
 
-// impl From<key::sticky::Event> for Event {
-//     fn from(ev: key::sticky::Event) -> Self {
-//         Event::Sticky(ev)
-//     }
-// }
+impl From<key::sticky::Event> for Event {
+    fn from(ev: key::sticky::Event) -> Self {
+        Event::Sticky(ev)
+    }
+}
 
 // impl From<key::tap_dance::Event> for Event {
 //     fn from(ev: key::tap_dance::Event) -> Self {
@@ -277,16 +278,16 @@ impl TryFrom<Event> for key::layered::LayerEvent {
     }
 }
 
-// impl TryFrom<Event> for key::sticky::Event {
-//     type Error = key::EventError;
+impl TryFrom<Event> for key::sticky::Event {
+    type Error = key::EventError;
 
-//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
-//         match ev {
-//             Event::Sticky(ev) => Ok(ev),
-//             _ => Err(key::EventError::UnmappableEvent),
-//         }
-//     }
-// }
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Sticky(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
 
 // impl TryFrom<Event> for key::tap_dance::Event {
 //     type Error = key::EventError;
@@ -381,8 +382,8 @@ pub enum KeyState {
     Keyboard(key::keyboard::KeyState),
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(key::layered::ModifierKeyState),
-    // /// Key state for [key::sticky::KeyState].
-    // Sticky(key::sticky::KeyState),
+    /// Key state for [key::sticky::KeyState].
+    Sticky(key::sticky::KeyState),
     // /// Key state for [key::custom::KeyState].
     // Custom(key::custom::KeyState),
 }
@@ -405,11 +406,11 @@ impl From<key::layered::ModifierKeyState> for KeyState {
     }
 }
 
-// impl From<key::sticky::KeyState> for KeyState {
-//     fn from(ks: key::sticky::KeyState) -> Self {
-//         KeyState::Sticky(ks)
-//     }
-// }
+impl From<key::sticky::KeyState> for KeyState {
+    fn from(ks: key::sticky::KeyState) -> Self {
+        KeyState::Sticky(ks)
+    }
+}
 
 // impl From<key::custom::KeyState> for KeyState {
 //     fn from(ks: key::custom::KeyState) -> Self {
@@ -471,6 +472,8 @@ impl From<key::layered::ModifierKeyState> for KeyState {
 pub trait Keys {
     /// Type used by [key::keyboard::System].
     type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
+    /// Type used by [key::sticky::System].
+    type Sticky: Debug + Index<usize, Output = key::sticky::Key>;
     /// Type used by [key::tap_hold::System].
     type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
     /// Type used by [key::layered::System].
@@ -487,6 +490,7 @@ pub trait Keys {
 #[derive(Debug)]
 pub struct KeyArrays<
     const KEYBOARD: usize,
+    const STICKY: usize,
     const TAP_HOLD: usize,
     const LAYER_MODIFIERS: usize,
     const LAYERED: usize,
@@ -496,14 +500,17 @@ pub struct KeyArrays<
 
 impl<
         const KEYBOARD: usize,
+        const STICKY: usize,
         const TAP_HOLD: usize,
         const LAYER_MODIFIERS: usize,
         const LAYERED: usize,
         const CHORDED: usize,
         const CHORDED_AUXILIARY: usize,
-    > Keys for KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED, CHORDED, CHORDED_AUXILIARY>
+    > Keys
+    for KeyArrays<KEYBOARD, STICKY, TAP_HOLD, LAYER_MODIFIERS, LAYERED, CHORDED, CHORDED_AUXILIARY>
 {
     type Keyboard = [key::keyboard::Key; KEYBOARD];
+    type Sticky = [key::sticky::Key; STICKY];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
     type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
     type Layered = [key::layered::LayeredKey<Ref>; LAYERED];
@@ -519,6 +526,7 @@ pub struct KeyVecs;
 #[cfg(feature = "std")]
 impl Keys for KeyVecs {
     type Keyboard = Vec<key::keyboard::Key>;
+    type Sticky = Vec<key::sticky::Key>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
     type LayerModifiers = Vec<key::layered::ModifierKey>;
     type Layered = Vec<key::layered::LayeredKey<Ref>>;
@@ -530,6 +538,7 @@ impl Keys for KeyVecs {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<D: Keys> {
     keyboard: key::keyboard::System<D::Keyboard>,
+    sticky: key::sticky::System<D::Sticky>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
     chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
@@ -538,16 +547,21 @@ pub struct System<D: Keys> {
 
 impl<
         const KEYBOARD: usize,
+        const STICKY: usize,
         const TAP_HOLD: usize,
         const LAYER_MODIFIERS: usize,
         const LAYERED: usize,
         const CHORDED: usize,
         const CHORDED_AUXILIARY: usize,
-    > System<KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED, CHORDED, CHORDED_AUXILIARY>>
+    >
+    System<
+        KeyArrays<KEYBOARD, STICKY, TAP_HOLD, LAYER_MODIFIERS, LAYERED, CHORDED, CHORDED_AUXILIARY>,
+    >
 {
     /// Constructs a new [System].
     pub const fn array_based(
         keyboard: key::keyboard::System<[key::keyboard::Key; KEYBOARD]>,
+        sticky: key::sticky::System<[key::sticky::Key; STICKY]>,
         tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
         layered: key::layered::System<
             Ref,
@@ -562,6 +576,7 @@ impl<
     ) -> Self {
         System {
             keyboard,
+            sticky,
             tap_hold,
             layered,
             chorded,
@@ -575,6 +590,7 @@ impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
         keyboard: key::keyboard::System<<KeyVecs as Keys>::Keyboard>,
+        sticky: key::sticky::System<<KeyVecs as Keys>::Sticky>,
         tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
         layered: key::layered::System<
             Ref,
@@ -589,6 +605,7 @@ impl System<KeyVecs> {
     ) -> Self {
         System {
             keyboard,
+            sticky,
             tap_hold,
             layered,
             chorded,
@@ -621,6 +638,15 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 (
                     pkr.map(|_| panic!(), KeyState::Keyboard),
                     pke.map_events(|_| panic!()),
+                )
+            }
+            Ref::Sticky(key_ref) => {
+                let (pkr, pke) =
+                    self.sticky
+                        .new_pressed_key(keymap_index, &context.sticky, key_ref);
+                (
+                    pkr.map(|_| panic!(), KeyState::Sticky),
+                    pke.map_events(Into::into),
                 )
             }
             Ref::TapHold(key_ref) => {
@@ -715,6 +741,21 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                             event,
                         );
                     pke.map_events(|_| panic!())
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
+            (Ref::Sticky(key_ref), KeyState::Sticky(mut key_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                    let pke = <key::sticky::System<K::Sticky> as key::System<Ref>>::update_state(
+                        &self.sticky,
+                        &mut key_state,
+                        key_ref,
+                        context.into(),
+                        keymap_index,
+                        event,
+                    );
+                    pke.map_events(Into::into)
                 } else {
                     key::KeyEvents::no_events()
                 }

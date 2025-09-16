@@ -1004,6 +1004,7 @@ let validators = import "validators.ncl" in
           module
           |> match {
             "smart_keymap::key::keyboard" => "Keyboard",
+            "smart_keymap::key::sticky" => "Sticky",
             "smart_keymap::key::tap_hold" => "TapHold",
             "smart_keymap::key::layered" => "Layered",
             "smart_keymap::key::chorded" => "Chorded",
@@ -1296,6 +1297,14 @@ let validators = import "validators.ncl" in
         ])
       "%
       in
+      let sticky_system_expr =
+        let sticky_data = (key_data & { sticky | default = [] }).sticky in
+        m%"
+        smart_keymap::key::sticky::System::new([
+          %{sticky_data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}
+        ])
+      "%
+      in
       let tap_hold_system_expr =
         let tap_hold_data = (key_data & { tap_hold | default = [] }).tap_hold in
         m%"
@@ -1335,6 +1344,7 @@ let validators = import "validators.ncl" in
       let key_system_expr = m%"
         smart_keymap::key::composite::System::array_based(
           %{keyboard_system_expr},
+          %{sticky_system_expr},
           %{tap_hold_system_expr},
           %{layered_system_expr},
           %{chorded_system_expr},
@@ -1351,6 +1361,7 @@ let validators = import "validators.ncl" in
         #     ..smart_keymap::key::composite::DEFAULT_CONFIG
         # }"%,
         config = m%"smart_keymap::key::composite::Config {
+            sticky: %{sticky_config_expr},
             tap_hold: %{tap_hold_config_expr},
             chorded: %{chorded_config_expr},
             ..smart_keymap::key::composite::DEFAULT_CONFIG
