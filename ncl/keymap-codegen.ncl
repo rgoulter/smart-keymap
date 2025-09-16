@@ -428,6 +428,24 @@ let validators = import "validators.ncl" in
         },
 
       traverse = fun f acc cv => f acc cv,
+
+      data_and_ref = fun key_data cv =>
+        let data_ = key_data in
+        let { sticky = sticky_, ..other_data } = data_ & { sticky | default = [] } in
+        let new_index = std.array.length sticky_ in
+        let new_key = {
+          json = cv.json_value,
+          rust_expr = cv.rust_expr,
+        }
+        in
+        {
+          key_data = other_data & { sticky = std.array.append new_key sticky_ },
+          ref = {
+            include module,
+            json = new_index,
+            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+          },
+        },
     },
 
   custom
