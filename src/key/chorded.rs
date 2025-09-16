@@ -723,8 +723,6 @@ impl<
     > System<R, Keys, AuxiliaryKeys>
 {
     /// Constructs a new [System] with the given key data.
-    ///
-    /// The key data is for keys with both key codes and modifiers.
     pub const fn new(keys: Keys, auxiliary_keys: AuxiliaryKeys) -> Self {
         Self {
             keys,

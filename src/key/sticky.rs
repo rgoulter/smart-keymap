@@ -1,11 +1,16 @@
 use core::fmt::Debug;
 use core::marker::Copy;
+use core::ops::Index;
 
 use serde::Deserialize;
 
 use crate::input;
 use crate::key;
 use crate::keymap;
+
+/// Reference for a sticky modifier key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Ref(pub u8);
 
 /// When the sticky modifiers activate.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -250,52 +255,13 @@ impl Key {
 
     /// Constructs a pressed key state
     pub fn new_pressed_key(&self) -> KeyState {
-        KeyState::new(self.sticky_modifiers)
+        KeyState::new()
     }
 }
 
-impl key::Key for Key {
-    type Context = crate::init::Context;
-    type Event = crate::init::Event;
-    type PendingKeyState = crate::init::PendingKeyState;
-    type KeyState = crate::init::KeyState;
-
-    fn new_pressed_key(
-        &self,
-        _context: &Self::Context,
-        _key_path: key::KeyPath,
-    ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-        key::KeyEvents<Self::Event>,
-    ) {
-        let ks = self.new_pressed_key();
-        let pks = key::PressedKeyResult::Resolved(ks.into());
-        let pke = key::KeyEvents::no_events();
-        (pks, pke)
-    }
-
-    fn handle_event(
-        &self,
-        _pending_state: &mut Self::PendingKeyState,
-        _context: &Self::Context,
-        _key_path: key::KeyPath,
-        _event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
-        panic!()
-    }
-
-    fn lookup(
-        &self,
-        _path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        self
-    }
-}
+/// The pending key state type for sticky modifier keys. (No pending state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PendingKeyState;
 
 /// Whether the pressed Sticky modifier key is "sticky" or "regular".
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
@@ -309,15 +275,13 @@ pub enum Behavior {
 /// Key state for sticky modifier keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeyState {
-    sticky_modifiers: key::KeyboardModifiers,
     behavior: Behavior,
 }
 
 impl KeyState {
     /// Constructs a new key state with the given sticky modifiers.
-    pub fn new(sticky_modifiers: key::KeyboardModifiers) -> Self {
+    pub fn new() -> Self {
         KeyState {
-            sticky_modifiers,
             behavior: Behavior::Sticky,
         }
     }
@@ -325,8 +289,9 @@ impl KeyState {
 
 impl KeyState {
     /// Handle the given event.
-    pub fn handle_event(
+    pub fn update_state(
         &mut self,
+        key: &Key,
         context: &Context,
         keymap_index: u16,
         event: key::Event<Event>,
@@ -350,11 +315,11 @@ impl KeyState {
                     // The sticky key has been released.
                     match context.config.activation {
                         StickyKeyActivation::OnStickyKeyRelease => {
-                            let sticky_ev = Event::ActivateModifiers(self.sticky_modifiers);
+                            let sticky_ev = Event::ActivateModifiers(key.sticky_modifiers);
                             let k_ev = key::Event::key_event(keymap_index, sticky_ev);
 
                             let sticky_key_output =
-                                key::KeyOutput::from_key_modifiers(self.sticky_modifiers);
+                                key::KeyOutput::from_key_modifiers(key.sticky_modifiers);
                             let vk_ev = key::Event::Input(input::Event::VirtualKeyPress {
                                 key_output: sticky_key_output,
                             });
@@ -372,10 +337,79 @@ impl KeyState {
     }
 
     /// Key output for the pressed key state.
-    pub fn key_output(&self) -> Option<key::KeyOutput> {
+    pub fn key_output(&self, key: &Key) -> Option<key::KeyOutput> {
         match self.behavior {
             Behavior::Sticky => None,
-            Behavior::Regular => Some(key::KeyOutput::from_key_modifiers(self.sticky_modifiers)),
+            Behavior::Regular => Some(key::KeyOutput::from_key_modifiers(key.sticky_modifiers)),
         }
+    }
+}
+
+/// The [key::System] implementation for keyboard keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<Keys: Index<usize, Output = Key>> {
+    keys: Keys,
+}
+
+impl<Keys: Index<usize, Output = Key>> System<Keys> {
+    /// Constructs a new [System] with the given key data.
+    pub const fn new(key_data: Keys) -> Self {
+        Self { keys: key_data }
+    }
+}
+
+impl<R, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<Keys> {
+    type Ref = Ref;
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        _keymap_index: u16,
+        _context: &Self::Context,
+        Ref(key_index): Ref,
+    ) -> (
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        let key = &self.keys[key_index as usize];
+        let ks = key.new_pressed_key();
+        let pks = key::PressedKeyResult::Resolved(ks);
+        let pke = key::KeyEvents::no_events();
+        (pks, pke)
+    }
+
+    fn update_pending_state(
+        &self,
+        _pending_state: &mut Self::PendingKeyState,
+        _keymap_index: u16,
+        _context: &Self::Context,
+        _key_ref: Ref,
+        _event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
+        panic!()
+    }
+
+    fn update_state(
+        &self,
+        key_state: &mut Self::KeyState,
+        Ref(key_index): &Self::Ref,
+        context: &Self::Context,
+        keymap_index: u16,
+        event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        let key = &self.keys[*key_index as usize];
+        key_state.update_state(key, context, keymap_index, event)
+    }
+
+    fn key_output(
+        &self,
+        Ref(key_index): &Self::Ref,
+        key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        let key = &self.keys[*key_index as usize];
+        key_state.key_output(key)
     }
 }

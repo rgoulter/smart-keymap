@@ -401,8 +401,6 @@ impl<
     > System<R, ModifierKeys, LayeredKeys>
 {
     /// Constructs a new [System] with the given key data.
-    ///
-    /// The key data is for keys with both key codes and modifiers.
     pub const fn new(modifier_keys: ModifierKeys, layered_keys: LayeredKeys) -> Self {
         Self {
             modifier_keys,

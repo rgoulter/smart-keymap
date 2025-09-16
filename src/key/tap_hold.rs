@@ -262,8 +262,6 @@ pub struct System<R, Keys: Index<usize, Output = Key<R>>> {
 
 impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
     /// Constructs a new [System] with the given key data.
-    ///
-    /// The key data is for keys with both key codes and modifiers.
     pub const fn new(key_data: Keys) -> Self {
         Self { keys: key_data }
     }
