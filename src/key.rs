@@ -8,8 +8,8 @@ use crate::input;
 // pub mod callback;
 // /// CapsWord key(s).
 // pub mod caps_word;
-// /// Chorded keys. (Chording functionality).
-// pub mod chorded;
+/// Chorded keys. (Chording functionality).
+pub mod chorded;
 // /// Custom keys.
 // pub mod custom;
 /// HID Keyboard keys.
