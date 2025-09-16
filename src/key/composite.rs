@@ -795,6 +795,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     ks,
                 )
             }
+            (Ref::Sticky(r), KeyState::Sticky(ks)) => {
+                <key::sticky::System<K::Sticky> as key::System<Ref>>::key_output(
+                    &self.sticky,
+                    r,
+                    ks,
+                )
+            }
             (_, _) => None,
         }
     }
