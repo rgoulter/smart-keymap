@@ -419,7 +419,7 @@ let validators = import "validators.ncl" in
           ref = {
             include module,
             variant = "Modifier",
-            json = { "%{variant}" = new_index},
+            json = { "%{variant}" = new_index },
             rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
           },
         },
@@ -561,32 +561,6 @@ let validators = import "validators.ncl" in
       traverse = fun f acc cv => f acc cv,
     },
 
-  # Related to key::composite::TapHoldNestable trait.
-  tap_hold_nestable = {
-    # Wraps the codegen values for
-    #   - key::keyboard::Key
-    #   - key::layered::ModifierKey
-    #   - key::caps_word::Key
-    #   - key::callback::Key
-    #   - key::sticky::Key
-    #   - key::custom::Key
-    #
-    # In particular, the returned value is a codegen values record
-    #  for an item which implements key::Key with associated
-    #  PressedKey = key::composite::BasePressedKey.
-    wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
-      key_type
-      |> match {
-        "smart_keymap::key::keyboard::Key" => cv,
-        "smart_keymap::key::layered::ModifierKey" => cv,
-        "smart_keymap::key::caps_word::Key" => cv,
-        "smart_keymap::key::callback::Key" => cv,
-        "smart_keymap::key::sticky::Key" => cv,
-        "smart_keymap::key::custom::Key" => cv,
-        cv => std.fail_with "bad codegen_values for tap_hold_nestable.wrap: %{cv |> std.serialize 'Json}",
-      },
-  },
-
   tap_dance
     | doc "for key::tap_dance::Key."
     = {
@@ -605,7 +579,7 @@ let validators = import "validators.ncl" in
       is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { definitions } =>
-        let definitions_cv = definitions |> std.array.map (fun k => k |> key.codegen_values |> tap_hold_nestable.wrap) in
+        let definitions_cv = definitions |> std.array.map (fun k => k |> key.codegen_values) in
 
         let target_type = unified_key_impl_for_codegen_values definitions_cv in
 
@@ -697,15 +671,13 @@ let validators = import "validators.ncl" in
       is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { hold, tap } =>
-        let hold_cv = hold |> key.codegen_values |> tap_hold_nestable.wrap in
-        let tap_cv = tap |> key.codegen_values |> tap_hold_nestable.wrap in
-
-        let target_type = unified_key_impl_for_codegen_values [hold_cv, tap_cv] in
+        let hold_cv = hold |> key.codegen_values in
+        let tap_cv = tap |> key.codegen_values in
 
         {
           nested = {
-            tap = tap_cv |> key.lift_to target_type,
-            hold = hold_cv |> key.lift_to target_type,
+            tap = tap_cv,
+            hold = hold_cv,
           },
           key_type = {
             key_type = "smart_keymap::key::tap_hold::Key",
@@ -766,29 +738,6 @@ let validators = import "validators.ncl" in
           },
         },
     },
-
-  # Related to key::composite::LayeredNestable trait.
-  layered_nestable = {
-    # Wraps the codegen values for
-    #   - key::tap_dance::Key.
-    #   - key::tap_hold::Key.
-    #   - TapHoldNestable impls.
-    #     - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
-    #
-    # In particular, the returned value is a codegen values record
-    #  for an item which implements key::Key with associated
-    #  PressedKey = key::composite::TapHoldPressedKey.
-    wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
-      key_type
-      |> match {
-        "smart_keymap::key::tap_dance::Key" =>
-          cv |> composite.tap_hold_key.tap_dance_,
-        "smart_keymap::key::tap_hold::Key" =>
-          cv |> composite.tap_hold_key.tap_hold_,
-        _ =>
-          cv |> tap_hold_nestable.wrap |> composite.tap_hold_.wrap,
-      },
-  },
 
   checks.check_layered = {
     # Use a json value to check the "is" predicate.
@@ -898,8 +847,6 @@ let validators = import "validators.ncl" in
           std.array.filter ((!=) null) layered_cvs
         in
 
-        let target_type = unified_key_impl_for_codegen_values ([base_cv] @ nn_layered_cvs) in
-
         {
           nested = {
             base = base_cv,
@@ -984,33 +931,11 @@ let validators = import "validators.ncl" in
           ref = {
             include module,
             variant = "Layered",
-            json = { "%{variant}" = new_index},
+            json = { "%{variant}" = new_index },
             rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
           },
         },
     },
-
-  # Related to key::composite::ChordedNestable trait.
-  chorded_nestable = {
-    # Wraps the codegen values for
-    #   - key::layered::LayeredKey.
-    #   - LayeredNestable impls.
-    #     - e.g. key::tap_hold::Key,
-    #     - TapHoldNestable impls.
-    #       - e.g. key::keyboard::Key, key::layered::ModifierKey, etc.
-    #
-    # In particular, the returned value is a codegen values record
-    #  for an item which implements key::Key with associated
-    #  PressedKey = key::composite::ChordedPressedKey.
-    wrap = fun cv @ { key_type = { key_type, .. }, .. } =>
-      key_type
-      |> match {
-        "smart_keymap::key::layered::LayeredKey" =>
-          cv |> composite.layered_key.layered_,
-        _ =>
-          cv |> layered_nestable.wrap |> composite.layered_.wrap,
-      },
-  },
 
   chorded
     | doc "for key::chorded::Key."
@@ -1033,15 +958,13 @@ let validators = import "validators.ncl" in
       map_chords = fun f chords => chords |> std.array.map (fun [id, ch_k] => [id, ch_k |> f]),
 
       codegen_values = fun k @ { chords, passthrough } =>
-        let chords_cv = chords |> map_chords (fun ch_k => ch_k |> key.codegen_values |> chorded_nestable.wrap) in
-        let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
-
-        let target_type = unified_key_impl_for_codegen_values ([passthrough_cv] @ (chords_cv |> std.array.map (fun [_, cv] => cv))) in
+        let chords_cv = chords |> map_chords (fun ch_k => ch_k |> key.codegen_values) in
+        let passthrough_cv = passthrough |> key.codegen_values in
 
         {
           nested = {
-            chords = chords_cv |> map_chords (fun cv => cv |> key.lift_to target_type),
-            passthrough = passthrough_cv |> key.lift_to target_type,
+            chords = chords_cv,
+            passthrough = passthrough_cv,
           },
           key_type = {
             key_type = "smart_keymap::key::chorded::Key",
@@ -1105,7 +1028,7 @@ let validators = import "validators.ncl" in
       is_json_value = fun k => 'Ok == json_value_validator k,
 
       codegen_values = fun k @ { passthrough } =>
-        let passthrough_cv = passthrough |> key.codegen_values |> chorded_nestable.wrap in
+        let passthrough_cv = passthrough |> key.codegen_values in
 
         {
           nested = {
@@ -1147,44 +1070,7 @@ let validators = import "validators.ncl" in
         key.traverse f acc cv.nested.passthrough,
     },
 
-  checks.check_composite = {
-    check_base_key_codegen_values = {
-      # A keyboard::Key lifted to composite::BaseKey
-      check_base_key_keyboard =
-        let k = { key_code = 4 } in
-        let kcv = keyboard.codegen_values k in
-        let cv = composite.base_key.keyboard kcv in
-        {
-          check_key_type = {
-            actual = cv.key_type.as_rust_type_path,
-            expected = "smart_keymap::key::composite::BaseKey",
-          },
-          check_rust_expr = {
-            actual = cv.rust_expr,
-            expected = "smart_keymap::key::composite::BaseKey::Keyboard(smart_keymap::key::keyboard::Key::new(4))",
-          },
-        },
-    },
-
-    check_tap_hold_key_codegen_values = {
-      # A keyboard::Key lifted to composite::TapHoldKey via composite::BaseKey
-      check_tap_hold_key_keyboard =
-        let k = { key_code = 4 } in
-        let kcv = keyboard.codegen_values k in
-        let bk_cv = composite.base_key.keyboard kcv in
-        let cv = composite.tap_hold_key.passthrough bk_cv in
-        {
-          check_key_type = {
-            actual = cv.key_type.as_rust_type_path,
-            expected = "smart_keymap::key::composite::TapHoldKey<smart_keymap::key::composite::BaseKey>",
-          },
-          check_rust_expr = {
-            actual = cv.rust_expr,
-            expected = "smart_keymap::key::composite::TapHoldKey::Pass(smart_keymap::key::composite::BaseKey::Keyboard(smart_keymap::key::keyboard::Key::new(4)))",
-          },
-        },
-    },
-  },
+  checks.check_composite = {},
 
   composite = {
     ref = {
@@ -1205,325 +1091,6 @@ let validators = import "validators.ncl" in
           rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
         },
     },
-
-    base_key = {
-      layer_modifier = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::BaseKey",
-            as_rust_type_path = key_type,
-            variant = "LayerModifier",
-          },
-          key_impl = {
-            base = key_type.key_type,
-          },
-          rust_expr = "smart_keymap::key::composite::BaseKey::LayerModifier(%{nested.rust_expr})",
-        },
-
-      keymap_callback = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::BaseKey",
-            as_rust_type_path = key_type,
-            variant = "Callback",
-          },
-          key_impl = {
-            base = key_type.key_type,
-          },
-          rust_expr = "smart_keymap::key::composite::BaseKey::Callback(%{nested.rust_expr})",
-        },
-
-      keyboard = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::BaseKey",
-            as_rust_type_path = key_type,
-            variant = "Keyboard",
-          },
-          key_impl = {
-            base = key_type.key_type,
-          },
-          rust_expr = "smart_keymap::key::composite::BaseKey::Keyboard(%{nested.rust_expr})",
-        },
-
-      caps_word = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            as_rust_type_path = "smart_keymap::key::composite::BaseKey",
-            key_type = "smart_keymap::key::composite::BaseKey",
-          },
-          rust_expr = "smart_keymap::key::composite::BaseKey::CapsWord(%{cv.rust_expr})",
-        },
-
-      sticky = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            as_rust_type_path = "smart_keymap::key::composite::BaseKey",
-            key_type = "smart_keymap::key::composite::BaseKey",
-          },
-          rust_expr = "smart_keymap::key::composite::BaseKey::Sticky(%{cv.rust_expr})",
-        },
-
-      custom = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::BaseKey",
-            as_rust_type_path = key_type,
-            variant = "Custom",
-          },
-          key_impl = {
-            base = key_type.key_type,
-          },
-          rust_expr = "smart_keymap::key::composite::BaseKey::Custom(%{nested.rust_expr})",
-        },
-
-      lift_to = fun key_impl cv =>
-        cv,
-
-      # Traverse by visiting the wrapper key,
-      #  then by visiting the nested key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        key.traverse f acc cv.nested,
-    },
-
-    tap_hold_key = {
-      tap_dance_ = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::TapHoldKey",
-            nested_key_type = nested.key_type.nested_key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-            variant = "TapDance",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              tap_hold = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::TapHoldKey::TapDance(%{nested.rust_expr})",
-        },
-
-      tap_hold_ = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::TapHoldKey",
-            nested_key_type = nested.key_type.nested_key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-            variant = "TapHold",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              tap_hold = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::TapHoldKey::TapHold(%{nested.rust_expr})",
-        },
-
-      passthrough = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::TapHoldKey",
-            nested_key_type = nested.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-            variant = "Pass",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              tap_hold = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::TapHoldKey::Pass(%{nested.rust_expr})",
-        },
-
-      lift_to = fun key_impl { nested = nested_, ..cv } =>
-        cv.key_type.variant
-        |> match {
-          "TapDance" => cv & { nested = tap_dance.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
-          "TapHold" => cv & { nested = tap_hold.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
-          "Pass" => cv & { nested = key.lift_to key_impl nested_ },
-        },
-
-      # Traverse by visiting the wrapper key,
-      #  then by visiting the nested key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        key.traverse f acc cv.nested,
-    },
-
-    tap_hold_ = {
-      wrap = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::TapHold",
-            nested_key_type = nested.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              tap_hold = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::TapHold(%{nested.rust_expr})",
-        },
-
-      lift_to = fun key_impl { nested = nested_, ..cv } =>
-        if key_impl.tap_hold == "smart_keymap::key::composite::TapHoldKey" then
-          # Lift the key impl. of the nested key,
-          #  and construct as a TapHoldKey::Pass variant.
-          nested_ |> key.lift_to key_impl |> tap_hold_key.passthrough
-        else
-          cv & { nested = key.lift_to key_impl nested_ },
-
-      # Traverse by visiting the wrapper key,
-      #  then by visiting the nested key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        key.traverse f acc cv.nested,
-    },
-
-    layered_key = {
-      layered_ = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::LayeredKey",
-            nested_key_type = nested.key_type.nested_key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-            variant = "Layered",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              layered = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::LayeredKey::Layered(%{nested.rust_expr})",
-        },
-
-      passthrough = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::LayeredKey",
-            nested_key_type = nested.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
-            variant = "Pass",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              layered = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::LayeredKey::Pass(%{nested.rust_expr})",
-        },
-
-      lift_to = fun key_impl { nested = nested_, ..cv } =>
-        cv.key_type.variant
-        |> match {
-          "Layered" => cv & { nested = layered.map_nested (fun cv_ => key.lift_to key_impl cv_) nested_ },
-          "Pass" => cv & { nested = key.lift_to key_impl nested_ },
-        },
-
-      # Traverse by visiting the wrapper key,
-      #  then by visiting the nested key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        key.traverse f acc cv.nested,
-    },
-
-    layered_ = {
-      wrap = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::Layered",
-            nested_key_type = nested.key_type,
-            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              layered = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::Layered(%{nested.rust_expr})",
-        },
-
-      lift_to = fun key_impl { nested = nested_, ..cv } =>
-        if key_impl.layered == "smart_keymap::key::composite::LayeredKey" then
-          # Lift the key impl. of the nested key,
-          #  and construct as a LayeredKey::Pass variant.
-          nested_ |> key.lift_to key_impl |> layered_key.passthrough
-        else
-          cv & { nested = key.lift_to key_impl nested_ },
-
-      # Traverse by visiting the wrapper key,
-      #  then by visiting the nested key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        key.traverse f acc cv.nested,
-    },
-
-    chorded_ = {
-      wrap = fun cv =>
-        {
-          nested = cv,
-          key_type = {
-            key_type = "smart_keymap::key::composite::Chorded",
-            nested_key_type = nested.key_type,
-            as_rust_type_path = "%{key_type}<%{nested.key_type.as_rust_type_path}>",
-          },
-          key_impl =
-            nested.key_impl
-            & {
-              chorded = key_type.key_type,
-            },
-          rust_expr = "smart_keymap::key::composite::Chorded(%{nested.rust_expr})",
-        },
-
-      lift_to = fun key_impl { nested = nested_, ..cv } =>
-        if key_impl.chorded == "smart_keymap::key::composite::Chorded" then
-          std.fail_with "not implemented"
-        else
-          cv & { nested = key.lift_to key_impl nested_ },
-
-      # Traverse by visiting the wrapper key,
-      #  then by visiting the nested key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        key.traverse f acc cv.nested,
-    },
-
-    # Construct codegen values to used with keymap::Keymap.
-    #
-    # keymap::Keymap takes in a `keys` which is an indexable collection
-    #  of `key::Key` implementations which have the associated types
-    #  Context, Event, and PressedKey.
-    #
-    # Since `keymap::Keymap` uses `key::Key` with `PressedKey = key::composite::PressedKey`,
-    #  each of the `K0`, `K1`, etc. passed to `KeysN`
-    #  must impl. `key::Key` with those associated types.
-    # e.g. `key::keyboard::Key` implements `key::Key` with `PressedKey=BasePressedKey`;
-    #  so it needs to be lifted to `Chorded(Layered(TapHold(keyboard::Key)))`.
-    lift_to_key = fun cv @ { key_type = { key_type, .. }, .. } =>
-      key_type
-      |> match {
-        "smart_keymap::key::chorded::Key" =>
-          cv,
-        "smart_keymap::key::chorded::AuxiliaryKey" =>
-          cv,
-        _ =>
-          cv |> chorded_nestable.wrap |> chorded_.wrap,
-      }
   },
 
   key = {
@@ -1764,10 +1331,7 @@ let validators = import "validators.ncl" in
         std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
-      let composite_codegen_values =
-        key_codegen_values
-        |> std.array.map composite.lift_to_key
-      in
+      let composite_codegen_values = key_codegen_values in
       let key_types =
         composite_codegen_values
         |> std.array.map (fun { key_type, .. } => key_type)
