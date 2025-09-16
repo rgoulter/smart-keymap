@@ -878,30 +878,30 @@ let validators = import "validators.ncl" in
         key.traverse f acc cv.nested.passthrough,
 
       data_and_ref = fun key_data cv @ { nested = { chords = chords_cvs, passthrough = passthrough_cv }, .. } =>
-        let { key_data, chords_refs } =
+        let { key_data, chord_indices_and_refs } =
           std.array.fold_left
-            (fun { key_data, chords_refs = parts } cv =>
+            (fun { key_data, chord_indices_and_refs = parts } [chord_index, cv] =>
               let { key_data, ref = chord_ref } = key.data_and_ref key_data cv in
               let chord_ref = chord_ref |> composite.ref.wrap in
-              { include key_data, chords_refs = std.array.append chord_ref parts }
+              { include key_data, chord_indices_and_refs = std.array.append [chord_index, chord_ref] parts }
             )
-            { include key_data, chords_refs = [] }
+            { include key_data, chord_indices_and_refs = [] }
             chords_cvs
+        in
         let { key_data, ref = passthrough_ref } = key.data_and_ref key_data passthrough_cv in
         let passthrough_ref = passthrough_ref |> composite.ref.wrap in
-        in
         let { chorded = chorded_, ..other_data } = key_data & { chorded | default = [] } in
         let new_index = std.array.length chorded_ in
         let new_key = {
           json = {
-            chords = chords_refs |> std.array.map (fun chord_ref => chord_ref.json),
+            chords = chord_indices_and_refs |> map_chords (fun chord_ref => chord_ref.json),
             passthrough = passthrough_ref.json,
           },
           rust_expr = m%"
             %{module}::Key::new(
               &[%{
-                chords_refs
-                |> std.array.map (fun chord_ref => "%{chord_ref.rust_expr}")
+                chord_indices_and_refs
+                |> std.array.map (fun [i, chord_ref] => "(%{std.to_string i}, %{chord_ref.rust_expr})")
                 |> std.string.join ", "
               }],
               %{passthrough_ref.rust_expr},
@@ -946,7 +946,7 @@ let validators = import "validators.ncl" in
             passthrough = passthrough_cv,
           },
           key_type = {
-            key_type = "%{chorded}::AuxiliaryKey",
+            key_type = "%{module}::AuxiliaryKey",
           },
           rust_expr =
             let passthrough_expr = nested.passthrough.rust_expr in
@@ -971,7 +971,6 @@ let validators = import "validators.ncl" in
       data_and_ref = fun key_data cv @ { nested = { passthrough = passthrough_cv }, .. } =>
         let { key_data, ref = passthrough_ref } = key.data_and_ref key_data passthrough_cv in
         let passthrough_ref = passthrough_ref |> composite.ref.wrap in
-        in
         let { chorded_auxiliary = chorded_auxiliary_, ..other_data } = key_data & { chorded_auxiliary | default = [] } in
         let new_index = std.array.length chorded_auxiliary_ in
         let new_key = {
@@ -986,7 +985,7 @@ let validators = import "validators.ncl" in
         }
         in
         {
-          key_data = other_data & { chorded = std.array.append new_key chorded_ },
+          key_data = other_data & { chorded_auxiliary = std.array.append new_key chorded_auxiliary_ },
           ref = {
             include module,
             variant = "Auxiliary",
@@ -1067,16 +1066,17 @@ let validators = import "validators.ncl" in
       "smart_keymap::key::layered::LayeredKey" => layered,
       "smart_keymap::key::chorded::Key" => chorded,
       "smart_keymap::key::chorded::AuxiliaryKey" => chorded_aux,
-      "smart_keymap::key::composite::BaseKey" => composite.base_key,
-      "smart_keymap::key::composite::TapHoldKey" => composite.tap_hold_key,
-      "smart_keymap::key::composite::TapHold" => composite.tap_hold_,
-      "smart_keymap::key::composite::LayeredKey" => composite.layered_key,
-      "smart_keymap::key::composite::Layered" => composite.layered_,
       cv => std.fail_with "bad codegen_values for key.codegen_module_for_codegen_value: %{cv |> std.serialize 'Json}",
     },
 
-    codegen_module_for_codegen_value = fun cv @ { key_type = { key_type, .. }, .. } =>
-      codegen_module_for_key_type key_type,
+    # codegen_module_for_codegen_value = fun cv @ { key_type = { key_type, .. }, .. } =>
+      # codegen_module_for_key_type key_type,
+    codegen_module_for_codegen_value = fun cv => cv |>
+      match {
+        { key_type = { key_type, .. }, .. } => codegen_module_for_key_type key_type,
+        _ => std.fail_with "bad codegen_values for key.codegen_module_for_codegen_value: %{cv |> std.serialize 'Json}",
+      },
+
 
     traverse = fun f acc cv =>
       let codegen_module = codegen_module_for_codegen_value cv in
