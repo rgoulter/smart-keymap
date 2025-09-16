@@ -1,5 +1,5 @@
 // mod caps_word;
-// mod chorded;
+mod chorded;
 // mod custom;
 mod layered;
 // mod sticky;
