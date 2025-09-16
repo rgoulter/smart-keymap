@@ -99,47 +99,6 @@ let validators = import "validators.ncl" in
     key_data = key_data_and_refs.key_data |> std.record.map_values (std.array.map (fun { json, .. } => json)),
   },
 
-  # Given an array of codegen_values,
-  #  return the 'wrapper type' that unifies all the values.
-  #
-  # e.g.:
-  # - unified_ [kbd::Key, kbd::Key] => { base = kbd::Key },
-  # - unified_ [kbd::Key, layered::ModKey] => { base = comp::BaseKey },
-  unified_key_impl_for_codegen_values = fun codegen_values =>
-    let key_impls = std.array.map (fun { key_impl, .. } => key_impl) codegen_values in
-    let impls_for = fun field =>
-      key_impls
-      |> std.array.map (fun ki => if std.record.has_field field ki then ki."%{field}" else false)
-      |> std.array.filter ((!=) false)
-    in
-    let base_impls = impls_for "base" in
-    let tap_hold_impls = impls_for "tap_hold" in
-    let layered_impls = impls_for "layered" in
-    let chorded_impls = impls_for "chorded" in
-    let impl_for = fun field aggr impls =>
-      (
-        impls
-        |> match {
-          [] => {},
-          [x, ..xs] =>
-            {
-              "%{field}" =
-                if std.array.all ((==) x) xs then
-                  # If all the impls are the same (e.g. all are keyboard::Key),
-                  #  then can use that as the impl.
-                  x
-                else
-                  # Otherwise, use the aggregating type. (e.g. composite::BaseKey)
-                  aggr,
-            },
-        }
-      )
-    in
-    (impl_for "base" "smart_keymap::key::composite::BaseKey" base_impls)
-    & (impl_for "tap_hold" "smart_keymap::key::composite::TapHoldKey" tap_hold_impls)
-    & (impl_for "layered" "smart_keymap::key::composite::LayeredKey" layered_impls)
-    & (impl_for "chorded" "smart_keymap::key::composite::ChordedKey" chorded_impls),
-
   keyboard_modifiers = {
     JsonValue = std.contract.from_validator json_value_validator,
 
@@ -227,12 +186,6 @@ let validators = import "validators.ncl" in
           json_value = k,
         },
 
-      lift_to = fun key_impl cv =>
-        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
-          cv |> composite.base_key.keyboard
-        else
-          cv,
-
       traverse = fun f acc cv => f acc cv,
 
       data_and_ref = fun key_data cv @ { json_value = k, .. } =>
@@ -314,12 +267,6 @@ let validators = import "validators.ncl" in
           json_value = k,
         },
 
-      lift_to = fun key_impl cv =>
-        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
-          cv |> composite.base_key.caps_word
-        else
-          cv,
-
       traverse = fun f acc cv => f acc cv,
     },
 
@@ -398,12 +345,6 @@ let validators = import "validators.ncl" in
             },
         },
 
-      lift_to = fun key_impl cv =>
-        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
-          cv |> composite.base_key.layer_modifier
-        else
-          cv,
-
       traverse = fun f acc cv => f acc cv,
 
       data_and_ref = fun key_data cv @ { json_value = k, .. } =>
@@ -470,12 +411,6 @@ let validators = import "validators.ncl" in
           json_value = k,
         },
 
-      lift_to = fun key_impl cv =>
-        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
-          cv |> composite.base_key.keymap_callback
-        else
-          cv,
-
       traverse = fun f acc cv => f acc cv,
     },
 
@@ -515,12 +450,6 @@ let validators = import "validators.ncl" in
           json_value = k,
         },
 
-      lift_to = fun key_impl cv =>
-        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
-          cv |> composite.base_key.sticky
-        else
-          cv,
-
       traverse = fun f acc cv => f acc cv,
     },
 
@@ -552,12 +481,6 @@ let validators = import "validators.ncl" in
           json_value = k,
         },
 
-      lift_to = fun key_impl cv =>
-        if key_impl.base == "smart_keymap::key::composite::BaseKey" then
-          cv |> composite.base_key.custom
-        else
-          cv,
-
       traverse = fun f acc cv => f acc cv,
     },
 
@@ -581,11 +504,9 @@ let validators = import "validators.ncl" in
       codegen_values = fun k @ { definitions } =>
         let definitions_cv = definitions |> std.array.map (fun k => k |> key.codegen_values) in
 
-        let target_type = unified_key_impl_for_codegen_values definitions_cv in
-
         {
           nested = {
-            definitions = definitions_cv |> std.array.map (fun cv => cv |> key.lift_to target_type),
+            definitions = definitions_cv,
           },
           key_type = {
             key_type = "smart_keymap::key::tap_dance::Key",
@@ -997,11 +918,6 @@ let validators = import "validators.ncl" in
           },
         },
 
-      # Since key::chorded::Key is a key::Key impl. for keymap::Keymap,
-      #  we want a lift_to fn
-      lift_to = fun key_impl cv =>
-        chorded.map_nested (fun cv_ => key.lift_to key_impl cv_) cv,
-
       # Traverse by visiting the chorded key,
       #  then traversing the chord keys, passthrough keys.
       traverse = fun f acc cv =>
@@ -1057,11 +973,6 @@ let validators = import "validators.ncl" in
             passthrough = f cv.nested.passthrough,
           },
         },
-
-      # Since key::chorded::AuxiliaryKey is a key::Key impl. for keymap::Keymap,
-      #  we want a lift_to fn
-      lift_to = fun key_impl cv =>
-        chorded_aux.map_nested (fun cv_ => key.lift_to key_impl cv_) cv,
 
       # Traverse by visiting the chorded aux key,
       #  then traversing the passthrough key.
@@ -1150,10 +1061,6 @@ let validators = import "validators.ncl" in
 
     codegen_module_for_codegen_value = fun cv @ { key_type = { key_type, .. }, .. } =>
       codegen_module_for_key_type key_type,
-
-    lift_to = fun key_impl cv @ { key_type = { key_type, .. }, .. } =>
-      let codegen_module = codegen_module_for_codegen_value cv in
-      codegen_module.lift_to key_impl cv,
 
     traverse = fun f acc cv =>
       let codegen_module = codegen_module_for_codegen_value cv in
