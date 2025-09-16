@@ -129,7 +129,6 @@ let validators = import "validators.ncl" in
           check_key_type = {
             actual = cv.key_type,
             expected = {
-              as_rust_type_path = "smart_keymap::key::keyboard::Key",
               key_type = "smart_keymap::key::keyboard::Key",
             },
           },
@@ -167,8 +166,7 @@ let validators = import "validators.ncl" in
       codegen_values = fun k =>
         {
           key_type = {
-            key_type = "smart_keymap::key::keyboard::Key",
-            as_rust_type_path = key_type,
+            key_type = "%{module}::Key",
           },
           rust_expr =
             k
@@ -242,6 +240,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::caps_word",
+
       json_value_validator = fun k =>
         k
         |> match {
@@ -254,8 +254,7 @@ let validators = import "validators.ncl" in
       codegen_values = fun k =>
         {
           key_type = {
-            key_type = "smart_keymap::key::caps_word::Key",
-            as_rust_type_path = key_type,
+            key_type = "%{module}::Key",
           },
           rust_expr = "smart_keymap::key::caps_word::Key::new()",
           json_value = k,
@@ -301,31 +300,28 @@ let validators = import "validators.ncl" in
           { Default = layer_index } =>
             {
               key_type = {
-                key_type = "smart_keymap::key::layered::ModifierKey",
-                as_rust_type_path = key_type,
+                key_type = "%{module}::ModifierKey",
               },
               variant = "Default",
-              rust_expr = "smart_keymap::key::layered::ModifierKey::default(%{std.to_string layer_index})",
+              rust_expr = "%{module}::ModifierKey::default(%{std.to_string layer_index})",
               json_value = k,
             },
           { Hold = layer_index } =>
             {
               key_type = {
-                key_type = "smart_keymap::key::layered::ModifierKey",
-                as_rust_type_path = key_type,
+                key_type = "%{module}::ModifierKey",
               },
               variant = "Hold",
-              rust_expr = "smart_keymap::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
+              rust_expr = "%{module}::ModifierKey::hold(%{std.to_string layer_index})",
               json_value = k,
             },
           { SetActiveLayers = active_layers_bitset } =>
             {
               key_type = {
-                key_type = "smart_keymap::key::layered::ModifierKey",
-                as_rust_type_path = key_type,
+                key_type = "%{module}::ModifierKey",
               },
               variant = "SetActiveLayers",
-              rust_expr = "smart_keymap::key::layered::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
+              rust_expr = "%{module}::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
               json_value = k,
             },
         },
@@ -356,6 +352,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "key::callback::Key",
+
       json_value_validator =
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["keymap_callback"],
@@ -378,8 +376,7 @@ let validators = import "validators.ncl" in
       codegen_values = fun k @ { keymap_callback } =>
         {
           key_type = {
-            key_type = "smart_keymap::key::callback::Key",
-            as_rust_type_path = key_type,
+            key_type = "%{module}::Key",
           },
           rust_expr =
             let cb_expr =
@@ -389,7 +386,7 @@ let validators = import "validators.ncl" in
                   "smart_keymap::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
                 _ => "smart_keymap::keymap::KeymapCallback::%{keymap_callback}"
               }
-            in "smart_keymap::key::callback::Key::new(%{cb_expr})",
+            in "%{module}::Key::new(%{cb_expr})",
           json_value = k,
         },
 
@@ -400,6 +397,8 @@ let validators = import "validators.ncl" in
     | doc "for key::sticky::Key."
     = {
       JsonValue = std.contract.from_validator json_value_validator,
+
+      module = "smart_keymap::key::sticky",
 
       json_value_validator =
         validators.record.validator {
@@ -417,14 +416,13 @@ let validators = import "validators.ncl" in
       codegen_values = fun k =>
         {
           key_type = {
-            key_type = "smart_keymap::key::sticky::Key",
-            as_rust_type_path = key_type,
+            key_type = "%{module}::Key",
           },
           rust_expr =
             k
             |> match {
               { sticky_modifiers } =>
-                "smart_keymap::key::sticky::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
+                "%{module}::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
             },
           json_value = k,
         },
@@ -436,6 +434,8 @@ let validators = import "validators.ncl" in
     | doc "for key::custom::Key."
     = {
       JsonValue = std.contract.from_validator json_value_validator,
+
+      module = "smart_keymap::key::custom",
 
       json_value_validator =
         validators.record.validator {
@@ -450,10 +450,9 @@ let validators = import "validators.ncl" in
       codegen_values = fun k @ { custom } =>
         {
           key_type = {
-            key_type = "smart_keymap::key::custom::Key",
-            as_rust_type_path = key_type,
+            key_type = "%{module}::Key",
           },
-          rust_expr = "smart_keymap::key::custom::Key::new(%{std.to_string custom})",
+          rust_expr = "%{module}::Key::new(%{std.to_string custom})",
           json_value = k,
         },
 
@@ -464,6 +463,8 @@ let validators = import "validators.ncl" in
     | doc "for key::tap_dance::Key."
     = {
       JsonValue = std.contract.from_validator json_value_validator,
+
+      module = "smart_keymap::key::tap_dance",
 
       # JSON serialization of key::tap_dance::Key is { definitions: [Option<K>] }
       #  and the codegen uses the from_definitions(&[K]) constructor.
@@ -485,14 +486,12 @@ let validators = import "validators.ncl" in
             definitions = definitions_cv,
           },
           key_type = {
-            key_type = "smart_keymap::key::tap_dance::Key",
-            nested_key_type = (std.array.first nested.definitions).key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            key_type = "%{module}::Key",
           },
           rust_expr =
             let definitions_expr = nested.definitions |> std.array.map (fun cv => cv.rust_expr) in
             let definitions_slice_expr = "&[%{definitions_expr |> std.string.join ", "}]" in
-            "smart_keymap::key::tap_dance::Key::from_definitions(%{definitions_slice_expr})",
+            "%{module}::Key::from_definitions(%{definitions_slice_expr})",
           json_value = k,
         },
 
@@ -534,10 +533,6 @@ let validators = import "validators.ncl" in
         in
         let cv = tap_hold.codegen_values k in
         {
-          check_key_type = {
-            actual = cv.key_type.as_rust_type_path,
-            expected = "smart_keymap::key::tap_hold::Key<smart_keymap::key::keyboard::Key>",
-          },
           check_rust_expr = {
             actual = cv.rust_expr,
             expected = "smart_keymap::key::tap_hold::Key::new(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224))",
@@ -576,14 +571,12 @@ let validators = import "validators.ncl" in
             hold = hold_cv,
           },
           key_type = {
-            key_type = "smart_keymap::key::tap_hold::Key",
-            nested_key_type = nested.tap.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            key_type = "%{module}::Key",
           },
           rust_expr =
             let hold_expr = nested.hold.rust_expr in
             let tap_expr = nested.tap.rust_expr in
-            "smart_keymap::key::tap_hold::Key::new(%{tap_expr}, %{hold_expr})",
+            "%{module}::Key::new(%{tap_expr}, %{hold_expr})",
           json_value = k,
         },
 
@@ -661,10 +654,6 @@ let validators = import "validators.ncl" in
         in
         let cv = layered.codegen_values k in
         {
-          check_key_type = {
-            actual = cv.key_type.as_rust_type_path,
-            expected = "smart_keymap::key::layered::LayeredKey<smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>>",
-          },
           check_rust_expr = {
             actual = cv.rust_expr,
             expected = "smart_keymap::key::layered::LayeredKey::new(smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(4)), [None,Some(smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(6)))])",
@@ -687,10 +676,6 @@ let validators = import "validators.ncl" in
         in
         let cv = layered.codegen_values k in
         {
-          check_key_type = {
-            actual = cv.key_type.as_rust_type_path,
-            expected = "smart_keymap::key::layered::LayeredKey<smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>>",
-          },
           check_rust_expr = {
             actual = cv.rust_expr,
             expected = "smart_keymap::key::layered::LayeredKey::new(smart_keymap::key::composite::TapHoldKey::TapHold(smart_keymap::key::tap_hold::Key::new(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224))), [None,Some(smart_keymap::key::composite::TapHoldKey::Pass(smart_keymap::key::keyboard::Key::new(6)))])",
@@ -748,9 +733,7 @@ let validators = import "validators.ncl" in
             layered = layered_cvs,
           },
           key_type = {
-            key_type = "smart_keymap::key::layered::LayeredKey",
-            nested_key_type = nested.base.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
+            key_type = "%{module}::LayeredKey",
           },
           rust_expr =
             let base_expr = nested.base.rust_expr in
@@ -836,6 +819,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::chorded",
+
       # JSON serialization of key::chorded::Key is { chords: [[id, key]], passthrough: key }
       json_value_validator =
         validators.record.validator {
@@ -861,9 +846,7 @@ let validators = import "validators.ncl" in
             passthrough = passthrough_cv,
           },
           key_type = {
-            key_type = "smart_keymap::key::chorded::Key",
-            nested_key_type = nested.passthrough.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            key_type = "%{module}::Key",
           },
           rust_expr =
             let chords_expr = m%"&[%{
@@ -900,6 +883,8 @@ let validators = import "validators.ncl" in
     = {
       JsonValue = std.contract.from_validator json_value_validator,
 
+      module = "smart_keymap::key::chorded",
+
       # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
       json_value_validator =
         validators.record.validator {
@@ -919,9 +904,7 @@ let validators = import "validators.ncl" in
             passthrough = passthrough_cv,
           },
           key_type = {
-            key_type = "smart_keymap::key::chorded::AuxiliaryKey",
-            nested_key_type = nested.passthrough.key_type,
-            as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
+            key_type = "%{chorded}::AuxiliaryKey",
           },
           rust_expr =
             let passthrough_expr = nested.passthrough.rust_expr in
@@ -1202,12 +1185,7 @@ let validators = import "validators.ncl" in
       in
       let keys_id = "Keys%{std.to_string keymap_len}" in
       let composite_codegen_values = key_codegen_values in
-      let key_types =
-        composite_codegen_values
-        |> std.array.map (fun { key_type, .. } => key_type)
-        |> std.array.map (fun { as_rust_type_path, .. } => as_rust_type_path)
-        |> std.string.join ","
-      in
+      let key_types = std.fail_with "TBI: replace old implementation detail" in
       let key_exprs =
         composite_codegen_values
         |> std.array.map (fun k => "%{k.rust_expr},")
