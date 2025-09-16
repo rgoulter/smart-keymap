@@ -1474,7 +1474,7 @@ pub mod init {
     pub const SYSTEM: System = %{key_system_expr};
 
     /// Alias for the [keymap::Keymap] type.
-    pub type Keymap = keymap::Keymap<
+    pub type Keymap = smart_keymap::keymap::Keymap<
         [Ref; KEY_COUNT],
         Ref,
         Context,
