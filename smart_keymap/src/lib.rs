@@ -122,7 +122,7 @@ pub struct KeymapHidReport {
     pub custom: [u8; 6],
 }
 
-static mut KEYMAP: init::Keymap = init::Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
+static mut KEYMAP: init::Keymap = init::Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
 
 /// Initialize the global keymap instance.
 #[allow(static_mut_refs)]

@@ -1310,6 +1310,7 @@ let validators = import "validators.ncl" in
       let data_len_rust_expr = fun field_name =>
         let data = (key_data & { "%{field_name}" | default = [] })."%{field_name}" in
         data |> std.array.length |> std.to_string
+      in
       let keyboard_system_expr =
         let keyboard_data = (key_data & { keyboard | default = [] }).keyboard in
         m%"

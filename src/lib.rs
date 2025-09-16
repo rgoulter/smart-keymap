@@ -64,14 +64,13 @@ pub mod slice;
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate::key::composite;
-    use crate::key::keyboard;
-    use crate::keymap;
+    use crate as smart_keymap;
+
+    use smart_keymap::key::composite;
+    use smart_keymap::key::keyboard;
+    use smart_keymap::keymap;
 
     use composite as key_system;
-
-    /// Config used to construct initial context.
-    pub const CONFIG: key_system::Config = key_system::DEFAULT_CONFIG;
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
@@ -98,40 +97,38 @@ pub mod init {
 
     pub use key_system::KeyState;
 
-    pub use key_system::System;
-
     /// Max number of data entries for each system.
-    pub const DATA_LEN: usize = 32;
+    pub const DATA_LEN: usize = 0;
 
-    /// Initial [Context] value.
-    pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
+    /// Alias for the System type
+    pub type System = key_system::System<
+        key_system::KeyArrays<DATA_LEN, DATA_LEN, DATA_LEN, DATA_LEN, DATA_LEN, DATA_LEN, DATA_LEN>,
+    >;
 
     /// The number of keys in the keymap.
     pub const KEY_COUNT: usize = 1;
 
-    /// Alias for the [keymap::Keymap] type.
-    pub type Keymap = keymap::Keymap<
-        [Ref; KEY_COUNT],
-        Ref,
-        Context,
-        Event,
-        PendingKeyState,
-        KeyState,
-        System<
-            crate::key::composite::KeyArrays<
-                DATA_LEN,
-                DATA_LEN,
-                DATA_LEN,
-                DATA_LEN,
-                DATA_LEN,
-                DATA_LEN,
-                DATA_LEN,
-            >,
-        >,
-    >;
-
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_DEFINITIONS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
+    pub const KEY_REFS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
+
+    /// Config used to construct initial context.
+    pub const CONFIG: key_system::Config = key_system::DEFAULT_CONFIG;
+
+    /// Initial [Context] value.
+    pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
+
+    /// Initial [Context] value.
+    pub const SYSTEM: System = System::array_based(
+        smart_keymap::key::keyboard::System::new([]),
+        smart_keymap::key::sticky::System::new([]),
+        smart_keymap::key::tap_hold::System::new([]),
+        smart_keymap::key::layered::System::new([], []),
+        smart_keymap::key::chorded::System::new([], []),
+    );
+
+    /// Alias for the [keymap::Keymap] type.
+    pub type Keymap =
+        keymap::Keymap<[Ref; KEY_COUNT], Ref, Context, Event, PendingKeyState, KeyState, System>;
 }
 
 #[cfg(custom_keymap)]
