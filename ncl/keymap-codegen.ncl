@@ -876,6 +876,48 @@ let validators = import "validators.ncl" in
         let chords_cvs = cv.nested.chords |> std.array.map (fun [_, ch_cv] => ch_cv) in
         let acc = std.array.fold_left (fun acc ch_cv => key.traverse f acc ch_cv) acc chords_cvs in
         key.traverse f acc cv.nested.passthrough,
+
+      data_and_ref = fun key_data cv @ { nested = { chords = chords_cvs, passthrough = passthrough_cv }, .. } =>
+        let { key_data, chords_refs } =
+          std.array.fold_left
+            (fun { key_data, chords_refs = parts } cv =>
+              let { key_data, ref = chord_ref } = key.data_and_ref key_data cv in
+              let chord_ref = chord_ref |> composite.ref.wrap in
+              { include key_data, chords_refs = std.array.append chord_ref parts }
+            )
+            { include key_data, chords_refs = [] }
+            chords_cvs
+        let { key_data, ref = passthrough_ref } = key.data_and_ref key_data passthrough_cv in
+        let passthrough_ref = passthrough_ref |> composite.ref.wrap in
+        in
+        let { chorded = chorded_, ..other_data } = key_data & { chorded | default = [] } in
+        let new_index = std.array.length chorded_ in
+        let new_key = {
+          json = {
+            chords = chords_refs |> std.array.map (fun chord_ref => chord_ref.json),
+            passthrough = passthrough_ref.json,
+          },
+          rust_expr = m%"
+            %{module}::Key::new(
+              &[%{
+                chords_refs
+                |> std.array.map (fun chord_ref => "%{chord_ref.rust_expr}")
+                |> std.string.join ", "
+              }],
+              %{passthrough_ref.rust_expr},
+            )
+          "%,
+        }
+        in
+        {
+          key_data = other_data & { chorded = std.array.append new_key chorded_ },
+          ref = {
+            include module,
+            variant = "Chorded",
+            json = { "%{variant}" = new_index },
+            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+          },
+        },
     },
 
   chorded_aux
@@ -925,6 +967,33 @@ let validators = import "validators.ncl" in
       traverse = fun f acc cv =>
         let acc = f acc cv in
         key.traverse f acc cv.nested.passthrough,
+
+      data_and_ref = fun key_data cv @ { nested = { passthrough = passthrough_cv }, .. } =>
+        let { key_data, ref = passthrough_ref } = key.data_and_ref key_data passthrough_cv in
+        let passthrough_ref = passthrough_ref |> composite.ref.wrap in
+        in
+        let { chorded_auxiliary = chorded_auxiliary_, ..other_data } = key_data & { chorded_auxiliary | default = [] } in
+        let new_index = std.array.length chorded_auxiliary_ in
+        let new_key = {
+          json = {
+            passthrough = passthrough_ref.json,
+          },
+          rust_expr = m%"
+            %{module}::AuxiliaryKey::new(
+              %{passthrough_ref.rust_expr},
+            )
+          "%,
+        }
+        in
+        {
+          key_data = other_data & { chorded = std.array.append new_key chorded_ },
+          ref = {
+            include module,
+            variant = "Auxiliary",
+            json = { "%{variant}" = new_index },
+            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+          },
+        },
     },
 
   checks.check_composite = {},
@@ -938,6 +1007,7 @@ let validators = import "validators.ncl" in
             "smart_keymap::key::keyboard" => "Keyboard",
             "smart_keymap::key::tap_hold" => "TapHold",
             "smart_keymap::key::layered" => "Layered",
+            "smart_keymap::key::chorded" => "Chorded",
             _ => std.fail_with "bad ref for composite.ref.wrap: %{std.serialize ref 'Json}",
           }
         in
