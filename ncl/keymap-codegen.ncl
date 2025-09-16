@@ -170,9 +170,6 @@ let validators = import "validators.ncl" in
             key_type = "smart_keymap::key::keyboard::Key",
             as_rust_type_path = key_type,
           },
-          key_impl = {
-            base = key_type.key_type,
-          },
           rust_expr =
             k
             |> match {
@@ -260,9 +257,6 @@ let validators = import "validators.ncl" in
             key_type = "smart_keymap::key::caps_word::Key",
             as_rust_type_path = key_type,
           },
-          key_impl = {
-            base = key_type.key_type,
-          },
           rust_expr = "smart_keymap::key::caps_word::Key::new()",
           json_value = k,
         },
@@ -310,9 +304,6 @@ let validators = import "validators.ncl" in
                 key_type = "smart_keymap::key::layered::ModifierKey",
                 as_rust_type_path = key_type,
               },
-              key_impl = {
-                base = key_type.key_type,
-              },
               variant = "Default",
               rust_expr = "smart_keymap::key::layered::ModifierKey::default(%{std.to_string layer_index})",
               json_value = k,
@@ -323,9 +314,6 @@ let validators = import "validators.ncl" in
                 key_type = "smart_keymap::key::layered::ModifierKey",
                 as_rust_type_path = key_type,
               },
-              key_impl = {
-                base = key_type.key_type,
-              },
               variant = "Hold",
               rust_expr = "smart_keymap::key::layered::ModifierKey::hold(%{std.to_string layer_index})",
               json_value = k,
@@ -335,9 +323,6 @@ let validators = import "validators.ncl" in
               key_type = {
                 key_type = "smart_keymap::key::layered::ModifierKey",
                 as_rust_type_path = key_type,
-              },
-              key_impl = {
-                base = key_type.key_type,
               },
               variant = "SetActiveLayers",
               rust_expr = "smart_keymap::key::layered::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
@@ -396,9 +381,6 @@ let validators = import "validators.ncl" in
             key_type = "smart_keymap::key::callback::Key",
             as_rust_type_path = key_type,
           },
-          key_impl = {
-            base = key_type.key_type,
-          },
           rust_expr =
             let cb_expr =
               keymap_callback
@@ -438,9 +420,6 @@ let validators = import "validators.ncl" in
             key_type = "smart_keymap::key::sticky::Key",
             as_rust_type_path = key_type,
           },
-          key_impl = {
-            base = key_type.key_type,
-          },
           rust_expr =
             k
             |> match {
@@ -473,9 +452,6 @@ let validators = import "validators.ncl" in
           key_type = {
             key_type = "smart_keymap::key::custom::Key",
             as_rust_type_path = key_type,
-          },
-          key_impl = {
-            base = key_type.key_type,
           },
           rust_expr = "smart_keymap::key::custom::Key::new(%{std.to_string custom})",
           json_value = k,
@@ -513,7 +489,6 @@ let validators = import "validators.ncl" in
             nested_key_type = (std.array.first nested.definitions).key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
-          key_impl = {} & (std.array.first nested.definitions).key_impl,
           rust_expr =
             let definitions_expr = nested.definitions |> std.array.map (fun cv => cv.rust_expr) in
             let definitions_slice_expr = "&[%{definitions_expr |> std.string.join ", "}]" in
@@ -605,7 +580,6 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.tap.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
-          key_impl = {} & nested.tap.key_impl,
           rust_expr =
             let hold_expr = nested.hold.rust_expr in
             let tap_expr = nested.tap.rust_expr in
@@ -778,7 +752,6 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.base.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>",
           },
-          key_impl = {} & nested.base.key_impl,
           rust_expr =
             let base_expr = nested.base.rust_expr in
             let layered_exprs =
@@ -892,11 +865,6 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.passthrough.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
-          key_impl =
-            nested.passthrough.key_impl
-            & {
-              chorded = key_type.key_type,
-            },
           rust_expr =
             let chords_expr = m%"&[%{
               nested.chords
@@ -955,11 +923,6 @@ let validators = import "validators.ncl" in
             nested_key_type = nested.passthrough.key_type,
             as_rust_type_path = "%{key_type}<%{nested_key_type.as_rust_type_path}>"
           },
-          key_impl =
-            nested.passthrough.key_impl
-            & {
-              chorded = key_type.key_type,
-            },
           rust_expr =
             let passthrough_expr = nested.passthrough.rust_expr in
             "smart_keymap::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
