@@ -729,12 +729,12 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
         match (key_ref, key_state) {
-            (Ref::Keyboard(key_ref), KeyState::Keyboard(mut key_state)) => {
+            (Ref::Keyboard(key_ref), KeyState::Keyboard(key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
                     let pke =
                         <key::keyboard::System<K::Keyboard> as key::System<Ref>>::update_state(
                             &self.keyboard,
-                            &mut key_state,
+                            key_state,
                             key_ref,
                             context.into(),
                             keymap_index,
@@ -745,11 +745,11 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     key::KeyEvents::no_events()
                 }
             }
-            (Ref::Sticky(key_ref), KeyState::Sticky(mut key_state)) => {
+            (Ref::Sticky(key_ref), KeyState::Sticky(key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
                     let pke = <key::sticky::System<K::Sticky> as key::System<Ref>>::update_state(
                         &self.sticky,
-                        &mut key_state,
+                        key_state,
                         key_ref,
                         context.into(),
                         keymap_index,
@@ -760,14 +760,14 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     key::KeyEvents::no_events()
                 }
             }
-            (Ref::Layered(key_ref), KeyState::LayerModifier(mut key_state)) => {
+            (Ref::Layered(key_ref), KeyState::LayerModifier(key_state)) => {
                 if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
                     let pke =
                         <key::layered::System<Ref, K::LayerModifiers, K::Layered> as key::System<
                             Ref,
                         >>::update_state(
                             &self.layered,
-                            &mut key_state,
+                            key_state,
                             key_ref,
                             context.into(),
                             keymap_index,

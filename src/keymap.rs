@@ -473,18 +473,12 @@ where
             self.pressed_inputs.iter_mut().for_each(|pi| {
                 if let input::PressedInput::Key(input::PressedKey {
                     key_ref,
-                    mut key_state,
+                    key_state,
                     keymap_index,
                 }) = pi
                 {
                     self.key_system
-                        .update_state(
-                            &mut key_state,
-                            &key_ref,
-                            &self.context,
-                            *keymap_index,
-                            ev.into(),
-                        )
+                        .update_state(key_state, &key_ref, &self.context, *keymap_index, ev.into())
                         .into_iter()
                         .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                 }
@@ -686,13 +680,13 @@ where
         // Update each of the pressed keys with the event.
         self.pressed_inputs.iter_mut().for_each(|pi| {
             if let input::PressedInput::Key(input::PressedKey {
-                mut key_state,
+                key_state,
                 key_ref,
                 keymap_index,
             }) = pi
             {
                 self.key_system
-                    .update_state(&mut key_state, &key_ref, &self.context, *keymap_index, ev)
+                    .update_state(key_state, &key_ref, &self.context, *keymap_index, ev)
                     .into_iter()
                     .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
             }
