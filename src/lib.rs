@@ -117,7 +117,16 @@ pub mod init {
         Event,
         PendingKeyState,
         KeyState,
-        System<crate::key::composite::KeyArrays<DATA_LEN, DATA_LEN, DATA_LEN, DATA_LEN>>,
+        System<
+            crate::key::composite::KeyArrays<
+                DATA_LEN,
+                DATA_LEN,
+                DATA_LEN,
+                DATA_LEN,
+                DATA_LEN,
+                DATA_LEN,
+            >,
+        >,
     >;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.

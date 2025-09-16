@@ -495,6 +495,10 @@ pub trait Keys {
     type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
     /// Type used by [key::layered::System].
     type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref>>;
+    /// Type used by [key::chorded::System].
+    type Chorded: Debug + Index<usize, Output = key::chorded::Key<Ref>>;
+    /// Type used by [key::chorded::System].
+    type ChordedAuxiliary: Debug + Index<usize, Output = key::chorded::AuxiliaryKey<Ref>>;
 }
 
 /// Array-based data implementations.
@@ -504,6 +508,8 @@ pub struct KeyArrays<
     const TAP_HOLD: usize,
     const LAYER_MODIFIERS: usize,
     const LAYERED: usize,
+    const CHORDED: usize,
+    const CHORDED_AUXILIARY: usize,
 >;
 
 impl<
@@ -511,12 +517,16 @@ impl<
         const TAP_HOLD: usize,
         const LAYER_MODIFIERS: usize,
         const LAYERED: usize,
-    > Keys for KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED>
+        const CHORDED: usize,
+        const CHORDED_AUXILIARY: usize,
+    > Keys for KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED, CHORDED, CHORDED_AUXILIARY>
 {
     type Keyboard = [key::keyboard::Key; KEYBOARD];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
     type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
     type Layered = [key::layered::LayeredKey<Ref>; LAYERED];
+    type Chorded = [key::chorded::Key<Ref>; CHORDED];
+    type ChordedAuxiliary = [key::chorded::AuxiliaryKey<Ref>; CHORDED_AUXILIARY];
 }
 
 /// Vec-based data implementations.
@@ -530,6 +540,8 @@ impl Keys for KeyVecs {
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
     type LayerModifiers = Vec<key::layered::ModifierKey>;
     type Layered = Vec<key::layered::LayeredKey<Ref>>;
+    type Chorded = Vec<key::chorded::Key<Ref>>;
+    type ChordedAuxiliary = Vec<key::chorded::AuxiliaryKey<Ref>>;
 }
 
 /// Aggregate [key::System] implementation.
@@ -538,6 +550,7 @@ pub struct System<D: Keys> {
     keyboard: key::keyboard::System<D::Keyboard>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
+    chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
     marker: PhantomData<D>,
 }
 
@@ -546,7 +559,9 @@ impl<
         const TAP_HOLD: usize,
         const LAYER_MODIFIERS: usize,
         const LAYERED: usize,
-    > System<KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED>>
+        const CHORDED: usize,
+        const CHORDED_AUXILIARY: usize,
+    > System<KeyArrays<KEYBOARD, TAP_HOLD, LAYER_MODIFIERS, LAYERED, CHORDED, CHORDED_AUXILIARY>>
 {
     /// Constructs a new [System].
     pub const fn array_based(
@@ -557,11 +572,17 @@ impl<
             [key::layered::ModifierKey; LAYER_MODIFIERS],
             [key::layered::LayeredKey<Ref>; LAYERED],
         >,
+        chorded: key::chorded::System<
+            Ref,
+            [key::chorded::Key<Ref>; CHORDED],
+            [key::chorded::AuxiliaryKey<Ref>; CHORDED_AUXILIARY],
+        >,
     ) -> Self {
         System {
             keyboard,
             tap_hold,
             layered,
+            chorded,
             marker: PhantomData,
         }
     }
@@ -578,11 +599,17 @@ impl System<KeyVecs> {
             <KeyVecs as Keys>::LayerModifiers,
             <KeyVecs as Keys>::Layered,
         >,
+        chorded: key::chorded::System<
+            Ref,
+            <KeyVecs as Keys>::Chorded,
+            <KeyVecs as Keys>::ChordedAuxiliary,
+        >,
     ) -> Self {
         System {
             keyboard,
             tap_hold,
             layered,
+            chorded,
             marker: PhantomData,
         }
     }

@@ -35,6 +35,7 @@ fn basic_keymap_expression() {
                 smart_keymap::key::keyboard::System::new([]),
                 smart_keymap::key::tap_hold::System::new([]),
                 smart_keymap::key::layered::System::new([], []),
+                smart_keymap::key::chorded::System::new([], []),
             ),
         )
     };
