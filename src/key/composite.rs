@@ -59,7 +59,7 @@ pub const DEFAULT_CONFIG: Config = Config {
 pub struct Context {
     keymap_context: keymap::KeymapContext,
     // caps_word_context: key::caps_word::Context,
-    chorded_context: key::chorded::Context,
+    chorded: key::chorded::Context,
     layered: key::layered::Context,
     // tap_dance_context: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
@@ -70,7 +70,7 @@ pub struct Context {
 pub const DEFAULT_CONTEXT: Context = Context {
     keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
     // caps_word_context: key::caps_word::DEFAULT_CONTEXT,
-    chorded_context: key::chorded::DEFAULT_CONTEXT,
+    chorded: key::chorded::DEFAULT_CONTEXT,
     layered: key::layered::DEFAULT_CONTEXT,
     // sticky_context: key::sticky::DEFAULT_CONTEXT,
     // tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
@@ -81,7 +81,7 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
-            chorded_context: key::chorded::Context::from_config(config.chorded),
+            chorded: key::chorded::Context::from_config(config.chorded),
             // sticky_context: key::sticky::Context::from_config(config.sticky),
             // tap_dance_context: key::tap_dance::Context::from_config(config.tap_dance),
             tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
@@ -112,7 +112,7 @@ impl key::Context for Context {
         // }
 
         if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
-            self.chorded_context.handle_event(e);
+            self.chorded.handle_event(e);
         }
 
         if let key::Event::Key {
@@ -155,7 +155,7 @@ impl<'c> From<&'c Context> for &'c key::keyboard::Context {
 
 impl<'c> From<&'c Context> for &'c key::chorded::Context {
     fn from(ctx: &'c Context) -> Self {
-        &ctx.chorded_context
+        &ctx.chorded
     }
 }
 
@@ -198,12 +198,6 @@ pub enum Event {
     TapHold(key::tap_hold::Event),
     /// A layer modification event.
     LayerModification(key::layered::LayerEvent),
-}
-
-impl From<key::keyboard::Event> for Event {
-    fn from(_ev: key::keyboard::Event) -> Self {
-        panic!("key::keyboard never emits events")
-    }
 }
 
 // impl From<key::caps_word::Event> for Event {
@@ -327,12 +321,6 @@ pub enum PendingKeyState {
     Chorded(key::chorded::PendingKeyState),
 }
 
-impl From<key::keyboard::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::keyboard::PendingKeyState) -> Self {
-        panic!("key::keyboard has no pending state")
-    }
-}
-
 // impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
 //     fn from(pks: key::tap_dance::PendingKeyState) -> Self {
 //         PendingKeyState::TapDance(pks)
@@ -342,12 +330,6 @@ impl From<key::keyboard::PendingKeyState> for PendingKeyState {
 impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     fn from(pks: key::tap_hold::PendingKeyState) -> Self {
         PendingKeyState::TapHold(pks)
-    }
-}
-
-impl From<key::layered::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::layered::PendingKeyState) -> Self {
-        panic!("key::layered has no pending state")
     }
 }
 
@@ -637,8 +619,8 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     self.keyboard
                         .new_pressed_key(keymap_index, &key::keyboard::Context, key_ref);
                 (
-                    pkr.map(Into::into, KeyState::Keyboard),
-                    pke.map_events(Into::into),
+                    pkr.map(|_| panic!(), KeyState::Keyboard),
+                    pke.map_events(|_| panic!()),
                 )
             }
             Ref::TapHold(key_ref) => {
@@ -655,12 +637,18 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     self.layered
                         .new_pressed_key(keymap_index, &context.layered, key_ref);
                 (
-                    pkr.map(Into::into, KeyState::LayerModifier),
+                    pkr.map(|_| panic!(), KeyState::LayerModifier),
                     pke.map_events(Into::into),
                 )
             }
-            Ref::Chorded(_key_ref) => {
-                todo!()
+            Ref::Chorded(key_ref) => {
+                let (pkr, pke) =
+                    self.chorded
+                        .new_pressed_key(keymap_index, &context.chorded, key_ref);
+                (
+                    pkr.map(Into::into, |_| panic!()),
+                    pke.map_events(Into::into),
+                )
             }
         }
     }
@@ -680,6 +668,20 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                         pending_state,
                         keymap_index,
                         &context.tap_hold,
+                        key_ref,
+                        event,
+                    );
+                    (maybe_npk, pke.map_events(Into::into))
+                } else {
+                    (None, key::KeyEvents::no_events())
+                }
+            }
+            (Ref::Chorded(key_ref), PendingKeyState::Chorded(pending_state)) => {
+                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                    let (maybe_npk, pke) = self.chorded.update_pending_state(
+                        pending_state,
+                        keymap_index,
+                        &context.chorded,
                         key_ref,
                         event,
                     );
@@ -712,7 +714,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                             keymap_index,
                             event,
                         );
-                    pke.map_events(Into::into)
+                    pke.map_events(|_| panic!())
                 } else {
                     key::KeyEvents::no_events()
                 }
