@@ -35,10 +35,11 @@
 //!
 //! # Implementation Overview
 //!
-//! The heart of the library is the [key] module, and its
-//! [key::Key], [key::Context], [key::KeyState] traits.
+//! The heart of the library is the [key] module,
+//! and its [key::System] trait.
 //!
-//! These provide the interface with which 'smart keys' are implemented.
+//! Implementors are then aggregated by [key::composite],
+//! which is used by the [keymap] module.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -46,14 +47,12 @@
 pub mod input;
 /// Smart key interface and implementations.
 ///
-/// The core interface for the smart keymap library is [key::Key],
+/// The core interface for the smart keymap library is [key::System],
 ///  and its associated [key::Context], `PendingKeyState`, and [key::KeyState] types.
 /// Together, these are used to define smart key behaviour.
 pub mod key;
 /// Keymap implementation.
 pub mod keymap;
-/// Keys1, Keys2, etc. tuple structs for defining keymaps.
-pub mod tuples;
 
 /// Split keyboard support.
 pub mod split;
@@ -65,12 +64,13 @@ pub mod slice;
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate::key::{composite, keyboard};
-    use crate::keymap;
-    use crate::tuples::Keys1;
+    use crate as smart_keymap;
 
-    /// Config used to construct initial context.
-    pub const CONFIG: crate::key::composite::Config = crate::key::composite::DEFAULT_CONFIG;
+    use smart_keymap::key::composite;
+    use smart_keymap::key::keyboard;
+    use smart_keymap::keymap;
+
+    use composite as key_system;
 
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYER_COUNT: usize = 8;
@@ -87,28 +87,60 @@ pub mod init {
     /// The tap-dance definitions.
     pub const MAX_TAP_DANCE_DEFINITIONS: usize = 3;
 
-    pub use composite::Context;
+    pub use key_system::Ref;
 
-    pub use composite::Event;
+    pub use key_system::Context;
 
-    pub use composite::PendingKeyState;
+    pub use key_system::Event;
 
-    pub use composite::KeyState;
+    pub use key_system::PendingKeyState;
 
-    pub use composite::Key;
+    pub use key_system::KeyState;
 
-    /// Initial [Context] value.
-    pub const CONTEXT: Context = composite::Context::from_config(CONFIG);
+    /// Max number of data entries for each system.
+    pub const DATA_LEN: usize = 0;
 
-    /// Alias for a tuples KeysN type. Without a custom keymap, just a single [composite::Key].
-    pub type KeyDefinitionsType = Keys1<Key, Context, Event, PendingKeyState, KeyState>;
+    /// Alias for the System type
+    pub type System = key_system::System<
+        key_system::KeyArrays<
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
+        >,
+    >;
 
-    /// Alias for the [keymap::Keymap] type.
-    pub type Keymap = keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
+    /// The number of keys in the keymap.
+    pub const KEY_COUNT: usize = 1;
 
     /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_DEFINITIONS: KeyDefinitionsType =
-        Keys1::new((Key::keyboard(keyboard::Key::new(0x04)),));
+    pub const KEY_REFS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
+
+    /// Config used to construct initial context.
+    pub const CONFIG: key_system::Config = key_system::DEFAULT_CONFIG;
+
+    /// Initial [Context] value.
+    pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
+
+    /// Initial [Context] value.
+    pub const SYSTEM: System = System::array_based(
+        smart_keymap::key::keyboard::System::new([]),
+        smart_keymap::key::callback::System::new([]),
+        smart_keymap::key::sticky::System::new([]),
+        smart_keymap::key::tap_dance::System::new([]),
+        smart_keymap::key::tap_hold::System::new([]),
+        smart_keymap::key::layered::System::new([], []),
+        smart_keymap::key::chorded::System::new([], []),
+    );
+
+    /// Alias for the [keymap::Keymap] type.
+    pub type Keymap =
+        keymap::Keymap<[Ref; KEY_COUNT], Ref, Context, Event, PendingKeyState, KeyState, System>;
 }
 
 #[cfg(custom_keymap)]

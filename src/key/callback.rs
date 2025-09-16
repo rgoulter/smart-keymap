@@ -1,4 +1,5 @@
-#![doc = include_str!("doc_de_callback.md")]
+use core::fmt::Debug;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -6,7 +7,11 @@ use crate::key;
 
 use crate::keymap::KeymapCallback;
 
-/// A key for HID Keyboard usage codes.
+/// Reference for a keymap callback key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Ref(pub u8);
+
+/// A key for keymap callbacks.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key {
     /// The keymap callback
@@ -20,46 +25,87 @@ impl Key {
     }
 }
 
-impl key::Key for Key {
-    type Context = crate::init::Context;
-    type Event = crate::init::Event;
-    type PendingKeyState = crate::init::PendingKeyState;
-    type KeyState = crate::init::KeyState;
+/// The context type for keymap callback keys. (No events).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Context;
+
+/// The event type for keymap callback keys. (No events).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Event;
+
+/// The pending key state type for keymap callback keys. (No pending state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PendingKeyState;
+
+/// Key state used by [System]. (No state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KeyState;
+
+/// The [key::System] implementation for keymap callback keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<Keys: Index<usize, Output = Key>> {
+    keys: Keys,
+}
+
+impl<Keys: Index<usize, Output = Key>> System<Keys> {
+    /// Constructs a new [System] with the given key data.
+    ///
+    /// The key data is for keys with both key codes and modifiers.
+    pub const fn new(key_data: Keys) -> Self {
+        Self { keys: key_data }
+    }
+}
+
+impl<R, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<Keys> {
+    type Ref = Ref;
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
 
     fn new_pressed_key(
         &self,
+        _keymap_index: u16,
         _context: &Self::Context,
-        _key_path: key::KeyPath,
+        Ref(key_index): Ref,
     ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        let &Key { keymap_callback } = self;
+        let &Key { keymap_callback } = &self.keys[key_index as usize];
         let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp);
         let km_ev = crate::keymap::KeymapEvent::Callback(keymap_callback);
         let pke = key::KeyEvents::event(key::Event::Keymap(km_ev));
         (pkr, pke)
     }
 
-    fn handle_event(
+    fn update_pending_state(
         &self,
         _pending_state: &mut Self::PendingKeyState,
+        _keymap_index: u16,
         _context: &Self::Context,
-        _key_path: key::KeyPath,
+        _key_ref: Ref,
         _event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
         panic!()
     }
 
-    fn lookup(
+    fn update_state(
         &self,
-        _path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        self
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        panic!()
+    }
+
+    fn key_output(
+        &self,
+        _key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        panic!()
     }
 }

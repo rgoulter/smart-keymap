@@ -19,45 +19,28 @@ fn basic_keymap_expression() {
     use keymap::DistinctReports;
 
     let mut keymap = {
-        use smart_keymap::key::composite::Context;
-        use smart_keymap::key::composite::Event;
-        use smart_keymap::key::composite::KeyState;
-        use smart_keymap::key::composite::PendingKeyState;
-        smart_keymap::tuples::define_keys!(1);
-        type KeyDefinitionsType = Keys1<
-            smart_keymap::key::composite::Chorded<
-                smart_keymap::key::composite::Layered<
-                    smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-                >,
-            >,
-            Context,
-            Event,
-            PendingKeyState,
-            KeyState,
-        >;
-        type Keymap = smart_keymap::keymap::Keymap<
-            Context,
-            Event,
-            PendingKeyState,
-            KeyState,
-            KeyDefinitionsType,
-        >;
-        const KEY_DEFINITIONS: KeyDefinitionsType = Keys1::new((
-            smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-                smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(4)),
-            )),
-        ));
-        const CONTEXT: Context = smart_keymap::key::composite::Context::from_config(
-            smart_keymap::key::composite::Config {
-                chorded: smart_keymap::key::chorded::DEFAULT_CONFIG,
-                sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-                tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
-                tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
-                ..smart_keymap::key::composite::DEFAULT_CONFIG
-            },
-        );
+        use key_system::Context;
+        use key_system::Ref;
+        use smart_keymap::key::composite as key_system;
+        const KEY_COUNT: usize = 1;
+        const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
+            smart_keymap::key::keyboard::Ref::KeyCode(0x04),
+        )];
+        const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
 
-        Keymap::new(KEY_DEFINITIONS, CONTEXT)
+        smart_keymap::keymap::Keymap::new(
+            KEY_REFS,
+            CONTEXT,
+            smart_keymap::key::composite::System::array_based(
+                smart_keymap::key::keyboard::System::new([]),
+                smart_keymap::key::callback::System::new([]),
+                smart_keymap::key::sticky::System::new([]),
+                smart_keymap::key::tap_dance::System::new([]),
+                smart_keymap::key::tap_hold::System::new([]),
+                smart_keymap::key::layered::System::new([], []),
+                smart_keymap::key::chorded::System::new([], []),
+            ),
+        )
     };
     let mut actual_reports = DistinctReports::new();
 

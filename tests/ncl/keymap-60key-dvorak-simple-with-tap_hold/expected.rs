@@ -2,18 +2,6 @@
 pub mod init {
     use crate as smart_keymap;
 
-    /// Config used by tap-hold keys.
-    pub const CONFIG: smart_keymap::key::composite::Config = smart_keymap::key::composite::Config {
-        chorded: smart_keymap::key::chorded::Config {
-            chords: smart_keymap::slice::Slice::from_slice(&[]),
-            ..smart_keymap::key::chorded::DEFAULT_CONFIG
-        },
-        sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-        tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
-        tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
-        ..smart_keymap::key::composite::DEFAULT_CONFIG
-    };
-
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYER_COUNT: usize = 0;
 
@@ -29,6 +17,8 @@ pub mod init {
     /// The tap-dance definitions.
     pub const MAX_TAP_DANCE_DEFINITIONS: usize = 0;
 
+    pub use smart_keymap::key::composite::Ref;
+
     pub use smart_keymap::key::composite::Context;
 
     pub use smart_keymap::key::composite::Event;
@@ -37,7 +27,117 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
-    pub use smart_keymap::key::composite::Key;
+    const KEYBOARD_DATA_LEN: usize = 0;
+    const CALLBACK_DATA_LEN: usize = 0;
+    const STICKY_DATA_LEN: usize = 0;
+    const TAP_DANCE_DATA_LEN: usize = 0;
+    const TAP_HOLD_DATA_LEN: usize = 8;
+    const LAYER_MODIFIERS_DATA_LEN: usize = 0;
+    const LAYERED_DATA_LEN: usize = 0;
+    const CHORDED_DATA_LEN: usize = 0;
+    const CHORDED_AUXILIARY_DATA_LEN: usize = 0;
+
+    /// The System type
+    pub type System = smart_keymap::key::composite::System<
+        smart_keymap::key::composite::KeyArrays<
+            KEYBOARD_DATA_LEN,
+            CALLBACK_DATA_LEN,
+            STICKY_DATA_LEN,
+            TAP_DANCE_DATA_LEN,
+            TAP_HOLD_DATA_LEN,
+            LAYER_MODIFIERS_DATA_LEN,
+            LAYERED_DATA_LEN,
+            CHORDED_DATA_LEN,
+            CHORDED_AUXILIARY_DATA_LEN,
+        >,
+    >;
+
+    /// The number of keys in the keymap.
+    pub const KEY_COUNT: usize = 60;
+
+    /// The key references.
+    pub const KEY_REFS: [Ref; KEY_COUNT] = [
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(53)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(30)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(31)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(32)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(33)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(34)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(35)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(36)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(37)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(38)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(39)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(52)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(54)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(55)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(19)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(28)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(9)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(10)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(6)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(21)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(15)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(42)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(0)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(1)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(2)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(3)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(12)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(7)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(4)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(5)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(6)),
+        smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(7)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(40)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(2)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(51)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(20)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(13)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(14)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(27)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(5)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(16)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(26)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(25)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(29)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(
+            32,
+        )),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(8)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(44)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(42)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(40)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(
+            64,
+        )),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(
+            128,
+        )),
+        smart_keymap::key::composite::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(
+            16,
+        )),
+    ];
+
+    /// The keymap config.
+    pub const CONFIG: smart_keymap::key::composite::Config = smart_keymap::key::composite::Config {
+        chorded: smart_keymap::key::chorded::Config {
+            chords: smart_keymap::slice::Slice::from_slice(&[]),
+            ..smart_keymap::key::chorded::DEFAULT_CONFIG
+        },
+        sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
+        tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
+        tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
+        ..smart_keymap::key::composite::DEFAULT_CONFIG
+    };
 
     /// Initial [Context] value.
     pub const CONTEXT: Context =
@@ -52,589 +152,90 @@ pub mod init {
             ..smart_keymap::key::composite::DEFAULT_CONFIG
         });
 
-    smart_keymap::tuples::define_keys!(60);
+    /// The key system.
+    pub const SYSTEM: System = smart_keymap::key::composite::System::array_based(
+        smart_keymap::key::keyboard::System::new([]),
+        smart_keymap::key::callback::System::new([]),
+        smart_keymap::key::sticky::System::new([]),
+        smart_keymap::key::tap_dance::System::new([]),
+        smart_keymap::key::tap_hold::System::new([
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(4),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(4),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(18),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(8),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(8),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(1),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(24),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(2),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(11),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(32),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(23),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(16),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(17),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(128),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(22),
+                ),
+                hold: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::Modifiers(64),
+                ),
+            },
+        ]),
+        smart_keymap::key::layered::System::new([], []),
+        smart_keymap::key::chorded::System::new([], []),
+    );
 
-    /// Alias for a [tuples] KeysN type, as generated by keymap.ncl.
-    pub type KeyDefinitionsType = Keys60<
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHoldKey<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
-        smart_keymap::key::composite::Chorded<
-            smart_keymap::key::composite::Layered<
-                smart_keymap::key::composite::TapHold<smart_keymap::key::keyboard::Key>,
-            >,
-        >,
+    /// Alias for the [keymap::Keymap] type.
+    pub type Keymap = smart_keymap::keymap::Keymap<
+        [Ref; KEY_COUNT],
+        Ref,
         Context,
         Event,
         PendingKeyState,
         KeyState,
+        System,
     >;
-
-    /// Alias for the [keymap::Keymap] type.
-    pub type Keymap =
-        smart_keymap::keymap::Keymap<Context, Event, PendingKeyState, KeyState, KeyDefinitionsType>;
-
-    /// A [tuples] KeysN value with keys, as generated by keymap.ncl.
-    pub const KEY_DEFINITIONS: KeyDefinitionsType = Keys60::new((
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(53)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(30)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(31)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(32)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(33)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(34)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(35)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(36)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(37)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(38)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(39)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(76)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(43)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(52)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(54)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(55)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(19)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(28)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(9)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(10)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(6)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(21)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(15)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(42)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(41)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(4),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(4),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(18),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(8),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(8),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(1),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(24),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(2),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(12)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(7)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(11),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(32),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(23),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(16),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(17),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(128),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHoldKey::TapHold(
-                smart_keymap::key::tap_hold::Key::new(
-                    smart_keymap::key::keyboard::Key::new(22),
-                    smart_keymap::key::keyboard::Key::from_modifiers(
-                        smart_keymap::key::KeyboardModifiers::from_byte(64),
-                    ),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(40)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(2),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(51)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(20)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(13)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(14)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(27)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(5)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(16)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(26)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(25)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(29)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(32),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(1),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(8),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(4),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(43)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(41)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(44)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(42)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(40)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(smart_keymap::key::keyboard::Key::new(76)),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(64),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(128),
-                ),
-            ),
-        )),
-        smart_keymap::key::composite::Chorded(smart_keymap::key::composite::Layered(
-            smart_keymap::key::composite::TapHold(
-                smart_keymap::key::keyboard::Key::from_modifiers(
-                    smart_keymap::key::KeyboardModifiers::from_byte(16),
-                ),
-            ),
-        )),
-    ));
 }

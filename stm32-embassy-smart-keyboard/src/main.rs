@@ -162,7 +162,7 @@ async fn main(_spawner: Spawner) {
     let backend = KEYBOARD_BACKEND.init({
         use smart_keymap::init;
         use smart_keymap::keymap::Keymap;
-        let keymap = Keymap::new(init::KEY_DEFINITIONS, init::CONTEXT);
+        let keymap = Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
         KeyboardBackend::new(keymap)
     });
 

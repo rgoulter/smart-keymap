@@ -1,12 +1,41 @@
-#![doc = include_str!("doc_de_tap_hold.md")]
-
 use core::fmt::Debug;
+use core::ops::Index;
 
 use serde::Deserialize;
 
 use crate::input;
 use crate::key;
 use crate::keymap;
+
+/// Reference for a tap_hold key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Ref(pub u8);
+
+/// A key with tap-hold functionality.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Key<R> {
+    /// The 'tap' key.
+    pub tap: R,
+    /// The 'hold' key.
+    pub hold: R,
+}
+
+impl<R> Key<R> {
+    /// Constructs a new tap-hold key.
+    pub const fn new(tap: R, hold: R) -> Key<R> {
+        Key { tap, hold }
+    }
+}
+
+#[cfg(feature = "std")]
+impl<R: Default> Default for Key<R> {
+    fn default() -> Self {
+        Key {
+            tap: R::default(),
+            hold: R::default(),
+        }
+    }
+}
 
 /// How the tap hold key should respond to interruptions (input events from other keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -62,170 +91,11 @@ impl Default for Config {
     }
 }
 
-/// A key with tap-hold functionality.
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key<K: key::Key> {
-    /// The 'tap' key.
-    pub tap: K,
-    /// The 'hold' key.
-    pub hold: K,
-}
-
-impl<K: key::Key> Key<K> {
-    /// Constructs a new tap-hold key.
-    pub const fn new(tap: K, hold: K) -> Key<K> {
-        Key { tap, hold }
-    }
-}
-
-impl<K: key::Key> Key<K> {
-    fn new_pressed_key(
-        &self,
-        context: &K::Context,
-        key_path: key::KeyPath,
-    ) -> (
-        key::PressedKeyResult<K::PendingKeyState, K::KeyState>,
-        key::KeyEvents<K::Event>,
-    )
-    where
-        for<'ctx> &'ctx K::Context: Into<&'ctx Context>,
-        for<'ctx> &'ctx K::Context: Into<&'ctx keymap::KeymapContext>,
-        Event: Into<K::Event>,
-        PendingKeyState: Into<K::PendingKeyState>,
-    {
-        let th_ctx: &Context = context.into();
-        match th_ctx.config.required_idle_time {
-            Some(required_idle_time) => {
-                let km_ctx: &keymap::KeymapContext = context.into();
-                if km_ctx.idle_time_ms >= required_idle_time as u32 {
-                    // Keymap has been idle long enough; use pending tap-hold key state.
-                    let (th_pks, sch_ev) = self.new_pending_key(th_ctx, key_path.clone());
-                    let pk = key::PressedKeyResult::Pending(key_path, th_pks.into());
-                    let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
-                    (pk, pke)
-                } else {
-                    // Keymap has not been idle for long enough;
-                    // immediately resolve as tap.
-                    // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-                    let tap_key_path = key_path.append_path_item(0);
-                    (
-                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key_path(
-                            tap_key_path,
-                        )),
-                        key::KeyEvents::no_events(),
-                    )
-                }
-            }
-            None => {
-                // Idle time not considered. Use pending tap-hold key state.
-                let (th_pks, sch_ev) = self.new_pending_key(th_ctx, key_path.clone());
-                let pk = key::PressedKeyResult::Pending(key_path, th_pks.into());
-                let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
-                (pk, pke)
-            }
-        }
-    }
-
-    fn new_pending_key(
-        &self,
-        context: &Context,
-        key_path: key::KeyPath,
-    ) -> (PendingKeyState, key::ScheduledEvent<Event>) {
-        let keymap_index: u16 = key_path.keymap_index();
-        let timeout_ev = Event::TapHoldTimeout;
-        (
-            PendingKeyState::new(),
-            key::ScheduledEvent::after(
-                context.config.timeout,
-                key::Event::key_event(keymap_index, timeout_ev),
-            ),
-        )
-    }
-}
-
-impl<
-        K: key::Key<
-            Context = crate::init::Context,
-            Event = crate::init::Event,
-            PendingKeyState = crate::init::PendingKeyState,
-            KeyState = crate::init::KeyState,
-        >,
-    > key::Key for Key<K>
-{
-    type Context = crate::init::Context;
-    type Event = crate::init::Event;
-    type PendingKeyState = crate::init::PendingKeyState;
-    type KeyState = crate::init::KeyState;
-
-    fn new_pressed_key(
-        &self,
-        context: &Self::Context,
-        key_path: key::KeyPath,
-    ) -> (
-        key::PressedKeyResult<Self::PendingKeyState, Self::KeyState>,
-        key::KeyEvents<Self::Event>,
-    ) {
-        self.new_pressed_key(context, key_path.clone())
-    }
-
-    fn handle_event(
-        &self,
-        pending_state: &mut Self::PendingKeyState,
-        context: &Self::Context,
-        key_path: key::KeyPath,
-        event: key::Event<Self::Event>,
-    ) -> (Option<key::NewPressedKey>, key::KeyEvents<Self::Event>) {
-        let keymap_index = key_path.keymap_index();
-        let th_pks_res: Result<&mut PendingKeyState, _> = pending_state.try_into();
-        if let Ok(th_pks) = th_pks_res {
-            if let Ok(th_ev) = event.try_into_key_event(|e| e.try_into()) {
-                let th_state = th_pks.handle_event(context.into(), keymap_index, th_ev);
-                if let Some(th_state) = th_state {
-                    let i = match th_state {
-                        key::tap_hold::TapHoldState::Tap => 0,
-                        key::tap_hold::TapHoldState::Hold => 1,
-                    };
-                    // PRESSED KEY PATH: add Tap Hold item (0 = tap, 1 = hold)
-                    let new_key_path = key_path.append_path_item(i);
-
-                    (
-                        Some(key::NewPressedKey::key_path(new_key_path)),
-                        key::KeyEvents::no_events(),
-                    )
-                } else {
-                    (None, key::KeyEvents::no_events())
-                }
-            } else {
-                (None, key::KeyEvents::no_events())
-            }
-        } else {
-            (None, key::KeyEvents::no_events())
-        }
-    }
-
-    fn lookup(
-        &self,
-        path: &[u16],
-    ) -> &dyn key::Key<
-        Context = Self::Context,
-        Event = Self::Event,
-        PendingKeyState = Self::PendingKeyState,
-        KeyState = Self::KeyState,
-    > {
-        match path {
-            [] => self,
-            // 0 = tap, 1 = hold
-            [0, path @ ..] => self.tap.lookup(path),
-            [1, path @ ..] => self.hold.lookup(path),
-            _ => panic!(),
-        }
-    }
-}
-
 /// Context for [Key].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context {
     config: Config,
+    idle_time_ms: u32,
 }
 
 /// Default context.
@@ -234,7 +104,18 @@ pub const DEFAULT_CONTEXT: Context = Context::from_config(DEFAULT_CONFIG);
 impl Context {
     /// Constructs a context from the given config
     pub const fn from_config(config: Config) -> Context {
-        Context { config }
+        Context {
+            config,
+            idle_time_ms: 0,
+        }
+    }
+
+    /// Updates the context with the given keymap context.
+    pub fn update_keymap_context(
+        &mut self,
+        keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
+    ) {
+        self.idle_time_ms = *idle_time_ms;
     }
 }
 
@@ -364,5 +245,130 @@ impl PendingKeyState {
         // Resolve tap-hold state per the event.
         let Context { config, .. } = context;
         self.hold_resolution(config.interrupt_response, keymap_index, event)
+    }
+}
+
+/// Key state for tap_hold keys. (Not used).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KeyState;
+
+/// The [key::System] implementation for tap hold keys.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<R, Keys: Index<usize, Output = Key<R>>> {
+    keys: Keys,
+}
+
+impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
+    /// Constructs a new [System] with the given key data.
+    pub const fn new(key_data: Keys) -> Self {
+        Self { keys: key_data }
+    }
+
+    fn new_pending_key(
+        &self,
+        context: &Context,
+        keymap_index: u16,
+    ) -> (PendingKeyState, key::ScheduledEvent<Event>) {
+        let timeout_ev = Event::TapHoldTimeout;
+        (
+            PendingKeyState::new(),
+            key::ScheduledEvent::after(
+                context.config.timeout,
+                key::Event::key_event(keymap_index, timeout_ev),
+            ),
+        )
+    }
+}
+
+impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
+    for System<R, Keys>
+{
+    type Ref = Ref;
+    type Context = Context;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        keymap_index: u16,
+        context: &Self::Context,
+        Ref(key_index): Ref,
+    ) -> (
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        match context.config.required_idle_time {
+            Some(required_idle_time) => {
+                if context.idle_time_ms >= required_idle_time as u32 {
+                    // Keymap has been idle long enough; use pending tap-hold key state.
+                    let (th_pks, sch_ev) = self.new_pending_key(context, keymap_index);
+                    let pk = key::PressedKeyResult::Pending(th_pks);
+                    let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+                    (pk, pke)
+                } else {
+                    // Keymap has not been idle for long enough;
+                    // immediately resolve as tap.
+                    let Key {
+                        tap: tap_key_ref, ..
+                    } = self.keys[key_index as usize];
+                    (
+                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
+                        key::KeyEvents::no_events(),
+                    )
+                }
+            }
+            None => {
+                // Idle time not considered. Use pending tap-hold key state.
+                let (th_pks, sch_ev) = self.new_pending_key(context, keymap_index);
+                let pk = key::PressedKeyResult::Pending(th_pks);
+                let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+                (pk, pke)
+            }
+        }
+    }
+
+    fn update_pending_state(
+        &self,
+        pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
+        context: &Self::Context,
+        Ref(key_index): Ref,
+        event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
+        let th_state = pending_state.handle_event(context, keymap_index, event);
+        if let Some(th_state) = th_state {
+            let Key { tap, hold } = self.keys[key_index as usize];
+            let new_key_ref = match th_state {
+                key::tap_hold::TapHoldState::Tap => tap,
+                key::tap_hold::TapHoldState::Hold => hold,
+            };
+
+            (
+                Some(key::NewPressedKey::key(new_key_ref)),
+                key::KeyEvents::no_events(),
+            )
+        } else {
+            (None, key::KeyEvents::no_events())
+        }
+    }
+
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        panic!() // tap_hold has no key state
+    }
+
+    fn key_output(
+        &self,
+        _key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        panic!() // tap_hold has no key state
     }
 }

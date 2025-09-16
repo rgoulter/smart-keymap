@@ -14,11 +14,10 @@ use smart_keymap_nickel_helper::{
     NickelError,
 };
 
-use key::composite::{Context, Event, KeyState, PendingKeyState};
+use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
-type Key = key::composite::Key;
-
-type Keymap = keymap::Keymap<Context, Event, PendingKeyState, KeyState, Vec<Key>>;
+type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
+type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"
@@ -124,10 +123,46 @@ impl Default for KeymapWorld {
     }
 }
 
+#[derive(Deserialize, Default)]
+struct KeyVecs {
+    #[serde(default)]
+    keyboard: Vec<key::keyboard::Key>,
+    #[serde(default)]
+    callback: Vec<key::callback::Key>,
+    #[serde(default)]
+    sticky: Vec<key::sticky::Key>,
+    #[serde(default)]
+    tap_dance: Vec<key::tap_dance::Key<Ref>>,
+    #[serde(default)]
+    tap_hold: Vec<key::tap_hold::Key<Ref>>,
+    #[serde(default)]
+    layer_modifiers: Vec<key::layered::ModifierKey>,
+    #[serde(default)]
+    layered: Vec<key::layered::LayeredKey<Ref>>,
+    #[serde(default)]
+    chorded: Vec<key::chorded::Key<Ref>>,
+    #[serde(default)]
+    chorded_auxiliary: Vec<key::chorded::AuxiliaryKey<Ref>>,
+}
+
 #[derive(Deserialize)]
 struct DocstringKeymap {
     config: key::composite::Config,
-    keys: Vec<Key>,
+    key_refs: Vec<Ref>,
+    #[serde(default)]
+    key_data: KeyVecs,
+}
+
+fn system_from_key_data(keys: KeyVecs) -> System {
+    System::vec_based(
+        smart_keymap::key::keyboard::System::new(keys.keyboard),
+        smart_keymap::key::callback::System::new(keys.callback),
+        smart_keymap::key::sticky::System::new(keys.sticky),
+        smart_keymap::key::tap_dance::System::new(keys.tap_dance),
+        smart_keymap::key::tap_hold::System::new(keys.tap_hold),
+        smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
+        smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
+    )
 }
 
 fn load_keymap(keymap_ncl: &str) -> Keymap {
@@ -136,9 +171,10 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
             let keymap_result: serde_json::Result<DocstringKeymap> = serde_json::from_str(&json);
             match keymap_result {
                 Ok(keymap) => {
-                    let dyn_keys = keymap.keys.into_iter().collect();
-                    let context = key::composite::Context::from_config(keymap.config);
-                    keymap::Keymap::new(dyn_keys, context)
+                    let key_refs = keymap.key_refs;
+                    let context = Context::from_config(keymap.config);
+                    let system = system_from_key_data(keymap.key_data);
+                    keymap::Keymap::new(key_refs, context, system)
                 }
                 Err(e) => {
                     panic!(
