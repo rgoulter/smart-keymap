@@ -18,6 +18,8 @@ pub enum Ref {
     TapHold(key::tap_hold::Ref),
     /// [key::layered::Ref] variant.
     Layered(key::layered::Ref),
+    /// [key::chorded::Ref] variant.
+    Chorded(key::chorded::Ref),
 }
 
 #[cfg(feature = "std")]
@@ -30,9 +32,9 @@ impl Default for Ref {
 /// Aggregate config.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
-    // /// The chorded configuration.
-    // #[serde(default)]
-    // pub chorded: key::chorded::Config,
+    /// The chorded configuration.
+    #[serde(default)]
+    pub chorded: key::chorded::Config,
     // /// The sticky modifier configuration
     // #[serde(default)]
     // pub sticky: key::sticky::Config,
@@ -46,7 +48,7 @@ pub struct Config {
 
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
-    // chorded: key::chorded::DEFAULT_CONFIG,
+    chorded: key::chorded::DEFAULT_CONFIG,
     // sticky: key::sticky::DEFAULT_CONFIG,
     // tap_dance: key::tap_dance::DEFAULT_CONFIG,
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
@@ -57,7 +59,7 @@ pub const DEFAULT_CONFIG: Config = Config {
 pub struct Context {
     keymap_context: keymap::KeymapContext,
     // caps_word_context: key::caps_word::Context,
-    // chorded_context: key::chorded::Context,
+    chorded_context: key::chorded::Context,
     layered: key::layered::Context,
     // tap_dance_context: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
@@ -68,7 +70,7 @@ pub struct Context {
 pub const DEFAULT_CONTEXT: Context = Context {
     keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
     // caps_word_context: key::caps_word::DEFAULT_CONTEXT,
-    // chorded_context: key::chorded::DEFAULT_CONTEXT,
+    chorded_context: key::chorded::DEFAULT_CONTEXT,
     layered: key::layered::DEFAULT_CONTEXT,
     // sticky_context: key::sticky::DEFAULT_CONTEXT,
     // tap_dance_context: key::tap_dance::DEFAULT_CONTEXT,
@@ -79,7 +81,7 @@ impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
-            // chorded_context: key::chorded::Context::from_config(config.chorded),
+            chorded_context: key::chorded::Context::from_config(config.chorded),
             // sticky_context: key::sticky::Context::from_config(config.sticky),
             // tap_dance_context: key::tap_dance::Context::from_config(config.tap_dance),
             tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
@@ -109,9 +111,9 @@ impl key::Context for Context {
         //     pke.extend(sticky_ev.into_events());
         // }
 
-        // if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
-        //     self.chorded_context.handle_event(e);
-        // }
+        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+            self.chorded_context.handle_event(e);
+        }
 
         if let key::Event::Key {
             key_event: Event::LayerModification(ev),
@@ -151,11 +153,11 @@ impl<'c> From<&'c Context> for &'c key::keyboard::Context {
 //     }
 // }
 
-// impl<'c> From<&'c Context> for &'c key::chorded::Context {
-//     fn from(ctx: &'c Context) -> Self {
-//         &ctx.chorded_context
-//     }
-// }
+impl<'c> From<&'c Context> for &'c key::chorded::Context {
+    fn from(ctx: &'c Context) -> Self {
+        &ctx.chorded_context
+    }
+}
 
 impl<'c> From<&'c Context> for &'c key::layered::Context {
     fn from(ctx: &'c Context) -> Self {
@@ -186,8 +188,8 @@ impl<'c> From<&'c Context> for &'c key::layered::Context {
 pub enum Event {
     // /// A caps word event.
     // CapsWord(key::caps_word::Event),
-    // /// A chorded event.
-    // Chorded(key::chorded::Event),
+    /// A chorded event.
+    Chorded(key::chorded::Event),
     // /// A sticky modifier event.
     // Sticky(key::sticky::Event),
     // /// A tap-dance event.
@@ -210,11 +212,11 @@ impl From<key::keyboard::Event> for Event {
 //     }
 // }
 
-// impl From<key::chorded::Event> for Event {
-//     fn from(ev: key::chorded::Event) -> Self {
-//         Event::Chorded(ev)
-//     }
-// }
+impl From<key::chorded::Event> for Event {
+    fn from(ev: key::chorded::Event) -> Self {
+        Event::Chorded(ev)
+    }
+}
 
 impl From<key::layered::LayerEvent> for Event {
     fn from(ev: key::layered::LayerEvent) -> Self {
@@ -259,16 +261,16 @@ impl TryFrom<Event> for key::keyboard::Event {
 //     }
 // }
 
-// impl TryFrom<Event> for key::chorded::Event {
-//     type Error = key::EventError;
+impl TryFrom<Event> for key::chorded::Event {
+    type Error = key::EventError;
 
-//     fn try_from(ev: Event) -> Result<Self, Self::Error> {
-//         match ev {
-//             Event::Chorded(ev) => Ok(ev),
-//             _ => Err(key::EventError::UnmappableEvent),
-//         }
-//     }
-// }
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Chorded(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
 
 impl TryFrom<Event> for key::layered::LayerEvent {
     type Error = key::EventError;
@@ -321,8 +323,8 @@ pub enum PendingKeyState {
     // TapDance(key::tap_dance::PendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
     TapHold(key::tap_hold::PendingKeyState),
-    // /// Pending key state for [key::chorded::PendingKeyState].
-    // Chorded(key::chorded::PendingKeyState),
+    /// Pending key state for [key::chorded::PendingKeyState].
+    Chorded(key::chorded::PendingKeyState),
 }
 
 impl From<key::keyboard::PendingKeyState> for PendingKeyState {
@@ -349,11 +351,11 @@ impl From<key::layered::PendingKeyState> for PendingKeyState {
     }
 }
 
-// impl From<key::chorded::PendingKeyState> for PendingKeyState {
-//     fn from(pks: key::chorded::PendingKeyState) -> Self {
-//         PendingKeyState::Chorded(pks)
-//     }
-// }
+impl From<key::chorded::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::chorded::PendingKeyState) -> Self {
+        PendingKeyState::Chorded(pks)
+    }
+}
 
 // impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_dance::PendingKeyState {
 //     type Error = ();
@@ -377,16 +379,16 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::Pendi
     }
 }
 
-// impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
-//     type Error = ();
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
+    type Error = ();
 
-//     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-//         match pks {
-//             PendingKeyState::Chorded(pks) => Ok(pks),
-//             _ => Err(()),
-//         }
-//     }
-// }
+    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+        match pks {
+            PendingKeyState::Chorded(pks) => Ok(pks),
+            _ => Err(()),
+        }
+    }
+}
 
 /// Aggregate enum for key state. (i.e. pressed key data).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -629,6 +631,9 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     pkr.map(Into::into, KeyState::LayerModifier),
                     pke.map_events(Into::into),
                 )
+            }
+            Ref::Chorded(_key_ref) => {
+                todo!()
             }
         }
     }
