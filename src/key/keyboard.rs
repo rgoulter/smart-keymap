@@ -21,10 +21,12 @@ pub enum Ref {
 /// A key for HID Keyboard usage codes.
 #[derive(Deserialize, Clone, Copy, PartialEq, Default)]
 pub struct Key {
+    /// HID usage code.
     #[serde(default)]
-    key_code: u8,
+    pub key_code: u8,
+    /// Modifiers.
     #[serde(default)]
-    modifiers: key::KeyboardModifiers,
+    pub modifiers: key::KeyboardModifiers,
 }
 
 impl core::fmt::Debug for Key {
