@@ -70,9 +70,9 @@ pub struct Context {
     caps_word_context: key::caps_word::Context,
     chorded: key::chorded::Context,
     layered: key::layered::Context,
+    sticky: key::sticky::Context,
     tap_dance: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
-    sticky: key::sticky::Context,
 }
 
 /// The default context.
@@ -115,12 +115,12 @@ impl key::Context for Context {
         pke.extend(caps_word_ev);
 
         if let Ok(e) = event.try_into_key_event() {
-            let sticky_ev = self.sticky.handle_event(e);
-            pke.extend(sticky_ev.into_events());
+            self.chorded.handle_event(e);
         }
 
         if let Ok(e) = event.try_into_key_event() {
-            self.chorded.handle_event(e);
+            let sticky_ev = self.sticky.handle_event(e);
+            pke.extend(sticky_ev.into_events());
         }
 
         if let key::Event::Key {
@@ -149,9 +149,9 @@ impl<'c> From<&'c Context> for &'c keymap::KeymapContext {
     }
 }
 
-impl<'c> From<&'c Context> for &'c key::keyboard::Context {
+impl<'c> From<&'c Context> for &'c key::callback::Context {
     fn from(_ctx: &'c Context) -> Self {
-        &key::keyboard::Context
+        &key::callback::Context
     }
 }
 
@@ -161,15 +161,21 @@ impl<'c> From<&'c Context> for &'c key::caps_word::Context {
     }
 }
 
-impl<'c> From<&'c Context> for &'c key::callback::Context {
-    fn from(_ctx: &'c Context) -> Self {
-        &key::callback::Context
-    }
-}
-
 impl<'c> From<&'c Context> for &'c key::chorded::Context {
     fn from(ctx: &'c Context) -> Self {
         &ctx.chorded
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::custom::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::custom::Context
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::keyboard::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::keyboard::Context
     }
 }
 
@@ -182,12 +188,6 @@ impl<'c> From<&'c Context> for &'c key::layered::Context {
 impl<'c> From<&'c Context> for &'c key::sticky::Context {
     fn from(ctx: &'c Context) -> Self {
         &ctx.sticky
-    }
-}
-
-impl<'c> From<&'c Context> for &'c key::custom::Context {
-    fn from(_ctx: &'c Context) -> Self {
-        &key::custom::Context
     }
 }
 
