@@ -11,24 +11,24 @@ use crate::{key, keymap};
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
-    /// [key::keyboard::Ref] variant.
-    Keyboard(key::keyboard::Ref),
-    /// [key::caps_word::Ref] variant.
-    CapsWord(key::caps_word::Ref),
     /// [key::callback::Ref] variant.
     Callback(key::callback::Ref),
-    /// [key::sticky::Ref] variant.
-    Sticky(key::sticky::Ref),
+    /// [key::caps_word::Ref] variant.
+    CapsWord(key::caps_word::Ref),
+    /// [key::chorded::Ref] variant.
+    Chorded(key::chorded::Ref),
     /// [key::custom::Ref] variant.
     Custom(key::custom::Ref),
+    /// [key::keyboard::Ref] variant.
+    Keyboard(key::keyboard::Ref),
+    /// [key::layered::Ref] variant.
+    Layered(key::layered::Ref),
+    /// [key::sticky::Ref] variant.
+    Sticky(key::sticky::Ref),
     /// [key::tap_dance::Ref] variant.
     TapDance(key::tap_dance::Ref),
     /// [key::tap_hold::Ref] variant.
     TapHold(key::tap_hold::Ref),
-    /// [key::layered::Ref] variant.
-    Layered(key::layered::Ref),
-    /// [key::chorded::Ref] variant.
-    Chorded(key::chorded::Ref),
 }
 
 #[cfg(feature = "std")]
