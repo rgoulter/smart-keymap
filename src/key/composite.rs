@@ -206,8 +206,14 @@ impl<'c> From<&'c Context> for &'c key::tap_hold::Context {
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
+    /// A keyboard event.
+    Keyboard(key::keyboard::Event),
     /// A caps word event.
     CapsWord(key::caps_word::Event),
+    /// A callback event.
+    Callback(key::callback::Event),
+    /// A custom event.
+    Custom(key::custom::Event),
     /// A chorded event.
     Chorded(key::chorded::Event),
     /// A sticky modifier event.
@@ -221,8 +227,8 @@ pub enum Event {
 }
 
 impl From<key::keyboard::Event> for Event {
-    fn from(_ev: key::keyboard::Event) -> Self {
-        panic!()
+    fn from(ev: key::keyboard::Event) -> Self {
+        Event::Keyboard(ev)
     }
 }
 
@@ -233,14 +239,14 @@ impl From<key::caps_word::Event> for Event {
 }
 
 impl From<key::callback::Event> for Event {
-    fn from(_ev: key::callback::Event) -> Self {
-        panic!()
+    fn from(ev: key::callback::Event) -> Self {
+        Event::Callback(ev)
     }
 }
 
 impl From<key::custom::Event> for Event {
-    fn from(_ev: key::custom::Event) -> Self {
-        panic!()
+    fn from(ev: key::custom::Event) -> Self {
+        Event::Custom(ev)
     }
 }
 
@@ -277,8 +283,11 @@ impl From<key::tap_hold::Event> for Event {
 impl TryFrom<Event> for key::keyboard::Event {
     type Error = key::EventError;
 
-    fn try_from(_ev: Event) -> Result<Self, Self::Error> {
-        Err(key::EventError::UnmappableEvent)
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Keyboard(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
     }
 }
 
@@ -352,6 +361,18 @@ impl TryFrom<Event> for key::tap_hold::Event {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(clippy::large_enum_variant)]
 pub enum PendingKeyState {
+    /// Pending key state for [key::keyboard::PendingKeyState].
+    Keyboard(key::keyboard::PendingKeyState),
+    /// Pending key state for [key::caps_word::PendingKeyState].
+    CapsWord(key::caps_word::PendingKeyState),
+    /// Pending key state for [key::callback::PendingKeyState].
+    Callback(key::callback::PendingKeyState),
+    /// Pending key state for [key::sticky::PendingKeyState].
+    Sticky(key::sticky::PendingKeyState),
+    /// Pending key state for [key::custom::PendingKeyState].
+    Custom(key::custom::PendingKeyState),
+    /// Pending key state for [key::layered::PendingKeyState].
+    Layered(key::layered::PendingKeyState),
     /// Pending key state for [key::tap_dance::PendingKeyState].
     TapDance(key::tap_dance::PendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
@@ -361,32 +382,32 @@ pub enum PendingKeyState {
 }
 
 impl From<key::keyboard::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::keyboard::PendingKeyState) -> Self {
-        panic!()
+    fn from(pks: key::keyboard::PendingKeyState) -> Self {
+        PendingKeyState::Keyboard(pks)
     }
 }
 
 impl From<key::caps_word::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::caps_word::PendingKeyState) -> Self {
-        panic!()
+    fn from(pks: key::caps_word::PendingKeyState) -> Self {
+        PendingKeyState::CapsWord(pks)
     }
 }
 
 impl From<key::callback::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::callback::PendingKeyState) -> Self {
-        panic!()
+    fn from(pks: key::callback::PendingKeyState) -> Self {
+        PendingKeyState::Callback(pks)
     }
 }
 
 impl From<key::sticky::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::sticky::PendingKeyState) -> Self {
-        panic!()
+    fn from(pks: key::sticky::PendingKeyState) -> Self {
+        PendingKeyState::Sticky(pks)
     }
 }
 
 impl From<key::custom::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::custom::PendingKeyState) -> Self {
-        panic!()
+    fn from(pks: key::custom::PendingKeyState) -> Self {
+        PendingKeyState::Custom(pks)
     }
 }
 
@@ -403,8 +424,8 @@ impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
 }
 
 impl From<key::layered::PendingKeyState> for PendingKeyState {
-    fn from(_pks: key::layered::PendingKeyState) -> Self {
-        panic!()
+    fn from(pks: key::layered::PendingKeyState) -> Self {
+        PendingKeyState::Layered(pks)
     }
 }
 
@@ -454,8 +475,18 @@ pub enum KeyState {
     NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
     /// Key state for [key::keyboard::KeyState].
     Keyboard(key::keyboard::KeyState),
+    /// Key state for [key::caps_word::KeyState].
+    CapsWord(key::caps_word::KeyState),
+    /// Key state for [key::callback::KeyState].
+    Callback(key::callback::KeyState),
+    /// Key state for [key::tap_dance::KeyState].
+    TapDance(key::tap_dance::KeyState),
+    /// Key state for [key::tap_hold::KeyState].
+    TapHold(key::tap_hold::KeyState),
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(key::layered::ModifierKeyState),
+    /// Key state for [key::chorded::KeyState].
+    Chorded(key::chorded::KeyState),
     /// Key state for [key::sticky::KeyState].
     Sticky(key::sticky::KeyState),
     /// Key state for [key::custom::KeyState].
@@ -475,26 +506,26 @@ impl From<key::keyboard::KeyState> for KeyState {
 }
 
 impl From<key::caps_word::KeyState> for KeyState {
-    fn from(_ks: key::caps_word::KeyState) -> Self {
-        panic!()
+    fn from(ks: key::caps_word::KeyState) -> Self {
+        KeyState::CapsWord(ks)
     }
 }
 
 impl From<key::callback::KeyState> for KeyState {
-    fn from(_ks: key::callback::KeyState) -> Self {
-        panic!()
+    fn from(ks: key::callback::KeyState) -> Self {
+        KeyState::Callback(ks)
     }
 }
 
 impl From<key::tap_dance::KeyState> for KeyState {
-    fn from(_ks: key::tap_dance::KeyState) -> Self {
-        panic!()
+    fn from(ks: key::tap_dance::KeyState) -> Self {
+        KeyState::TapDance(ks)
     }
 }
 
 impl From<key::tap_hold::KeyState> for KeyState {
-    fn from(_ks: key::tap_hold::KeyState) -> Self {
-        panic!()
+    fn from(ks: key::tap_hold::KeyState) -> Self {
+        KeyState::TapHold(ks)
     }
 }
 
@@ -505,8 +536,8 @@ impl From<key::layered::ModifierKeyState> for KeyState {
 }
 
 impl From<key::chorded::KeyState> for KeyState {
-    fn from(_ks: key::chorded::KeyState) -> Self {
-        panic!()
+    fn from(ks: key::chorded::KeyState) -> Self {
+        KeyState::Chorded(ks)
     }
 }
 
