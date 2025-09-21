@@ -161,6 +161,15 @@ impl<R, PKS, KS> PressedKeyResult<R, PKS, KS> {
             PressedKeyResult::Resolved(ks) => PressedKeyResult::Resolved(g(ks)),
         }
     }
+
+    /// Maps the PressedKeyResult into a new type.
+    pub fn into_result<TPKS, TKS>(self) -> PressedKeyResult<R, TPKS, TKS>
+    where
+        PKS: Into<TPKS>,
+        KS: Into<TKS>,
+    {
+        self.map(|pks| pks.into(), |ks| ks.into())
+    }
 }
 
 /// The interface for key `System` behaviour.
