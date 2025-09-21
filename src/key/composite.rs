@@ -112,25 +112,19 @@ impl key::Context for Context {
         let mut pke = key::KeyEvents::no_events();
 
         if let Ok(e) = event.try_into_key_event() {
-            let caps_word_ev = self.caps_word.handle_event(e);
-            pke.extend(caps_word_ev.into_events());
+            pke.extend(self.caps_word.handle_event(e).into_events());
         }
 
         if let Ok(e) = event.try_into_key_event() {
-            self.chorded.handle_event(e);
+            pke.extend(self.chorded.handle_event(e).into_events());
         }
 
         if let Ok(e) = event.try_into_key_event() {
-            let sticky_ev = self.sticky.handle_event(e);
-            pke.extend(sticky_ev.into_events());
+            pke.extend(self.layered.handle_event(e).into_events());
         }
 
-        if let key::Event::Key {
-            key_event: Event::Layered(ev),
-            ..
-        } = event
-        {
-            self.layered.handle_event(ev);
+        if let Ok(e) = event.try_into_key_event() {
+            pke.extend(self.sticky.handle_event(e).into_events());
         }
 
         pke
