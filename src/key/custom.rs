@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use core::marker::PhantomData;
 
 use serde::Deserialize;
 
@@ -26,22 +27,22 @@ pub struct KeyState;
 
 /// The [key::System] implementation for custom keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System;
+pub struct System<R>(PhantomData<R>);
 
-impl System {
+impl<R> System<R> {
     /// Constructs a new [System] with the given key data.
     pub const fn new() -> Self {
-        Self
+        Self(PhantomData)
     }
 }
 
-impl Default for System {
+impl<R> Default for System<R> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<R> key::System<R> for System {
+impl<R: Debug> key::System<R> for System<R> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;

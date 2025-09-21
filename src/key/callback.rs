@@ -1,4 +1,5 @@
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::Index;
 
 use serde::Deserialize;
@@ -43,20 +44,24 @@ pub struct KeyState;
 
 /// The [key::System] implementation for keymap callback keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<Keys: Index<usize, Output = Key>> {
+pub struct System<R, Keys: Index<usize, Output = Key>> {
     keys: Keys,
+    marker: PhantomData<R>,
 }
 
-impl<Keys: Index<usize, Output = Key>> System<Keys> {
+impl<R, Keys: Index<usize, Output = Key>> System<R, Keys> {
     /// Constructs a new [System] with the given key data.
     ///
     /// The key data is for keys with both key codes and modifiers.
-    pub const fn new(key_data: Keys) -> Self {
-        Self { keys: key_data }
+    pub const fn new(keys: Keys) -> Self {
+        Self {
+            keys,
+            marker: PhantomData,
+        }
     }
 }
 
-impl<R, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<Keys> {
+impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<R, Keys> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
