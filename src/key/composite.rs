@@ -361,29 +361,29 @@ impl TryFrom<Event> for key::tap_hold::Event {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(clippy::large_enum_variant)]
 pub enum PendingKeyState {
-    /// Pending key state for [key::keyboard::PendingKeyState].
-    Keyboard(key::keyboard::PendingKeyState),
-    /// Pending key state for [key::caps_word::PendingKeyState].
-    CapsWord(key::caps_word::PendingKeyState),
     /// Pending key state for [key::callback::PendingKeyState].
     Callback(key::callback::PendingKeyState),
-    /// Pending key state for [key::sticky::PendingKeyState].
-    Sticky(key::sticky::PendingKeyState),
+    /// Pending key state for [key::caps_word::PendingKeyState].
+    CapsWord(key::caps_word::PendingKeyState),
+    /// Pending key state for [key::chorded::PendingKeyState].
+    Chorded(key::chorded::PendingKeyState),
     /// Pending key state for [key::custom::PendingKeyState].
     Custom(key::custom::PendingKeyState),
+    /// Pending key state for [key::keyboard::PendingKeyState].
+    Keyboard(key::keyboard::PendingKeyState),
     /// Pending key state for [key::layered::PendingKeyState].
     Layered(key::layered::PendingKeyState),
+    /// Pending key state for [key::sticky::PendingKeyState].
+    Sticky(key::sticky::PendingKeyState),
     /// Pending key state for [key::tap_dance::PendingKeyState].
     TapDance(key::tap_dance::PendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
     TapHold(key::tap_hold::PendingKeyState),
-    /// Pending key state for [key::chorded::PendingKeyState].
-    Chorded(key::chorded::PendingKeyState),
 }
 
-impl From<key::keyboard::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::keyboard::PendingKeyState) -> Self {
-        PendingKeyState::Keyboard(pks)
+impl From<key::callback::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::callback::PendingKeyState) -> Self {
+        PendingKeyState::Callback(pks)
     }
 }
 
@@ -393,21 +393,33 @@ impl From<key::caps_word::PendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::callback::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::callback::PendingKeyState) -> Self {
-        PendingKeyState::Callback(pks)
-    }
-}
-
-impl From<key::sticky::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::sticky::PendingKeyState) -> Self {
-        PendingKeyState::Sticky(pks)
+impl From<key::chorded::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::chorded::PendingKeyState) -> Self {
+        PendingKeyState::Chorded(pks)
     }
 }
 
 impl From<key::custom::PendingKeyState> for PendingKeyState {
     fn from(pks: key::custom::PendingKeyState) -> Self {
         PendingKeyState::Custom(pks)
+    }
+}
+
+impl From<key::keyboard::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::keyboard::PendingKeyState) -> Self {
+        PendingKeyState::Keyboard(pks)
+    }
+}
+
+impl From<key::layered::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::layered::PendingKeyState) -> Self {
+        PendingKeyState::Layered(pks)
+    }
+}
+
+impl From<key::sticky::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::sticky::PendingKeyState) -> Self {
+        PendingKeyState::Sticky(pks)
     }
 }
 
@@ -423,15 +435,14 @@ impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::layered::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::layered::PendingKeyState) -> Self {
-        PendingKeyState::Layered(pks)
-    }
-}
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
+    type Error = ();
 
-impl From<key::chorded::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::chorded::PendingKeyState) -> Self {
-        PendingKeyState::Chorded(pks)
+    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+        match pks {
+            PendingKeyState::Chorded(pks) => Ok(pks),
+            _ => Err(()),
+        }
     }
 }
 
@@ -452,17 +463,6 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::Pendi
     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
         match pks {
             PendingKeyState::TapHold(pks) => Ok(pks),
-            _ => Err(()),
-        }
-    }
-}
-
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::PendingKeyState {
-    type Error = ();
-
-    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-        match pks {
-            PendingKeyState::Chorded(pks) => Ok(pks),
             _ => Err(()),
         }
     }
