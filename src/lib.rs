@@ -129,13 +129,13 @@ pub mod init {
 
     /// Initial [Context] value.
     pub const SYSTEM: System = System::array_based(
-        smart_keymap::key::keyboard::System::new([]),
         smart_keymap::key::callback::System::new([]),
+        smart_keymap::key::chorded::System::new([], []),
+        smart_keymap::key::keyboard::System::new([]),
+        smart_keymap::key::layered::System::new([], []),
         smart_keymap::key::sticky::System::new([]),
         smart_keymap::key::tap_dance::System::new([]),
         smart_keymap::key::tap_hold::System::new([]),
-        smart_keymap::key::layered::System::new([], []),
-        smart_keymap::key::chorded::System::new([], []),
     );
 
     /// Alias for the [keymap::Keymap] type.

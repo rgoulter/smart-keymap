@@ -27,28 +27,28 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
-    const KEYBOARD_DATA_LEN: usize = 28;
     const CALLBACK_DATA_LEN: usize = 0;
+    const CHORDED_AUXILIARY_DATA_LEN: usize = 0;
+    const CHORDED_DATA_LEN: usize = 0;
+    const KEYBOARD_DATA_LEN: usize = 28;
+    const LAYERED_DATA_LEN: usize = 34;
+    const LAYER_MODIFIERS_DATA_LEN: usize = 8;
     const STICKY_DATA_LEN: usize = 16;
     const TAP_DANCE_DATA_LEN: usize = 0;
     const TAP_HOLD_DATA_LEN: usize = 0;
-    const LAYER_MODIFIERS_DATA_LEN: usize = 8;
-    const LAYERED_DATA_LEN: usize = 34;
-    const CHORDED_DATA_LEN: usize = 0;
-    const CHORDED_AUXILIARY_DATA_LEN: usize = 0;
 
     /// The System type
     pub type System = smart_keymap::key::composite::System<
         smart_keymap::key::composite::KeyArrays<
-            KEYBOARD_DATA_LEN,
             CALLBACK_DATA_LEN,
+            CHORDED_AUXILIARY_DATA_LEN,
+            CHORDED_DATA_LEN,
+            KEYBOARD_DATA_LEN,
+            LAYERED_DATA_LEN,
+            LAYER_MODIFIERS_DATA_LEN,
             STICKY_DATA_LEN,
             TAP_DANCE_DATA_LEN,
             TAP_HOLD_DATA_LEN,
-            LAYER_MODIFIERS_DATA_LEN,
-            LAYERED_DATA_LEN,
-            CHORDED_DATA_LEN,
-            CHORDED_AUXILIARY_DATA_LEN,
         >,
     >;
 
@@ -120,6 +120,8 @@ pub mod init {
 
     /// The key system.
     pub const SYSTEM: System = smart_keymap::key::composite::System::array_based(
+        smart_keymap::key::callback::System::new([]),
+        smart_keymap::key::chorded::System::new([], []),
         smart_keymap::key::keyboard::System::new([
             smart_keymap::key::keyboard::Key {
                 key_code: 30,
@@ -234,27 +236,6 @@ pub mod init {
                 modifiers: smart_keymap::key::KeyboardModifiers::from_byte(2),
             },
         ]),
-        smart_keymap::key::callback::System::new([]),
-        smart_keymap::key::sticky::System::new([
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
-            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
-        ]),
-        smart_keymap::key::tap_dance::System::new([]),
-        smart_keymap::key::tap_hold::System::new([]),
         smart_keymap::key::layered::System::new(
             [
                 smart_keymap::key::layered::ModifierKey::default(0),
@@ -991,7 +972,26 @@ pub mod init {
                 ),
             ],
         ),
-        smart_keymap::key::chorded::System::new([], []),
+        smart_keymap::key::sticky::System::new([
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+        ]),
+        smart_keymap::key::tap_dance::System::new([]),
+        smart_keymap::key::tap_hold::System::new([]),
     );
 
     /// Alias for the [keymap::Keymap] type.

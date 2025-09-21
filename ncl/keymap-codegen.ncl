@@ -115,13 +115,13 @@
     system = {
       rust_expr = m%"
         smart_keymap::key::composite::System::array_based(
-          %{smart_keymap.keyboard.system.rust_expr},
           %{smart_keymap.callback.system.rust_expr},
+          %{smart_keymap.chorded.system.rust_expr},
+          %{smart_keymap.keyboard.system.rust_expr},
+          %{smart_keymap.layered.system.rust_expr},
           %{smart_keymap.sticky.system.rust_expr},
           %{smart_keymap.tap_dance.system.rust_expr},
           %{smart_keymap.tap_hold.system.rust_expr},
-          %{smart_keymap.layered.system.rust_expr},
-          %{smart_keymap.chorded.system.rust_expr},
         )
       "%,
     },
@@ -298,28 +298,28 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
-    const KEYBOARD_DATA_LEN: usize = %{data_len_rust_expr "keyboard"};
     const CALLBACK_DATA_LEN: usize = %{data_len_rust_expr "callback"};
+    const CHORDED_AUXILIARY_DATA_LEN: usize = %{data_len_rust_expr "chorded_auxiliary"};
+    const CHORDED_DATA_LEN: usize = %{data_len_rust_expr "chorded"};
+    const KEYBOARD_DATA_LEN: usize = %{data_len_rust_expr "keyboard"};
+    const LAYERED_DATA_LEN: usize = %{data_len_rust_expr "layered"};
+    const LAYER_MODIFIERS_DATA_LEN: usize = %{data_len_rust_expr "layer_modifiers"};
     const STICKY_DATA_LEN: usize = %{data_len_rust_expr "sticky"};
     const TAP_DANCE_DATA_LEN: usize = %{data_len_rust_expr "tap_dance"};
     const TAP_HOLD_DATA_LEN: usize = %{data_len_rust_expr "tap_hold"};
-    const LAYER_MODIFIERS_DATA_LEN: usize = %{data_len_rust_expr "layer_modifiers"};
-    const LAYERED_DATA_LEN: usize = %{data_len_rust_expr "layered"};
-    const CHORDED_DATA_LEN: usize = %{data_len_rust_expr "chorded"};
-    const CHORDED_AUXILIARY_DATA_LEN: usize = %{data_len_rust_expr "chorded_auxiliary"};
 
     /// The System type
     pub type System = smart_keymap::key::composite::System<
             smart_keymap::key::composite::KeyArrays<
-                KEYBOARD_DATA_LEN,
                 CALLBACK_DATA_LEN,
+                CHORDED_AUXILIARY_DATA_LEN,
+                CHORDED_DATA_LEN,
+                KEYBOARD_DATA_LEN,
+                LAYERED_DATA_LEN,
+                LAYER_MODIFIERS_DATA_LEN,
                 STICKY_DATA_LEN,
                 TAP_DANCE_DATA_LEN,
                 TAP_HOLD_DATA_LEN,
-                LAYER_MODIFIERS_DATA_LEN,
-                LAYERED_DATA_LEN,
-                CHORDED_DATA_LEN,
-                CHORDED_AUXILIARY_DATA_LEN,
             >,
         >;
 

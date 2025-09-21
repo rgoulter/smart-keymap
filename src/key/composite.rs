@@ -574,38 +574,38 @@ pub trait Keys {
 /// Array-based data implementations.
 #[derive(Debug)]
 pub struct KeyArrays<
-    const KEYBOARD: usize,
     const CALLBACK: usize,
+    const CHORDED: usize,
+    const CHORDED_AUXILIARY: usize,
+    const KEYBOARD: usize,
+    const LAYERED: usize,
+    const LAYER_MODIFIERS: usize,
     const STICKY: usize,
     const TAP_DANCE: usize,
     const TAP_HOLD: usize,
-    const LAYER_MODIFIERS: usize,
-    const LAYERED: usize,
-    const CHORDED: usize,
-    const CHORDED_AUXILIARY: usize,
 >;
 
 impl<
-        const KEYBOARD: usize,
         const CALLBACK: usize,
+        const CHORDED: usize,
+        const CHORDED_AUXILIARY: usize,
+        const KEYBOARD: usize,
+        const LAYERED: usize,
+        const LAYER_MODIFIERS: usize,
         const STICKY: usize,
         const TAP_DANCE: usize,
         const TAP_HOLD: usize,
-        const LAYER_MODIFIERS: usize,
-        const LAYERED: usize,
-        const CHORDED: usize,
-        const CHORDED_AUXILIARY: usize,
     > Keys
     for KeyArrays<
-        KEYBOARD,
         CALLBACK,
+        CHORDED,
+        CHORDED_AUXILIARY,
+        KEYBOARD,
+        LAYERED,
+        LAYER_MODIFIERS,
         STICKY,
         TAP_DANCE,
         TAP_HOLD,
-        LAYER_MODIFIERS,
-        LAYERED,
-        CHORDED,
-        CHORDED_AUXILIARY,
     >
 {
     type Callback = [key::callback::Key; CALLBACK];
@@ -653,47 +653,47 @@ pub struct System<D: Keys> {
 }
 
 impl<
-        const KEYBOARD: usize,
         const CALLBACK: usize,
+        const CHORDED: usize,
+        const CHORDED_AUXILIARY: usize,
+        const KEYBOARD: usize,
+        const LAYERED: usize,
+        const LAYER_MODIFIERS: usize,
         const STICKY: usize,
         const TAP_DANCE: usize,
         const TAP_HOLD: usize,
-        const LAYER_MODIFIERS: usize,
-        const LAYERED: usize,
-        const CHORDED: usize,
-        const CHORDED_AUXILIARY: usize,
     >
     System<
         KeyArrays<
-            KEYBOARD,
             CALLBACK,
+            CHORDED,
+            CHORDED_AUXILIARY,
+            KEYBOARD,
+            LAYERED,
+            LAYER_MODIFIERS,
             STICKY,
             TAP_DANCE,
             TAP_HOLD,
-            LAYER_MODIFIERS,
-            LAYERED,
-            CHORDED,
-            CHORDED_AUXILIARY,
         >,
     >
 {
     /// Constructs a new [System].
     pub const fn array_based(
-        keyboard: key::keyboard::System<Ref, [key::keyboard::Key; KEYBOARD]>,
         callback: key::callback::System<Ref, [key::callback::Key; CALLBACK]>,
-        sticky: key::sticky::System<Ref, [key::sticky::Key; STICKY]>,
-        tap_dance: key::tap_dance::System<Ref, [key::tap_dance::Key<Ref>; TAP_DANCE]>,
-        tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
-        layered: key::layered::System<
-            Ref,
-            [key::layered::ModifierKey; LAYER_MODIFIERS],
-            [key::layered::LayeredKey<Ref>; LAYERED],
-        >,
         chorded: key::chorded::System<
             Ref,
             [key::chorded::Key<Ref>; CHORDED],
             [key::chorded::AuxiliaryKey<Ref>; CHORDED_AUXILIARY],
         >,
+        keyboard: key::keyboard::System<Ref, [key::keyboard::Key; KEYBOARD]>,
+        layered: key::layered::System<
+            Ref,
+            [key::layered::ModifierKey; LAYER_MODIFIERS],
+            [key::layered::LayeredKey<Ref>; LAYERED],
+        >,
+        sticky: key::sticky::System<Ref, [key::sticky::Key; STICKY]>,
+        tap_dance: key::tap_dance::System<Ref, [key::tap_dance::Key<Ref>; TAP_DANCE]>,
+        tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
     ) -> Self {
         System {
             callback,
