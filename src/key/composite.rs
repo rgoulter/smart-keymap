@@ -124,7 +124,7 @@ impl key::Context for Context {
         }
 
         if let key::Event::Key {
-            key_event: Event::LayerModification(ev),
+            key_event: Event::Layered(ev),
             ..
         } = event
         {
@@ -217,7 +217,7 @@ pub enum Event {
     /// A keyboard event.
     Keyboard(key::keyboard::Event),
     /// A layer modification event.
-    LayerModification(key::layered::LayerEvent),
+    Layered(key::layered::LayerEvent),
     /// A sticky modifier event.
     Sticky(key::sticky::Event),
     /// A tap-dance event.
@@ -258,7 +258,7 @@ impl From<key::keyboard::Event> for Event {
 
 impl From<key::layered::LayerEvent> for Event {
     fn from(ev: key::layered::LayerEvent) -> Self {
-        Event::LayerModification(ev)
+        Event::Layered(ev)
     }
 }
 
@@ -318,7 +318,7 @@ impl TryFrom<Event> for key::layered::LayerEvent {
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
         match ev {
-            Event::LayerModification(ev) => Ok(ev),
+            Event::Layered(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
         }
     }
