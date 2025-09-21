@@ -1,4 +1,3 @@
-let validators = import "validators.ncl" in
 {
   KeymapJson
     | doc "Contract for the keymap.json value"
@@ -7,6 +6,8 @@ let validators = import "validators.ncl" in
       config | composite.config.Json | default = {},
       ..
     },
+
+  validators = import "validators.ncl",
 
   lib = {
     array_rust_expr = fun data =>
