@@ -206,29 +206,29 @@ impl<'c> From<&'c Context> for &'c key::tap_hold::Context {
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
-    /// A keyboard event.
-    Keyboard(key::keyboard::Event),
-    /// A caps word event.
-    CapsWord(key::caps_word::Event),
     /// A callback event.
     Callback(key::callback::Event),
-    /// A custom event.
-    Custom(key::custom::Event),
+    /// A caps word event.
+    CapsWord(key::caps_word::Event),
     /// A chorded event.
     Chorded(key::chorded::Event),
+    /// A custom event.
+    Custom(key::custom::Event),
+    /// A keyboard event.
+    Keyboard(key::keyboard::Event),
+    /// A layer modification event.
+    LayerModification(key::layered::LayerEvent),
     /// A sticky modifier event.
     Sticky(key::sticky::Event),
     /// A tap-dance event.
     TapDance(key::tap_dance::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
-    /// A layer modification event.
-    LayerModification(key::layered::LayerEvent),
 }
 
-impl From<key::keyboard::Event> for Event {
-    fn from(ev: key::keyboard::Event) -> Self {
-        Event::Keyboard(ev)
+impl From<key::callback::Event> for Event {
+    fn from(ev: key::callback::Event) -> Self {
+        Event::Callback(ev)
     }
 }
 
@@ -238,9 +238,9 @@ impl From<key::caps_word::Event> for Event {
     }
 }
 
-impl From<key::callback::Event> for Event {
-    fn from(ev: key::callback::Event) -> Self {
-        Event::Callback(ev)
+impl From<key::chorded::Event> for Event {
+    fn from(ev: key::chorded::Event) -> Self {
+        Event::Chorded(ev)
     }
 }
 
@@ -250,9 +250,9 @@ impl From<key::custom::Event> for Event {
     }
 }
 
-impl From<key::chorded::Event> for Event {
-    fn from(ev: key::chorded::Event) -> Self {
-        Event::Chorded(ev)
+impl From<key::keyboard::Event> for Event {
+    fn from(ev: key::keyboard::Event) -> Self {
+        Event::Keyboard(ev)
     }
 }
 
@@ -280,17 +280,6 @@ impl From<key::tap_hold::Event> for Event {
     }
 }
 
-impl TryFrom<Event> for key::keyboard::Event {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Keyboard(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
 impl TryFrom<Event> for key::caps_word::Event {
     type Error = key::EventError;
 
@@ -308,6 +297,17 @@ impl TryFrom<Event> for key::chorded::Event {
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
         match ev {
             Event::Chorded(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
+
+impl TryFrom<Event> for key::keyboard::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Keyboard(ev) => Ok(ev),
             _ => Err(key::EventError::UnmappableEvent),
         }
     }
