@@ -697,7 +697,7 @@ impl PendingKeyState {
 }
 
 /// Key state used by [System]. (Chorded keys do not have a key state).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeyState;
 
 /// The [key::System] implementation for the chorded key system.
