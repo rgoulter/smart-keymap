@@ -88,7 +88,7 @@ pub enum Event {
 }
 
 /// The state of a pressed tap-dance key.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PendingKeyState {
     press_count: u8,
 }
@@ -140,7 +140,7 @@ impl PendingKeyState {
 }
 
 /// The key state for System. (No state).
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct KeyState;
 
 /// The [key::System] implementation for tap dance keys.
