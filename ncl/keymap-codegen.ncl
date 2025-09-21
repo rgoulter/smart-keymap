@@ -1,7 +1,4 @@
 let validators = import "validators.ncl" in
-let array_rust_expr = fun data =>
-  "[%{data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]"
-in
 {
   KeymapJson
     | doc "Contract for the keymap.json value"
@@ -10,6 +7,11 @@ in
       config | composite.config.Json | default = {},
       ..
     },
+
+  lib = {
+    array_rust_expr = fun data =>
+      "[%{data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]",
+  },
 
   json_keymap
     | doc "The 'JSON' value of the keymap. e.g. imported from keymap.json."
@@ -183,7 +185,7 @@ in
       system = {
         rust_expr =
           let keyboard_data = (key_data_and_refs.key_data & { keyboard | default = [] }).keyboard in
-          "smart_keymap::key::keyboard::System::new(%{keyboard_data |> array_rust_expr})",
+          "smart_keymap::key::keyboard::System::new(%{keyboard_data |> lib.array_rust_expr})",
       },
     },
 
@@ -296,7 +298,7 @@ in
       system = {
         rust_expr =
           let callback_data = (key_data_and_refs.key_data & { callback | default = [] }).callback in
-          "smart_keymap::key::callback::System::new(%{callback_data |> array_rust_expr})",
+          "smart_keymap::key::callback::System::new(%{callback_data |> lib.array_rust_expr})",
       },
     },
 
@@ -417,7 +419,7 @@ in
       system = {
         rust_expr =
           let sticky_data = (key_data_and_refs.key_data & { sticky | default = [] }).sticky in
-          "smart_keymap::key::sticky::System::new(%{sticky_data |> array_rust_expr})"
+          "smart_keymap::key::sticky::System::new(%{sticky_data |> lib.array_rust_expr})"
       },
     },
 
@@ -584,7 +586,7 @@ in
       system = {
         rust_expr =
           let tap_dance_data = (key_data_and_refs.key_data & { tap_dance | default = [] }).tap_dance in
-          "smart_keymap::key::tap_dance::System::new(%{tap_dance_data |> array_rust_expr})",
+          "smart_keymap::key::tap_dance::System::new(%{tap_dance_data |> lib.array_rust_expr})",
       },
     },
 
@@ -755,7 +757,7 @@ in
       system = {
         rust_expr =
           let tap_hold_data = (key_data_and_refs.key_data & { tap_hold | default = [] }).tap_hold in
-          "smart_keymap::key::tap_hold::System::new(%{tap_hold_data |> array_rust_expr})",
+          "smart_keymap::key::tap_hold::System::new(%{tap_hold_data |> lib.array_rust_expr})",
       },
     },
 
@@ -1031,8 +1033,8 @@ in
           let layered_data = (key_data_and_refs.key_data & { layered | default = [] }).layered in
           m%"
           smart_keymap::key::layered::System::new(
-            %{layer_modifiers_data |> array_rust_expr},
-            %{layered_data |> array_rust_expr},
+            %{layer_modifiers_data |> lib.array_rust_expr},
+            %{layered_data |> lib.array_rust_expr},
           )
         "%,
       },
@@ -1265,8 +1267,8 @@ in
           let auxiliary_key_data = (key_data_and_refs.key_data & { chorded_auxiliary | default = [] }).chorded_auxiliary in
           m%"
         smart_keymap::key::chorded::System::new(
-            %{chorded_key_data |> array_rust_expr},
-            %{auxiliary_key_data |> array_rust_expr},
+            %{chorded_key_data |> lib.array_rust_expr},
+            %{auxiliary_key_data |> lib.array_rust_expr},
         )
       "%,
       },
