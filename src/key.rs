@@ -588,13 +588,17 @@ impl<T: Copy> Event<T> {
     }
 
     /// Maps the Event into a new type.
-    pub fn try_into_key_event<U, E>(self, f: fn(T) -> Result<U, E>) -> EventResult<Event<U>> {
+    pub fn try_into_key_event<U, E>(self) -> EventResult<Event<U>>
+    where
+        T: TryInto<U, Error = E>,
+    {
         match self {
             Event::Input(event) => Ok(Event::Input(event)),
             Event::Key {
                 key_event,
                 keymap_index,
-            } => f(key_event)
+            } => key_event
+                .try_into()
                 .map(|key_event| Event::Key {
                     key_event,
                     keymap_index,
