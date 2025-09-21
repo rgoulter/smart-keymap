@@ -27,28 +27,28 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
-    const KEYBOARD_DATA_LEN: usize = 0;
     const CALLBACK_DATA_LEN: usize = 0;
+    const CHORDED_AUXILIARY_DATA_LEN: usize = 0;
+    const CHORDED_DATA_LEN: usize = 0;
+    const KEYBOARD_DATA_LEN: usize = 0;
+    const LAYERED_DATA_LEN: usize = 1;
+    const LAYER_MODIFIERS_DATA_LEN: usize = 1;
     const STICKY_DATA_LEN: usize = 0;
     const TAP_DANCE_DATA_LEN: usize = 0;
     const TAP_HOLD_DATA_LEN: usize = 1;
-    const LAYER_MODIFIERS_DATA_LEN: usize = 1;
-    const LAYERED_DATA_LEN: usize = 1;
-    const CHORDED_DATA_LEN: usize = 0;
-    const CHORDED_AUXILIARY_DATA_LEN: usize = 0;
 
     /// The System type
     pub type System = smart_keymap::key::composite::System<
         smart_keymap::key::composite::KeyArrays<
-            KEYBOARD_DATA_LEN,
             CALLBACK_DATA_LEN,
+            CHORDED_AUXILIARY_DATA_LEN,
+            CHORDED_DATA_LEN,
+            KEYBOARD_DATA_LEN,
+            LAYERED_DATA_LEN,
+            LAYER_MODIFIERS_DATA_LEN,
             STICKY_DATA_LEN,
             TAP_DANCE_DATA_LEN,
             TAP_HOLD_DATA_LEN,
-            LAYER_MODIFIERS_DATA_LEN,
-            LAYERED_DATA_LEN,
-            CHORDED_DATA_LEN,
-            CHORDED_AUXILIARY_DATA_LEN,
         >,
     >;
 
@@ -88,18 +88,9 @@ pub mod init {
 
     /// The key system.
     pub const SYSTEM: System = smart_keymap::key::composite::System::array_based(
-        smart_keymap::key::keyboard::System::new([]),
         smart_keymap::key::callback::System::new([]),
-        smart_keymap::key::sticky::System::new([]),
-        smart_keymap::key::tap_dance::System::new([]),
-        smart_keymap::key::tap_hold::System::new([smart_keymap::key::tap_hold::Key {
-            tap: smart_keymap::key::composite::Ref::Keyboard(
-                smart_keymap::key::keyboard::Ref::KeyCode(4),
-            ),
-            hold: smart_keymap::key::composite::Ref::Layered(
-                smart_keymap::key::layered::Ref::Modifier(0),
-            ),
-        }]),
+        smart_keymap::key::chorded::System::new([], []),
+        smart_keymap::key::keyboard::System::new([]),
         smart_keymap::key::layered::System::new(
             [smart_keymap::key::layered::ModifierKey::hold(1)],
             [smart_keymap::key::layered::LayeredKey::new(
@@ -111,7 +102,16 @@ pub mod init {
                 ))],
             )],
         ),
-        smart_keymap::key::chorded::System::new([], []),
+        smart_keymap::key::sticky::System::new([]),
+        smart_keymap::key::tap_dance::System::new([]),
+        smart_keymap::key::tap_hold::System::new([smart_keymap::key::tap_hold::Key {
+            tap: smart_keymap::key::composite::Ref::Keyboard(
+                smart_keymap::key::keyboard::Ref::KeyCode(4),
+            ),
+            hold: smart_keymap::key::composite::Ref::Layered(
+                smart_keymap::key::layered::Ref::Modifier(0),
+            ),
+        }]),
     );
 
     /// Alias for the [keymap::Keymap] type.
