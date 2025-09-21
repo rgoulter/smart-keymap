@@ -220,9 +220,27 @@ pub enum Event {
     LayerModification(key::layered::LayerEvent),
 }
 
+impl From<key::keyboard::Event> for Event {
+    fn from(_ev: key::keyboard::Event) -> Self {
+        panic!()
+    }
+}
+
 impl From<key::caps_word::Event> for Event {
     fn from(ev: key::caps_word::Event) -> Self {
         Event::CapsWord(ev)
+    }
+}
+
+impl From<key::callback::Event> for Event {
+    fn from(_ev: key::callback::Event) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::custom::Event> for Event {
+    fn from(_ev: key::custom::Event) -> Self {
+        panic!()
     }
 }
 
@@ -342,6 +360,36 @@ pub enum PendingKeyState {
     Chorded(key::chorded::PendingKeyState),
 }
 
+impl From<key::keyboard::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::keyboard::PendingKeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::caps_word::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::caps_word::PendingKeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::callback::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::callback::PendingKeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::sticky::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::sticky::PendingKeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::custom::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::custom::PendingKeyState) -> Self {
+        panic!()
+    }
+}
+
 impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
     fn from(pks: key::tap_dance::PendingKeyState) -> Self {
         PendingKeyState::TapDance(pks)
@@ -351,6 +399,12 @@ impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
 impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     fn from(pks: key::tap_hold::PendingKeyState) -> Self {
         PendingKeyState::TapHold(pks)
+    }
+}
+
+impl From<key::layered::PendingKeyState> for PendingKeyState {
+    fn from(_pks: key::layered::PendingKeyState) -> Self {
+        panic!()
     }
 }
 
@@ -420,9 +474,39 @@ impl From<key::keyboard::KeyState> for KeyState {
     }
 }
 
+impl From<key::caps_word::KeyState> for KeyState {
+    fn from(_ks: key::caps_word::KeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::callback::KeyState> for KeyState {
+    fn from(_ks: key::callback::KeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::tap_dance::KeyState> for KeyState {
+    fn from(_ks: key::tap_dance::KeyState) -> Self {
+        panic!()
+    }
+}
+
+impl From<key::tap_hold::KeyState> for KeyState {
+    fn from(_ks: key::tap_hold::KeyState) -> Self {
+        panic!()
+    }
+}
+
 impl From<key::layered::ModifierKeyState> for KeyState {
     fn from(ks: key::layered::ModifierKeyState) -> Self {
         KeyState::LayerModifier(ks)
+    }
+}
+
+impl From<key::chorded::KeyState> for KeyState {
+    fn from(_ks: key::chorded::KeyState) -> Self {
+        panic!()
     }
 }
 
@@ -655,82 +739,55 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 let (pkr, pke) =
                     self.keyboard
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(|_| panic!(), KeyState::Keyboard),
-                    pke.map_events(|_| panic!()),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::Callback(key_ref) => {
                 let (pkr, pke) =
                     self.callback
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(|_| panic!(), |_| panic!()),
-                    pke.map_events(|_| panic!()),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::CapsWord(key_ref) => {
                 let (pkr, pke) =
                     self.caps_word
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(|_| panic!(), |_| panic!()),
-                    pke.map_events(Into::into),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::Sticky(key_ref) => {
                 let (pkr, pke) = self
                     .sticky
                     .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(|_| panic!(), Into::into),
-                    pke.map_events(Into::into),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::Custom(key_ref) => {
                 let (pkr, pke) = self
                     .custom
                     .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(|_| panic!(), Into::into),
-                    pke.map_events(|_| panic!()),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::TapDance(key_ref) => {
                 let (pkr, pke) =
                     self.tap_dance
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(Into::into, |_| panic!()),
-                    pke.map_events(Into::into),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::TapHold(key_ref) => {
                 let (pkr, pke) =
                     self.tap_hold
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(Into::into, |_| panic!()),
-                    pke.map_events(Into::into),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::Layered(key_ref) => {
                 let (pkr, pke) =
                     self.layered
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(|_| panic!(), Into::into),
-                    pke.map_events(Into::into),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
             Ref::Chorded(key_ref) => {
                 let (pkr, pke) =
                     self.chorded
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (
-                    pkr.map(Into::into, |_| panic!()),
-                    pke.map_events(Into::into),
-                )
+                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
             }
         }
     }
@@ -810,7 +867,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                             keymap_index,
                             event,
                         );
-                    pke.map_events(|_| panic!())
+                    pke.map_events(Into::into)
                 } else {
                     key::KeyEvents::no_events()
                 }
