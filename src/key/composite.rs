@@ -67,7 +67,7 @@ pub const DEFAULT_CONFIG: Config = Config {
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
     keymap_context: keymap::KeymapContext,
-    caps_word_context: key::caps_word::Context,
+    caps_word: key::caps_word::Context,
     chorded: key::chorded::Context,
     layered: key::layered::Context,
     sticky: key::sticky::Context,
@@ -78,7 +78,7 @@ pub struct Context {
 /// The default context.
 pub const DEFAULT_CONTEXT: Context = Context {
     keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
-    caps_word_context: key::caps_word::DEFAULT_CONTEXT,
+    caps_word: key::caps_word::DEFAULT_CONTEXT,
     chorded: key::chorded::DEFAULT_CONTEXT,
     layered: key::layered::DEFAULT_CONTEXT,
     sticky: key::sticky::DEFAULT_CONTEXT,
@@ -111,7 +111,7 @@ impl key::Context for Context {
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         let mut pke = key::KeyEvents::no_events();
 
-        let caps_word_ev = self.caps_word_context.handle_event(event);
+        let caps_word_ev = self.caps_word.handle_event(event);
         pke.extend(caps_word_ev);
 
         if let Ok(e) = event.try_into_key_event() {
@@ -157,7 +157,7 @@ impl<'c> From<&'c Context> for &'c key::callback::Context {
 
 impl<'c> From<&'c Context> for &'c key::caps_word::Context {
     fn from(ctx: &'c Context) -> Self {
-        &ctx.caps_word_context
+        &ctx.caps_word
     }
 }
 
