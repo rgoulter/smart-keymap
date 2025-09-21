@@ -19,11 +19,7 @@ pub const DEFAULT_CONTEXT: Context = Context { is_active: false };
 
 impl Context {
     /// Updates the context with the given event.
-    pub fn handle_event<E>(&mut self, event: key::Event<E>) -> key::KeyEvents<E>
-    where
-        Event: TryFrom<E>,
-        E: core::fmt::Debug + core::marker::Copy,
-    {
+    fn handle_event(&mut self, event: key::Event<Event>) -> key::KeyEvents<Event> {
         match event {
             key::Event::Keymap(keymap::KeymapEvent::ResolvedKeyOutput {
                 key_output:
@@ -65,32 +61,26 @@ impl Context {
                     key::KeyEvents::no_events()
                 }
             }
-            key::Event::Key { key_event, .. } => {
-                if let Ok(ev) = key_event.try_into() {
-                    match ev {
-                        Event::EnableCapsWord => {
-                            self.is_active = true;
+            key::Event::Key { key_event, .. } => match key_event {
+                Event::EnableCapsWord => {
+                    self.is_active = true;
 
-                            let key_code = 0xE1;
-                            let vk_ev = input::Event::VirtualKeyPress {
-                                key_output: key::KeyOutput::from_key_code(key_code),
-                            };
-                            key::KeyEvents::event(key::Event::Input(vk_ev))
-                        }
-                        Event::DisableCapsWord => {
-                            self.is_active = false;
-
-                            let key_code = 0xE1;
-                            let vk_ev = input::Event::VirtualKeyRelease {
-                                key_output: key::KeyOutput::from_key_code(key_code),
-                            };
-                            key::KeyEvents::event(key::Event::Input(vk_ev))
-                        }
-                    }
-                } else {
-                    key::KeyEvents::no_events()
+                    let key_code = 0xE1;
+                    let vk_ev = input::Event::VirtualKeyPress {
+                        key_output: key::KeyOutput::from_key_code(key_code),
+                    };
+                    key::KeyEvents::event(key::Event::Input(vk_ev))
                 }
-            }
+                Event::DisableCapsWord => {
+                    self.is_active = false;
+
+                    let key_code = 0xE1;
+                    let vk_ev = input::Event::VirtualKeyRelease {
+                        key_output: key::KeyOutput::from_key_code(key_code),
+                    };
+                    key::KeyEvents::event(key::Event::Input(vk_ev))
+                }
+            },
             _ => key::KeyEvents::no_events(),
         }
     }

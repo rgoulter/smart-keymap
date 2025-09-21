@@ -111,8 +111,10 @@ impl key::Context for Context {
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         let mut pke = key::KeyEvents::no_events();
 
-        let caps_word_ev = self.caps_word.handle_event(event);
-        pke.extend(caps_word_ev);
+        if let Ok(e) = event.try_into_key_event() {
+            let caps_word_ev = self.caps_word.handle_event(e);
+            pke.extend(caps_word_ev.into_events());
+        }
 
         if let Ok(e) = event.try_into_key_event() {
             self.chorded.handle_event(e);
