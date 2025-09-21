@@ -832,6 +832,20 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
         match (key_ref, pending_state) {
+            (Ref::Chorded(key_ref), PendingKeyState::Chorded(pending_state)) => {
+                if let Ok(event) = event.try_into_key_event() {
+                    let (maybe_npk, pke) = self.chorded.update_pending_state(
+                        pending_state,
+                        keymap_index,
+                        context.into(),
+                        key_ref,
+                        event,
+                    );
+                    (maybe_npk, pke.into_events())
+                } else {
+                    (None, key::KeyEvents::no_events())
+                }
+            }
             (Ref::TapDance(key_ref), PendingKeyState::TapDance(pending_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
                     let (maybe_npk, pke) = self.tap_dance.update_pending_state(
@@ -849,20 +863,6 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             (Ref::TapHold(key_ref), PendingKeyState::TapHold(pending_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
                     let (maybe_npk, pke) = self.tap_hold.update_pending_state(
-                        pending_state,
-                        keymap_index,
-                        context.into(),
-                        key_ref,
-                        event,
-                    );
-                    (maybe_npk, pke.into_events())
-                } else {
-                    (None, key::KeyEvents::no_events())
-                }
-            }
-            (Ref::Chorded(key_ref), PendingKeyState::Chorded(pending_state)) => {
-                if let Ok(event) = event.try_into_key_event() {
-                    let (maybe_npk, pke) = self.chorded.update_pending_state(
                         pending_state,
                         keymap_index,
                         context.into(),
@@ -903,21 +903,6 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     key::KeyEvents::no_events()
                 }
             }
-            (Ref::Sticky(key_ref), KeyState::Sticky(key_state)) => {
-                if let Ok(event) = event.try_into_key_event() {
-                    let pke = <key::sticky::System<K::Sticky> as key::System<Ref>>::update_state(
-                        &self.sticky,
-                        key_state,
-                        key_ref,
-                        context.into(),
-                        keymap_index,
-                        event,
-                    );
-                    pke.into_events()
-                } else {
-                    key::KeyEvents::no_events()
-                }
-            }
             (Ref::Layered(key_ref), KeyState::LayerModifier(key_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
                     let pke =
@@ -931,6 +916,21 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                             keymap_index,
                             event,
                         );
+                    pke.into_events()
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
+            (Ref::Sticky(key_ref), KeyState::Sticky(key_state)) => {
+                if let Ok(event) = event.try_into_key_event() {
+                    let pke = <key::sticky::System<K::Sticky> as key::System<Ref>>::update_state(
+                        &self.sticky,
+                        key_state,
+                        key_ref,
+                        context.into(),
+                        keymap_index,
+                        event,
+                    );
                     pke.into_events()
                 } else {
                     key::KeyEvents::no_events()
