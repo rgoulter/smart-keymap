@@ -946,6 +946,9 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
+            (Ref::Custom(r), KeyState::Custom(ks)) => {
+                <key::custom::System as key::System<Ref>>::key_output(&self.custom, r, ks)
+            }
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
                 <key::keyboard::System<K::Keyboard> as key::System<Ref>>::key_output(
                     &self.keyboard,
@@ -959,9 +962,6 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     r,
                     ks,
                 )
-            }
-            (Ref::Custom(r), KeyState::Custom(ks)) => {
-                <key::custom::System as key::System<Ref>>::key_output(&self.custom, r, ks)
             }
             (_, _) => None,
         }
