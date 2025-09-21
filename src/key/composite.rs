@@ -114,12 +114,12 @@ impl key::Context for Context {
         let caps_word_ev = self.caps_word_context.handle_event(event);
         pke.extend(caps_word_ev);
 
-        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+        if let Ok(e) = event.try_into_key_event() {
             let sticky_ev = self.sticky.handle_event(e);
             pke.extend(sticky_ev.into_events());
         }
 
-        if let Ok(e) = event.try_into_key_event(|e| e.try_into()) {
+        if let Ok(e) = event.try_into_key_event() {
             self.chorded.handle_event(e);
         }
 
@@ -739,55 +739,55 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 let (pkr, pke) =
                     self.keyboard
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::Callback(key_ref) => {
                 let (pkr, pke) =
                     self.callback
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::CapsWord(key_ref) => {
                 let (pkr, pke) =
                     self.caps_word
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::Sticky(key_ref) => {
                 let (pkr, pke) = self
                     .sticky
                     .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::Custom(key_ref) => {
                 let (pkr, pke) = self
                     .custom
                     .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::TapDance(key_ref) => {
                 let (pkr, pke) =
                     self.tap_dance
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::TapHold(key_ref) => {
                 let (pkr, pke) =
                     self.tap_hold
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::Layered(key_ref) => {
                 let (pkr, pke) =
                     self.layered
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
             Ref::Chorded(key_ref) => {
                 let (pkr, pke) =
                     self.chorded
                         .new_pressed_key(keymap_index, context.into(), key_ref);
-                (pkr.map(Into::into, Into::into), pke.map_events(Into::into))
+                (pkr.into_result(), pke.into_events())
             }
         }
     }
@@ -802,7 +802,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
     ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
         match (key_ref, pending_state) {
             (Ref::TapDance(key_ref), PendingKeyState::TapDance(pending_state)) => {
-                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                if let Ok(event) = event.try_into_key_event() {
                     let (maybe_npk, pke) = self.tap_dance.update_pending_state(
                         pending_state,
                         keymap_index,
@@ -810,13 +810,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                         key_ref,
                         event,
                     );
-                    (maybe_npk, pke.map_events(Into::into))
+                    (maybe_npk, pke.into_events())
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
             }
             (Ref::TapHold(key_ref), PendingKeyState::TapHold(pending_state)) => {
-                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                if let Ok(event) = event.try_into_key_event() {
                     let (maybe_npk, pke) = self.tap_hold.update_pending_state(
                         pending_state,
                         keymap_index,
@@ -824,13 +824,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                         key_ref,
                         event,
                     );
-                    (maybe_npk, pke.map_events(Into::into))
+                    (maybe_npk, pke.into_events())
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
             }
             (Ref::Chorded(key_ref), PendingKeyState::Chorded(pending_state)) => {
-                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                if let Ok(event) = event.try_into_key_event() {
                     let (maybe_npk, pke) = self.chorded.update_pending_state(
                         pending_state,
                         keymap_index,
@@ -838,7 +838,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                         key_ref,
                         event,
                     );
-                    (maybe_npk, pke.map_events(Into::into))
+                    (maybe_npk, pke.into_events())
                 } else {
                     (None, key::KeyEvents::no_events())
                 }
@@ -857,7 +857,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
     ) -> key::KeyEvents<Self::Event> {
         match (key_ref, key_state) {
             (Ref::Keyboard(key_ref), KeyState::Keyboard(key_state)) => {
-                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                if let Ok(event) = event.try_into_key_event() {
                     let pke =
                         <key::keyboard::System<K::Keyboard> as key::System<Ref>>::update_state(
                             &self.keyboard,
@@ -867,13 +867,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                             keymap_index,
                             event,
                         );
-                    pke.map_events(Into::into)
+                    pke.into_events()
                 } else {
                     key::KeyEvents::no_events()
                 }
             }
             (Ref::Sticky(key_ref), KeyState::Sticky(key_state)) => {
-                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                if let Ok(event) = event.try_into_key_event() {
                     let pke = <key::sticky::System<K::Sticky> as key::System<Ref>>::update_state(
                         &self.sticky,
                         key_state,
@@ -882,13 +882,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                         keymap_index,
                         event,
                     );
-                    pke.map_events(Into::into)
+                    pke.into_events()
                 } else {
                     key::KeyEvents::no_events()
                 }
             }
             (Ref::Layered(key_ref), KeyState::LayerModifier(key_state)) => {
-                if let Ok(event) = event.try_into_key_event(TryInto::try_into) {
+                if let Ok(event) = event.try_into_key_event() {
                     let pke =
                         <key::layered::System<Ref, K::LayerModifiers, K::Layered> as key::System<
                             Ref,
@@ -900,7 +900,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                             keymap_index,
                             event,
                         );
-                    pke.map_events(Into::into)
+                    pke.into_events()
                 } else {
                     key::KeyEvents::no_events()
                 }
