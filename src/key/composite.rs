@@ -644,15 +644,15 @@ impl Keys for KeyVecs {
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<D: Keys> {
-    keyboard: key::keyboard::System<D::Keyboard>,
     callback: key::callback::System<D::Callback>,
     caps_word: key::caps_word::System,
-    sticky: key::sticky::System<D::Sticky>,
+    chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
     custom: key::custom::System,
+    keyboard: key::keyboard::System<D::Keyboard>,
+    layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
+    sticky: key::sticky::System<D::Sticky>,
     tap_dance: key::tap_dance::System<Ref, D::TapDance>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
-    layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
-    chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
     marker: PhantomData<D>,
 }
 
@@ -700,15 +700,15 @@ impl<
         >,
     ) -> Self {
         System {
-            keyboard,
             callback,
             caps_word: key::caps_word::System::new(),
-            sticky,
+            chorded,
             custom: key::custom::System::new(),
+            keyboard,
+            layered,
+            sticky,
             tap_dance,
             tap_hold,
-            layered,
-            chorded,
             marker: PhantomData,
         }
     }
@@ -735,15 +735,15 @@ impl System<KeyVecs> {
         >,
     ) -> Self {
         System {
-            keyboard,
             callback,
             caps_word: key::caps_word::System::new(),
-            sticky,
+            chorded,
             custom: key::custom::System::new(),
+            keyboard,
+            layered,
+            sticky,
             tap_dance,
             tap_hold,
-            layered,
-            chorded,
             marker: PhantomData,
         }
     }
