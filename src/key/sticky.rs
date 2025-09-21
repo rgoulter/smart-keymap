@@ -96,7 +96,7 @@ impl Context {
     }
 
     /// Updates the context with the given event.
-    pub fn handle_event(&mut self, event: key::Event<Event>) -> key::KeyEvents<Event> {
+    fn handle_event(&mut self, event: key::Event<Event>) -> key::KeyEvents<Event> {
         // Cases:
         //
         // - No sticky key has been pressed.
@@ -230,6 +230,14 @@ impl Context {
             }
             _ => key::KeyEvents::no_events(),
         }
+    }
+}
+
+impl key::Context for Context {
+    type Event = Event;
+
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        self.handle_event(event)
     }
 }
 
