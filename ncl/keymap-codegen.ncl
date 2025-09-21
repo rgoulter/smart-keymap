@@ -59,18 +59,18 @@ in
     # Use a JSON value to check the "is" predicate.
     check_json_is =
       let json = { key_code = 4 } in
-      keyboard.is_json json,
+      keyboard.key.is_json json,
     check_json_with_modifier_is =
       let json = { key_code = 4, modifiers = 1 } in
-      keyboard.is_json json,
+      keyboard.key.is_json json,
     check_json_modifiers_is =
       let json = { modifiers = 1 } in
-      keyboard.is_json json,
+      keyboard.key.is_json json,
 
     check_keyboard_codegen_values = {
       check_basic =
         let json = { key_code = 4 } in
-        let cv = keyboard.codegen_values json in
+        let cv = keyboard.key.codegen_values json in
         {
           check_module_type = {
             actual = cv.key_type,
@@ -87,96 +87,98 @@ in
   keyboard
     | doc "for key::keyboard::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       module = "smart_keymap::key::keyboard",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      # c.f. doc_de_keyboard.md.
-      json_validator =
-        validators.record.validator {
-          fields_validator =
-            validators.all_of [
-              validators.record.has_any_field_of ["key_code", "modifiers"],
-              validators.record.has_only_fields ["key_code", "modifiers"],
-            ],
-          field_validators = {
-            key_code = validators.is_number,
-            modifiers = keyboard_modifiers.json_validator,
+        key_type = "%{module}::Key",
+
+        # c.f. doc_de_keyboard.md.
+        json_validator =
+          validators.record.validator {
+            fields_validator =
+              validators.all_of [
+                validators.record.has_any_field_of ["key_code", "modifiers"],
+                validators.record.has_only_fields ["key_code", "modifiers"],
+              ],
+            field_validators = {
+              key_code = validators.is_number,
+              modifiers = keyboard_modifiers.json_validator,
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      codegen_values = fun json =>
-        {
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            json
-            |> match {
-              { key_code } =>
-                "smart_keymap::key::keyboard::Key::new(%{std.to_string key_code})",
-              { modifiers } =>
-                "smart_keymap::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
-              { key_code, modifiers } =>
-                "smart_keymap::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
-            },
-        },
-
-      traverse = fun f acc cv => f acc cv,
-
-      data_and_ref = fun key_data cv @ { json, .. } =>
-        json
-        |> match {
-          { key_code } =>
-            {
-              include key_data,
-              ref = {
-                include module,
-                variant = "KeyCode",
-                json = { "%{variant}" = key_code },
-                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string key_code})",
+        codegen_values = fun json =>
+          {
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              json
+              |> match {
+                { key_code } =>
+                  "smart_keymap::key::keyboard::Key::new(%{std.to_string key_code})",
+                { modifiers } =>
+                  "smart_keymap::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
+                { key_code, modifiers } =>
+                  "smart_keymap::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
               },
-            },
-          { modifiers } =>
-            {
-              include key_data,
-              ref = {
-                include module,
-                variant = "Modifiers",
-                json = { "%{variant}" = modifiers },
-                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string modifiers})",
+          },
+
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv @ { json, .. } =>
+          json
+          |> match {
+            { key_code } =>
+              {
+                include key_data,
+                ref = {
+                  include module,
+                  variant = "KeyCode",
+                  json = { "%{variant}" = key_code },
+                  rust_expr = "%{module}::Ref::%{variant}(%{std.to_string key_code})",
+                },
               },
-            },
-          { key_code, modifiers } =>
-            let { keyboard = keyboard_, ..other_data } = key_data & { keyboard | default = [] } in
-            let new_index = std.array.length keyboard_ in
-            let new_key = {
-              json = {
-                include key_code,
-                include modifiers,
+            { modifiers } =>
+              {
+                include key_data,
+                ref = {
+                  include module,
+                  variant = "Modifiers",
+                  json = { "%{variant}" = modifiers },
+                  rust_expr = "%{module}::Ref::%{variant}(%{std.to_string modifiers})",
+                },
               },
-              rust_expr = m%"
+            { key_code, modifiers } =>
+              let { keyboard = keyboard_, ..other_data } = key_data & { keyboard | default = [] } in
+              let new_index = std.array.length keyboard_ in
+              let new_key = {
+                json = {
+                  include key_code,
+                  include modifiers,
+                },
+                rust_expr = m%"
                 %{module}::Key {
                   key_code: %{std.to_string key_code},
                   modifiers: %{keyboard_modifiers.expr modifiers},
                 }
               "%,
-            }
-            in
-            {
-              key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
-              ref = {
-                include module,
-                variant = "KeyCodeAndModifier",
-                json = { "%{variant}" = new_index },
-                rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+              }
+              in
+              {
+                key_data = other_data & { keyboard = std.array.append new_key keyboard_ },
+                ref = {
+                  include module,
+                  variant = "KeyCodeAndModifier",
+                  json = { "%{variant}" = new_index },
+                  rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+                },
               },
-            },
-        },
+          },
+      },
 
       system = {
         rust_expr =
@@ -188,187 +190,108 @@ in
   caps_word
     | doc "for key::caps_word::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       module = "smart_keymap::key::caps_word",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      json_validator = fun json =>
-        json
-        |> match {
-          "ToggleCapsWord" => 'Ok,
-          _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
-        },
+        key_type = "%{module}::Key",
 
-      is_json = fun json => 'Ok == json_validator json,
+        json_validator = fun json =>
+          json
+          |> match {
+            "ToggleCapsWord" => 'Ok,
+            _ => 'Error { message = "Expected \"ToggleCapsWord\"" },
+          },
 
-      codegen_values = fun json =>
-        {
-          include json,
-          include module,
-          include key_type,
-          rust_expr = "smart_keymap::key::caps_word::Key::new()",
-        },
+        is_json = fun json => 'Ok == json_validator json,
 
-      traverse = fun f acc cv => f acc cv,
-
-      data_and_ref = fun key_data cv @ { json, .. } =>
-        {
-          include key_data,
-          ref = {
-            include module,
+        codegen_values = fun json =>
+          {
             include json,
-            rust_expr = "%{module}::Ref(%{module}::Key::%{json})",
-          },
-        },
-    },
-
-  checks.layer_modifier_is = {
-    # Use a json value to check the "is" predicate.
-    check_json_is =
-      let json = { Hold = 0 } in
-      layer_modifier.is_json json
-  },
-
-  layer_modifier
-    | doc "for key::layered::ModifierKey."
-    = {
-      Json = std.contract.from_validator json_validator,
-
-      module = "smart_keymap::key::layered",
-
-      key_type = "%{module}::ModifierKey",
-
-      # c.f. doc_de_layered.md.
-      # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer), SetActiveLayers([layer, ...]).
-      json_validator =
-        validators.record.validator {
-          fields_validator =
-            validators.all_of [
-              validators.record.has_any_field_of ["Default", "Hold", "SetActiveLayers"],
-              validators.record.has_only_fields ["Default", "Hold", "SetActiveLayers"],
-            ],
-          field_validators = {
-            Hold = validators.is_number,
-            SetActiveLayers = validators.is_number,
-          },
-        },
-
-      is_json = fun json => 'Ok == json_validator json,
-
-      codegen_values = fun json =>
-        json
-        |> match {
-          { Default = layer_index } =>
-            {
-              include json,
-              include module,
-              include key_type,
-              variant = "Default",
-              rust_expr = "%{module}::ModifierKey::default(%{std.to_string layer_index})",
-            },
-          { Hold = layer_index } =>
-            {
-              include json,
-              include module,
-              include key_type,
-              variant = "Hold",
-              rust_expr = "%{module}::ModifierKey::hold(%{std.to_string layer_index})",
-            },
-          { SetActiveLayers = active_layers_bitset } =>
-            {
-              include json,
-              include module,
-              include key_type,
-              variant = "SetActiveLayers",
-              rust_expr = "%{module}::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
-            },
-        },
-
-      traverse = fun f acc cv => f acc cv,
-
-      data_and_ref = fun key_data cv @ { json, .. } =>
-        let { layer_modifiers = layer_modifiers_, ..other_data } = key_data & { layer_modifiers | default = [] } in
-        let new_index = std.array.length layer_modifiers_ in
-        let new_key = {
-          include json,
-          rust_expr = cv.rust_expr,
-        }
-        in
-        {
-          key_data = other_data & { layer_modifiers = std.array.append new_key layer_modifiers_ },
-          ref = {
             include module,
-            variant = "Modifier",
-            json = { "%{variant}" = new_index },
-            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+            include key_type,
+            rust_expr = "smart_keymap::key::caps_word::Key::new()",
           },
-        },
+
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv @ { json, .. } =>
+          {
+            include key_data,
+            ref = {
+              include module,
+              include json,
+              rust_expr = "%{module}::Ref(%{module}::Key::%{json})",
+            },
+          },
+      },
     },
 
   callback
     | doc "for key::callback::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       module = "smart_keymap::key::callback",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["keymap_callback"],
-          field_validators = {
-            keymap_callback =
-              validators.any_of [
-                validators.is_string,
-                validators.record.validator {
-                  fields_validator = validators.record.has_exact_fields ["Custom"],
-                  field_validators = {
-                    Custom = validators.is_array,
-                  },
-                }
-              ],
+        key_type = "%{module}::Key",
+
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["keymap_callback"],
+            field_validators = {
+              keymap_callback =
+                validators.any_of [
+                  validators.is_string,
+                  validators.record.validator {
+                    fields_validator = validators.record.has_exact_fields ["Custom"],
+                    field_validators = {
+                      Custom = validators.is_array,
+                    },
+                  }
+                ],
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      codegen_values = fun json @ { keymap_callback } =>
-        {
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            let cb_expr =
-              keymap_callback
-              |> match {
-                { Custom = [i, j] } =>
-                  "smart_keymap::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
-                _ => "smart_keymap::keymap::KeymapCallback::%{keymap_callback}"
-              }
-            in "%{module}::Key::new(%{cb_expr})",
-        },
-
-      traverse = fun f acc cv => f acc cv,
-
-      data_and_ref = fun key_data cv =>
-        let { callback = callback_, ..other_data } = key_data & { callback | default = [] } in
-        let new_index = std.array.length callback_ in
-        let new_key = {
-          json = cv.json,
-          rust_expr = cv.rust_expr,
-        }
-        in
-        {
-          key_data = other_data & { callback = std.array.append new_key callback_ },
-          ref = {
+        codegen_values = fun json @ { keymap_callback } =>
+          {
+            include json,
             include module,
-            json = new_index,
-            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+            include key_type,
+            rust_expr =
+              let cb_expr =
+                keymap_callback
+                |> match {
+                  { Custom = [i, j] } =>
+                    "smart_keymap::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
+                  _ => "smart_keymap::keymap::KeymapCallback::%{keymap_callback}"
+                }
+              in "%{module}::Key::new(%{cb_expr})",
           },
-        },
+
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv =>
+          let { callback = callback_, ..other_data } = key_data & { callback | default = [] } in
+          let new_index = std.array.length callback_ in
+          let new_key = {
+            json = cv.json,
+            rust_expr = cv.rust_expr,
+          }
+          in
+          {
+            key_data = other_data & { callback = std.array.append new_key callback_ },
+            ref = {
+              include module,
+              json = new_index,
+              rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+            },
+          },
+      },
 
       system = {
         rust_expr =
@@ -380,8 +303,6 @@ in
   sticky
     | doc "for key::sticky::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       StickyActivationJson_ =
         std.contract.from_validator (
           validators.is_elem_of [
@@ -408,52 +329,56 @@ in
 
       module = "smart_keymap::key::sticky",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      json_validator =
-        validators.record.validator {
-          fields_validator =
-            validators.all_of [
-              validators.record.has_exact_fields ["sticky_modifiers"],
-            ],
-          field_validators = {
-            sticky_modifiers = keyboard_modifiers.json_validator,
-          },
-        },
+        key_type = "%{module}::Key",
 
-      is_json = fun json => 'Ok == json_validator json,
-
-      codegen_values = fun json =>
-        {
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            json
-            |> match {
-              { sticky_modifiers } =>
-                "%{module}::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
+        json_validator =
+          validators.record.validator {
+            fields_validator =
+              validators.all_of [
+                validators.record.has_exact_fields ["sticky_modifiers"],
+              ],
+            field_validators = {
+              sticky_modifiers = keyboard_modifiers.json_validator,
             },
-        },
-
-      traverse = fun f acc cv => f acc cv,
-
-      data_and_ref = fun key_data cv =>
-        let { sticky = sticky_, ..other_data } = key_data & { sticky | default = [] } in
-        let new_index = std.array.length sticky_ in
-        let new_key = {
-          json = cv.json,
-          rust_expr = cv.rust_expr,
-        }
-        in
-        {
-          key_data = other_data & { sticky = std.array.append new_key sticky_ },
-          ref = {
-            include module,
-            json = new_index,
-            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
           },
-        },
+
+        is_json = fun json => 'Ok == json_validator json,
+
+        codegen_values = fun json =>
+          {
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              json
+              |> match {
+                { sticky_modifiers } =>
+                  "%{module}::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
+              },
+          },
+
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv =>
+          let { sticky = sticky_, ..other_data } = key_data & { sticky | default = [] } in
+          let new_index = std.array.length sticky_ in
+          let new_key = {
+            json = cv.json,
+            rust_expr = cv.rust_expr,
+          }
+          in
+          {
+            key_data = other_data & { sticky = std.array.append new_key sticky_ },
+            ref = {
+              include module,
+              json = new_index,
+              rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+            },
+          },
+      },
 
       config = {
         rust_expr =
@@ -499,119 +424,122 @@ in
   custom
     | doc "for key::custom::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       module = "smart_keymap::key::custom",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["custom"],
-          field_validators = {
-            custom = validators.is_number,
+        key_type = "%{module}::Key",
+
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["custom"],
+            field_validators = {
+              custom = validators.is_number,
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      codegen_values = fun json @ { custom } =>
-        {
-          include json,
-          include module,
-          include key_type,
-          rust_expr = "%{module}::Key::new(%{std.to_string custom})",
-        },
-
-      traverse = fun f acc cv => f acc cv,
-
-      data_and_ref = fun key_data cv @ { json, .. } =>
-        {
-          include key_data,
-          ref = {
+        codegen_values = fun json @ { custom } =>
+          {
             include json,
             include module,
-            rust_expr = "%{module}::Ref(%{json.custom |> std.to_string})",
+            include key_type,
+            rust_expr = "%{module}::Key::new(%{std.to_string custom})",
           },
-        },
+
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv @ { json, .. } =>
+          {
+            include key_data,
+            ref = {
+              include json,
+              include module,
+              rust_expr = "%{module}::Ref(%{json.custom |> std.to_string})",
+            },
+          },
+      },
     },
 
   tap_dance
     | doc "for key::tap_dance::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       ConfigJson = {
         timeout | optional | Number,
       },
 
       module = "smart_keymap::key::tap_dance",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      # JSON serialization of key::tap_dance::Key is { definitions: [Option<json>] }
-      #  and the codegen uses the from_definitions(&[json]) constructor.
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["definitions"],
-          field_validators = {
-            definitions = validators.array.validator smart_key.json_validator,
+        key_type = "%{module}::Key",
+
+        # JSON serialization of key::tap_dance::Key is { definitions: [Option<json>] }
+        #  and the codegen uses the from_definitions(&[json]) constructor.
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["definitions"],
+            field_validators = {
+              definitions = validators.array.validator smart_key.json_validator,
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      codegen_values = fun json @ { definitions } =>
-        let definitions_cv = definitions |> std.array.map (fun json => json |> smart_key.codegen_values) in
+        codegen_values = fun json @ { definitions } =>
+          let definitions_cv = definitions |> std.array.map (fun json => json |> smart_key.codegen_values) in
 
-        {
-          nested = {
-            definitions = definitions_cv,
+          {
+            nested = {
+              definitions = definitions_cv,
+            },
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              let definitions_expr = nested.definitions |> std.array.map (fun cv => cv.rust_expr) in
+              let definitions_slice_expr = "&[%{definitions_expr |> std.string.join ", "}]" in
+              "%{module}::Key::from_definitions(%{definitions_slice_expr})",
           },
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            let definitions_expr = nested.definitions |> std.array.map (fun cv => cv.rust_expr) in
-            let definitions_slice_expr = "&[%{definitions_expr |> std.string.join ", "}]" in
-            "%{module}::Key::from_definitions(%{definitions_slice_expr})",
-        },
 
-      map_nested = fun f cv @ { nested, ..rest } =>
-        rest
-        & {
-          nested = {
-            definitions = std.array.map f cv.nested.definitions,
+        map_nested = fun f cv @ { nested, ..rest } =>
+          rest
+          & {
+            nested = {
+              definitions = std.array.map f cv.nested.definitions,
+            },
           },
-        },
 
-      # Traverse by visiting the tap_dance key,
-      #  then traversing the definitions.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        std.array.fold_left
-          (fun acc nested_cv => smart_key.traverse f acc nested_cv)
-          acc
-          cv.nested.definitions,
-
-      data_and_ref = fun key_data cv @ { nested = { definitions = definitions_cvs }, .. } =>
-        let { key_data, definitions_refs } =
+        # Traverse by visiting the tap_dance key,
+        #  then traversing the definitions.
+        traverse = fun f acc cv =>
+          let acc = f acc cv in
           std.array.fold_left
-            (fun { key_data, definitions_refs = parts } cv =>
-              let { key_data, ref = definition_ref } = smart_key.data_and_ref key_data cv in
-              let definition_ref = definition_ref |> composite.ref.wrap in
-              { include key_data, definitions_refs = std.array.append definition_ref parts }
-            )
-            { include key_data, definitions_refs = [] }
-            definitions_cvs
-        in
-        let { tap_dance = tap_dance_, ..other_data } = key_data & { tap_dance | default = [] } in
-        let new_index = std.array.length tap_dance_ in
-        let new_key = {
-          json = {
-            definitions = definitions_refs |> std.array.map (fun { json, .. } => json),
-          },
-          rust_expr = m%"
+            (fun acc nested_cv => smart_key.traverse f acc nested_cv)
+            acc
+            cv.nested.definitions,
+
+        data_and_ref = fun key_data cv @ { nested = { definitions = definitions_cvs }, .. } =>
+          let { key_data, definitions_refs } =
+            std.array.fold_left
+              (fun { key_data, definitions_refs = parts } cv =>
+                let { key_data, ref = definition_ref } = smart_key.data_and_ref key_data cv in
+                let definition_ref = definition_ref |> composite.ref.wrap in
+                { include key_data, definitions_refs = std.array.append definition_ref parts }
+              )
+              { include key_data, definitions_refs = [] }
+              definitions_cvs
+          in
+          let { tap_dance = tap_dance_, ..other_data } = key_data & { tap_dance | default = [] } in
+          let new_index = std.array.length tap_dance_ in
+          let new_key = {
+            json = {
+              definitions = definitions_refs |> std.array.map (fun { json, .. } => json),
+            },
+            rust_expr = m%"
             %{module}::Key::from_definitions(
               &[%{
                 definitions_refs
@@ -620,17 +548,18 @@ in
               }],
             )
           "%,
-        }
-        in
-        {
-          key_data = other_data & { tap_dance = std.array.append new_key tap_dance_ },
-          ref = {
-            include module,
-            variant = "TapDance",
-            json = new_index,
-            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+          }
+          in
+          {
+            key_data = other_data & { tap_dance = std.array.append new_key tap_dance_ },
+            ref = {
+              include module,
+              variant = "TapDance",
+              json = new_index,
+              rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+            },
           },
-        },
+      },
 
       config = {
         rust_expr =
@@ -667,7 +596,7 @@ in
         tap = { key_code = 4 },
       }
       in
-      tap_hold.is_json json,
+      tap_hold.key.is_json json,
 
     check_taphold_codegen_values = {
       # Current impl: tap_hold::Key<keyboard::Key> is still th::Key<composite::Base>
@@ -677,7 +606,7 @@ in
           tap = { key_code = 4 },
         }
         in
-        let cv = tap_hold.codegen_values json in
+        let cv = tap_hold.key.codegen_values json in
         {
           check_rust_expr = {
             actual = cv.rust_expr,
@@ -690,8 +619,6 @@ in
   tap_hold
     | doc "for key::tap_hold::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       TapHoldInterruptResponseJson =
         std.contract.from_validator (
           validators.is_elem_of [
@@ -709,83 +636,87 @@ in
 
       module = "smart_keymap::key::tap_hold",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      # c.f. doc_de_tap_hold.md.
-      # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["tap", "hold"],
-          field_validators = {
-            tap = smart_key.json_validator,
-            hold = smart_key.json_validator,
+        key_type = "%{module}::Key",
+
+        # c.f. doc_de_tap_hold.md.
+        # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["tap", "hold"],
+            field_validators = {
+              tap = smart_key.json_validator,
+              hold = smart_key.json_validator,
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      codegen_values = fun json @ { hold, tap } =>
-        let hold_cv = hold |> smart_key.codegen_values in
-        let tap_cv = tap |> smart_key.codegen_values in
+        codegen_values = fun json @ { hold, tap } =>
+          let hold_cv = hold |> smart_key.codegen_values in
+          let tap_cv = tap |> smart_key.codegen_values in
 
-        {
-          nested = {
-            tap = tap_cv,
-            hold = hold_cv,
+          {
+            nested = {
+              tap = tap_cv,
+              hold = hold_cv,
+            },
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              let hold_expr = nested.hold.rust_expr in
+              let tap_expr = nested.tap.rust_expr in
+              "%{module}::Key::new(%{tap_expr}, %{hold_expr})",
           },
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            let hold_expr = nested.hold.rust_expr in
-            let tap_expr = nested.tap.rust_expr in
-            "%{module}::Key::new(%{tap_expr}, %{hold_expr})",
-        },
 
-      map_nested = fun f cv @ { nested, ..rest } =>
-        rest
-        & {
-          nested = {
-            tap = f cv.nested.tap,
-            hold = f cv.nested.hold,
+        map_nested = fun f cv @ { nested, ..rest } =>
+          rest
+          & {
+            nested = {
+              tap = f cv.nested.tap,
+              hold = f cv.nested.hold,
+            },
           },
-        },
 
-      # Traverse by visiting the tap_hold key,
-      #  then traversing the tap, hold keys.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        let acc = smart_key.traverse f acc cv.nested.tap in
-        smart_key.traverse f acc cv.nested.hold,
+        # Traverse by visiting the tap_hold key,
+        #  then traversing the tap, hold keys.
+        traverse = fun f acc cv =>
+          let acc = f acc cv in
+          let acc = smart_key.traverse f acc cv.nested.tap in
+          smart_key.traverse f acc cv.nested.hold,
 
-      data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
-        let { key_data, ref = tap_ref } = smart_key.data_and_ref key_data tap_cv in
-        let tap_ref = tap_ref |> composite.ref.wrap in
-        let { key_data, ref = hold_ref } = smart_key.data_and_ref key_data hold_cv in
-        let hold_ref = hold_ref |> composite.ref.wrap in
-        let { tap_hold = tap_hold_, ..other_data } = key_data & { tap_hold | default = [] } in
-        let new_index = std.array.length tap_hold_ in
-        let new_key = {
-          json = {
-            tap = tap_ref.json,
-            hold = hold_ref.json,
-          },
-          rust_expr = m%"
+        data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
+          let { key_data, ref = tap_ref } = smart_key.data_and_ref key_data tap_cv in
+          let tap_ref = tap_ref |> composite.ref.wrap in
+          let { key_data, ref = hold_ref } = smart_key.data_and_ref key_data hold_cv in
+          let hold_ref = hold_ref |> composite.ref.wrap in
+          let { tap_hold = tap_hold_, ..other_data } = key_data & { tap_hold | default = [] } in
+          let new_index = std.array.length tap_hold_ in
+          let new_key = {
+            json = {
+              tap = tap_ref.json,
+              hold = hold_ref.json,
+            },
+            rust_expr = m%"
             %{module}::Key {
               tap: %{tap_ref.rust_expr},
               hold: %{hold_ref.rust_expr},
             }
           "%,
-        }
-        in
-        {
-          key_data = other_data & { tap_hold = std.array.append new_key tap_hold_ },
-          ref = {
-            include module,
-            json = new_index,
-            rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+          }
+          in
+          {
+            key_data = other_data & { tap_hold = std.array.append new_key tap_hold_ },
+            ref = {
+              include module,
+              json = new_index,
+              rust_expr = "%{module}::Ref(%{std.to_string new_index})",
+            },
           },
-        },
+      },
 
       config = {
         rust_expr =
@@ -839,7 +770,7 @@ in
         ]
       }
       in
-      layered.is_json json,
+      layered.layered_key.is_json json,
 
     check_layered_codegen_values = {
       # A layered::LayeredKey of keyboard::Key
@@ -853,7 +784,7 @@ in
           ]
         }
         in
-        let cv = layered.codegen_values json in
+        let cv = layered.layered_key.codegen_values json in
         {
           check_rust_expr = {
             actual = cv.rust_expr,
@@ -873,7 +804,7 @@ in
           ]
         }
         in
-        let cv = layered.codegen_values json in
+        let cv = layered.layered_key.codegen_values json in
         {
           check_rust_expr = {
             actual = cv.rust_expr,
@@ -883,115 +814,195 @@ in
     },
   },
 
+  checks.layer_modifier_is = {
+    # Use a json value to check the "is" predicate.
+    check_json_is =
+      let json = { Hold = 0 } in
+      layered.modifier_key.is_json json
+  },
+
   layered
     | doc "for key::layered::LayeredKey."
     = {
-      Json = std.contract.from_validator json_validator,
-
       module = "smart_keymap::key::layered",
 
-      key_type = "%{module}::LayeredKey",
+      modifier_key = {
+        Json = std.contract.from_validator json_validator,
 
-      # c.f. doc_de_layered.md.
-      # e.g.:
-      # ```
-      #   {
-      #     "base": 4,
-      #     "layered": [5, null, 7]
-      #   }
-      # ```
-      # JSON serialization of key::layered::Layered has fields: { base, layered }
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["base", "layered"],
-          field_validators = {
-            base = smart_key.json_validator,
-            layered =
-              validators.array.validator (
-                validators.any_of [
-                  validators.is_null,
-                  smart_key.json_validator,
-                ]
-              ),
+        key_type = "%{module}::ModifierKey",
+
+        # c.f. doc_de_layered.md.
+        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer), SetActiveLayers([layer, ...]).
+        json_validator =
+          validators.record.validator {
+            fields_validator =
+              validators.all_of [
+                validators.record.has_any_field_of ["Default", "Hold", "SetActiveLayers"],
+                validators.record.has_only_fields ["Default", "Hold", "SetActiveLayers"],
+              ],
+            field_validators = {
+              Hold = validators.is_number,
+              SetActiveLayers = validators.is_number,
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      codegen_values = fun json @ { base, layered } =>
-        let base_cv = base |> smart_key.codegen_values in
-        let non_null_layered = std.array.filter ((!=) null) layered in
-        let layered_cvs =
-          std.array.map (fun json => if json != null then json |> smart_key.codegen_values else null) layered
-        in
-        let nn_layered_cvs =
-          std.array.filter ((!=) null) layered_cvs
-        in
-
-        {
-          nested = {
-            base = base_cv,
-            layered = layered_cvs,
+        codegen_values = fun json =>
+          json
+          |> match {
+            { Default = layer_index } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Default",
+                rust_expr = "%{module}::ModifierKey::default(%{std.to_string layer_index})",
+              },
+            { Hold = layer_index } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Hold",
+                rust_expr = "%{module}::ModifierKey::hold(%{std.to_string layer_index})",
+              },
+            { SetActiveLayers = active_layers_bitset } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "SetActiveLayers",
+                rust_expr = "%{module}::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
+              },
           },
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            let base_expr = nested.base.rust_expr in
-            let layered_exprs =
-              nested.layered
-              |> std.array.map (fun cv => if cv == null then "None" else "Some(%{cv.rust_expr})")
-              |> std.string.join ","
-            in
-            "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
-        },
 
-      map_nested = fun f cv @ { nested, ..rest } =>
-        rest
-        & {
-          nested = {
-            base = f cv.nested.base,
-            layered = std.array.map (fun cv => if cv != null then f cv else null) cv.nested.layered,
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv @ { json, .. } =>
+          let { layer_modifiers = layer_modifiers_, ..other_data } = key_data & { layer_modifiers | default = [] } in
+          let new_index = std.array.length layer_modifiers_ in
+          let new_key = {
+            include json,
+            rust_expr = cv.rust_expr,
+          }
+          in
+          {
+            key_data = other_data & { layer_modifiers = std.array.append new_key layer_modifiers_ },
+            ref = {
+              include module,
+              variant = "Modifier",
+              json = { "%{variant}" = new_index },
+              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+            },
           },
-        },
+      },
 
-      # Traverse by visiting the layered key itself,
-      #  then traversing the base, non-null nested layered keys.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        let acc = smart_key.traverse f acc cv.nested.base in
-        let nn_layered_cvs =
-          std.array.filter ((!=) null) cv.nested.layered
-        in
-        std.array.fold_left
-          (fun acc nested_cv => smart_key.traverse f acc nested_cv)
-          acc
-          nn_layered_cvs,
+      layered_key = {
+        Json = std.contract.from_validator json_validator,
 
-      data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
-        let { key_data, ref = base_ref } = smart_key.data_and_ref key_data base_cv in
-        let base_ref = base_ref |> composite.ref.wrap in
-        let { key_data, layered_refs } =
+        key_type = "%{module}::LayeredKey",
+
+        # c.f. doc_de_layered.md.
+        # e.g.:
+        # ```
+        #   {
+        #     "base": 4,
+        #     "layered": [5, null, 7]
+        #   }
+        # ```
+        # JSON serialization of key::layered::Layered has fields: { base, layered }
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["base", "layered"],
+            field_validators = {
+              base = smart_key.json_validator,
+              layered =
+                validators.array.validator (
+                  validators.any_of [
+                    validators.is_null,
+                    smart_key.json_validator,
+                  ]
+                ),
+            },
+          },
+
+        is_json = fun json => 'Ok == json_validator json,
+
+        codegen_values = fun json @ { base, layered } =>
+          let base_cv = base |> smart_key.codegen_values in
+          let non_null_layered = std.array.filter ((!=) null) layered in
+          let layered_cvs =
+            std.array.map (fun json => if json != null then json |> smart_key.codegen_values else null) layered
+          in
+          let nn_layered_cvs =
+            std.array.filter ((!=) null) layered_cvs
+          in
+
+          {
+            nested = {
+              base = base_cv,
+              layered = layered_cvs,
+            },
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              let base_expr = nested.base.rust_expr in
+              let layered_exprs =
+                nested.layered
+                |> std.array.map (fun cv => if cv == null then "None" else "Some(%{cv.rust_expr})")
+                |> std.string.join ","
+              in
+              "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+          },
+
+        map_nested = fun f cv @ { nested, ..rest } =>
+          rest
+          & {
+            nested = {
+              base = f cv.nested.base,
+              layered = std.array.map (fun cv => if cv != null then f cv else null) cv.nested.layered,
+            },
+          },
+
+        # Traverse by visiting the layered key itself,
+        #  then traversing the base, non-null nested layered keys.
+        traverse = fun f acc cv =>
+          let acc = f acc cv in
+          let acc = smart_key.traverse f acc cv.nested.base in
+          let nn_layered_cvs =
+            std.array.filter ((!=) null) cv.nested.layered
+          in
           std.array.fold_left
-            (fun { key_data, layered_refs = parts } cv =>
-              if cv == null then
-                { include key_data, layered_refs = std.array.append null parts }
-              else
-                let { key_data, ref = layer_ref } = smart_key.data_and_ref key_data cv in
-                let layer_ref = layer_ref |> composite.ref.wrap in
-                { include key_data, layered_refs = std.array.append layer_ref parts }
-            )
-            { include key_data, layered_refs = [] }
-            layered_cvs
-        in
-        let { layered = layered_, ..other_data } = key_data & { layered | default = [] } in
-        let new_index = std.array.length layered_ in
-        let new_key = {
-          json = {
-            base = base_ref.json,
-            layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
-          },
-          rust_expr = m%"
+            (fun acc nested_cv => smart_key.traverse f acc nested_cv)
+            acc
+            nn_layered_cvs,
+
+        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
+          let { key_data, ref = base_ref } = smart_key.data_and_ref key_data base_cv in
+          let base_ref = base_ref |> composite.ref.wrap in
+          let { key_data, layered_refs } =
+            std.array.fold_left
+              (fun { key_data, layered_refs = parts } cv =>
+                if cv == null then
+                  { include key_data, layered_refs = std.array.append null parts }
+                else
+                  let { key_data, ref = layer_ref } = smart_key.data_and_ref key_data cv in
+                  let layer_ref = layer_ref |> composite.ref.wrap in
+                  { include key_data, layered_refs = std.array.append layer_ref parts }
+              )
+              { include key_data, layered_refs = [] }
+              layered_cvs
+          in
+          let { layered = layered_, ..other_data } = key_data & { layered | default = [] } in
+          let new_index = std.array.length layered_ in
+          let new_key = {
+            json = {
+              base = base_ref.json,
+              layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
+            },
+            rust_expr = m%"
             %{module}::LayeredKey::new(
               %{base_ref.rust_expr},
               [%{
@@ -1001,17 +1012,18 @@ in
               }],
             )
           "%,
-        }
-        in
-        {
-          key_data = other_data & { layered = std.array.append new_key layered_ },
-          ref = {
-            include module,
-            variant = "Layered",
-            json = { "%{variant}" = new_index },
-            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+          }
+          in
+          {
+            key_data = other_data & { layered = std.array.append new_key layered_ },
+            ref = {
+              include module,
+              variant = "Layered",
+              json = { "%{variant}" = new_index },
+              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+            },
           },
-        },
+      },
 
       system = {
         rust_expr =
@@ -1029,8 +1041,6 @@ in
   chorded
     | doc "for key::chorded::Key."
     = {
-      Json = std.contract.from_validator json_validator,
-
       ChordIndicesJson = Array Number,
 
       ConfigJson = {
@@ -1040,84 +1050,87 @@ in
 
       module = "smart_keymap::key::chorded",
 
-      key_type = "%{module}::Key",
+      key = {
+        Json = std.contract.from_validator json_validator,
 
-      # JSON serialization of key::chorded::Key is { chords: [[id, key]], passthrough: key }
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["chords", "passthrough"],
-          field_validators = {
-            chords =
-              validators.array.validator (validators.tuple.validator [validators.is_number, smart_key.json_validator]),
-            passthrough = smart_key.json_validator,
+        key_type = "%{module}::Key",
+
+        # JSON serialization of key::chorded::Key is { chords: [[id, key]], passthrough: key }
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["chords", "passthrough"],
+            field_validators = {
+              chords =
+                validators.array.validator (validators.tuple.validator [validators.is_number, smart_key.json_validator]),
+              passthrough = smart_key.json_validator,
+            },
           },
-        },
 
-      is_json = fun json => 'Ok == json_validator json,
+        is_json = fun json => 'Ok == json_validator json,
 
-      map_chords = fun f chords => chords |> std.array.map (fun [id, ch_json] => [id, ch_json |> f]),
+        map_chords = fun f chords => chords |> std.array.map (fun [id, ch_json] => [id, ch_json |> f]),
 
-      codegen_values = fun json @ { chords, passthrough } =>
-        let chords_cv = chords |> map_chords (fun ch_json => ch_json |> smart_key.codegen_values) in
-        let passthrough_cv = passthrough |> smart_key.codegen_values in
+        codegen_values = fun json @ { chords, passthrough } =>
+          let chords_cv = chords |> map_chords (fun ch_json => ch_json |> smart_key.codegen_values) in
+          let passthrough_cv = passthrough |> smart_key.codegen_values in
 
-        {
-          nested = {
-            chords = chords_cv,
-            passthrough = passthrough_cv,
-          },
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            let chords_expr = m%"&[%{
+          {
+            nested = {
+              chords = chords_cv,
+              passthrough = passthrough_cv,
+            },
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              let chords_expr = m%"&[%{
               nested.chords
               |> std.array.map (fun [i, ch_cv] => "(%{i |> std.to_string}, %{ch_cv.rust_expr})")
               |> std.string.join ", "
             }]"%
-            in
-            let passthrough_expr = nested.passthrough.rust_expr in
-            "smart_keymap::key::chorded::Key::new(%{chords_expr}, %{passthrough_expr})",
-        },
-
-      map_nested = fun f cv @ { nested, ..rest } =>
-        rest
-        & {
-          nested = {
-            chords = cv.nested.chords |> map_chords f,
-            passthrough = f cv.nested.passthrough,
+              in
+              let passthrough_expr = nested.passthrough.rust_expr in
+              "smart_keymap::key::chorded::Key::new(%{chords_expr}, %{passthrough_expr})",
           },
-        },
 
-      # Traverse by visiting the chorded key,
-      #  then traversing the chord keys, passthrough keys.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        let chords_cvs = cv.nested.chords |> std.array.map (fun [_, ch_cv] => ch_cv) in
-        let acc = std.array.fold_left (fun acc ch_cv => smart_key.traverse f acc ch_cv) acc chords_cvs in
-        smart_key.traverse f acc cv.nested.passthrough,
-
-      data_and_ref = fun key_data cv @ { nested = { chords = chords_cvs, passthrough = passthrough_cv }, .. } =>
-        let { key_data, chord_indices_and_refs } =
-          std.array.fold_left
-            (fun { key_data, chord_indices_and_refs = parts } [chord_index, cv] =>
-              let { key_data, ref = chord_ref } = smart_key.data_and_ref key_data cv in
-              let chord_ref = chord_ref |> composite.ref.wrap in
-              { include key_data, chord_indices_and_refs = std.array.append [chord_index, chord_ref] parts }
-            )
-            { include key_data, chord_indices_and_refs = [] }
-            chords_cvs
-        in
-        let { key_data, ref = passthrough_ref } = smart_key.data_and_ref key_data passthrough_cv in
-        let passthrough_ref = passthrough_ref |> composite.ref.wrap in
-        let { chorded = chorded_, ..other_data } = key_data & { chorded | default = [] } in
-        let new_index = std.array.length chorded_ in
-        let new_key = {
-          json = {
-            chords = chord_indices_and_refs |> map_chords (fun chord_ref => chord_ref.json),
-            passthrough = passthrough_ref.json,
+        map_nested = fun f cv @ { nested, ..rest } =>
+          rest
+          & {
+            nested = {
+              chords = cv.nested.chords |> map_chords f,
+              passthrough = f cv.nested.passthrough,
+            },
           },
-          rust_expr = m%"
+
+        # Traverse by visiting the chorded key,
+        #  then traversing the chord keys, passthrough keys.
+        traverse = fun f acc cv =>
+          let acc = f acc cv in
+          let chords_cvs = cv.nested.chords |> std.array.map (fun [_, ch_cv] => ch_cv) in
+          let acc = std.array.fold_left (fun acc ch_cv => smart_key.traverse f acc ch_cv) acc chords_cvs in
+          smart_key.traverse f acc cv.nested.passthrough,
+
+        data_and_ref = fun key_data cv @ { nested = { chords = chords_cvs, passthrough = passthrough_cv }, .. } =>
+          let { key_data, chord_indices_and_refs } =
+            std.array.fold_left
+              (fun { key_data, chord_indices_and_refs = parts } [chord_index, cv] =>
+                let { key_data, ref = chord_ref } = smart_key.data_and_ref key_data cv in
+                let chord_ref = chord_ref |> composite.ref.wrap in
+                { include key_data, chord_indices_and_refs = std.array.append [chord_index, chord_ref] parts }
+              )
+              { include key_data, chord_indices_and_refs = [] }
+              chords_cvs
+          in
+          let { key_data, ref = passthrough_ref } = smart_key.data_and_ref key_data passthrough_cv in
+          let passthrough_ref = passthrough_ref |> composite.ref.wrap in
+          let { chorded = chorded_, ..other_data } = key_data & { chorded | default = [] } in
+          let new_index = std.array.length chorded_ in
+          let new_key = {
+            json = {
+              chords = chord_indices_and_refs |> map_chords (fun chord_ref => chord_ref.json),
+              passthrough = passthrough_ref.json,
+            },
+            rust_expr = m%"
             %{module}::Key::new(
               &[%{
                 chord_indices_and_refs
@@ -1127,17 +1140,90 @@ in
               %{passthrough_ref.rust_expr},
             )
           "%,
-        }
-        in
-        {
-          key_data = other_data & { chorded = std.array.append new_key chorded_ },
-          ref = {
-            include module,
-            variant = "Chorded",
-            json = { "%{variant}" = new_index },
-            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+          }
+          in
+          {
+            key_data = other_data & { chorded = std.array.append new_key chorded_ },
+            ref = {
+              include module,
+              variant = "Chorded",
+              json = { "%{variant}" = new_index },
+              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+            },
           },
-        },
+      },
+
+      auxiliary_key = {
+        Json = std.contract.from_validator json_validator,
+
+        key_type = "%{module}::AuxiliaryKey",
+
+        # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_exact_fields ["passthrough"],
+            field_validators = {
+              passthrough = smart_key.json_validator,
+            },
+          },
+
+        is_json = fun json => 'Ok == json_validator json,
+
+        codegen_values = fun json @ { passthrough } =>
+          let passthrough_cv = passthrough |> smart_key.codegen_values in
+
+          {
+            nested = {
+              passthrough = passthrough_cv,
+            },
+            include json,
+            include module,
+            include key_type,
+            rust_expr =
+              let passthrough_expr = nested.passthrough.rust_expr in
+              "smart_keymap::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
+          },
+
+        map_nested = fun f cv @ { nested, ..rest } =>
+          rest
+          & {
+            nested = {
+              passthrough = f cv.nested.passthrough,
+            },
+          },
+
+        # Traverse by visiting the chorded aux key,
+        #  then traversing the passthrough key.
+        traverse = fun f acc cv =>
+          let acc = f acc cv in
+          smart_key.traverse f acc cv.nested.passthrough,
+
+        data_and_ref = fun key_data cv @ { nested = { passthrough = passthrough_cv }, .. } =>
+          let { key_data, ref = passthrough_ref } = smart_key.data_and_ref key_data passthrough_cv in
+          let passthrough_ref = passthrough_ref |> composite.ref.wrap in
+          let { chorded_auxiliary = chorded_auxiliary_, ..other_data } = key_data & { chorded_auxiliary | default = [] } in
+          let new_index = std.array.length chorded_auxiliary_ in
+          let new_key = {
+            json = {
+              passthrough = passthrough_ref.json,
+            },
+            rust_expr = m%"
+            %{module}::AuxiliaryKey::new(
+              %{passthrough_ref.rust_expr},
+            )
+          "%,
+          }
+          in
+          {
+            key_data = other_data & { chorded_auxiliary = std.array.append new_key chorded_auxiliary_ },
+            ref = {
+              include module,
+              variant = "Auxiliary",
+              json = { "%{variant}" = new_index },
+              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
+            },
+          },
+      },
 
       config = {
         rust_expr =
@@ -1184,82 +1270,6 @@ in
         )
       "%,
       },
-    },
-
-  chorded_aux
-    | doc "for key::chorded::AuxiliaryKey."
-    = {
-      Json = std.contract.from_validator json_validator,
-
-      module = "smart_keymap::key::chorded",
-
-      key_type = "%{module}::AuxiliaryKey",
-
-      # JSON serialization of key::chorded::AuxiliaryKey is { passthrough: key }
-      json_validator =
-        validators.record.validator {
-          fields_validator = validators.record.has_exact_fields ["passthrough"],
-          field_validators = {
-            passthrough = smart_key.json_validator,
-          },
-        },
-
-      is_json = fun json => 'Ok == json_validator json,
-
-      codegen_values = fun json @ { passthrough } =>
-        let passthrough_cv = passthrough |> smart_key.codegen_values in
-
-        {
-          nested = {
-            passthrough = passthrough_cv,
-          },
-          include json,
-          include module,
-          include key_type,
-          rust_expr =
-            let passthrough_expr = nested.passthrough.rust_expr in
-            "smart_keymap::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
-        },
-
-      map_nested = fun f cv @ { nested, ..rest } =>
-        rest
-        & {
-          nested = {
-            passthrough = f cv.nested.passthrough,
-          },
-        },
-
-      # Traverse by visiting the chorded aux key,
-      #  then traversing the passthrough key.
-      traverse = fun f acc cv =>
-        let acc = f acc cv in
-        smart_key.traverse f acc cv.nested.passthrough,
-
-      data_and_ref = fun key_data cv @ { nested = { passthrough = passthrough_cv }, .. } =>
-        let { key_data, ref = passthrough_ref } = smart_key.data_and_ref key_data passthrough_cv in
-        let passthrough_ref = passthrough_ref |> composite.ref.wrap in
-        let { chorded_auxiliary = chorded_auxiliary_, ..other_data } = key_data & { chorded_auxiliary | default = [] } in
-        let new_index = std.array.length chorded_auxiliary_ in
-        let new_key = {
-          json = {
-            passthrough = passthrough_ref.json,
-          },
-          rust_expr = m%"
-            %{module}::AuxiliaryKey::new(
-              %{passthrough_ref.rust_expr},
-            )
-          "%,
-        }
-        in
-        {
-          key_data = other_data & { chorded_auxiliary = std.array.append new_key chorded_auxiliary_ },
-          ref = {
-            include module,
-            variant = "Auxiliary",
-            json = { "%{variant}" = new_index },
-            rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
-          },
-        },
     },
 
   composite = {
@@ -1329,17 +1339,17 @@ in
     Json = std.contract.from_validator json_validator,
 
     codegen_modules = [
-      keyboard,
-      caps_word,
-      layer_modifier,
-      callback,
-      sticky,
-      custom,
-      layered,
-      tap_dance,
-      tap_hold,
-      chorded,
-      chorded_aux,
+      callback.key,
+      caps_word.key,
+      chorded.auxiliary_key,
+      chorded.key,
+      custom.key,
+      keyboard.key,
+      layered.layered_key,
+      layered.modifier_key,
+      sticky.key,
+      tap_dance.key,
+      tap_hold.key,
     ],
 
     json_validator =
