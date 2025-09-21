@@ -640,13 +640,13 @@ impl Keys for KeyVecs {
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<D: Keys> {
-    callback: key::callback::System<D::Callback>,
-    caps_word: key::caps_word::System,
+    callback: key::callback::System<Ref, D::Callback>,
+    caps_word: key::caps_word::System<Ref>,
     chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
-    custom: key::custom::System,
-    keyboard: key::keyboard::System<D::Keyboard>,
+    custom: key::custom::System<Ref>,
+    keyboard: key::keyboard::System<Ref, D::Keyboard>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
-    sticky: key::sticky::System<D::Sticky>,
+    sticky: key::sticky::System<Ref, D::Sticky>,
     tap_dance: key::tap_dance::System<Ref, D::TapDance>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
     marker: PhantomData<D>,
@@ -679,9 +679,9 @@ impl<
 {
     /// Constructs a new [System].
     pub const fn array_based(
-        keyboard: key::keyboard::System<[key::keyboard::Key; KEYBOARD]>,
-        callback: key::callback::System<[key::callback::Key; CALLBACK]>,
-        sticky: key::sticky::System<[key::sticky::Key; STICKY]>,
+        keyboard: key::keyboard::System<Ref, [key::keyboard::Key; KEYBOARD]>,
+        callback: key::callback::System<Ref, [key::callback::Key; CALLBACK]>,
+        sticky: key::sticky::System<Ref, [key::sticky::Key; STICKY]>,
         tap_dance: key::tap_dance::System<Ref, [key::tap_dance::Key<Ref>; TAP_DANCE]>,
         tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
         layered: key::layered::System<
@@ -714,9 +714,9 @@ impl<
 impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
-        keyboard: key::keyboard::System<<KeyVecs as Keys>::Keyboard>,
-        callback: key::callback::System<<KeyVecs as Keys>::Callback>,
-        sticky: key::sticky::System<<KeyVecs as Keys>::Sticky>,
+        keyboard: key::keyboard::System<Ref, <KeyVecs as Keys>::Keyboard>,
+        callback: key::callback::System<Ref, <KeyVecs as Keys>::Callback>,
+        sticky: key::sticky::System<Ref, <KeyVecs as Keys>::Sticky>,
         tap_dance: key::tap_dance::System<Ref, <KeyVecs as Keys>::TapDance>,
         tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
         layered: key::layered::System<
@@ -885,15 +885,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         match (key_ref, key_state) {
             (Ref::Keyboard(key_ref), KeyState::Keyboard(key_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
-                    let pke =
-                        <key::keyboard::System<K::Keyboard> as key::System<Ref>>::update_state(
-                            &self.keyboard,
-                            key_state,
-                            key_ref,
-                            context.into(),
-                            keymap_index,
-                            event,
-                        );
+                    let pke = self.keyboard.update_state(
+                        key_state,
+                        key_ref,
+                        context.into(),
+                        keymap_index,
+                        event,
+                    );
                     pke.into_events()
                 } else {
                     key::KeyEvents::no_events()
@@ -901,17 +899,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             }
             (Ref::Layered(key_ref), KeyState::LayerModifier(key_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
-                    let pke =
-                        <key::layered::System<Ref, K::LayerModifiers, K::Layered> as key::System<
-                            Ref,
-                        >>::update_state(
-                            &self.layered,
-                            key_state,
-                            key_ref,
-                            context.into(),
-                            keymap_index,
-                            event,
-                        );
+                    let pke = self.layered.update_state(
+                        key_state,
+                        key_ref,
+                        context.into(),
+                        keymap_index,
+                        event,
+                    );
                     pke.into_events()
                 } else {
                     key::KeyEvents::no_events()
@@ -919,8 +913,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             }
             (Ref::Sticky(key_ref), KeyState::Sticky(key_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
-                    let pke = <key::sticky::System<K::Sticky> as key::System<Ref>>::update_state(
-                        &self.sticky,
+                    let pke = self.sticky.update_state(
                         key_state,
                         key_ref,
                         context.into(),
@@ -942,23 +935,9 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
-            (Ref::Custom(r), KeyState::Custom(ks)) => {
-                <key::custom::System as key::System<Ref>>::key_output(&self.custom, r, ks)
-            }
-            (Ref::Keyboard(r), KeyState::Keyboard(ks)) => {
-                <key::keyboard::System<K::Keyboard> as key::System<Ref>>::key_output(
-                    &self.keyboard,
-                    r,
-                    ks,
-                )
-            }
-            (Ref::Sticky(r), KeyState::Sticky(ks)) => {
-                <key::sticky::System<K::Sticky> as key::System<Ref>>::key_output(
-                    &self.sticky,
-                    r,
-                    ks,
-                )
-            }
+            (Ref::Custom(r), KeyState::Custom(ks)) => self.custom.key_output(r, ks),
+            (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
+            (Ref::Sticky(r), KeyState::Sticky(ks)) => self.sticky.key_output(r, ks),
             (_, _) => None,
         }
     }
