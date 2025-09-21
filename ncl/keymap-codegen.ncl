@@ -6,7 +6,7 @@ in
   KeymapJson
     | doc "Contract for the keymap.json value"
     = {
-      keys | Array key.Json,
+      keys | Array smart_key.Json,
       config | composite.ConfigJson | default = {},
       ..
     },
@@ -17,13 +17,13 @@ in
 
   key_codegen_values =
     json_keymap.keys
-    |> std.array.map key.codegen_values,
+    |> std.array.map smart_key.codegen_values,
 
   key_data_and_refs =
     key_codegen_values
     |> std.array.fold_left
       (fun { key_data, key_refs = refs } cv =>
-        let { key_data = kd, ref = r } = key.data_and_ref key_data cv in
+        let { key_data = kd, ref = r } = smart_key.data_and_ref key_data cv in
         {
           key_data = kd,
           key_refs = refs @ [r],
@@ -555,14 +555,14 @@ in
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["definitions"],
           field_validators = {
-            definitions = validators.array.validator key.json_validator,
+            definitions = validators.array.validator smart_key.json_validator,
           },
         },
 
       is_json = fun json => 'Ok == json_validator json,
 
       codegen_values = fun json @ { definitions } =>
-        let definitions_cv = definitions |> std.array.map (fun json => json |> key.codegen_values) in
+        let definitions_cv = definitions |> std.array.map (fun json => json |> smart_key.codegen_values) in
 
         {
           nested = {
@@ -590,7 +590,7 @@ in
       traverse = fun f acc cv =>
         let acc = f acc cv in
         std.array.fold_left
-          (fun acc nested_cv => key.traverse f acc nested_cv)
+          (fun acc nested_cv => smart_key.traverse f acc nested_cv)
           acc
           cv.nested.definitions,
 
@@ -598,7 +598,7 @@ in
         let { key_data, definitions_refs } =
           std.array.fold_left
             (fun { key_data, definitions_refs = parts } cv =>
-              let { key_data, ref = definition_ref } = key.data_and_ref key_data cv in
+              let { key_data, ref = definition_ref } = smart_key.data_and_ref key_data cv in
               let definition_ref = definition_ref |> composite.ref.wrap in
               { include key_data, definitions_refs = std.array.append definition_ref parts }
             )
@@ -717,16 +717,16 @@ in
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["tap", "hold"],
           field_validators = {
-            tap = key.json_validator,
-            hold = key.json_validator,
+            tap = smart_key.json_validator,
+            hold = smart_key.json_validator,
           },
         },
 
       is_json = fun json => 'Ok == json_validator json,
 
       codegen_values = fun json @ { hold, tap } =>
-        let hold_cv = hold |> key.codegen_values in
-        let tap_cv = tap |> key.codegen_values in
+        let hold_cv = hold |> smart_key.codegen_values in
+        let tap_cv = tap |> smart_key.codegen_values in
 
         {
           nested = {
@@ -755,13 +755,13 @@ in
       #  then traversing the tap, hold keys.
       traverse = fun f acc cv =>
         let acc = f acc cv in
-        let acc = key.traverse f acc cv.nested.tap in
-        key.traverse f acc cv.nested.hold,
+        let acc = smart_key.traverse f acc cv.nested.tap in
+        smart_key.traverse f acc cv.nested.hold,
 
       data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
-        let { key_data, ref = tap_ref } = key.data_and_ref key_data tap_cv in
+        let { key_data, ref = tap_ref } = smart_key.data_and_ref key_data tap_cv in
         let tap_ref = tap_ref |> composite.ref.wrap in
-        let { key_data, ref = hold_ref } = key.data_and_ref key_data hold_cv in
+        let { key_data, ref = hold_ref } = smart_key.data_and_ref key_data hold_cv in
         let hold_ref = hold_ref |> composite.ref.wrap in
         let { tap_hold = tap_hold_, ..other_data } = key_data & { tap_hold | default = [] } in
         let new_index = std.array.length tap_hold_ in
@@ -905,12 +905,12 @@ in
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["base", "layered"],
           field_validators = {
-            base = key.json_validator,
+            base = smart_key.json_validator,
             layered =
               validators.array.validator (
                 validators.any_of [
                   validators.is_null,
-                  key.json_validator,
+                  smart_key.json_validator,
                 ]
               ),
           },
@@ -919,10 +919,10 @@ in
       is_json = fun json => 'Ok == json_validator json,
 
       codegen_values = fun json @ { base, layered } =>
-        let base_cv = base |> key.codegen_values in
+        let base_cv = base |> smart_key.codegen_values in
         let non_null_layered = std.array.filter ((!=) null) layered in
         let layered_cvs =
-          std.array.map (fun json => if json != null then json |> key.codegen_values else null) layered
+          std.array.map (fun json => if json != null then json |> smart_key.codegen_values else null) layered
         in
         let nn_layered_cvs =
           std.array.filter ((!=) null) layered_cvs
@@ -959,17 +959,17 @@ in
       #  then traversing the base, non-null nested layered keys.
       traverse = fun f acc cv =>
         let acc = f acc cv in
-        let acc = key.traverse f acc cv.nested.base in
+        let acc = smart_key.traverse f acc cv.nested.base in
         let nn_layered_cvs =
           std.array.filter ((!=) null) cv.nested.layered
         in
         std.array.fold_left
-          (fun acc nested_cv => key.traverse f acc nested_cv)
+          (fun acc nested_cv => smart_key.traverse f acc nested_cv)
           acc
           nn_layered_cvs,
 
       data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
-        let { key_data, ref = base_ref } = key.data_and_ref key_data base_cv in
+        let { key_data, ref = base_ref } = smart_key.data_and_ref key_data base_cv in
         let base_ref = base_ref |> composite.ref.wrap in
         let { key_data, layered_refs } =
           std.array.fold_left
@@ -977,7 +977,7 @@ in
               if cv == null then
                 { include key_data, layered_refs = std.array.append null parts }
               else
-                let { key_data, ref = layer_ref } = key.data_and_ref key_data cv in
+                let { key_data, ref = layer_ref } = smart_key.data_and_ref key_data cv in
                 let layer_ref = layer_ref |> composite.ref.wrap in
                 { include key_data, layered_refs = std.array.append layer_ref parts }
             )
@@ -1048,8 +1048,8 @@ in
           fields_validator = validators.record.has_exact_fields ["chords", "passthrough"],
           field_validators = {
             chords =
-              validators.array.validator (validators.tuple.validator [validators.is_number, key.json_validator]),
-            passthrough = key.json_validator,
+              validators.array.validator (validators.tuple.validator [validators.is_number, smart_key.json_validator]),
+            passthrough = smart_key.json_validator,
           },
         },
 
@@ -1058,8 +1058,8 @@ in
       map_chords = fun f chords => chords |> std.array.map (fun [id, ch_json] => [id, ch_json |> f]),
 
       codegen_values = fun json @ { chords, passthrough } =>
-        let chords_cv = chords |> map_chords (fun ch_json => ch_json |> key.codegen_values) in
-        let passthrough_cv = passthrough |> key.codegen_values in
+        let chords_cv = chords |> map_chords (fun ch_json => ch_json |> smart_key.codegen_values) in
+        let passthrough_cv = passthrough |> smart_key.codegen_values in
 
         {
           nested = {
@@ -1094,21 +1094,21 @@ in
       traverse = fun f acc cv =>
         let acc = f acc cv in
         let chords_cvs = cv.nested.chords |> std.array.map (fun [_, ch_cv] => ch_cv) in
-        let acc = std.array.fold_left (fun acc ch_cv => key.traverse f acc ch_cv) acc chords_cvs in
-        key.traverse f acc cv.nested.passthrough,
+        let acc = std.array.fold_left (fun acc ch_cv => smart_key.traverse f acc ch_cv) acc chords_cvs in
+        smart_key.traverse f acc cv.nested.passthrough,
 
       data_and_ref = fun key_data cv @ { nested = { chords = chords_cvs, passthrough = passthrough_cv }, .. } =>
         let { key_data, chord_indices_and_refs } =
           std.array.fold_left
             (fun { key_data, chord_indices_and_refs = parts } [chord_index, cv] =>
-              let { key_data, ref = chord_ref } = key.data_and_ref key_data cv in
+              let { key_data, ref = chord_ref } = smart_key.data_and_ref key_data cv in
               let chord_ref = chord_ref |> composite.ref.wrap in
               { include key_data, chord_indices_and_refs = std.array.append [chord_index, chord_ref] parts }
             )
             { include key_data, chord_indices_and_refs = [] }
             chords_cvs
         in
-        let { key_data, ref = passthrough_ref } = key.data_and_ref key_data passthrough_cv in
+        let { key_data, ref = passthrough_ref } = smart_key.data_and_ref key_data passthrough_cv in
         let passthrough_ref = passthrough_ref |> composite.ref.wrap in
         let { chorded = chorded_, ..other_data } = key_data & { chorded | default = [] } in
         let new_index = std.array.length chorded_ in
@@ -1200,14 +1200,14 @@ in
         validators.record.validator {
           fields_validator = validators.record.has_exact_fields ["passthrough"],
           field_validators = {
-            passthrough = key.json_validator,
+            passthrough = smart_key.json_validator,
           },
         },
 
       is_json = fun json => 'Ok == json_validator json,
 
       codegen_values = fun json @ { passthrough } =>
-        let passthrough_cv = passthrough |> key.codegen_values in
+        let passthrough_cv = passthrough |> smart_key.codegen_values in
 
         {
           nested = {
@@ -1233,10 +1233,10 @@ in
       #  then traversing the passthrough key.
       traverse = fun f acc cv =>
         let acc = f acc cv in
-        key.traverse f acc cv.nested.passthrough,
+        smart_key.traverse f acc cv.nested.passthrough,
 
       data_and_ref = fun key_data cv @ { nested = { passthrough = passthrough_cv }, .. } =>
-        let { key_data, ref = passthrough_ref } = key.data_and_ref key_data passthrough_cv in
+        let { key_data, ref = passthrough_ref } = smart_key.data_and_ref key_data passthrough_cv in
         let passthrough_ref = passthrough_ref |> composite.ref.wrap in
         let { chorded_auxiliary = chorded_auxiliary_, ..other_data } = key_data & { chorded_auxiliary | default = [] } in
         let new_index = std.array.length chorded_auxiliary_ in
@@ -1325,7 +1325,7 @@ in
     },
   },
 
-  key = {
+  smart_key = {
     Json = std.contract.from_validator json_validator,
 
     codegen_modules = [
@@ -1361,7 +1361,7 @@ in
       |> std.array.filter (fun m => m.key_type == key_type)
       |> match {
         [m] => m,
-        _ => std.fail_with "bad key_type for key.codegen_module_for_key_type: %{key_type}",
+        _ => std.fail_with "bad key_type for smart_key.codegen_module_for_key_type: %{key_type}",
       },
 
     codegen_module_for_codegen_value = fun cv @ { key_type, .. } =>
@@ -1386,7 +1386,7 @@ in
         let max_td_defs =
           std.array.map
             (fun cv =>
-              key.traverse
+              smart_key.traverse
                 (fun acc cv =>
                   cv
                   |> match {
@@ -1408,7 +1408,7 @@ in
         let max_layered_lengths =
           std.array.map
             (fun cv =>
-              key.traverse
+              smart_key.traverse
                 (fun acc cv =>
                   cv
                   |> match {
