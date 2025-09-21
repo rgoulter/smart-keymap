@@ -86,6 +86,14 @@ impl Context {
     }
 }
 
+impl key::Context for Context {
+    type Event = Event;
+
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        self.handle_event(event)
+    }
+}
+
 /// Caps Word events.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
