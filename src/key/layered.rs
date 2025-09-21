@@ -178,7 +178,7 @@ impl Context {
     }
 
     /// Updates the context with the [LayerEvent].
-    pub fn handle_event(&mut self, event: LayerEvent) {
+    fn handle_event(&mut self, event: LayerEvent) {
         match event {
             LayerEvent::LayerActivated(layer) => {
                 self.active_layers.activate(layer);
@@ -200,6 +200,20 @@ impl Context {
             }
             LayerEvent::DefaultLayerSet(0) => self.default_layer = None,
             LayerEvent::DefaultLayerSet(layer) => self.default_layer = Some(layer),
+        }
+    }
+}
+
+impl key::Context for Context {
+    type Event = LayerEvent;
+
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        match event {
+            key::Event::Key { key_event, .. } => {
+                self.handle_event(key_event);
+                key::KeyEvents::no_events()
+            }
+            _ => key::KeyEvents::no_events(),
         }
     }
 }
