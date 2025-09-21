@@ -555,24 +555,24 @@ impl From<key::custom::KeyState> for KeyState {
 
 /// Convenience trait for the data storage types.
 pub trait Keys {
-    /// Type used by [key::keyboard::System].
-    type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
     /// Type used by [key::callback::System].
     type Callback: Debug + Index<usize, Output = key::callback::Key>;
+    /// Type used by [key::chorded::System].
+    type Chorded: Debug + Index<usize, Output = key::chorded::Key<Ref>>;
+    /// Type used by [key::chorded::System].
+    type ChordedAuxiliary: Debug + Index<usize, Output = key::chorded::AuxiliaryKey<Ref>>;
+    /// Type used by [key::keyboard::System].
+    type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
+    /// Type used by [key::layered::System].
+    type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
+    /// Type used by [key::layered::System].
+    type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref>>;
     /// Type used by [key::sticky::System].
     type Sticky: Debug + Index<usize, Output = key::sticky::Key>;
     /// Type used by [key::tap_dance::System].
     type TapDance: Debug + Index<usize, Output = key::tap_dance::Key<Ref>>;
     /// Type used by [key::tap_hold::System].
     type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
-    /// Type used by [key::layered::System].
-    type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
-    /// Type used by [key::layered::System].
-    type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref>>;
-    /// Type used by [key::chorded::System].
-    type Chorded: Debug + Index<usize, Output = key::chorded::Key<Ref>>;
-    /// Type used by [key::chorded::System].
-    type ChordedAuxiliary: Debug + Index<usize, Output = key::chorded::AuxiliaryKey<Ref>>;
 }
 
 /// Array-based data implementations.
@@ -612,15 +612,15 @@ impl<
         CHORDED_AUXILIARY,
     >
 {
-    type Keyboard = [key::keyboard::Key; KEYBOARD];
     type Callback = [key::callback::Key; CALLBACK];
+    type Chorded = [key::chorded::Key<Ref>; CHORDED];
+    type ChordedAuxiliary = [key::chorded::AuxiliaryKey<Ref>; CHORDED_AUXILIARY];
+    type Keyboard = [key::keyboard::Key; KEYBOARD];
+    type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
+    type Layered = [key::layered::LayeredKey<Ref>; LAYERED];
     type Sticky = [key::sticky::Key; STICKY];
     type TapDance = [key::tap_dance::Key<Ref>; TAP_DANCE];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
-    type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
-    type Layered = [key::layered::LayeredKey<Ref>; LAYERED];
-    type Chorded = [key::chorded::Key<Ref>; CHORDED];
-    type ChordedAuxiliary = [key::chorded::AuxiliaryKey<Ref>; CHORDED_AUXILIARY];
 }
 
 /// Vec-based data implementations.
@@ -630,15 +630,15 @@ pub struct KeyVecs;
 
 #[cfg(feature = "std")]
 impl Keys for KeyVecs {
-    type Keyboard = Vec<key::keyboard::Key>;
     type Callback = Vec<key::callback::Key>;
+    type Chorded = Vec<key::chorded::Key<Ref>>;
+    type ChordedAuxiliary = Vec<key::chorded::AuxiliaryKey<Ref>>;
+    type Keyboard = Vec<key::keyboard::Key>;
+    type LayerModifiers = Vec<key::layered::ModifierKey>;
+    type Layered = Vec<key::layered::LayeredKey<Ref>>;
     type Sticky = Vec<key::sticky::Key>;
     type TapDance = Vec<key::tap_dance::Key<Ref>>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
-    type LayerModifiers = Vec<key::layered::ModifierKey>;
-    type Layered = Vec<key::layered::LayeredKey<Ref>>;
-    type Chorded = Vec<key::chorded::Key<Ref>>;
-    type ChordedAuxiliary = Vec<key::chorded::AuxiliaryKey<Ref>>;
 }
 
 /// Aggregate [key::System] implementation.
