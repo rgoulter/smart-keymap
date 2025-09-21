@@ -473,24 +473,24 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::chorded::Pendin
 pub enum KeyState {
     /// No-op key state.
     NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
-    /// Key state for [key::keyboard::KeyState].
-    Keyboard(key::keyboard::KeyState),
-    /// Key state for [key::caps_word::KeyState].
-    CapsWord(key::caps_word::KeyState),
     /// Key state for [key::callback::KeyState].
     Callback(key::callback::KeyState),
+    /// Key state for [key::caps_word::KeyState].
+    CapsWord(key::caps_word::KeyState),
+    /// Key state for [key::chorded::KeyState].
+    Chorded(key::chorded::KeyState),
+    /// Key state for [key::custom::KeyState].
+    Custom(key::custom::KeyState),
+    /// Key state for [key::keyboard::KeyState].
+    Keyboard(key::keyboard::KeyState),
+    /// Key state for [key::layered::ModifierKeyState].
+    LayerModifier(key::layered::ModifierKeyState),
+    /// Key state for [key::sticky::KeyState].
+    Sticky(key::sticky::KeyState),
     /// Key state for [key::tap_dance::KeyState].
     TapDance(key::tap_dance::KeyState),
     /// Key state for [key::tap_hold::KeyState].
     TapHold(key::tap_hold::KeyState),
-    /// Key state for [key::layered::ModifierKeyState].
-    LayerModifier(key::layered::ModifierKeyState),
-    /// Key state for [key::chorded::KeyState].
-    Chorded(key::chorded::KeyState),
-    /// Key state for [key::sticky::KeyState].
-    Sticky(key::sticky::KeyState),
-    /// Key state for [key::custom::KeyState].
-    Custom(key::custom::KeyState),
 }
 
 impl From<key::NoOpKeyState> for KeyState {
@@ -499,9 +499,9 @@ impl From<key::NoOpKeyState> for KeyState {
     }
 }
 
-impl From<key::keyboard::KeyState> for KeyState {
-    fn from(ks: key::keyboard::KeyState) -> Self {
-        KeyState::Keyboard(ks)
+impl From<key::callback::KeyState> for KeyState {
+    fn from(ks: key::callback::KeyState) -> Self {
+        KeyState::Callback(ks)
     }
 }
 
@@ -511,9 +511,27 @@ impl From<key::caps_word::KeyState> for KeyState {
     }
 }
 
-impl From<key::callback::KeyState> for KeyState {
-    fn from(ks: key::callback::KeyState) -> Self {
-        KeyState::Callback(ks)
+impl From<key::chorded::KeyState> for KeyState {
+    fn from(ks: key::chorded::KeyState) -> Self {
+        KeyState::Chorded(ks)
+    }
+}
+
+impl From<key::custom::KeyState> for KeyState {
+    fn from(ks: key::custom::KeyState) -> Self {
+        KeyState::Custom(ks)
+    }
+}
+
+impl From<key::keyboard::KeyState> for KeyState {
+    fn from(ks: key::keyboard::KeyState) -> Self {
+        KeyState::Keyboard(ks)
+    }
+}
+
+impl From<key::layered::ModifierKeyState> for KeyState {
+    fn from(ks: key::layered::ModifierKeyState) -> Self {
+        KeyState::LayerModifier(ks)
     }
 }
 
@@ -529,27 +547,9 @@ impl From<key::tap_hold::KeyState> for KeyState {
     }
 }
 
-impl From<key::layered::ModifierKeyState> for KeyState {
-    fn from(ks: key::layered::ModifierKeyState) -> Self {
-        KeyState::LayerModifier(ks)
-    }
-}
-
-impl From<key::chorded::KeyState> for KeyState {
-    fn from(ks: key::chorded::KeyState) -> Self {
-        KeyState::Chorded(ks)
-    }
-}
-
 impl From<key::sticky::KeyState> for KeyState {
     fn from(ks: key::sticky::KeyState) -> Self {
         KeyState::Sticky(ks)
-    }
-}
-
-impl From<key::custom::KeyState> for KeyState {
-    fn from(ks: key::custom::KeyState) -> Self {
-        KeyState::Custom(ks)
     }
 }
 
