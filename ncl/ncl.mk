@@ -24,6 +24,7 @@ test-ncl-checks:
 .PHONY: ncl-format
 ncl-format:
 	nickel format \
+	   ncl/smart_keys/**/*.ncl \
 	   ncl/layouts/remap.ncl \
 	   ncl/layouts/remap-36keys.ncl \
 	   ncl/checks.ncl \
