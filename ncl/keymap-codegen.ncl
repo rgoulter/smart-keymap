@@ -7,7 +7,7 @@ in
     | doc "Contract for the keymap.json value"
     = {
       keys | Array smart_key.Json,
-      config | composite.ConfigJson | default = {},
+      config | composite.config.Json | default = {},
       ..
     },
 
@@ -303,30 +303,6 @@ in
   sticky
     | doc "for key::sticky::Key."
     = {
-      StickyActivationJson_ =
-        std.contract.from_validator (
-          validators.is_elem_of [
-            "OnStickyKeyRelease"
-          ]
-        ),
-
-      StickyReleaseJson_ =
-        std.contract.from_validator (
-          validators.is_elem_of [
-            "OnModifiedKeyRelease",
-            "OnNextKeyPress",
-          ]
-        ),
-
-      ConfigJson = {
-        activation
-          | optional
-          | StickyActivationJson_,
-        release
-          | optional
-          | StickyReleaseJson_,
-      },
-
       module = "smart_keymap::key::sticky",
 
       key = {
@@ -381,6 +357,30 @@ in
       },
 
       config = {
+        StickyActivationJson_ =
+          std.contract.from_validator (
+            validators.is_elem_of [
+              "OnStickyKeyRelease"
+            ]
+          ),
+
+        StickyReleaseJson_ =
+          std.contract.from_validator (
+            validators.is_elem_of [
+              "OnModifiedKeyRelease",
+              "OnNextKeyPress",
+            ]
+          ),
+
+        Json = {
+          activation
+            | optional
+            | StickyActivationJson_,
+          release
+            | optional
+            | StickyReleaseJson_,
+        },
+
         rust_expr =
           if std.record.has_field "sticky" json_keymap.config then
             let sticky_config = json_keymap.config.sticky in
@@ -466,10 +466,6 @@ in
   tap_dance
     | doc "for key::tap_dance::Key."
     = {
-      ConfigJson = {
-        timeout | optional | Number,
-      },
-
       module = "smart_keymap::key::tap_dance",
 
       key = {
@@ -562,6 +558,10 @@ in
       },
 
       config = {
+        Json = {
+          timeout | optional | Number,
+        },
+
         rust_expr =
           if std.record.has_field "tap_dance" json_keymap.config then
             let tap_dance_config = json_keymap.config.tap_dance in
@@ -627,12 +627,6 @@ in
             "Ignore",
           ]
         ),
-
-      ConfigJson = {
-        timeout | optional | Number,
-        interrupt_response | optional | TapHoldInterruptResponseJson,
-        required_idle_time | optional | Number,
-      },
 
       module = "smart_keymap::key::tap_hold",
 
@@ -719,6 +713,12 @@ in
       },
 
       config = {
+        Json = {
+          timeout | optional | Number,
+          interrupt_response | optional | TapHoldInterruptResponseJson,
+          required_idle_time | optional | Number,
+        },
+
         rust_expr =
           if std.record.has_field "tap_hold" json_keymap.config then
             let tap_hold_config = json_keymap.config.tap_hold in
@@ -1041,13 +1041,6 @@ in
   chorded
     | doc "for key::chorded::Key."
     = {
-      ChordIndicesJson = Array Number,
-
-      ConfigJson = {
-        chords | optional | Array ChordIndicesJson,
-        timeout | optional | Number,
-      },
-
       module = "smart_keymap::key::chorded",
 
       key = {
@@ -1226,6 +1219,13 @@ in
       },
 
       config = {
+        ChordIndicesJson = Array Number,
+
+        Json = {
+          chords | optional | Array ChordIndicesJson,
+          timeout | optional | Number,
+        },
+
         rust_expr =
           if std.record.has_field "chorded" json_keymap.config then
             let chorded_config = json_keymap.config.chorded in
@@ -1273,18 +1273,6 @@ in
     },
 
   composite = {
-    ConfigJson =
-      let Chorded = chorded.ConfigJson in
-      let Sticky = sticky.ConfigJson in
-      let TapDance = tap_dance.ConfigJson in
-      let TapHold = tap_hold.ConfigJson in
-      {
-        chorded | optional | Chorded,
-        sticky | optional | Sticky,
-        tap_dance | optional | TapDance,
-        tap_hold | optional | TapHold,
-      },
-
     ref = {
       wrap = fun ref @ { module, json, rust_expr, .. } =>
         let variant =
@@ -1311,6 +1299,18 @@ in
     },
 
     config = {
+      Json =
+        let Chorded = chorded.config.Json in
+        let Sticky = sticky.config.Json in
+        let TapDance = tap_dance.config.Json in
+        let TapHold = tap_hold.config.Json in
+        {
+          chorded | optional | Chorded,
+          sticky | optional | Sticky,
+          tap_dance | optional | TapDance,
+          tap_hold | optional | TapHold,
+        },
+
       rust_expr = m%"smart_keymap::key::composite::Config {
             chorded: %{chorded.config.rust_expr},
             sticky: %{sticky.config.rust_expr},
