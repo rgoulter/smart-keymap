@@ -161,6 +161,12 @@ impl<'c> From<&'c Context> for &'c key::caps_word::Context {
     }
 }
 
+impl<'c> From<&'c Context> for &'c key::callback::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::callback::Context
+    }
+}
+
 impl<'c> From<&'c Context> for &'c key::chorded::Context {
     fn from(ctx: &'c Context) -> Self {
         &ctx.chorded
@@ -176,6 +182,12 @@ impl<'c> From<&'c Context> for &'c key::layered::Context {
 impl<'c> From<&'c Context> for &'c key::sticky::Context {
     fn from(ctx: &'c Context) -> Self {
         &ctx.sticky
+    }
+}
+
+impl<'c> From<&'c Context> for &'c key::custom::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::custom::Context
     }
 }
 
@@ -642,7 +654,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             Ref::Keyboard(key_ref) => {
                 let (pkr, pke) =
                     self.keyboard
-                        .new_pressed_key(keymap_index, &key::keyboard::Context, key_ref);
+                        .new_pressed_key(keymap_index, context.into(), key_ref);
                 (
                     pkr.map(|_| panic!(), KeyState::Keyboard),
                     pke.map_events(|_| panic!()),
@@ -651,7 +663,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             Ref::Callback(key_ref) => {
                 let (pkr, pke) =
                     self.callback
-                        .new_pressed_key(keymap_index, &key::callback::Context, key_ref);
+                        .new_pressed_key(keymap_index, context.into(), key_ref);
                 (
                     pkr.map(|_| panic!(), |_| panic!()),
                     pke.map_events(|_| panic!()),
@@ -676,9 +688,9 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 )
             }
             Ref::Custom(key_ref) => {
-                let (pkr, pke) =
-                    self.custom
-                        .new_pressed_key(keymap_index, &key::custom::Context, key_ref);
+                let (pkr, pke) = self
+                    .custom
+                    .new_pressed_key(keymap_index, context.into(), key_ref);
                 (
                     pkr.map(|_| panic!(), Into::into),
                     pke.map_events(|_| panic!()),
