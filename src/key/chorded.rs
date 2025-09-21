@@ -252,7 +252,7 @@ impl Context {
     }
 
     /// Updates the context for the given key event.
-    pub fn handle_event(&mut self, event: key::Event<Event>) {
+    fn handle_event(&mut self, event: key::Event<Event>) {
         match event {
             key::Event::Input(input::Event::Press { keymap_index }) => {
                 self.press_index(keymap_index);
@@ -280,6 +280,15 @@ impl Context {
             }
             _ => {}
         }
+    }
+}
+
+impl key::Context for Context {
+    type Event = Event;
+
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        self.handle_event(event);
+        key::KeyEvents::no_events()
     }
 }
 
