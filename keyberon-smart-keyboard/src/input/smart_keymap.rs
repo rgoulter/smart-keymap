@@ -11,13 +11,18 @@ pub struct KeymapCallbacks {
 /// through to listing HID scancodes to report using HIDs.
 #[derive(Debug)]
 pub struct KeyboardBackend {
-    keymap: smart_keymap::init::Keymap,
+    keymap: smart_keymap::Keymap,
     keymap_output: smart_keymap::keymap::KeymapOutput,
 }
 
 impl KeyboardBackend {
     /// Constructs a new keyboard backend.
-    pub fn new(keymap: smart_keymap::init::Keymap) -> Self {
+    pub fn new() -> Self {
+        Self::new_with_keymap(smart_keymap::new_keymap())
+    }
+
+    /// Constructs a new keyboard backend with the given keymap.
+    pub fn new_with_keymap(keymap: smart_keymap::Keymap) -> Self {
         Self {
             keymap,
             keymap_output: smart_keymap::keymap::KeymapOutput::default(),

@@ -153,12 +153,7 @@ mod app {
 
         let keyboard = board::keyboard!(gpioa, gpiob);
 
-        let backend = {
-            use smart_keymap::init;
-            use smart_keymap::keymap::Keymap;
-            let keymap = Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
-            KeyboardBackend::new(keymap)
-        };
+        let backend = KeyboardBackend::new();
 
         let (split_conn_tx, split_conn_rx) = split_app_init::init_serial(
             &clocks,

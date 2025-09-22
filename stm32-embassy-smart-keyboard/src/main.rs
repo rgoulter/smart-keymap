@@ -159,12 +159,7 @@ async fn main(_spawner: Spawner) {
 
     let mut keyboard = board::keyboard!(p);
 
-    let backend = KEYBOARD_BACKEND.init({
-        use smart_keymap::init;
-        use smart_keymap::keymap::Keymap;
-        let keymap = Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
-        KeyboardBackend::new(keymap)
-    });
+    let backend = KEYBOARD_BACKEND.init(KeyboardBackend::new());
 
     let mut report_success = true;
 

@@ -129,12 +129,7 @@ mod app {
 
         let keyboard = board::keyboard!(gpioa, gpiob);
 
-        let backend = {
-            use smart_keymap::init;
-            use smart_keymap::keymap::Keymap;
-            let keymap = Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
-            KeyboardBackend::new(keymap)
-        };
+        let backend = KeyboardBackend::new();
 
         (
             SharedResources { usb_dev, usb_class },
