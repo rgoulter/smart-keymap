@@ -206,12 +206,7 @@ mod app {
             debouncer: Debouncer::new(PressedKeys::default(), PressedKeys::default(), 25),
         };
 
-        let backend = {
-            use smart_keymap::init;
-            use smart_keymap::keymap::Keymap;
-            let keymap = Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
-            KeyboardBackend::new(keymap)
-        };
+        let backend = KeyboardBackend::new();
 
         (
             Shared {

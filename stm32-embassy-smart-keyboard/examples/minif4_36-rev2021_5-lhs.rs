@@ -315,12 +315,7 @@ async fn main(spawner: Spawner) {
 async fn keyboard_backend(
     mut writer: HidWriter<'static, Driver<'static, peripherals::USB_OTG_FS>, 8>,
 ) {
-    let backend = KEYBOARD_BACKEND.init({
-        use smart_keymap::init;
-        use smart_keymap::keymap::Keymap;
-        let keymap = Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
-        KeyboardBackend::new(keymap)
-    });
+    let backend = KEYBOARD_BACKEND.init(KeyboardBackend::new());
 
     let mut report_success = true;
 
