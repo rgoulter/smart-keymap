@@ -32,6 +32,7 @@ ncl-format:
 	   ncl/import-keymap-json.ncl \
 	   ncl/inputs-to-json.ncl \
 	   ncl/inputs.ncl \
+       ncl/key-docs.ncl  \
        ncl/key-extensions.ncl  \
        ncl/keymap-ncl-to-json.ncl \
 	   ncl/keymap-codegen.ncl \
