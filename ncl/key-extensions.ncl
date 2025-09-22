@@ -1,5 +1,5 @@
 {
-  keyboard = fun K =>
+  keyboard =
     (import "hid-usage-keyboard.ncl")
     |> std.record.map_values (fun kc =>
       kc
@@ -24,264 +24,268 @@
       }
     ),
 
-  tap_hold = fun K =>
-    {
-      hold
-        | doc "creates a hold key modifier"
-        = fun key => { hold = key },
+  tap_hold = {
+    keys,
 
-      H_LCtrl = hold K.LeftCtrl,
-      H_LShift = hold K.LeftShift,
-      H_LAlt = hold K.LeftAlt,
-      H_LGUI = hold K.LeftGUI,
-      H_RCtrl = hold K.RightCtrl,
-      H_RShift = hold K.RightShift,
-      H_RAlt = hold K.RightAlt,
-      H_RGUI = hold K.RightGUI,
-    },
+    hold
+      | doc "creates a hold key modifier"
+      = fun key => { hold = key },
 
-  layered = fun K =>
-    {
-      layer_mod = {
-        set_default = fun layer_num =>
-          {
-            layer_modifier = { default_ = layer_num }
-          },
-        hold = fun layer_num =>
-          {
-            layer_modifier = { hold = layer_num }
-          },
-        set_active_layers_to = fun active_layers =>
-          {
-            layer_modifier = { set_active_layers_to = active_layers }
-          },
-      },
+    H_LCtrl = hold keys.LeftCtrl,
+    H_LShift = hold keys.LeftShift,
+    H_LAlt = hold keys.LeftAlt,
+    H_LGUI = hold keys.LeftGUI,
+    H_RCtrl = hold keys.RightCtrl,
+    H_RShift = hold keys.RightShift,
+    H_RAlt = hold keys.RightAlt,
+    H_RGUI = hold keys.RightGUI,
+  },
 
-      # Layer Transparency
-      TTTT = null,
-    },
-
-  keymap_callbacks = fun K =>
-    {
-      callback = fun i j => { keymap_callback = { Custom = [i, j] } },
-      reset = { keymap_callback = "Reset" },
-      reset_to_bootloader = { keymap_callback = "ResetToBootloader" },
-    },
-
-  caps_word = fun K =>
-    {
-      caps_word = { toggle = "ToggleCapsWord" },
-    },
-
-  sticky = fun K =>
-    {
-      sticky = fun m =>
+  layered = {
+    layer_mod = {
+      set_default = fun layer_num =>
         {
-          sticky_modifiers = m.modifiers,
+          layer_modifier = { default_ = layer_num }
+        },
+      hold = fun layer_num =>
+        {
+          layer_modifier = { hold = layer_num }
+        },
+      set_active_layers_to = fun active_layers =>
+        {
+          layer_modifier = { set_active_layers_to = active_layers }
         },
     },
 
-  custom = fun K =>
-    {
-      custom = fun c => { custom = c },
+    # Layer Transparency
+    TTTT = null,
+  },
+
+  keymap_callbacks = {
+    callback = fun i j => { keymap_callback = { Custom = [i, j] } },
+    reset = { keymap_callback = "Reset" },
+    reset_to_bootloader = { keymap_callback = "ResetToBootloader" },
+  },
+
+  caps_word = {
+    caps_word = { toggle = "ToggleCapsWord" },
+  },
+
+  sticky = {
+    sticky = fun m =>
+      {
+        sticky_modifiers = m.modifiers,
+      },
+  },
+
+  custom = {
+    custom = fun c => { custom = c },
+  },
+
+  shifted = {
+    keys,
+
+    Exclaim = keys.N1 & keys.LeftShift,
+    At = keys.N2 & keys.LeftShift,
+    Hash = keys.N3 & keys.LeftShift,
+    Dollar = keys.N4 & keys.LeftShift,
+    Percent = keys.N5 & keys.LeftShift,
+    Caret = keys.N6 & keys.LeftShift, # ^
+    Ampersand = keys.N7 & keys.LeftShift,
+    Asterisk = keys.N8 & keys.LeftShift,
+    LeftParen = keys.N9 & keys.LeftShift,
+    RightParen = keys.N0 & keys.LeftShift,
+
+    LeftCurlyBracket = keys.LeftBracket & keys.LeftShift,
+    RightCurlyBracket = keys.RightBracket & keys.LeftShift,
+
+    Tilde = keys.Grave & keys.LeftShift, # ~
+
+    Plus = keys.Equals & keys.LeftShift,
+    Underscore = keys.Minus & keys.LeftShift,
+
+    Question = keys.Slash & keys.LeftShift,
+    Pipe = keys.Backslash & keys.LeftShift,
+
+    Colon = keys.Semicolon & keys.LeftShift,
+    DoubleQuote = keys.Quote & keys.LeftShift,
+
+    LeftAngleBracket = keys.Comma & keys.LeftShift,
+    RightAngleBracket = keys.Dot & keys.LeftShift,
+  },
+
+  aliases = {
+    keys,
+
+    Enter = keys.Return,
+    Circumflex = keys.Caret, # ^
+    LeftBrace = keys.LeftCurlyBracket, # {
+    RightBrace = keys.RightCurlyBracket,
+  },
+
+  abbreviations = {
+    keys,
+
+    XXXX = keys.NO,
+
+    RET = keys.Return,
+    ESC = keys.Escape,
+    BSPC = keys.Backspace,
+    TAB = keys.Tab,
+    SPC = keys.Space,
+
+    ENT = keys.Enter,
+
+    EXCL = keys.Exclaim,
+    AT = keys.At,
+    HASH = keys.Hash,
+    DLR = keys.Dollar,
+    PCT = keys.Percent,
+    CARE = keys.Caret, # ^
+    AMP = keys.Ampersand,
+    ASTR = keys.Asterisk,
+    LPRN = keys.LeftParen,
+    RPRN = keys.RightParen,
+
+    PERC = keys.Percent,
+    CIRC = keys.Circumflex, # ^
+
+    LBRK = keys.LeftBracket, # [
+    LCBR = keys.LeftCurlyBracket, # {
+    LBRC = keys.LeftBrace, # {
+    RBRK = keys.RightBracket,
+    RCBR = keys.RightCurlyBracket,
+    RBRC = keys.RightBrace,
+
+    GRV = keys.Grave, # `
+    TILD = keys.Tilde, # ~
+
+    MINS = keys.Minus,
+    UNDS = keys.Underscore,
+    EQLS = keys.Equals,
+    PLUS = keys.Plus,
+
+    SLSH = keys.Slash,
+    QUES = keys.Question,
+    BSLS = keys.Backslash,
+    PIPE = keys.Pipe,
+
+    SCLN = keys.Semicolon,
+    COLN = keys.Colon,
+    QUOT = keys.Quote,
+    DQUO = keys.DoubleQuote,
+
+    COMM = keys.Comma,
+    LABR = keys.LeftAngleBracket,
+    DOT = keys.Dot,
+    RABR = keys.RightAngleBracket,
+
+    CAPS = keys.CapsLock,
+
+    PSCR = keys.PrintScreen,
+    SCRL = keys.ScrollLock,
+    PAUS = keys.Pause,
+
+    SLCK = keys.ScrollLock,
+
+    INS = keys.Insert,
+    HOME = keys.Home,
+    PGUP = keys.PageUp,
+    DEL = keys.Delete,
+    END = keys.End,
+    PGDN = keys.PageDown,
+
+    RGHT = keys.Right,
+    LEFT = keys.Left,
+    DOWN = keys.Down,
+    UP = keys.Up,
+
+    NPNL = keys.NumLock,
+    NPSL = keys.NPSlash,
+    NPST = keys.NPStar,
+    NPMN = keys.NPMinus,
+    NPPL = keys.NPPlus,
+    NPEN = keys.NPEnter,
+    NPDT = keys.NPDot,
+
+    LCTL = keys.LeftCtrl,
+    LSFT = keys.LeftShift,
+    LALT = keys.LeftAlt,
+    LGUI = keys.LeftGUI,
+    RCTL = keys.RightCtrl,
+    RSFT = keys.RightShift,
+    RALT = keys.RightAlt,
+    RGUI = keys.RightGUI,
+
+    APPN = keys.Application,
+
+    NUSH = keys.NonUSHash,
+    NUSB = keys.NonUSBackslash,
+
+    RST = keys.reset,
+    BOOT = keys.reset_to_bootloader,
+
+    CWTG = keys.caps_word.toggle,
+  },
+
+  literals = {
+    keys,
+
+    "1" = keys.N1,
+    "2" = keys.N2,
+    "3" = keys.N3,
+    "4" = keys.N4,
+    "5" = keys.N5,
+    "6" = keys.N6,
+    "7" = keys.N7,
+    "8" = keys.N8,
+    "9" = keys.N9,
+    "0" = keys.N0,
+
+    "!" = keys.Exclaim,
+    "@" = keys.At,
+    "#" = keys.Hash,
+    "$" = keys.Dollar,
+    "%" = keys.Percent,
+    "^" = keys.Caret,
+    "&" = keys.Ampersand,
+    "*" = keys.Asterisk,
+    "(" = keys.LeftParen,
+    ")" = keys.RightParen,
+
+    "[" = keys.LeftBracket,
+    "{" = keys.LeftCurlyBracket,
+    "]" = keys.RightBracket,
+    "}" = keys.RightCurlyBracket,
+
+    "`" = keys.Grave,
+    "~" = keys.Tilde,
+
+    "-" = keys.Minus,
+    "_" = keys.Underscore,
+    "=" = keys.Equals,
+    "+" = keys.Plus,
+
+    "/" = keys.Slash,
+    "?" = keys.Question,
+    "\\" = keys.Backslash,
+    "|" = keys.Pipe,
+
+    ";" = keys.Semicolon,
+    ":" = keys.Colon,
+    "'" = keys.Quote,
+    "\"" = keys.DoubleQuote,
+
+    "," = keys.Comma,
+    "<" = keys.LeftAngleBracket,
+    "." = keys.Dot,
+    ">" = keys.RightAngleBracket,
+  },
+
+  extend_keys = fun K key_extension =>
+    std.typeof key_extension
+    |> match {
+      'Record => K & key_extension,
+      'Function => K & key_extension K,
     },
-
-  shifted = fun K =>
-    {
-      Exclaim = K.N1,
-      At = K.N2,
-      Hash = K.N3,
-      Dollar = K.N4,
-      Percent = K.N5,
-      Caret = K.N6, # ^
-      Ampersand = K.N7,
-      Asterisk = K.N8,
-      LeftParen = K.N9,
-      RightParen = K.N0,
-
-      LeftCurlyBracket = K.LeftBracket,
-      RightCurlyBracket = K.RightBracket,
-
-      Tilde = K.Grave, # ~
-
-      Plus = K.Equals,
-      Underscore = K.Minus,
-
-      Question = K.Slash,
-      Pipe = K.Backslash,
-
-      Colon = K.Semicolon,
-      DoubleQuote = K.Quote,
-
-      LeftAngleBracket = K.Comma,
-      RightAngleBracket = K.Dot,
-    }
-    |> std.record.map_values (fun k => k & K.LeftShift),
-
-  aliases = fun K =>
-    {
-      Enter = K.Return,
-      Circumflex = K.Caret, # ^
-      LeftBrace = K.LeftCurlyBracket, # {
-      RightBrace = K.RightCurlyBracket,
-    },
-
-  abbreviations = fun K =>
-    {
-      XXXX = K.NO,
-
-      RET = K.Return,
-      ESC = K.Escape,
-      BSPC = K.Backspace,
-      TAB = K.Tab,
-      SPC = K.Space,
-
-      ENT = K.Enter,
-
-      EXCL = K.Exclaim,
-      AT = K.At,
-      HASH = K.Hash,
-      DLR = K.Dollar,
-      PCT = K.Percent,
-      CARE = K.Caret, # ^
-      AMP = K.Ampersand,
-      ASTR = K.Asterisk,
-      LPRN = K.LeftParen,
-      RPRN = K.RightParen,
-
-      PERC = K.Percent,
-      CIRC = K.Circumflex, # ^
-
-      LBRK = K.LeftBracket, # [
-      LCBR = K.LeftCurlyBracket, # {
-      LBRC = K.LeftBrace, # {
-      RBRK = K.RightBracket,
-      RCBR = K.RightCurlyBracket,
-      RBRC = K.RightBrace,
-
-      GRV = K.Grave, # `
-      TILD = K.Tilde, # ~
-
-      MINS = K.Minus,
-      UNDS = K.Underscore,
-      EQLS = K.Equals,
-      PLUS = K.Plus,
-
-      SLSH = K.Slash,
-      QUES = K.Question,
-      BSLS = K.Backslash,
-      PIPE = K.Pipe,
-
-      SCLN = K.Semicolon,
-      COLN = K.Colon,
-      QUOT = K.Quote,
-      DQUO = K.DoubleQuote,
-
-      COMM = K.Comma,
-      LABR = K.LeftAngleBracket,
-      DOT = K.Dot,
-      RABR = K.RightAngleBracket,
-
-      CAPS = K.CapsLock,
-
-      PSCR = K.PrintScreen,
-      SCRL = K.ScrollLock,
-      PAUS = K.Pause,
-
-      SLCK = K.ScrollLock,
-
-      INS = K.Insert,
-      HOME = K.Home,
-      PGUP = K.PageUp,
-      DEL = K.Delete,
-      END = K.End,
-      PGDN = K.PageDown,
-
-      RGHT = K.Right,
-      LEFT = K.Left,
-      DOWN = K.Down,
-      UP = K.Up,
-
-      NPNL = K.NumLock,
-      NPSL = K.NPSlash,
-      NPST = K.NPStar,
-      NPMN = K.NPMinus,
-      NPPL = K.NPPlus,
-      NPEN = K.NPEnter,
-      NPDT = K.NPDot,
-
-      LCTL = K.LeftCtrl,
-      LSFT = K.LeftShift,
-      LALT = K.LeftAlt,
-      LGUI = K.LeftGUI,
-      RCTL = K.RightCtrl,
-      RSFT = K.RightShift,
-      RALT = K.RightAlt,
-      RGUI = K.RightGUI,
-
-      APPN = K.Application,
-
-      NUSH = K.NonUSHash,
-      NUSB = K.NonUSBackslash,
-
-      RST = K.reset,
-      BOOT = K.reset_to_bootloader,
-
-      CWTG = K.caps_word.toggle,
-    },
-
-  literals = fun K =>
-    {
-      "1" = K.N1,
-      "2" = K.N2,
-      "3" = K.N3,
-      "4" = K.N4,
-      "5" = K.N5,
-      "6" = K.N6,
-      "7" = K.N7,
-      "8" = K.N8,
-      "9" = K.N9,
-      "0" = K.N0,
-
-      "!" = K.Exclaim,
-      "@" = K.At,
-      "#" = K.Hash,
-      "$" = K.Dollar,
-      "%" = K.Percent,
-      "^" = K.Caret,
-      "&" = K.Ampersand,
-      "*" = K.Asterisk,
-      "(" = K.LeftParen,
-      ")" = K.RightParen,
-
-      "[" = K.LeftBracket,
-      "{" = K.LeftCurlyBracket,
-      "]" = K.RightBracket,
-      "}" = K.RightCurlyBracket,
-
-      "`" = K.Grave,
-      "~" = K.Tilde,
-
-      "-" = K.Minus,
-      "_" = K.Underscore,
-      "=" = K.Equals,
-      "+" = K.Plus,
-
-      "/" = K.Slash,
-      "?" = K.Question,
-      "\\" = K.Backslash,
-      "|" = K.Pipe,
-
-      ";" = K.Semicolon,
-      ":" = K.Colon,
-      "'" = K.Quote,
-      "\"" = K.DoubleQuote,
-
-      "," = K.Comma,
-      "<" = K.LeftAngleBracket,
-      "." = K.Dot,
-      ">" = K.RightAngleBracket,
-    },
-
-  extend_keys = fun K key_extension => K & key_extension K,
 }
