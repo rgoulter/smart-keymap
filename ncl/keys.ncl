@@ -7,10 +7,10 @@ let rec keys =
     [
       key_extensions.abbreviations,
       key_extensions.aliases,
+      key_extensions.callback,
       key_extensions.caps_word,
       key_extensions.custom,
       key_extensions.keyboard,
-      key_extensions.keymap_callbacks,
       key_extensions.layered,
       key_extensions.literals,
       key_extensions.shifted,
