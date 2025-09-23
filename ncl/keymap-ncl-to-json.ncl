@@ -60,7 +60,7 @@ let validators = import "validators.ncl" in
     std.contract.any_of [
       keymap_ncl.keyboard.Key,
       keymap_ncl.layer_modifier.Key,
-      keymap_ncl.keymap_callback.Key,
+      keymap_ncl.callback.Key,
       keymap_ncl.caps_word.Key,
       keymap_ncl.sticky.Key,
       keymap_ncl.custom.Key,
@@ -237,7 +237,7 @@ let validators = import "validators.ncl" in
         }
     },
 
-  keymap_ncl.keymap_callback
+  keymap_ncl.callback
     | doc "for key::callback::Key."
     = {
       Key = std.contract.from_validator key_validator,
@@ -523,7 +523,7 @@ let validators = import "validators.ncl" in
       |> validators.any_of [
         keymap_ncl.keyboard.key_validator,
         keymap_ncl.layer_modifier.key_validator,
-        keymap_ncl.keymap_callback.key_validator,
+        keymap_ncl.callback.key_validator,
         keymap_ncl.caps_word.key_validator,
         keymap_ncl.sticky.key_validator,
         keymap_ncl.custom.key_validator,
@@ -537,28 +537,28 @@ let validators = import "validators.ncl" in
     is_key = fun k => 'Ok == key_validator k,
 
     to_json_value = match {
+      # Make key::callback::Key
+      k if keymap_ncl.callback.is_key k => keymap_ncl.callback.to_json_value k,
+      # Make key::caps_word::Key
+      k if keymap_ncl.caps_word.is_key k => keymap_ncl.caps_word.to_json_value k,
       # Make key::chorded::Key
       k if keymap_ncl.chorded.is_key k => keymap_ncl.chorded.to_json_value k,
       # Make key::chorded::AuxiliaryKey
       k if keymap_ncl.chorded_aux.is_key k => keymap_ncl.chorded_aux.to_json_value k,
-      # Make key::layered::LayeredKey
-      k if keymap_ncl.layered.is_key k => keymap_ncl.layered.to_json_value k,
-      # Make key::tap_dance::Key from keys with a "tap_dances" modifier.
-      k if keymap_ncl.tap_dance.is_key k => keymap_ncl.tap_dance.to_json_value k,
-      # Make key::tap_hold::Key from keys with a "hold" modifier.
-      k if keymap_ncl.tap_hold.is_key k => keymap_ncl.tap_hold.to_json_value k,
-      # Make key::callback::Key
-      k if keymap_ncl.keymap_callback.is_key k => keymap_ncl.keymap_callback.to_json_value k,
-      # Make key::caps_word::Key
-      k if keymap_ncl.caps_word.is_key k => keymap_ncl.caps_word.to_json_value k,
-      # Make key::sticky::Key
-      k if keymap_ncl.sticky.is_key k => keymap_ncl.sticky.to_json_value k,
       # Make key::custom::Key
       k if keymap_ncl.custom.is_key k => keymap_ncl.custom.to_json_value k,
       # Otherwise, keys with just a base key_code are key::keyboard keys.
       k if keymap_ncl.keyboard.is_key k => keymap_ncl.keyboard.to_json_value k,
       # Make key::layered::ModifierKey
       k if keymap_ncl.layer_modifier.is_key k => keymap_ncl.layer_modifier.to_json_value k,
+      # Make key::layered::LayeredKey
+      k if keymap_ncl.layered.is_key k => keymap_ncl.layered.to_json_value k,
+      # Make key::sticky::Key
+      k if keymap_ncl.sticky.is_key k => keymap_ncl.sticky.to_json_value k,
+      # Make key::tap_dance::Key from keys with a "tap_dances" modifier.
+      k if keymap_ncl.tap_dance.is_key k => keymap_ncl.tap_dance.to_json_value k,
+      # Make key::tap_hold::Key from keys with a "hold" modifier.
+      k if keymap_ncl.tap_hold.is_key k => keymap_ncl.tap_hold.to_json_value k,
       # Null values (None) stay null
       null => null,
       _ => std.fail_with "unsupported item in keymap.ncl",
