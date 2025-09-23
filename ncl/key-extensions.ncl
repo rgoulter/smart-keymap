@@ -1,5 +1,5 @@
 {
-  keyboard =
+  key_extensions.keyboard =
     (import "hid-usage-keyboard.ncl")
     |> std.record.map_values (fun kc =>
       kc
@@ -24,7 +24,7 @@
       }
     ),
 
-  tap_hold = {
+  key_extensions.tap_hold = {
     keys,
 
     hold
@@ -41,7 +41,7 @@
     H_RGUI = hold keys.RightGUI,
   },
 
-  layered = {
+  key_extensions.layered = {
     layer_mod = {
       set_default = fun layer_num =>
         {
@@ -61,28 +61,28 @@
     TTTT = null,
   },
 
-  keymap_callbacks = {
+  key_extensions.keymap_callbacks = {
     callback = fun i j => { keymap_callback = { Custom = [i, j] } },
     reset = { keymap_callback = "Reset" },
     reset_to_bootloader = { keymap_callback = "ResetToBootloader" },
   },
 
-  caps_word = {
+  key_extensions.caps_word = {
     caps_word = { toggle = "ToggleCapsWord" },
   },
 
-  sticky = {
+  key_extensions.sticky = {
     sticky = fun m =>
       {
         sticky_modifiers = m.modifiers,
       },
   },
 
-  custom = {
+  key_extensions.custom = {
     custom = fun c => { custom = c },
   },
 
-  shifted = {
+  key_exstensions.shifted = {
     keys,
 
     Exclaim = keys.N1 & keys.LeftShift,
@@ -114,7 +114,7 @@
     RightAngleBracket = keys.Dot & keys.LeftShift,
   },
 
-  aliases = {
+  key_extensions.aliases = {
     keys,
 
     Enter = keys.Return,
@@ -123,7 +123,7 @@
     RightBrace = keys.RightCurlyBracket,
   },
 
-  abbreviations = {
+  key_extensions.abbreviations = {
     keys,
 
     XXXX = keys.NO,
@@ -228,7 +228,7 @@
     CWTG = keys.caps_word.toggle,
   },
 
-  literals = {
+  key_extensions.literals = {
     keys,
 
     "1" = keys.N1,

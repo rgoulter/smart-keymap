@@ -1,8 +1,8 @@
-let key_extensions = import "key-extensions.ncl" in
+let { key_extensions, extend_keys, .. } = import "key-extensions.ncl" in
 
 let rec keys =
   std.array.fold_left
-    key_extensions.extend_keys
+    extend_keys
     { include keys }
     [
       key_extensions.abbreviations,
