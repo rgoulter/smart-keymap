@@ -51,22 +51,9 @@ impl core::fmt::Debug for Key {
     }
 }
 
-/// Config for keyboard keys. (No config).
-pub struct Config;
-
-/// Default config for keyboard keys. (No config).
-pub const DEFAULT_CONFIG: Config = Config {};
-
 /// Context for keyboard keys. (No context).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context;
-
-impl Context {
-    /// Constructs a context from the given config.
-    pub const fn from_config(_config: Config) -> Context {
-        Context {}
-    }
-}
 
 impl key::Context for Context {
     type Event = Event;
@@ -77,6 +64,9 @@ impl key::Context for Context {
     }
 }
 
+// We want key::keyboard::Context to impl SetKeymapContext, because it's plausible
+// that some keyboard implementations only use key::keyboard keys,
+// and SetKeymapContext is required for keymap::Keymap.
 impl crate::keymap::SetKeymapContext for Context {
     fn set_keymap_context(&mut self, _context: crate::keymap::KeymapContext) {}
 }
@@ -128,10 +118,10 @@ impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for Syst
         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        let k_ks = KeyState;
-        let pks = key::PressedKeyResult::Resolved(k_ks);
-        let pke = key::KeyEvents::no_events();
-        (pks, pke)
+        (
+            key::PressedKeyResult::Resolved(KeyState),
+            key::KeyEvents::no_events(),
+        )
     }
 
     fn update_pending_state(
