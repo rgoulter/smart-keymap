@@ -9,10 +9,7 @@
       key_validator =
         validators.record.validator {
           fields_validator =
-            validators.all_of [
-              validators.record.has_field "usage_code",
-              validators.record.has_only_fields ["usage_code"],
-            ],
+            validators.record.has_exact_fields ["usage_code"],
           field_validators = {
             usage_code = validators.is_number,
           },
