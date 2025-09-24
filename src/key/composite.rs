@@ -314,6 +314,17 @@ impl TryFrom<Event> for key::chorded::Event {
     }
 }
 
+impl TryFrom<Event> for key::consumer::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Consumer(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
+
 impl TryFrom<Event> for key::keyboard::Event {
     type Error = key::EventError;
 
