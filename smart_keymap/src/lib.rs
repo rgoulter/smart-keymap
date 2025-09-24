@@ -35,7 +35,7 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-use smart_keymap::{init, input, key, keymap, split};
+use smart_keymap::{input, key, keymap, new_keymap, split, Keymap};
 
 /// Length of a buffer for serializing/deserializing split keyboard events.
 pub const MESSAGE_BUFFER_LEN: usize = 4;
@@ -122,7 +122,7 @@ pub struct KeymapHidReport {
     pub custom: [u8; 6],
 }
 
-static mut KEYMAP: init::Keymap = init::Keymap::new(init::KEY_REFS, init::CONTEXT, init::SYSTEM);
+static mut KEYMAP: Keymap = new_keymap();
 
 /// Initialize the global keymap instance.
 #[allow(static_mut_refs)]
