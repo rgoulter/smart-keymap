@@ -1,5 +1,5 @@
 {
-  key_extensions = (import "key-extensions.ncl") |> std.record.remove "extend_keys",
+  key_extensions = (import "key-extensions.ncl").key_extensions,
 
   grouped_key_fields =
     std.record.map_values
