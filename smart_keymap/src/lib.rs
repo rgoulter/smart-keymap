@@ -51,6 +51,9 @@ pub const KEYMAP_HID_REPORT_KEYBOARD_LEN: usize = 8;
 /// Length of a KeymapHidReport.custom array.
 pub const KEYMAP_HID_REPORT_CUSTOM_LEN: usize = 6;
 
+/// Length of a KeymapHidReport.consumer array.
+pub const KEYMAP_HID_REPORT_CONSUMER_LEN: usize = 4;
+
 /// Input event type.
 #[repr(C)]
 pub enum KeymapInputEventType {
@@ -126,6 +129,8 @@ pub struct KeymapHidReport {
     pub keyboard: [u8; KEYMAP_HID_REPORT_KEYBOARD_LEN],
     /// Reported `Custom` codes. (Implementation defined).
     pub custom: [u8; KEYMAP_HID_REPORT_CUSTOM_LEN],
+    /// Reported `Consumer` codes. (Implementation defined).
+    pub consumer: [u8; KEYMAP_HID_REPORT_CONSUMER_LEN],
 }
 
 static mut KEYMAP: Keymap = new_keymap();
@@ -209,6 +214,14 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
             custom_codes.as_ptr(),
             report.custom.as_mut_ptr(),
             KEYMAP_HID_REPORT_CUSTOM_LEN.min(custom_codes.len()),
+        );
+
+        report.consumer.fill(0);
+        let consumer_codes = &keymap_output.pressed_consumer_codes();
+        core::ptr::copy_nonoverlapping(
+            consumer_codes.as_ptr(),
+            report.consumer.as_mut_ptr(),
+            KEYMAP_HID_REPORT_CONSUMER_LEN.min(consumer_codes.len()),
         );
     }
 }
