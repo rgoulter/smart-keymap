@@ -149,6 +149,6 @@ include!(concat!(env!("OUT_DIR"), "/keymap.rs"));
 pub use init::{Keymap, CONTEXT, KEY_REFS, SYSTEM};
 
 /// Constructs a new keymap;
-pub fn new_keymap() -> Keymap {
+pub const fn new_keymap() -> Keymap {
     Keymap::new(KEY_REFS, CONTEXT, SYSTEM)
 }
