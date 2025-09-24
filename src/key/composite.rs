@@ -17,6 +17,8 @@ pub enum Ref {
     CapsWord(key::caps_word::Ref),
     /// [key::chorded::Ref] variant.
     Chorded(key::chorded::Ref),
+    /// [key::consumer::Ref] variant.
+    Consumer(key::consumer::Ref),
     /// [key::custom::Ref] variant.
     Custom(key::custom::Ref),
     /// [key::keyboard::Ref] variant.
@@ -163,6 +165,12 @@ impl<'c> From<&'c Context> for &'c key::chorded::Context {
     }
 }
 
+impl<'c> From<&'c Context> for &'c key::consumer::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::consumer::Context
+    }
+}
+
 impl<'c> From<&'c Context> for &'c key::custom::Context {
     fn from(_ctx: &'c Context) -> Self {
         &key::custom::Context
@@ -208,6 +216,8 @@ pub enum Event {
     CapsWord(key::caps_word::Event),
     /// A chorded event.
     Chorded(key::chorded::Event),
+    /// A consumer event.
+    Consumer(key::consumer::Event),
     /// A custom event.
     Custom(key::custom::Event),
     /// A keyboard event.
@@ -237,6 +247,12 @@ impl From<key::caps_word::Event> for Event {
 impl From<key::chorded::Event> for Event {
     fn from(ev: key::chorded::Event) -> Self {
         Event::Chorded(ev)
+    }
+}
+
+impl From<key::consumer::Event> for Event {
+    fn from(ev: key::consumer::Event) -> Self {
+        Event::Consumer(ev)
     }
 }
 
@@ -363,6 +379,8 @@ pub enum PendingKeyState {
     CapsWord(key::caps_word::PendingKeyState),
     /// Pending key state for [key::chorded::PendingKeyState].
     Chorded(key::chorded::PendingKeyState),
+    /// Pending key state for [key::consumer::PendingKeyState].
+    Consumer(key::consumer::PendingKeyState),
     /// Pending key state for [key::custom::PendingKeyState].
     Custom(key::custom::PendingKeyState),
     /// Pending key state for [key::keyboard::PendingKeyState].
@@ -392,6 +410,12 @@ impl From<key::caps_word::PendingKeyState> for PendingKeyState {
 impl From<key::chorded::PendingKeyState> for PendingKeyState {
     fn from(pks: key::chorded::PendingKeyState) -> Self {
         PendingKeyState::Chorded(pks)
+    }
+}
+
+impl From<key::consumer::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::consumer::PendingKeyState) -> Self {
+        PendingKeyState::Consumer(pks)
     }
 }
 
@@ -475,6 +499,8 @@ pub enum KeyState {
     CapsWord(key::caps_word::KeyState),
     /// Key state for [key::chorded::KeyState].
     Chorded(key::chorded::KeyState),
+    /// Key state for [key::consumer::KeyState].
+    Consumer(key::consumer::KeyState),
     /// Key state for [key::custom::KeyState].
     Custom(key::custom::KeyState),
     /// Key state for [key::keyboard::KeyState].
@@ -510,6 +536,12 @@ impl From<key::caps_word::KeyState> for KeyState {
 impl From<key::chorded::KeyState> for KeyState {
     fn from(ks: key::chorded::KeyState) -> Self {
         KeyState::Chorded(ks)
+    }
+}
+
+impl From<key::consumer::KeyState> for KeyState {
+    fn from(ks: key::consumer::KeyState) -> Self {
+        KeyState::Consumer(ks)
     }
 }
 
@@ -642,6 +674,7 @@ impl Keys for KeyVecs {
 pub struct System<D: Keys> {
     callback: key::callback::System<Ref, D::Callback>,
     caps_word: key::caps_word::System<Ref>,
+    consumer: key::consumer::System<Ref>,
     chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
     custom: key::custom::System<Ref>,
     keyboard: key::keyboard::System<Ref, D::Keyboard>,
@@ -698,6 +731,7 @@ impl<
         System {
             callback,
             caps_word: key::caps_word::System::new(),
+            consumer: key::consumer::System::new(),
             chorded,
             custom: key::custom::System::new(),
             keyboard,
@@ -733,6 +767,7 @@ impl System<KeyVecs> {
         System {
             callback,
             caps_word: key::caps_word::System::new(),
+            consumer: key::consumer::System::new(),
             chorded,
             custom: key::custom::System::new(),
             keyboard,
@@ -777,6 +812,12 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             Ref::Chorded(key_ref) => {
                 let (pkr, pke) =
                     self.chorded
+                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                (pkr.into_result(), pke.into_events())
+            }
+            Ref::Consumer(key_ref) => {
+                let (pkr, pke) =
+                    self.consumer
                         .new_pressed_key(keymap_index, context.into(), key_ref);
                 (pkr.into_result(), pke.into_events())
             }
@@ -883,6 +924,20 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
         match (key_ref, key_state) {
+            (Ref::Consumer(key_ref), KeyState::Consumer(key_state)) => {
+                if let Ok(event) = event.try_into_key_event() {
+                    let pke = self.consumer.update_state(
+                        key_state,
+                        key_ref,
+                        context.into(),
+                        keymap_index,
+                        event,
+                    );
+                    pke.into_events()
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
             (Ref::Keyboard(key_ref), KeyState::Keyboard(key_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
                     let pke = self.keyboard.update_state(
@@ -935,6 +990,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
         match (key_ref, key_state) {
+            (Ref::Consumer(r), KeyState::Consumer(ks)) => self.consumer.key_output(r, ks),
             (Ref::Custom(r), KeyState::Custom(ks)) => self.custom.key_output(r, ks),
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
             (Ref::Sticky(r), KeyState::Sticky(ks)) => self.sticky.key_output(r, ks),

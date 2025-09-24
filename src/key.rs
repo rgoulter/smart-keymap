@@ -10,6 +10,8 @@ pub mod callback;
 pub mod caps_word;
 /// Chorded keys. (Chording functionality).
 pub mod chorded;
+/// Consumer keys.
+pub mod consumer;
 /// Custom keys.
 pub mod custom;
 /// HID Keyboard keys.
@@ -431,6 +433,8 @@ impl KeyboardModifiers {
 pub enum KeyUsage {
     /// Key usage code.
     Keyboard(u8),
+    /// Consumer usage code.
+    Consumer(u16),
     /// Custom code. (Behaviour defined by firmware implementation).
     Custom(u8),
 }
@@ -475,6 +479,14 @@ impl KeyOutput {
         KeyOutput {
             key_code: KeyUsage::Keyboard(0x00),
             key_modifiers,
+        }
+    }
+
+    /// Constructs a [KeyOutput] from a consumer code.
+    pub fn from_consumer_code(usage_code: u16) -> Self {
+        KeyOutput {
+            key_code: KeyUsage::Consumer(usage_code),
+            key_modifiers: KeyboardModifiers::new(),
         }
     }
 

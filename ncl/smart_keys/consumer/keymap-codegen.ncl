@@ -1,0 +1,56 @@
+{
+  validators,
+  lib,
+  key_data_and_refs,
+
+  smart_keymap.consumer
+    | doc "for key::consumer::Key."
+    = {
+      module = "smart_keymap::key::consumer",
+
+      key = {
+        Json = { usage_code | Number, .. },
+
+        key_type = "%{module}::Key",
+
+        json_validator =
+          validators.record.validator {
+            fields_validator =
+              validators.all_of [
+                validators.record.has_field "usage_code",
+                validators.record.has_only_fields ["usage_code"],
+              ],
+            field_validators = {
+              usage_code = validators.is_number,
+            },
+          },
+
+        is_json = fun json => 'Ok == json_validator json,
+
+        codegen_values = fun json =>
+          {
+            include json,
+            include module,
+            include key_type,
+            rust_expr = "smart_keymap::key::consumer::Key { usage_code: %{std.to_string json.usage_code} }",
+          },
+
+        traverse = fun f acc cv => f acc cv,
+
+        data_and_ref = fun key_data cv @ { json, .. } =>
+          {
+            include key_data,
+            ref = {
+              include module,
+              variant = "UsageCode",
+              json = { "%{variant}" = json.usage_code },
+              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string json.usage_code})",
+            },
+          },
+      },
+
+      system = {
+        rust_expr = "smart_keymap::key::consumer::System::new()",
+      },
+    },
+}
