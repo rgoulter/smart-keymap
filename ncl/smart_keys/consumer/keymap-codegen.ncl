@@ -26,7 +26,7 @@
 
         codegen_values = fun json =>
           {
-            include json,
+            json = json,
             include module,
             include key_type,
             rust_expr = "smart_keymap::key::consumer::Key { usage_code: %{std.to_string json.usage_code} }",
@@ -34,14 +34,14 @@
 
         traverse = fun f acc cv => f acc cv,
 
-        data_and_ref = fun key_data cv @ { json, .. } =>
+        data_and_ref = fun key_data cv @ { json = { usage_code }, .. } =>
           {
             include key_data,
             ref = {
               include module,
               variant = "UsageCode",
-              json = { "%{variant}" = json.usage_code },
-              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string json.usage_code})",
+              json = { "%{variant}" = usage_code },
+              rust_expr = "%{module}::Ref::%{variant}(%{std.to_string usage_code})",
             },
           },
       },
