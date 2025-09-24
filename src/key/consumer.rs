@@ -8,7 +8,7 @@ use crate::key;
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
     /// A usage code. (Value is the HID usage code).
-    UsageCode(u16),
+    UsageCode(u8),
 }
 
 /// A key for HID Consumer usage codes.
@@ -16,7 +16,7 @@ pub enum Ref {
 pub struct Key {
     /// HID usage code.
     #[serde(default)]
-    pub usage_code: u16,
+    pub usage_code: u8,
 }
 
 /// Config for consumer keys. (No config).

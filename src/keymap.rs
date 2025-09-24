@@ -104,7 +104,7 @@ impl KeymapOutput {
     }
 
     /// Returns the pressed consumer codes.
-    pub fn pressed_consumer_codes(&self) -> heapless::Vec<u16, 24> {
+    pub fn pressed_consumer_codes(&self) -> heapless::Vec<u8, 24> {
         self.pressed_key_codes
             .iter()
             .flat_map(|ko| match ko.key_code() {
