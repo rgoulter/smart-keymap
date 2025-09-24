@@ -10,6 +10,8 @@ pub mod callback;
 pub mod caps_word;
 /// Chorded keys. (Chording functionality).
 pub mod chorded;
+/// Consumer keys.
+pub mod consumer;
 /// Custom keys.
 pub mod custom;
 /// HID Keyboard keys.
