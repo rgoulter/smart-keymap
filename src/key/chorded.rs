@@ -813,8 +813,6 @@ mod tests {
 
     use key::keyboard;
 
-    use crate::key::System as _;
-
     #[test]
     fn test_timeout_resolves_unsatisfied_aux_state_as_passthrough_key() {
         // Assemble: an Auxilary chorded key, and its PKS.
