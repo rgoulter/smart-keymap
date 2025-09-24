@@ -45,6 +45,12 @@ pub const KEYMAP_CALLBACK_RESET: u8 = 0;
 /// Callback ID for "enter bootloader mode"
 pub const KEYMAP_CALLBACK_BOOTLOADER: u8 = 1;
 
+/// Length of a KeymapHidReport.keyboard array.
+pub const KEYMAP_HID_REPORT_KEYBOARD_LEN: usize = 8;
+
+/// Length of a KeymapHidReport.custom array.
+pub const KEYMAP_HID_REPORT_CUSTOM_LEN: usize = 6;
+
 /// Input event type.
 #[repr(C)]
 pub enum KeymapInputEventType {
@@ -117,9 +123,9 @@ impl From<input::Event> for KeymapInputEvent {
 #[repr(C)]
 pub struct KeymapHidReport {
     /// HID Boot keyboard report.
-    pub keyboard: [u8; 8],
+    pub keyboard: [u8; KEYMAP_HID_REPORT_KEYBOARD_LEN],
     /// Reported `Custom` codes. (Implementation defined).
-    pub custom: [u8; 6],
+    pub custom: [u8; KEYMAP_HID_REPORT_CUSTOM_LEN],
 }
 
 static mut KEYMAP: Keymap = new_keymap();
@@ -197,13 +203,12 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
             keyboard_report.len(),
         );
 
-        let zeros = [0; 6];
-        core::ptr::copy_nonoverlapping(zeros.as_ptr(), report.custom.as_mut_ptr(), zeros.len());
+        report.custom.fill(0);
         let custom_codes = &keymap_output.pressed_custom_codes();
         core::ptr::copy_nonoverlapping(
             custom_codes.as_ptr(),
             report.custom.as_mut_ptr(),
-            6.min(custom_codes.len()),
+            KEYMAP_HID_REPORT_CUSTOM_LEN.min(custom_codes.len()),
         );
     }
 }
