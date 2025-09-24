@@ -1,12 +1,4 @@
-(import "smart_keys/callback/keymap-ncl-to-json.ncl")
-& (import "smart_keys/caps_word/keymap-ncl-to-json.ncl")
-& (import "smart_keys/chorded/keymap-ncl-to-json.ncl")
-& (import "smart_keys/custom/keymap-ncl-to-json.ncl")
-& (import "smart_keys/keyboard/keymap-ncl-to-json.ncl")
-& (import "smart_keys/layered/keymap-ncl-to-json.ncl")
-& (import "smart_keys/sticky/keymap-ncl-to-json.ncl")
-& (import "smart_keys/tap_dance/keymap-ncl-to-json.ncl")
-& (import "smart_keys/tap_hold/keymap-ncl-to-json.ncl")
+(import "smart-keys.ncl").keymap_ncl_to_json
 & {
   validators | default = import "validators.ncl",
 

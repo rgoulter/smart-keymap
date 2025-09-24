@@ -1,12 +1,4 @@
-(import "smart_keys/callback/keymap-codegen.ncl")
-& (import "smart_keys/caps_word/keymap-codegen.ncl")
-& (import "smart_keys/chorded/keymap-codegen.ncl")
-& (import "smart_keys/custom/keymap-codegen.ncl")
-& (import "smart_keys/keyboard/keymap-codegen.ncl")
-& (import "smart_keys/layered/keymap-codegen.ncl")
-& (import "smart_keys/sticky/keymap-codegen.ncl")
-& (import "smart_keys/tap_dance/keymap-codegen.ncl")
-& (import "smart_keys/tap_hold/keymap-codegen.ncl")
+(import "smart-keys.ncl").keymap_codegen
 & {
   KeymapJson
     | doc "Contract for the keymap.json value"
