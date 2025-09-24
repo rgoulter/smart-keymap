@@ -39,6 +39,7 @@ KEY_FIELDS_MD="${NCL_DIR}/key-docs.md"
 nickel export \
     --field=keys_md \
     --format=text \
+    --import-path="${NCL_DIR}" \
     "${NCL_DIR}/key-docs.ncl" \
     > "${KEY_FIELDS_MD}"
 
