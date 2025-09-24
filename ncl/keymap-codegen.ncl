@@ -1,5 +1,6 @@
 (import "smart_keys/callback/keymap-codegen.ncl")
 & (import "smart_keys/caps_word/keymap-codegen.ncl")
+& (import "smart_keys/consumer/keymap-codegen.ncl")
 & (import "smart_keys/chorded/keymap-codegen.ncl")
 & (import "smart_keys/custom/keymap-codegen.ncl")
 & (import "smart_keys/keyboard/keymap-codegen.ncl")
@@ -78,6 +79,7 @@
             "smart_keymap::key::keyboard" => "Keyboard",
             "smart_keymap::key::callback" => "Callback",
             "smart_keymap::key::caps_word" => "CapsWord",
+            "smart_keymap::key::consumer" => "Consumer",
             "smart_keymap::key::sticky" => "Sticky",
             "smart_keymap::key::custom" => "Custom",
             "smart_keymap::key::tap_dance" => "TapDance",
@@ -135,6 +137,7 @@
       smart_keymap.caps_word.key,
       smart_keymap.chorded.auxiliary_key,
       smart_keymap.chorded.key,
+      smart_keymap.consumer.key,
       smart_keymap.custom.key,
       smart_keymap.keyboard.key,
       smart_keymap.layered.layered_key,
