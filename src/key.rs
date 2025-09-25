@@ -437,6 +437,8 @@ pub enum KeyUsage {
     Consumer(u8),
     /// Custom code. (Behaviour defined by firmware implementation).
     Custom(u8),
+    /// Mouse usage.
+    Mouse(MouseOutput),
 }
 
 /// Struct for the output from [KeyState].
