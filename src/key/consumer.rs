@@ -15,15 +15,6 @@ pub enum Ref {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context;
 
-impl key::Context for Context {
-    type Event = Event;
-
-    /// Used to update the [Context]'s state.
-    fn handle_event(&mut self, _event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
-        key::KeyEvents::no_events()
-    }
-}
-
 /// The event type for consumer keys. (No events).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Event;

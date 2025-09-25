@@ -54,10 +54,7 @@ fn mouse_key_cleared_when_released() {
     let actual_mouse_output = keymap.report_output().pressed_mouse_output();
 
     // Assert -- mouse output is cleared
-    assert_eq!(
-        key::MouseOutput::NO_OUTPUT,
-        actual_mouse_output
-    );
+    assert_eq!(key::MouseOutput::NO_OUTPUT, actual_mouse_output);
 }
 
 #[test]
