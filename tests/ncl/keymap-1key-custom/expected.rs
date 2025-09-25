@@ -27,28 +27,28 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
-    const CALLBACK_DATA_LEN: usize = 0;
-    const CHORDED_AUXILIARY_DATA_LEN: usize = 0;
-    const CHORDED_DATA_LEN: usize = 0;
-    const KEYBOARD_DATA_LEN: usize = 0;
-    const LAYERED_DATA_LEN: usize = 0;
-    const LAYER_MODIFIERS_DATA_LEN: usize = 0;
-    const STICKY_DATA_LEN: usize = 0;
-    const TAP_DANCE_DATA_LEN: usize = 0;
-    const TAP_HOLD_DATA_LEN: usize = 0;
+    const CALLBACK: usize = 0;
+    const CHORDED: usize = 0;
+    const CHORDED_AUXILIARY: usize = 0;
+    const KEYBOARD: usize = 0;
+    const LAYERED: usize = 0;
+    const LAYER_MODIFIERS: usize = 0;
+    const STICKY: usize = 0;
+    const TAP_DANCE: usize = 0;
+    const TAP_HOLD: usize = 0;
 
     /// The System type
     pub type System = smart_keymap::key::composite::System<
         smart_keymap::key::composite::KeyArrays<
-            CALLBACK_DATA_LEN,
-            CHORDED_AUXILIARY_DATA_LEN,
-            CHORDED_DATA_LEN,
-            KEYBOARD_DATA_LEN,
-            LAYERED_DATA_LEN,
-            LAYER_MODIFIERS_DATA_LEN,
-            STICKY_DATA_LEN,
-            TAP_DANCE_DATA_LEN,
-            TAP_HOLD_DATA_LEN,
+            CALLBACK,
+            CHORDED,
+            CHORDED_AUXILIARY,
+            KEYBOARD,
+            LAYERED,
+            LAYER_MODIFIERS,
+            STICKY,
+            TAP_DANCE,
+            TAP_HOLD,
         >,
     >;
 
