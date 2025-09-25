@@ -18,6 +18,8 @@ pub mod custom;
 pub mod keyboard;
 /// Layered keys. (Layering functionality).
 pub mod layered;
+/// Mouse keys.
+pub mod mouse;
 /// Sticky Modifier keys.
 pub mod sticky;
 /// Tap-Dance keys.
@@ -496,6 +498,14 @@ impl KeyOutput {
     pub fn from_custom_code(custom_code: u8) -> Self {
         KeyOutput {
             key_code: KeyUsage::Custom(custom_code),
+            key_modifiers: KeyboardModifiers::new(),
+        }
+    }
+
+    /// Constructs a [KeyOutput] from a mouse output.
+    pub fn from_mouse_output(mouse_output: MouseOutput) -> Self {
+        KeyOutput {
+            key_code: KeyUsage::Mouse(mouse_output),
             key_modifiers: KeyboardModifiers::new(),
         }
     }
