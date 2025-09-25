@@ -86,6 +86,14 @@ int main(void) {
       }
 
       if (memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack,
+                 sizeof(Mouse_Data_Pack)) != 0 ||
+          memcmp(Mouse_Data_Pack,
+                 (uint8_t[4]){
+                     0x00,
+                     0x00,
+                     0x00,
+                     0x00,
+                 },
                  sizeof(Mouse_Data_Pack)) != 0) {
         if (sending_mouse == 0) {
           USBFS_Endp_DataUp(DEF_UEP2, Mouse_Data_Pack, sizeof(Mouse_Data_Pack),
