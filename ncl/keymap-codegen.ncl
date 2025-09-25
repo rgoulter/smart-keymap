@@ -304,28 +304,28 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
-    const CALLBACK_DATA_LEN: usize = %{data_len_rust_expr "callback"};
-    const CHORDED_AUXILIARY_DATA_LEN: usize = %{data_len_rust_expr "chorded_auxiliary"};
-    const CHORDED_DATA_LEN: usize = %{data_len_rust_expr "chorded"};
-    const KEYBOARD_DATA_LEN: usize = %{data_len_rust_expr "keyboard"};
-    const LAYERED_DATA_LEN: usize = %{data_len_rust_expr "layered"};
-    const LAYER_MODIFIERS_DATA_LEN: usize = %{data_len_rust_expr "layer_modifiers"};
-    const STICKY_DATA_LEN: usize = %{data_len_rust_expr "sticky"};
-    const TAP_DANCE_DATA_LEN: usize = %{data_len_rust_expr "tap_dance"};
-    const TAP_HOLD_DATA_LEN: usize = %{data_len_rust_expr "tap_hold"};
+    const CALLBACK: usize = %{data_len_rust_expr "callback"};
+    const CHORDED: usize = %{data_len_rust_expr "chorded"};
+    const CHORDED_AUXILIARY: usize = %{data_len_rust_expr "chorded_auxiliary"};
+    const KEYBOARD: usize = %{data_len_rust_expr "keyboard"};
+    const LAYERED: usize = %{data_len_rust_expr "layered"};
+    const LAYER_MODIFIERS: usize = %{data_len_rust_expr "layer_modifiers"};
+    const STICKY: usize = %{data_len_rust_expr "sticky"};
+    const TAP_DANCE: usize = %{data_len_rust_expr "tap_dance"};
+    const TAP_HOLD: usize = %{data_len_rust_expr "tap_hold"};
 
     /// The System type
     pub type System = smart_keymap::key::composite::System<
             smart_keymap::key::composite::KeyArrays<
-                CALLBACK_DATA_LEN,
-                CHORDED_AUXILIARY_DATA_LEN,
-                CHORDED_DATA_LEN,
-                KEYBOARD_DATA_LEN,
-                LAYERED_DATA_LEN,
-                LAYER_MODIFIERS_DATA_LEN,
-                STICKY_DATA_LEN,
-                TAP_DANCE_DATA_LEN,
-                TAP_HOLD_DATA_LEN,
+                CALLBACK,
+                CHORDED,
+                CHORDED_AUXILIARY,
+                KEYBOARD,
+                LAYERED,
+                LAYER_MODIFIERS,
+                STICKY,
+                TAP_DANCE,
+                TAP_HOLD,
             >,
         >;
 
