@@ -124,6 +124,17 @@ impl KeymapOutput {
             })
             .collect()
     }
+
+    /// Returns the combined pressed mouse output.
+    pub fn pressed_mouse_output(&self) -> key::MouseOutput {
+        self.pressed_key_codes
+            .iter()
+            .filter_map(|ko| match ko.key_code() {
+                key::KeyUsage::Mouse(mo) => Some(mo),
+                _ => None,
+            })
+            .fold(key::MouseOutput::NO_OUTPUT, |acc, mo| acc.combine(&mo))
+    }
 }
 
 #[derive(Debug)]
