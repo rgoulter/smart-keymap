@@ -6,6 +6,7 @@ use usb_device::UsbError;
 
 use usbd_human_interface_device::device::consumer::ConsumerControl;
 use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
+use usbd_human_interface_device::device::mouse::WheelMouse;
 use usbd_human_interface_device::usb_class::UsbHidClass;
 
 use usbd_serial::SerialPort;
@@ -17,6 +18,7 @@ pub type UsbClass = UsbHidClass<
     'static,
     UsbBus,
     HList!(
+        WheelMouse<'static, UsbBus>,
         ConsumerControl<'static, UsbBus>,
         NKROBootKeyboard<'static, UsbBus>,
     ),
