@@ -25,6 +25,8 @@ pub enum Ref {
     Keyboard(key::keyboard::Ref),
     /// [key::layered::Ref] variant.
     Layered(key::layered::Ref),
+    /// [key::mouse::Ref] variant.
+    Mouse(key::mouse::Ref),
     /// [key::sticky::Ref] variant.
     Sticky(key::sticky::Ref),
     /// [key::tap_dance::Ref] variant.
@@ -189,6 +191,12 @@ impl<'c> From<&'c Context> for &'c key::layered::Context {
     }
 }
 
+impl<'c> From<&'c Context> for &'c key::mouse::Context {
+    fn from(_ctx: &'c Context) -> Self {
+        &key::mouse::Context
+    }
+}
+
 impl<'c> From<&'c Context> for &'c key::sticky::Context {
     fn from(ctx: &'c Context) -> Self {
         &ctx.sticky
@@ -224,6 +232,8 @@ pub enum Event {
     Keyboard(key::keyboard::Event),
     /// A layer modification event.
     Layered(key::layered::LayerEvent),
+    /// A mouse event.
+    Mouse(key::mouse::Event),
     /// A sticky modifier event.
     Sticky(key::sticky::Event),
     /// A tap-dance event.
@@ -271,6 +281,12 @@ impl From<key::keyboard::Event> for Event {
 impl From<key::layered::LayerEvent> for Event {
     fn from(ev: key::layered::LayerEvent) -> Self {
         Event::Layered(ev)
+    }
+}
+
+impl From<key::mouse::Event> for Event {
+    fn from(ev: key::mouse::Event) -> Self {
+        Event::Mouse(ev)
     }
 }
 
@@ -347,6 +363,17 @@ impl TryFrom<Event> for key::layered::LayerEvent {
     }
 }
 
+impl TryFrom<Event> for key::mouse::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Mouse(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
+    }
+}
+
 impl TryFrom<Event> for key::sticky::Event {
     type Error = key::EventError;
 
@@ -398,6 +425,8 @@ pub enum PendingKeyState {
     Keyboard(key::keyboard::PendingKeyState),
     /// Pending key state for [key::layered::PendingKeyState].
     Layered(key::layered::PendingKeyState),
+    /// Pending key state for [key::mouse::PendingKeyState].
+    Mouse(key::mouse::PendingKeyState),
     /// Pending key state for [key::sticky::PendingKeyState].
     Sticky(key::sticky::PendingKeyState),
     /// Pending key state for [key::tap_dance::PendingKeyState].
@@ -445,6 +474,12 @@ impl From<key::keyboard::PendingKeyState> for PendingKeyState {
 impl From<key::layered::PendingKeyState> for PendingKeyState {
     fn from(pks: key::layered::PendingKeyState) -> Self {
         PendingKeyState::Layered(pks)
+    }
+}
+
+impl From<key::mouse::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::mouse::PendingKeyState) -> Self {
+        PendingKeyState::Mouse(pks)
     }
 }
 
@@ -518,6 +553,8 @@ pub enum KeyState {
     Keyboard(key::keyboard::KeyState),
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(key::layered::ModifierKeyState),
+    /// Key state for [key::mouse::KeyState].
+    Mouse(key::mouse::KeyState),
     /// Key state for [key::sticky::KeyState].
     Sticky(key::sticky::KeyState),
     /// Key state for [key::tap_dance::KeyState].
@@ -571,6 +608,12 @@ impl From<key::keyboard::KeyState> for KeyState {
 impl From<key::layered::ModifierKeyState> for KeyState {
     fn from(ks: key::layered::ModifierKeyState) -> Self {
         KeyState::LayerModifier(ks)
+    }
+}
+
+impl From<key::mouse::KeyState> for KeyState {
+    fn from(ks: key::mouse::KeyState) -> Self {
+        KeyState::Mouse(ks)
     }
 }
 
@@ -690,6 +733,7 @@ pub struct System<D: Keys> {
     custom: key::custom::System<Ref>,
     keyboard: key::keyboard::System<Ref, D::Keyboard>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
+    mouse: key::mouse::System<Ref>,
     sticky: key::sticky::System<Ref, D::Sticky>,
     tap_dance: key::tap_dance::System<Ref, D::TapDance>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
@@ -747,6 +791,7 @@ impl<
             custom: key::custom::System::new(),
             keyboard,
             layered,
+            mouse: key::mouse::System::new(),
             sticky,
             tap_dance,
             tap_hold,
@@ -783,6 +828,7 @@ impl System<KeyVecs> {
             custom: key::custom::System::new(),
             keyboard,
             layered,
+            mouse: key::mouse::System::new(),
             sticky,
             tap_dance,
             tap_hold,
@@ -848,6 +894,12 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 let (pkr, pke) =
                     self.layered
                         .new_pressed_key(keymap_index, context.into(), key_ref);
+                (pkr.into_result(), pke.into_events())
+            }
+            Ref::Mouse(key_ref) => {
+                let (pkr, pke) = self
+                    .mouse
+                    .new_pressed_key(keymap_index, context.into(), key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Sticky(key_ref) => {
@@ -1004,6 +1056,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             (Ref::Consumer(r), KeyState::Consumer(ks)) => self.consumer.key_output(r, ks),
             (Ref::Custom(r), KeyState::Custom(ks)) => self.custom.key_output(r, ks),
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
+            (Ref::Mouse(r), KeyState::Mouse(ks)) => self.mouse.key_output(r, ks),
             (Ref::Sticky(r), KeyState::Sticky(ks)) => self.sticky.key_output(r, ks),
             (_, _) => None,
         }
