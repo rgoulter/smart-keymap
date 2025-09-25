@@ -509,6 +509,36 @@ impl KeyOutput {
     }
 }
 
+/// Struct for the mouse output.
+#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MouseOutput {
+    /// Bitmask of pressed buttons.
+    pub pressed_buttons: u8,
+    /// X direction.
+    pub x: i8,
+    /// Y direction.
+    pub y: i8,
+    /// Vertical scroll.
+    pub vertical_scroll: i8,
+    /// Horizontal scroll.
+    pub horizontal_scroll: i8,
+}
+
+impl MouseOutput {
+    /// Combines two mouse output values into one.
+    pub fn combine(&self, other: &Self) -> Self {
+        Self {
+            pressed_buttons: self.pressed_buttons | other.pressed_buttons,
+            x: self.x.saturating_add(other.x),
+            y: self.y.saturating_add(other.y),
+            vertical_scroll: self.vertical_scroll.saturating_add(other.vertical_scroll),
+            horizontal_scroll: self
+                .horizontal_scroll
+                .saturating_add(other.horizontal_scroll),
+        }
+    }
+}
+
 /// Implements functionality for the pressed key.
 pub trait KeyState: Debug {
     /// The type of `Context` the pressed key state handles.
