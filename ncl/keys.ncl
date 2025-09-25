@@ -13,6 +13,7 @@ let rec keys =
       key_extensions.custom,
       key_extensions.keyboard,
       key_extensions.layered,
+      key_extensions.mouse,
       key_extensions.literals,
       key_extensions.shifted,
       key_extensions.sticky,

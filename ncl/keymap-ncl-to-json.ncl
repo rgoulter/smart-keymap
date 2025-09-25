@@ -5,6 +5,7 @@
 & (import "smart_keys/custom/keymap-ncl-to-json.ncl")
 & (import "smart_keys/keyboard/keymap-ncl-to-json.ncl")
 & (import "smart_keys/layered/keymap-ncl-to-json.ncl")
+& (import "smart_keys/mouse/keymap-ncl-to-json.ncl")
 & (import "smart_keys/sticky/keymap-ncl-to-json.ncl")
 & (import "smart_keys/tap_dance/keymap-ncl-to-json.ncl")
 & (import "smart_keys/tap_hold/keymap-ncl-to-json.ncl")
@@ -27,6 +28,7 @@
       keymap_ncl.callback.Key,
       keymap_ncl.caps_word.Key,
       keymap_ncl.consumer.Key,
+      keymap_ncl.mouse.Key,
       keymap_ncl.sticky.Key,
       keymap_ncl.custom.Key,
       keymap_ncl.layered.Key,
@@ -125,6 +127,7 @@
         keymap_ncl.callback.key_validator,
         keymap_ncl.caps_word.key_validator,
         keymap_ncl.consumer.key_validator,
+        keymap_ncl.mouse.key_validator,
         keymap_ncl.sticky.key_validator,
         keymap_ncl.custom.key_validator,
         keymap_ncl.layered.key_validator,
@@ -147,6 +150,8 @@
       k if keymap_ncl.chorded_aux.is_key k => keymap_ncl.chorded_aux.to_json_value k,
       # Make key::consumer::Key
       k if keymap_ncl.consumer.is_key k => keymap_ncl.consumer.to_json_value k,
+      # Make key::mouse::Key
+      k if keymap_ncl.mouse.is_key k => keymap_ncl.mouse.to_json_value k,
       # Make key::custom::Key
       k if keymap_ncl.custom.is_key k => keymap_ncl.custom.to_json_value k,
       # Otherwise, keys with just a base key_code are key::keyboard keys.
