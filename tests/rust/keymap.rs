@@ -3,6 +3,7 @@ mod chorded;
 mod consumer;
 mod custom;
 mod layered;
+mod mouse;
 mod sticky;
 mod tap_dance;
 mod tap_hold;
