@@ -537,6 +537,15 @@ pub struct MouseOutput {
 }
 
 impl MouseOutput {
+    /// A mouse output with no buttons pressed and no movement.
+    pub const NO_OUTPUT: MouseOutput = MouseOutput {
+        pressed_buttons: 0,
+        x: 0,
+        y: 0,
+        vertical_scroll: 0,
+        horizontal_scroll: 0,
+    };
+
     /// Combines two mouse output values into one.
     pub fn combine(&self, other: &Self) -> Self {
         Self {

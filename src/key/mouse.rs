@@ -120,66 +120,39 @@ impl<R: Debug> key::System<R> for System<R> {
         let mouse_output = match key_ref {
             Ref::Button(b) => key::MouseOutput {
                 pressed_buttons: 1 << (b - 1),
-                x: 0,
-                y: 0,
-                vertical_scroll: 0,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::CursorLeft => key::MouseOutput {
-                pressed_buttons: 0,
                 x: -MOVE_AMOUNT,
-                y: 0,
-                vertical_scroll: 0,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::CursorRight => key::MouseOutput {
-                pressed_buttons: 0,
                 x: MOVE_AMOUNT,
-                y: 0,
-                vertical_scroll: 0,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::CursorUp => key::MouseOutput {
-                pressed_buttons: 0,
-                x: 0,
                 y: -MOVE_AMOUNT,
-                vertical_scroll: 0,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::CursorDown => key::MouseOutput {
-                pressed_buttons: 0,
-                x: 0,
                 y: MOVE_AMOUNT,
-                vertical_scroll: 0,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::WheelUp => key::MouseOutput {
-                pressed_buttons: 0,
-                x: 0,
-                y: 0,
                 vertical_scroll: 1,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::WheelDown => key::MouseOutput {
-                pressed_buttons: 0,
-                x: 0,
-                y: 0,
                 vertical_scroll: -1,
-                horizontal_scroll: 0,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::WheelLeft => key::MouseOutput {
-                pressed_buttons: 0,
-                x: 0,
-                y: 0,
-                vertical_scroll: 0,
                 horizontal_scroll: -1,
+                ..key::MouseOutput::NO_OUTPUT
             },
             Ref::WheelRight => key::MouseOutput {
-                pressed_buttons: 0,
-                x: 0,
-                y: 0,
-                vertical_scroll: 0,
                 horizontal_scroll: 1,
+                ..key::MouseOutput::NO_OUTPUT
             },
         };
         Some(key::KeyOutput::from_mouse_output(mouse_output))
