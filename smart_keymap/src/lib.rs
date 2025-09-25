@@ -122,6 +122,33 @@ impl From<input::Event> for KeymapInputEvent {
     }
 }
 
+/// HID mouse report.
+#[repr(C)]
+pub struct KeymapHidMouseReport {
+    /// Bitmask of pressed buttons.
+    pub pressed_buttons: u8,
+    /// X direction.
+    pub x: i8,
+    /// Y direction.
+    pub y: i8,
+    /// Vertical scroll.
+    pub vertical_scroll: i8,
+    /// Horizontal scroll.
+    pub horizontal_scroll: i8,
+}
+
+impl From<key::MouseOutput> for KeymapHidMouseReport {
+    fn from(mo: key::MouseOutput) -> Self {
+        Self {
+            pressed_buttons: mo.pressed_buttons,
+            x: mo.x,
+            y: mo.y,
+            vertical_scroll: mo.vertical_scroll,
+            horizontal_scroll: mo.horizontal_scroll,
+        }
+    }
+}
+
 /// HID report.
 #[repr(C)]
 pub struct KeymapHidReport {
@@ -131,6 +158,8 @@ pub struct KeymapHidReport {
     pub custom: [u8; KEYMAP_HID_REPORT_CUSTOM_LEN],
     /// Reported `Consumer` codes. (Implementation defined).
     pub consumer: [u8; KEYMAP_HID_REPORT_CONSUMER_LEN],
+    /// HID mouse report.
+    pub mouse: KeymapHidMouseReport,
 }
 
 static mut KEYMAP: Keymap = new_keymap();
@@ -223,6 +252,8 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
             report.consumer.as_mut_ptr(),
             KEYMAP_HID_REPORT_CONSUMER_LEN.min(consumer_codes.len()),
         );
+
+        report.mouse = keymap_output.pressed_mouse_output().into();
     }
 }
 
