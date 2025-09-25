@@ -28,11 +28,14 @@
 #include "ch32x035_misc.h"
 
 #include "ch32x035_usbfs_device.h"
+#include "smart_keymap.h"
 #include "system_ch32x035.h"
 #include "usbd_composite_km.h"
 
 extern uint8_t KB_Data_Pack[8];
 extern uint8_t PREV_KB_Data_Pack[8];
+extern uint8_t Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN];
+extern uint8_t PREV_Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN];
 
 /*********************************************************************
  * @fn      main
@@ -59,7 +62,8 @@ int main(void) {
   TIM3_Init(47999, 0);
   printf("TIM3 Init OK!\r\n");
 
-  static uint8_t sending = 0;
+  static uint8_t sending_kb = 0;
+  static uint8_t sending_consumer = 0;
 
   /* Usb Init */
   USBFS_RCC_Init();
@@ -68,13 +72,26 @@ int main(void) {
   while (1) {
     if (USBFS_DevEnumStatus) {
       if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) != 0) {
-        if (sending == 0) {
-          int status = USBFS_Endp_DataUp(
-              DEF_UEP1, KB_Data_Pack, sizeof(KB_Data_Pack), DEF_UEP_CPY_LOAD);
-          sending = 1;
+        if (sending_kb == 0) {
+          USBFS_Endp_DataUp(DEF_UEP1, KB_Data_Pack, sizeof(KB_Data_Pack),
+                            DEF_UEP_CPY_LOAD);
+          sending_kb = 1;
         } else if (USBFS_Endp_Busy[DEF_UEP1] == 0) {
           memcpy(PREV_KB_Data_Pack, KB_Data_Pack, sizeof(KB_Data_Pack));
-          sending = 0;
+          sending_kb = 0;
+        }
+      }
+
+      if (memcmp(Consumer_Data_Pack, PREV_Consumer_Data_Pack,
+                 sizeof(Consumer_Data_Pack)) != 0) {
+        if (sending_consumer == 0) {
+          USBFS_Endp_DataUp(DEF_UEP3, Consumer_Data_Pack,
+                            sizeof(Consumer_Data_Pack), DEF_UEP_CPY_LOAD);
+          sending_consumer = 1;
+        } else if (USBFS_Endp_Busy[DEF_UEP3] == 0) {
+          memcpy(PREV_Consumer_Data_Pack, Consumer_Data_Pack,
+                 sizeof(Consumer_Data_Pack));
+          sending_consumer = 0;
         }
       }
 
