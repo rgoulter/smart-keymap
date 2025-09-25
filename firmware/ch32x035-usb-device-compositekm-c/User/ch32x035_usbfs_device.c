@@ -43,8 +43,8 @@ volatile uint8_t USBFS_DevSleepStatus;
 volatile uint8_t USBFS_DevEnumStatus;
 
 /* HID Class Command */
-volatile uint8_t USBFS_HidIdle[2];
-volatile uint8_t USBFS_HidProtocol[2];
+volatile uint8_t USBFS_HidIdle[3];
+volatile uint8_t USBFS_HidProtocol[3];
 
 /* Endpoint Buffer */
 __attribute__((
@@ -53,6 +53,8 @@ __attribute__((
     aligned(4))) uint8_t USBFS_EP1_Buf[DEF_USB_EP1_FS_SIZE]; // ep1_in(64)
 __attribute__((
     aligned(4))) uint8_t USBFS_EP2_Buf[DEF_USB_EP2_FS_SIZE]; // ep2_in(64)
+__attribute__((
+    aligned(4))) uint8_t USBFS_EP3_Buf[DEF_USB_EP3_FS_SIZE]; // ep3_in(64)
 
 /* USB IN Endpoint Busy Flag */
 volatile uint8_t USBFS_Endp_Busy[DEF_UEP_NUM];
@@ -82,15 +84,17 @@ void USBFS_RCC_Init(void) {
  */
 void USBFS_Device_Endp_Init(void) {
   USBFSD->UEP4_1_MOD = USBFS_UEP1_TX_EN;
-  USBFSD->UEP2_3_MOD = USBFS_UEP2_TX_EN;
+  USBFSD->UEP2_3_MOD = USBFS_UEP2_TX_EN | USBFS_UEP3_TX_EN;
 
   USBFSD->UEP0_DMA = (uint32_t)USBFS_EP0_Buf;
   USBFSD->UEP1_DMA = (uint32_t)USBFS_EP1_Buf;
   USBFSD->UEP2_DMA = (uint32_t)USBFS_EP2_Buf;
+  USBFSD->UEP3_DMA = (uint32_t)USBFS_EP3_Buf;
 
   USBFSD->UEP0_CTRL_H = USBFS_UEP_R_RES_ACK | USBFS_UEP_T_RES_NAK;
   USBFSD->UEP1_CTRL_H = USBFS_UEP_T_RES_NAK;
   USBFSD->UEP2_CTRL_H = USBFS_UEP_T_RES_NAK;
+  USBFSD->UEP3_CTRL_H = USBFS_UEP_T_RES_NAK;
 
   /* Clear End-points Busy Status */
   for (uint8_t i = 0; i < DEF_UEP_NUM; i++) {
@@ -366,6 +370,14 @@ void USBFS_IRQHandler(void) {
         USBFS_Endp_Busy[DEF_UEP2] = 0;
         break;
 
+      /* end-point 3 data in interrupt */
+      case USBFS_UIS_TOKEN_IN | DEF_UEP3:
+        USBFSD->UEP3_CTRL_H =
+            (USBFSD->UEP3_CTRL_H & ~USBFS_UEP_T_RES_MASK) | USBFS_UEP_T_RES_NAK;
+        USBFSD->UEP3_CTRL_H ^= USBFS_UEP_T_TOG;
+        USBFS_Endp_Busy[DEF_UEP3] = 0;
+        break;
+
       default:
         break;
       }
@@ -430,6 +442,8 @@ void USBFS_IRQHandler(void) {
               USBFS_HidIdle[0] = (uint8_t)(USBFS_SetupReqValue >> 8);
             } else if (USBFS_SetupReqIndex == 0x01) {
               USBFS_HidIdle[1] = (uint8_t)(USBFS_SetupReqValue >> 8);
+            } else if (USBFS_SetupReqIndex == 0x02) {
+              USBFS_HidIdle[2] = (uint8_t)(USBFS_SetupReqValue >> 8);
             } else {
               errflag = 0xFF;
             }
@@ -440,6 +454,8 @@ void USBFS_IRQHandler(void) {
               USBFS_HidProtocol[0] = (uint8_t)USBFS_SetupReqValue;
             } else if (USBFS_SetupReqIndex == 0x01) {
               USBFS_HidProtocol[1] = (uint8_t)USBFS_SetupReqValue;
+            } else if (USBFS_SetupReqIndex == 0x02) {
+              USBFS_HidProtocol[2] = (uint8_t)USBFS_SetupReqValue;
             } else {
               errflag = 0xFF;
             }
@@ -452,6 +468,9 @@ void USBFS_IRQHandler(void) {
             } else if (USBFS_SetupReqIndex == 0x01) {
               USBFS_EP0_Buf[0] = USBFS_HidIdle[1];
               len = 1;
+            } else if (USBFS_SetupReqIndex == 0x02) {
+              USBFS_EP0_Buf[0] = USBFS_HidIdle[2];
+              len = 1;
             } else {
               errflag = 0xFF;
             }
@@ -463,6 +482,9 @@ void USBFS_IRQHandler(void) {
               len = 1;
             } else if (USBFS_SetupReqIndex == 0x01) {
               USBFS_EP0_Buf[0] = USBFS_HidProtocol[1];
+              len = 1;
+            } else if (USBFS_SetupReqIndex == 0x02) {
+              USBFS_EP0_Buf[0] = USBFS_HidProtocol[2];
               len = 1;
             } else {
               errflag = 0xFF;
@@ -500,6 +522,9 @@ void USBFS_IRQHandler(void) {
             } else if (USBFS_SetupReqIndex == 0x01) {
               pUSBFS_Descr = &MyCfgDescr[43];
               len = 9;
+            } else if (USBFS_SetupReqIndex == 0x02) {
+              pUSBFS_Descr = &MyCfgDescr[68];
+              len = 9;
             } else {
               errflag = 0xFF;
             }
@@ -513,6 +538,9 @@ void USBFS_IRQHandler(void) {
             } else if (USBFS_SetupReqIndex == 0x01) {
               pUSBFS_Descr = MouseRepDesc;
               len = DEF_USBD_REPORT_DESC_LEN_MS;
+            } else if (USBFS_SetupReqIndex == 0x02) {
+              pUSBFS_Descr = ConsumerRepDesc;
+              len = DEF_USBD_REPORT_DESC_LEN_CONSUMER;
             } else {
               errflag = 0xFF;
             }
@@ -613,6 +641,11 @@ void USBFS_IRQHandler(void) {
                 USBFSD->UEP2_CTRL_H = USBFS_UEP_T_RES_NAK;
                 break;
 
+              case (DEF_UEP_IN | DEF_UEP3):
+                /* Set End-point 3 IN NAK */
+                USBFSD->UEP3_CTRL_H = USBFS_UEP_T_RES_NAK;
+                break;
+
               default:
                 errflag = 0xFF;
                 break;
@@ -656,6 +689,12 @@ void USBFS_IRQHandler(void) {
               case (DEF_UEP_IN | DEF_UEP2):
                 USBFSD->UEP2_CTRL_H =
                     (USBFSD->UEP2_CTRL_H & ~USBFS_UEP_T_RES_MASK) |
+                    USBFS_UEP_T_RES_STALL;
+                break;
+
+              case (DEF_UEP_IN | DEF_UEP3):
+                USBFSD->UEP3_CTRL_H =
+                    (USBFSD->UEP3_CTRL_H & ~USBFS_UEP_T_RES_MASK) |
                     USBFS_UEP_T_RES_STALL;
                 break;
 
@@ -705,6 +744,12 @@ void USBFS_IRQHandler(void) {
             } else if ((uint8_t)(USBFS_SetupReqIndex & 0xFF) ==
                        (DEF_UEP_IN | DEF_UEP2)) {
               if ((USBFSD->UEP2_CTRL_H & USBFS_UEP_T_RES_MASK) ==
+                  USBFS_UEP_T_RES_STALL) {
+                USBFS_EP0_Buf[0] = 0x01;
+              }
+            } else if ((uint8_t)(USBFS_SetupReqIndex & 0xFF) ==
+                       (DEF_UEP_IN | DEF_UEP3)) {
+              if ((USBFSD->UEP3_CTRL_H & USBFS_UEP_T_RES_MASK) ==
                   USBFS_UEP_T_RES_STALL) {
                 USBFS_EP0_Buf[0] = 0x01;
               }
