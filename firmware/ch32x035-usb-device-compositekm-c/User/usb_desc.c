@@ -44,8 +44,8 @@ const uint8_t MyCfgDescr[ ] =
     /* Configuration Descriptor */
     0x09,                                                   // bLength
     0x02,                                                   // bDescriptorType
-    0x3B, 0x00,                                             // wTotalLength
-    0x02,                                                   // bNumInterfaces
+    0x54, 0x00,                                             // wTotalLength
+    0x03,                                                   // bNumInterfaces
     0x01,                                                   // bConfigurationValue
     0x00,                                                   // iConfiguration
     0xA0,                                                   // bmAttributes: Bus Powered; Remote Wakeup
@@ -105,7 +105,35 @@ const uint8_t MyCfgDescr[ ] =
     0x82,                                                   // bEndpointAddress: IN Endpoint 2
     0x03,                                                   // bmAttributes
     0x08, 0x00,                                             // wMaxPacketSize
-    0x01                                                    // bInterval: 1mS
+    0x01,                                                    // bInterval: 1mS
+
+    /* Interface Descriptor (Consumer) */
+    0x09,                                                   // bLength
+    0x04,                                                   // bDescriptorType
+    0x02,                                                   // bInterfaceNumber
+    0x00,                                                   // bAlternateSetting
+    0x01,                                                   // bNumEndpoints
+    0x03,                                                   // bInterfaceClass
+    0x00,                                                   // bInterfaceSubClass
+    0x00,                                                   // bInterfaceProtocol
+    0x00,                                                   // iInterface
+
+    /* HID Descriptor (Consumer) */
+    0x09,                                                   // bLength
+    0x21,                                                   // bDescriptorType
+    0x11, 0x01,                                             // bcdHID
+    0x00,                                                   // bCountryCode
+    0x01,                                                   // bNumDescriptors
+    0x22,                                                   // bDescriptorType
+    0x17, 0x00,                // wDescriptorLength
+
+    /* Endpoint Descriptor (Consumer) */
+    0x07,                                                   // bLength
+    0x05,                                                   // bDescriptorType
+    0x83,                                                   // bEndpointAddress: IN Endpoint 3
+    0x03,                                                   // bmAttributes
+    0x04, 0x00,                                             // wMaxPacketSize
+    0x0A                                                    // bInterval: 10mS
 };
 // clang-format on
 
@@ -144,6 +172,24 @@ const uint8_t KeyRepDesc[ ] =
     0x29, 0x91,                                             // Usage Maximum (145)
     0x81, 0x00,                                             // Input(Data,Array,Absolute)
     0xC0                                                    // End Collection
+};
+// clang-format on
+
+// clang-format off
+/* Consumer Report Descriptor */
+const uint8_t ConsumerRepDesc[ ] =
+{
+    0x05, 0x0C,        // Usage Page (Consumer)
+    0x09, 0x01,        // Usage (Consumer Control)
+    0xA1, 0x01,        // Collection (Application)
+    0x15, 0x00,        //   Logical Minimum (0)
+    0x26, 0xFF, 0x00,  //   Logical Maximum (255)
+    0x19, 0x00,        //   Usage Minimum (0)
+    0x2A, 0xFF, 0x00,  //   Usage Maximum (255)
+    0x75, 0x08,        //   Report Size (8)
+    0x95, 0x04,        //   Report Count (4)
+    0x81, 0x00,        //   Input (Data,Array,Absolute)
+    0xC0               // End Collection
 };
 // clang-format on
 

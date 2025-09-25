@@ -66,6 +66,7 @@
   ((uint16_t)MyCfgDescr[2] + ((uint16_t)MyCfgDescr[3] << 8))
 #define DEF_USBD_REPORT_DESC_LEN_KB 0x3E
 #define DEF_USBD_REPORT_DESC_LEN_MS 0x34
+#define DEF_USBD_REPORT_DESC_LEN_CONSUMER 0x17
 #define DEF_USBD_LANG_DESC_LEN ((uint16_t)MyLangDescr[0])
 #define DEF_USBD_MANU_DESC_LEN ((uint16_t)MyManuInfo[0])
 #define DEF_USBD_PROD_DESC_LEN ((uint16_t)MyProdInfo[0])
@@ -81,6 +82,7 @@ extern const uint8_t MyDevDescr[];
 extern const uint8_t MyCfgDescr[];
 extern const uint8_t KeyRepDesc[];
 extern const uint8_t MouseRepDesc[];
+extern const uint8_t ConsumerRepDesc[];
 extern const uint8_t MyQuaDesc[];
 extern const uint8_t MyLangDescr[];
 extern const uint8_t MyManuInfo[];
