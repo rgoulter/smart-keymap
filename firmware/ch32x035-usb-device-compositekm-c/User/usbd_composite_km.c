@@ -52,6 +52,8 @@ uint8_t Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN] = {
     0x00}; // Consumer IN Data Packet
 uint8_t PREV_Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN] = {
     0x00};                                  // Consumer IN Data Packet
+uint8_t Mouse_Data_Pack[4] = {0x00};        // Mouse IN Data Packet
+uint8_t PREV_Mouse_Data_Pack[4] = {0x00};   // Mouse IN Data Packet
 volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
 volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
@@ -117,11 +119,17 @@ void TIM3_IRQHandler(void) {
 
     if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0 &&
         memcmp(Consumer_Data_Pack, PREV_Consumer_Data_Pack,
-               sizeof(Consumer_Data_Pack)) == 0) {
+               sizeof(Consumer_Data_Pack)) == 0 &&
+        memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack,
+               sizeof(Mouse_Data_Pack)) == 0) {
       keymap_tick(&hid_report);
       memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
       memcpy(Consumer_Data_Pack, hid_report.consumer,
              sizeof(Consumer_Data_Pack));
+      Mouse_Data_Pack[0] = hid_report.mouse.pressed_buttons;
+      Mouse_Data_Pack[1] = hid_report.mouse.x;
+      Mouse_Data_Pack[2] = hid_report.mouse.y;
+      Mouse_Data_Pack[3] = hid_report.mouse.vertical_scroll;
     }
 
     /* Clear interrupt flag */

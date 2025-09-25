@@ -36,6 +36,8 @@ extern uint8_t KB_Data_Pack[8];
 extern uint8_t PREV_KB_Data_Pack[8];
 extern uint8_t Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN];
 extern uint8_t PREV_Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN];
+extern uint8_t Mouse_Data_Pack[4];
+extern uint8_t PREV_Mouse_Data_Pack[4];
 
 /*********************************************************************
  * @fn      main
@@ -63,6 +65,7 @@ int main(void) {
   printf("TIM3 Init OK!\r\n");
 
   static uint8_t sending_kb = 0;
+  static uint8_t sending_mouse = 0;
   static uint8_t sending_consumer = 0;
 
   /* Usb Init */
@@ -79,6 +82,19 @@ int main(void) {
         } else if (USBFS_Endp_Busy[DEF_UEP1] == 0) {
           memcpy(PREV_KB_Data_Pack, KB_Data_Pack, sizeof(KB_Data_Pack));
           sending_kb = 0;
+        }
+      }
+
+      if (memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack,
+                 sizeof(Mouse_Data_Pack)) != 0) {
+        if (sending_mouse == 0) {
+          USBFS_Endp_DataUp(DEF_UEP2, Mouse_Data_Pack, sizeof(Mouse_Data_Pack),
+                            DEF_UEP_CPY_LOAD);
+          sending_mouse = 1;
+        } else if (USBFS_Endp_Busy[DEF_UEP2] == 0) {
+          memcpy(PREV_Mouse_Data_Pack, Mouse_Data_Pack,
+                 sizeof(Mouse_Data_Pack));
+          sending_mouse = 0;
         }
       }
 
