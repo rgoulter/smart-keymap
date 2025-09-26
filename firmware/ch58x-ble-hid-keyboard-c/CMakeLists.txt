@@ -25,6 +25,7 @@ add_subdirectory(generated)
 target_link_libraries(HID_Keyboard keyboard_codegen)
 
 add_subdirectory(sdk sdk)
+target_compile_definitions(sdk INTERFACE DEBUG Debug_UART1)
 
 target_link_libraries(HID_Keyboard sdk)
 
