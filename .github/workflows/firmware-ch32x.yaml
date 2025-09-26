@@ -15,6 +15,8 @@ on:
       - 'ncl/**/*.ncl'
       - 'src/**'
       - 'smart_keymap/**'
+      - 'tests/ncl/keymap-36key-rgoulter/**'
+      - 'tests/ncl/keymap-48key-rgoulter/**'
       - 'firmware/ch32x035-usb-device-compositekm-c/**'
   pull_request:
     branches:
