@@ -25,6 +25,7 @@ use usbd_hid::descriptor::{
 use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
 use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
 use keyberon_smart_keyboard::input::MatrixScanner;
+use keyberon_smart_keyboard::smart_keymap::key;
 use keyberon_smart_keyboard::split::BackendMessage;
 
 use smart_keymap::input::Event;
@@ -330,11 +331,7 @@ async fn main(spawner: Spawner) {
     };
 
     spawner
-        .spawn(keyboard_backend(
-            writer_kbd,
-            writer_mouse,
-            writer_consumer,
-        ))
+        .spawn(keyboard_backend(writer_kbd, writer_mouse, writer_consumer))
         .unwrap();
     spawner
         .spawn(keyboard_matrix_scan(matrix_scan_sender, keyboard))
@@ -393,12 +390,7 @@ async fn keyboard_backend(
                     wheel: mouse_output.vertical_scroll,
                     pan: mouse_output.horizontal_scroll,
                 };
-                if mouse_report.buttons != last_mouse_report.buttons
-                    || mouse_report.x != last_mouse_report.x
-                    || mouse_report.y != last_mouse_report.y
-                    || mouse_report.wheel != last_mouse_report.wheel
-                    || mouse_report.pan != last_mouse_report.pan
-                {
+                if mouse_report != last_mouse_report || mouse_output != key::MouseOutput::NO_OUTPUT {
                     let buf = [
                         mouse_report.buttons,
                         mouse_report.x as u8,

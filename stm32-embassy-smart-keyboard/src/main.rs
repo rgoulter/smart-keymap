@@ -21,6 +21,7 @@ use {defmt_rtt as _, panic_probe as _};
 
 use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
 use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
+use keyberon_smart_keyboard::smart_keymap::key;
 
 use board::KEYMAP_INDICES;
 
@@ -228,12 +229,7 @@ async fn main(_spawner: Spawner) {
                 wheel: mouse_output.vertical_scroll,
                 pan: mouse_output.horizontal_scroll,
             };
-            if mouse_report.buttons != last_mouse_report.buttons
-                || mouse_report.x != last_mouse_report.x
-                || mouse_report.y != last_mouse_report.y
-                || mouse_report.wheel != last_mouse_report.wheel
-                || mouse_report.pan != last_mouse_report.pan
-            {
+            if mouse_report != last_mouse_report || mouse_output != key::MouseOutput::NO_OUTPUT {
                 let buf = [
                     mouse_report.buttons,
                     mouse_report.x as u8,
