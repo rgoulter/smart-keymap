@@ -319,7 +319,7 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
     return (events ^ START_PHY_UPDATE_EVT);
   }
 
-  if (events & START_REPORT_EVT) {
+  if (events & START_KEYMAP_TICK_EVT) {
     // SmartKeymap
 
     keyboard_matrix_scan();
@@ -330,8 +330,8 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
                                   HID_KEYBOARD_IN_RPT_LEN, (unsigned char *)&hid_report.keyboard);
 
     // 13 * 625 microseconds = 8.125ms, approx 125Hz
-    tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 13);
-    return (events ^ START_REPORT_EVT);
+    tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 13);
+    return (events ^ START_KEYMAP_TICK_EVT);
   }
   return 0;
 }
@@ -502,7 +502,7 @@ static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
   }
   // notifications enabled
   else if (oper == HID_DEV_OPER_ENABLE) {
-    tmos_start_task(hidEmuTaskId, START_REPORT_EVT, 500);
+    tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 500);
   }
   return status;
 }
