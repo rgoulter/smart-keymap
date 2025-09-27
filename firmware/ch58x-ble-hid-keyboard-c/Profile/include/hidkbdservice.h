@@ -27,7 +27,7 @@ extern "C" {
  */
 
 // Number of HID reports defined in the service
-#define HID_NUM_REPORTS 7
+#define HID_NUM_REPORTS 8
 
 // HID Report IDs for the service
 #define HID_RPT_ID_KEY_IN 1      // Keyboard input report ID
