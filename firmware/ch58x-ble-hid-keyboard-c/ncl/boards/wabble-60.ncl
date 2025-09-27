@@ -2,6 +2,8 @@
   gpio_pins,
 
   board = {
+    debug.tx = 1,
+
     matrix
       | {
         cols | Array { port | String, pin | Number },
