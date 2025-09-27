@@ -60,7 +60,9 @@ mod app {
 
     use rtt_target::{rprintln, rtt_init_print};
     use usb_device::bus::UsbBusAllocator;
+    use usbd_human_interface_device::device::consumer::{ConsumerControl, MultipleConsumerReport};
     use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
+    use usbd_human_interface_device::page::Consumer;
     use usbd_human_interface_device::UsbHidError;
 
     use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
@@ -85,6 +87,7 @@ mod app {
         backend: KeyboardBackend,
         report_success: bool,
         timer: timer::CounterUs<pac::TIM3>,
+        previous_consumer: MultipleConsumerReport,
     }
 
     #[init(local = [
@@ -138,6 +141,9 @@ mod app {
                 keyboard,
                 backend,
                 report_success: true,
+                previous_consumer: MultipleConsumerReport {
+                    codes: [Consumer::Unassigned; 4],
+                },
             },
             init::Monotonics(),
         )
@@ -155,7 +161,7 @@ mod app {
         (usb_dev, usb_class).lock(usb_poll);
     }
 
-    #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [keyboard, backend, report_success, timer])]
+    #[task(binds = TIM3, priority = 1, shared = [usb_class], local = [keyboard, backend, report_success, timer, previous_consumer])]
     fn tick(c: tick::Context) {
         let tick::SharedResources { mut usb_class } = c.shared;
         let tick::LocalResources {
@@ -163,6 +169,7 @@ mod app {
             backend,
             report_success,
             timer,
+            previous_consumer,
         } = c.local;
 
         timer.start(1.millis()).ok();
@@ -190,6 +197,32 @@ mod app {
                 Err(UsbHidError::SerializationError) => panic!(),
                 Err(UsbHidError::Duplicate) => *report_success = true,
                 Ok(_) => *report_success = true,
+            }
+
+            let consumer_report: MultipleConsumerReport = {
+                MultipleConsumerReport {
+                    codes: backend
+                        .keymap_output()
+                        .pressed_consumer_codes()
+                        .iter()
+                        .map(|&c| (c as u16).into())
+                        .chain(core::iter::repeat(Consumer::Unassigned))
+                        .take(4)
+                        .collect::<heapless::Vec<_, 4>>()
+                        .into_array()
+                        .unwrap(),
+                }
+            };
+            if consumer_report != *previous_consumer {
+                let res = {
+                    k.device::<ConsumerControl<'_, _>, _>()
+                        .write_report(&consumer_report)
+                };
+                match res {
+                    Err(UsbError::WouldBlock) => {}
+                    Err(_) => panic!(),
+                    Ok(_) => *previous_consumer = consumer_report,
+                }
             }
         });
     }

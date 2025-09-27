@@ -11,5 +11,7 @@ pub use hal::{
     timer::TimerExt,
 };
 
+pub use usb_device::prelude::*;
+
 pub use crate::app_init;
 pub use crate::common::{usb_poll, UsbClass, UsbDevice, VID};
