@@ -326,12 +326,19 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
 
     keymap_tick(&hid_report);
 
-    report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
-                                  HID_KEYBOARD_IN_RPT_LEN, (unsigned char *)&hid_report.keyboard);
+    tmos_start_task(hidEmuTaskId, REPORT_KEYBOARD_EVT, 1);
 
     // 13 * 625 microseconds = 8.125ms, approx 125Hz
     tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 13);
     return (events ^ START_KEYMAP_TICK_EVT);
+  }
+  if (events & REPORT_KEYBOARD_EVT) {
+    // SmartKeymap
+    report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
+                                  HID_KEYBOARD_IN_RPT_LEN,
+                                  (unsigned char *)&hid_report.keyboard);
+
+    return (events ^ REPORT_KEYBOARD_EVT);
   }
   return 0;
 }

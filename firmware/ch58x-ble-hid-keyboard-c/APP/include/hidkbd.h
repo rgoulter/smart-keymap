@@ -31,6 +31,9 @@ extern "C" {
 #define START_PARAM_UPDATE_EVT 0x0002
 #define START_PHY_UPDATE_EVT 0x0004
 #define START_KEYMAP_TICK_EVT 0x0008
+#define REPORT_KEYBOARD_EVT 0x0010
+#define REPORT_MOUSE_EVT 0x0020
+#define REPORT_CONSUMER_EVT 0x0040
 /*********************************************************************
  * MACROS
  */
