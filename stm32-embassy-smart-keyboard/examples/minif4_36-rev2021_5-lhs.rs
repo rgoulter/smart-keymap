@@ -18,7 +18,9 @@ use embassy_usb::control::OutResponse;
 use embassy_usb::Builder;
 use panic_halt as _;
 use static_cell::StaticCell;
-use usbd_hid::descriptor::{KeyboardReport, SerializedDescriptor};
+use usbd_hid::descriptor::{
+    KeyboardReport, MediaKeyboardReport, MouseReport, SerializedDescriptor,
+};
 
 use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
 use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
@@ -50,6 +52,8 @@ static MS_OS_DESCRIPTOR: StaticCell<[u8; 256]> = StaticCell::new();
 static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
 
 static HID_STATE: StaticCell<State> = StaticCell::new();
+static HID_STATE_MOUSE: StaticCell<State> = StaticCell::new();
+static HID_STATE_CONSUMER: StaticCell<State> = StaticCell::new();
 
 static KEYBOARD_BACKEND: StaticCell<KeyboardBackend> = StaticCell::new();
 
@@ -241,9 +245,9 @@ async fn main(spawner: Spawner) {
     let ms_os_descriptor = MS_OS_DESCRIPTOR.init([0; 256]);
     let control_buf = CONTROL_BUF.init([0; 64]);
 
-    let mut request_handler = MyRequestHandler {};
-
-    let state = HID_STATE.init(State::new());
+    let state_kbd = HID_STATE.init(State::new());
+    let state_mouse = HID_STATE_MOUSE.init(State::new());
+    let state_consumer = HID_STATE_CONSUMER.init(State::new());
 
     let mut builder = Builder::new(
         driver,
@@ -260,17 +264,32 @@ async fn main(spawner: Spawner) {
         poll_ms: 1,
         max_packet_size: 8,
     };
+    let hid_kbd = HidReaderWriter::<_, 1, 8>::new(&mut builder, state_kbd, config);
 
-    let hid = HidReaderWriter::<_, 1, 8>::new(&mut builder, state, config);
+    let config_mouse = embassy_usb::class::hid::Config {
+        report_descriptor: MouseReport::desc(),
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: 8,
+    };
+    let hid_mouse = HidReaderWriter::<_, 1, 8>::new(&mut builder, state_mouse, config_mouse);
+
+    let config_consumer = embassy_usb::class::hid::Config {
+        report_descriptor: MediaKeyboardReport::desc(),
+        request_handler: None,
+        poll_ms: 1,
+        max_packet_size: 2,
+    };
+    let hid_consumer =
+        HidReaderWriter::<_, 1, 2>::new(&mut builder, state_consumer, config_consumer);
 
     let mut usb = builder.build();
 
     let usb_fut = usb.run();
 
-    let (reader, writer): (
-        HidReader<'static, Driver<'static, _>, 1>,
-        HidWriter<'static, Driver<'static, _>, 8>,
-    ) = hid.split();
+    let (reader_kbd, writer_kbd) = hid_kbd.split();
+    let (reader_mouse, writer_mouse) = hid_mouse.split();
+    let (reader_consumer, writer_consumer) = hid_consumer.split();
 
     let mut keyboard = board::keyboard!(p);
 
@@ -297,10 +316,26 @@ async fn main(spawner: Spawner) {
     .unwrap();
 
     let out_fut = async {
-        reader.run(false, &mut request_handler).await;
+        let mut rh_kbd = MyRequestHandler {};
+        let mut rh_mouse = MyRequestHandler {};
+        let mut rh_consumer = MyRequestHandler {};
+        join(
+            reader_kbd.run(false, &mut rh_kbd),
+            join(
+                reader_mouse.run(false, &mut rh_mouse),
+                reader_consumer.run(false, &mut rh_consumer),
+            ),
+        )
+        .await;
     };
 
-    spawner.spawn(keyboard_backend(writer)).unwrap();
+    spawner
+        .spawn(keyboard_backend(
+            writer_kbd,
+            writer_mouse,
+            writer_consumer,
+        ))
+        .unwrap();
     spawner
         .spawn(keyboard_matrix_scan(matrix_scan_sender, keyboard))
         .unwrap();
@@ -313,11 +348,22 @@ async fn main(spawner: Spawner) {
 
 #[embassy_executor::task]
 async fn keyboard_backend(
-    mut writer: HidWriter<'static, Driver<'static, peripherals::USB_OTG_FS>, 8>,
+    mut writer_kbd: HidWriter<'static, Driver<'static, peripherals::USB_OTG_FS>, 8>,
+    mut writer_mouse: HidWriter<'static, Driver<'static, peripherals::USB_OTG_FS>, 8>,
+    mut writer_consumer: HidWriter<'static, Driver<'static, peripherals::USB_OTG_FS>, 2>,
 ) {
     let backend = KEYBOARD_BACKEND.init(KeyboardBackend::new());
 
     let mut report_success = true;
+
+    let mut last_mouse_report = MouseReport {
+        buttons: 0,
+        x: 0,
+        y: 0,
+        wheel: 0,
+        pan: 0,
+    };
+    let mut last_consumer_report = MediaKeyboardReport { usage_id: 0 };
 
     loop {
         match BACKEND_CHANNEL.receive().await {
@@ -330,7 +376,7 @@ async fn keyboard_backend(
                 }
 
                 let report = backend.keymap_output().as_hid_boot_keyboard_report();
-                match writer.write(&report).await {
+                match writer_kbd.write(&report).await {
                     Ok(()) => {
                         report_success = true;
                     }
@@ -338,6 +384,48 @@ async fn keyboard_backend(
                         report_success = false;
                     }
                 };
+
+                let mouse_output = backend.keymap_output().pressed_mouse_output();
+                let mouse_report = MouseReport {
+                    buttons: mouse_output.pressed_buttons,
+                    x: mouse_output.x,
+                    y: mouse_output.y,
+                    wheel: mouse_output.vertical_scroll,
+                    pan: mouse_output.horizontal_scroll,
+                };
+                if mouse_report.buttons != last_mouse_report.buttons
+                    || mouse_report.x != last_mouse_report.x
+                    || mouse_report.y != last_mouse_report.y
+                    || mouse_report.wheel != last_mouse_report.wheel
+                    || mouse_report.pan != last_mouse_report.pan
+                {
+                    let buf = [
+                        mouse_report.buttons,
+                        mouse_report.x as u8,
+                        mouse_report.y as u8,
+                        mouse_report.wheel as u8,
+                        mouse_report.pan as u8,
+                    ];
+                    if writer_mouse.write(&buf).await.is_ok() {
+                        last_mouse_report = mouse_report;
+                    }
+                }
+
+                let consumer_code = backend
+                    .keymap_output()
+                    .pressed_consumer_codes()
+                    .get(0)
+                    .copied()
+                    .unwrap_or(0);
+                let consumer_report = MediaKeyboardReport {
+                    usage_id: consumer_code as u16,
+                };
+                if consumer_report.usage_id != last_consumer_report.usage_id {
+                    let buf = consumer_report.usage_id.to_le_bytes();
+                    if writer_consumer.write(&buf).await.is_ok() {
+                        last_consumer_report = consumer_report;
+                    }
+                }
             }
         }
     }
