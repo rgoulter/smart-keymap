@@ -82,6 +82,7 @@ mod app {
     use usb_device::UsbError;
     use usbd_human_interface_device::device::consumer::{ConsumerControl, MultipleConsumerReport};
     use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
+    use usbd_human_interface_device::device::mouse::{WheelMouse, WheelMouseReport};
     use usbd_human_interface_device::page::Consumer;
     use usbd_human_interface_device::UsbHidError;
 
@@ -265,6 +266,18 @@ mod app {
                             Ok(_) => *previous_consumer = consumer_report,
                         }
                     }
+
+                    let mouse_output = backend.keymap_output().pressed_mouse_output();
+                    let mouse_report = WheelMouseReport {
+                        buttons: mouse_output.pressed_buttons,
+                        x: mouse_output.x,
+                        y: mouse_output.y,
+                        vertical_wheel: mouse_output.vertical_scroll,
+                        horizontal_wheel: mouse_output.horizontal_scroll,
+                    };
+                    let _res = k
+                        .device::<WheelMouse<'_, _>, _>()
+                        .write_report(&mouse_report);
                 });
             }
             BackendMessage::Event(event) => {
