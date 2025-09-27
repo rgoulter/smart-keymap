@@ -15,6 +15,7 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "CONFIG.h"
 
@@ -281,6 +282,7 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
   static uint8_t send_char = 0;
   static uint8_t report_status = SUCCESS;
   static KeymapHidReport hid_report = {0};
+  static KeymapHidReport previous_hid_report = {0};
 
   if (events & SYS_EVENT_MSG) {
     uint8_t *pMsg;
@@ -326,7 +328,10 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
 
     keymap_tick(&hid_report);
 
-    tmos_start_task(hidEmuTaskId, REPORT_KEYBOARD_EVT, 1);
+    if (memcmp(&hid_report.keyboard, &previous_hid_report.keyboard,
+               sizeof(hid_report.keyboard)) != 0) {
+      tmos_start_task(hidEmuTaskId, REPORT_KEYBOARD_EVT, 1);
+    }
 
     // 13 * 625 microseconds = 8.125ms, approx 125Hz
     tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 13);
@@ -337,6 +342,10 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
     report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
                                   HID_KEYBOARD_IN_RPT_LEN,
                                   (unsigned char *)&hid_report.keyboard);
+    if (report_status == SUCCESS) {
+      memcpy(&previous_hid_report.keyboard, &hid_report.keyboard,
+             sizeof(hid_report.keyboard));
+    }
 
     return (events ^ REPORT_KEYBOARD_EVT);
   }
