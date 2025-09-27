@@ -332,6 +332,19 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
                sizeof(hid_report.keyboard)) != 0) {
       tmos_start_task(hidEmuTaskId, REPORT_KEYBOARD_EVT, 1);
     }
+    if (memcmp(&hid_report.mouse, &previous_hid_report.mouse,
+               sizeof(hid_report.mouse)) != 0 ||
+        memcmp(&hid_report.mouse,
+               &(KeymapHidMouseReport){
+                   0,
+               },
+               sizeof(hid_report.mouse)) != 0) {
+      tmos_start_task(hidEmuTaskId, REPORT_MOUSE_EVT, 1);
+    }
+    if (memcmp(&hid_report.consumer, &previous_hid_report.consumer,
+               sizeof(hid_report.consumer)) != 0) {
+      tmos_start_task(hidEmuTaskId, REPORT_CONSUMER_EVT, 1);
+    }
 
     // 13 * 625 microseconds = 8.125ms, approx 125Hz
     tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 13);
@@ -348,6 +361,30 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
     }
 
     return (events ^ REPORT_KEYBOARD_EVT);
+  }
+  if (events & REPORT_MOUSE_EVT) {
+    // SmartKeymap
+    report_status = HidDev_Report(HID_RPT_ID_MOUSE_IN, HID_REPORT_TYPE_INPUT,
+                                  sizeof(hid_report.mouse),
+                                  (unsigned char *)&hid_report.mouse);
+    if (report_status == SUCCESS) {
+      memcpy(&previous_hid_report.mouse, &hid_report.mouse,
+             sizeof(hid_report.mouse));
+    }
+
+    return (events ^ REPORT_MOUSE_EVT);
+  }
+  if (events & REPORT_CONSUMER_EVT) {
+    // SmartKeymap
+    report_status = HidDev_Report(HID_RPT_ID_CONSUMER_IN, HID_REPORT_TYPE_INPUT,
+                                  sizeof(hid_report.consumer),
+                                  (unsigned char *)&hid_report.consumer);
+    if (report_status == SUCCESS) {
+      memcpy(&previous_hid_report.consumer, &hid_report.consumer,
+             sizeof(hid_report.consumer));
+    }
+
+    return (events ^ REPORT_CONSUMER_EVT);
   }
   return 0;
 }
