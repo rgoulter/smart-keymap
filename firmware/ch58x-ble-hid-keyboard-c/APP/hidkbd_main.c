@@ -63,7 +63,7 @@ int main(void) {
   GPIOA_ModeCfg(bTXD1, GPIO_ModeOut_PP_5mA);
   UART1_DefInit();
 #endif
-  PRINT("%s\n", VER_LIB);
+  PRINT("%s\r\n", VER_LIB);
   CH58X_BLEInit();
   HAL_Init();
   GAPRole_PeripheralInit();
