@@ -1,6 +1,6 @@
 [package]
 name = "stm32f4-rtic-smart-keyboard"
-version = "0.11.0"
+version = "0.12.0-dev"
 license = "MIT OR Apache-2.0"
 authors = ["Richard Goulter <richard.goulter@gmail.com>"]
 edition = "2021"
