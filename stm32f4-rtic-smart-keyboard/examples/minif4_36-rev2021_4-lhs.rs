@@ -79,7 +79,10 @@ mod app {
 
     use rtt_target::{rprintln, rtt_init_print};
     use usb_device::bus::UsbBusAllocator;
+    use usb_device::UsbError;
+    use usbd_human_interface_device::device::consumer::{ConsumerControl, MultipleConsumerReport};
     use usbd_human_interface_device::device::keyboard::NKROBootKeyboard;
+    use usbd_human_interface_device::page::Consumer;
     use usbd_human_interface_device::UsbHidError;
 
     use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
@@ -105,6 +108,7 @@ mod app {
         backend: KeyboardBackend,
         report_success: bool,
         timer: timer::CounterUs<pac::TIM3>,
+        previous_consumer: MultipleConsumerReport,
         split_conn_tx: TransportWriter,
         split_conn_rx: TransportReader,
     }
@@ -169,6 +173,9 @@ mod app {
                 keyboard,
                 backend,
                 report_success: true,
+                previous_consumer: MultipleConsumerReport {
+                    codes: [Consumer::Unassigned; 4],
+                },
                 split_conn_rx,
                 split_conn_tx,
             },
@@ -196,7 +203,7 @@ mod app {
         (usb_dev, usb_class).lock(usb_poll);
     }
 
-    #[task(priority = 3, capacity = 8, shared = [usb_class, usb_dev], local = [backend, report_success])]
+    #[task(priority = 3, capacity = 8, shared = [usb_class, usb_dev], local = [backend, report_success, previous_consumer])]
     fn layout(c: layout::Context, message: BackendMessage) {
         let layout::SharedResources {
             mut usb_class,
@@ -205,6 +212,7 @@ mod app {
         let layout::LocalResources {
             backend,
             report_success,
+            previous_consumer,
         } = c.local;
         match message {
             BackendMessage::Tick => {
@@ -230,6 +238,32 @@ mod app {
                         Err(UsbHidError::SerializationError) => panic!(),
                         Err(UsbHidError::Duplicate) => *report_success = true,
                         Ok(_) => *report_success = true,
+                    }
+
+                    let consumer_report: MultipleConsumerReport = {
+                        MultipleConsumerReport {
+                            codes: backend
+                                .keymap_output()
+                                .pressed_consumer_codes()
+                                .iter()
+                                .map(|&c| (c as u16).into())
+                                .chain(core::iter::repeat(Consumer::Unassigned))
+                                .take(4)
+                                .collect::<heapless::Vec<_, 4>>()
+                                .into_array()
+                                .unwrap(),
+                        }
+                    };
+                    if consumer_report != *previous_consumer {
+                        let res = {
+                            k.device::<ConsumerControl<'_, _>, _>()
+                                .write_report(&consumer_report)
+                        };
+                        match res {
+                            Err(UsbError::WouldBlock) => {}
+                            Err(_) => panic!(),
+                            Ok(_) => *previous_consumer = consumer_report,
+                        }
                     }
                 });
             }
