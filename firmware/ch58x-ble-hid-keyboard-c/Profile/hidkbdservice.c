@@ -94,6 +94,7 @@ static const uint8_t hidReportMap[] = {
     0x05, 0x01, // Usage Pg (Generic Desktop)
     0x09, 0x06, // Usage (Keyboard)
     0xA1, 0x01, // Collection: (Application)
+    0x85, HID_RPT_ID_KEY_IN, // Report ID (1)
                 //
     0x05, 0x07, // Usage Pg (Key Codes)
     0x19, 0xE0, // Usage Min (224)
