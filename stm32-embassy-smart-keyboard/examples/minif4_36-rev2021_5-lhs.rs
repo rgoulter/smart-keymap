@@ -390,7 +390,8 @@ async fn keyboard_backend(
                     wheel: mouse_output.vertical_scroll,
                     pan: mouse_output.horizontal_scroll,
                 };
-                if mouse_report != last_mouse_report || mouse_output != key::MouseOutput::NO_OUTPUT {
+                if mouse_report != last_mouse_report || mouse_output != key::MouseOutput::NO_OUTPUT
+                {
                     let buf = [
                         mouse_report.buttons,
                         mouse_report.x as u8,
