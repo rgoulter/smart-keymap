@@ -166,11 +166,15 @@ pub struct KeymapContext {
     pub idle_time_ms: u32,
 }
 
-/// Default keymap context.
-pub const DEFAULT_KEYMAP_CONTEXT: KeymapContext = KeymapContext {
-    time_ms: 0,
-    idle_time_ms: 0,
-};
+impl KeymapContext {
+    /// Constructs a new default keymap context.
+    pub const fn new() -> Self {
+        KeymapContext {
+            time_ms: 0,
+            idle_time_ms: 0,
+        }
+    }
+}
 
 /// Trait for setting the keymap context.
 pub trait SetKeymapContext {

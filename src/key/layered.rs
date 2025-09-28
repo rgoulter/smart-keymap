@@ -145,22 +145,19 @@ pub struct Context {
     active_layers: [bool; LAYER_COUNT],
 }
 
-/// The default [Context] with no active layers.
-pub const DEFAULT_CONTEXT: Context = Context {
-    default_layer: None,
-    active_layers: [false; LAYER_COUNT],
-};
-
 impl Context {
     /// Create a new [Context].
     pub const fn new() -> Self {
-        DEFAULT_CONTEXT
+        Context {
+            default_layer: None,
+            active_layers: [false; LAYER_COUNT],
+        }
     }
 }
 
 impl Default for Context {
     fn default() -> Self {
-        DEFAULT_CONTEXT
+        Self::new()
     }
 }
 

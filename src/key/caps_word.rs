@@ -17,10 +17,12 @@ pub struct Context {
     is_active: bool,
 }
 
-/// The default [Context].
-pub const DEFAULT_CONTEXT: Context = Context { is_active: false };
-
 impl Context {
+    /// Constructs a new [Context].
+    pub const fn new() -> Self {
+        Context { is_active: false }
+    }
+
     /// Updates the context with the given event.
     fn handle_event(&mut self, event: key::Event<Event>) -> key::KeyEvents<Event> {
         match event {
