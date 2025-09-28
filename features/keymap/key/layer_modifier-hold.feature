@@ -10,11 +10,6 @@ Feature: Layer Modifier: Hold
 
   Background:
 
-    Layers can be used by setting using the `layers` field
-     of a keymap.ncl.
-
-    Here, a keymap.ncl file with 2 keys, and 2 layers (base layer + 1 layer).
-
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
