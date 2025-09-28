@@ -81,17 +81,17 @@ impl ModifierKey {
     pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
         match self {
             ModifierKey::Hold(layer) => {
-                let pks = ModifierKeyState(*self);
+                let pks = ModifierKeyState;
                 let event = LayerEvent::LayerActivated(*layer);
                 (pks, event)
             }
             ModifierKey::SetActiveLayers(layer_set) => {
-                let pks = ModifierKeyState(*self);
+                let pks = ModifierKeyState;
                 let event = LayerEvent::LayersSet(*layer_set);
                 (pks, event)
             }
             ModifierKey::Default(layer) => {
-                let pks = ModifierKeyState(*self);
+                let pks = ModifierKeyState;
                 let event = LayerEvent::DefaultLayerSet(*layer);
                 (pks, event)
             }
@@ -358,7 +358,7 @@ pub struct PendingKeyState;
 
 /// [crate::key::KeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ModifierKeyState(ModifierKey);
+pub struct ModifierKeyState;
 
 impl ModifierKeyState {
     /// Handle the given event for the given key.
@@ -366,8 +366,8 @@ impl ModifierKeyState {
         &mut self,
         keymap_index: u16,
         event: key::Event<LayerEvent>,
+        key: &ModifierKey,
     ) -> Option<LayerEvent> {
-        let ModifierKeyState(key) = self;
         match key {
             ModifierKey::Hold(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
@@ -480,8 +480,9 @@ impl<
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
         match key_ref {
-            Ref::Modifier(_key_ref) => {
-                let maybe_ev = key_state.handle_event(keymap_index, event);
+            Ref::Modifier(mod_key_index) => {
+                let mod_key = &self.modifier_keys[*mod_key_index as usize];
+                let maybe_ev = key_state.handle_event(keymap_index, event, mod_key);
                 maybe_ev.map_or(key::KeyEvents::no_events(), |ev| {
                     key::KeyEvents::event(key::Event::key_event(keymap_index, ev))
                 })
@@ -535,6 +536,7 @@ mod tests {
             .handle_event(
                 keymap_index,
                 key::Event::Input(input::Event::Release { keymap_index }),
+                &key,
             )
             .into_iter()
             .next();
@@ -563,7 +565,7 @@ mod tests {
             keymap_index: different_keymap_index,
         });
         let actual_events = pressed_key_state
-            .handle_event(keymap_index, different_key_released_ev)
+            .handle_event(keymap_index, different_key_released_ev, &key)
             .into_iter()
             .next();
 
