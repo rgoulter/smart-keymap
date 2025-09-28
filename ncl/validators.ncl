@@ -58,6 +58,12 @@
     else
       'Error { message = "Expected %{std.to_string v} to be elem of %{std.serialize 'Json array}" },
 
+  is_greater_than = fun gt n =>
+    if n > gt then
+      'Ok
+    else
+      'Error { message = "Expected %{std.to_string n} to be greater than %{std.to_string gt}" },
+
   checks.all_of = {
     all_ok_is_ok = {
       expected = 'Ok,
