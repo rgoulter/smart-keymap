@@ -22,6 +22,7 @@ keymap_key_features=(
     "layer_modifier-default"
     "layer_modifier-hold"
     "layer_modifier-set_active_layers"
+    "mouse"
     "sticky_modifiers"
     "sticky_modifiers-config-release_on_next_press"
     "tap_dance"
