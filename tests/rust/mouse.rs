@@ -32,6 +32,7 @@ fn mouse_key() {
     assert_eq!([0u8; 8], report_output.as_hid_boot_keyboard_report());
 }
 
+#[test]
 fn mouse_key_cleared_when_released() {
     // Assemble
     let mut keymap = smart_keymap_macros::keymap!(
