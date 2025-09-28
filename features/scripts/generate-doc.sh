@@ -21,7 +21,8 @@ keymap_key_features=(
     "tap_hold-config-interrupt-tap"
     "tap_hold-config-required_idle_time"
     "layered"
-    "layers-set_layers_to"
+    "layer_modifier-set_active_layers"
+    "layer_modifier-default"
     "caps_word"
     "tap_dance"
     "sticky_modifiers"
@@ -30,7 +31,6 @@ keymap_key_features=(
 
 keymap_ncl_features=(
     "layers"
-    "layers-default"
     "layer_string"
     "chords"
 )
