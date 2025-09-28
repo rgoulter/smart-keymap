@@ -216,3 +216,13 @@ impl<R: Debug> key::System<R> for System<R> {
         panic!()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(0, core::mem::size_of::<Ref>());
+    }
+}

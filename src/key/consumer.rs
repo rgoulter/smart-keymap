@@ -96,3 +96,13 @@ impl<R: Debug> key::System<R> for System<R> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(1, core::mem::size_of::<Ref>());
+    }
+}

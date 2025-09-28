@@ -508,6 +508,11 @@ mod tests {
     use crate::key::System as _;
 
     #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(2, core::mem::size_of::<Ref>());
+    }
+
+    #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
         let layer = 1;
         let key = ModifierKey::Hold(layer);

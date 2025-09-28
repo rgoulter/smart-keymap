@@ -168,3 +168,13 @@ impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for Syst
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(2, core::mem::size_of::<Ref>());
+    }
+}
