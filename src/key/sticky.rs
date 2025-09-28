@@ -79,20 +79,14 @@ pub struct Context {
     pub pressed_keymap_index: Option<u16>,
 }
 
-/// The default [Context].
-pub const DEFAULT_CONTEXT: Context = Context {
-    config: DEFAULT_CONFIG,
-    active_modifiers: [key::KeyboardModifiers::NONE; MAX_STICKY_MODIFIERS as usize],
-    active_modifier_count: 0,
-    pressed_keymap_index: None,
-};
-
 impl Context {
     /// Constructs a context from the given config
     pub const fn from_config(config: Config) -> Context {
         Context {
             config,
-            ..DEFAULT_CONTEXT
+            active_modifiers: [key::KeyboardModifiers::NONE; MAX_STICKY_MODIFIERS as usize],
+            active_modifier_count: 0,
+            pressed_keymap_index: None,
         }
     }
 

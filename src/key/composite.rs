@@ -79,26 +79,17 @@ pub struct Context {
     tap_hold: key::tap_hold::Context,
 }
 
-/// The default context.
-pub const DEFAULT_CONTEXT: Context = Context {
-    keymap_context: keymap::DEFAULT_KEYMAP_CONTEXT,
-    caps_word: key::caps_word::DEFAULT_CONTEXT,
-    chorded: key::chorded::DEFAULT_CONTEXT,
-    layered: key::layered::DEFAULT_CONTEXT,
-    sticky: key::sticky::DEFAULT_CONTEXT,
-    tap_dance: key::tap_dance::DEFAULT_CONTEXT,
-    tap_hold: key::tap_hold::DEFAULT_CONTEXT,
-};
-
 impl Context {
     /// Constructs a [Context] from the given [Config].
     pub const fn from_config(config: Config) -> Self {
         Self {
+            keymap_context: keymap::KeymapContext::new(),
+            caps_word: key::caps_word::Context::new(),
             chorded: key::chorded::Context::from_config(config.chorded),
+            layered: key::layered::Context::new(),
             sticky: key::sticky::Context::from_config(config.sticky),
             tap_dance: key::tap_dance::Context::from_config(config.tap_dance),
             tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
-            ..DEFAULT_CONTEXT
         }
     }
 }
@@ -106,7 +97,7 @@ impl Context {
 impl Default for Context {
     /// Returns the default context.
     fn default() -> Self {
-        DEFAULT_CONTEXT
+        Self::from_config(DEFAULT_CONFIG)
     }
 }
 
