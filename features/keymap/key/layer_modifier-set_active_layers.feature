@@ -1,4 +1,4 @@
-Feature: Layers (Set Layers To)
+Feature: Layer Modifier: Set Active Layers To
 
   The `K.layer_mod.set_active_layers_to` key allows setting the active layers.
 
