@@ -13,26 +13,26 @@ NCL_DIR="${REPOSITORY_DIR}/ncl"
 KEYMAP_FEATURE_MD=""
 
 keymap_key_features=(
+    "caps_word"
     "keyboard"
+    "layered"
+    "layer_modifier-set_active_layers"
+    "layer_modifier-default"
+    "sticky_modifiers"
+    "sticky_modifiers-config-release_on_next_press"
+    "tap_dance"
     "tap_hold"
-    "tap_hold-config-timeout"
     "tap_hold-config-interrupt-ignore"
     "tap_hold-config-interrupt-presses"
     "tap_hold-config-interrupt-tap"
     "tap_hold-config-required_idle_time"
-    "layered"
-    "layer_modifier-set_active_layers"
-    "layer_modifier-default"
-    "caps_word"
-    "tap_dance"
-    "sticky_modifiers"
-    "sticky_modifiers-config-release_on_next_press"
+    "tap_hold-config-timeout"
 )
 
 keymap_ncl_features=(
-    "layers"
-    "layer_string"
     "chords"
+    "layer_string"
+    "layers"
 )
 
 KEY_FIELDS_MD="${NCL_DIR}/key-docs.md"
