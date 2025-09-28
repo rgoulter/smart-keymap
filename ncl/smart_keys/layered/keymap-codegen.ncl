@@ -66,9 +66,12 @@
 
   checks.layer_modifier_is = {
     # Use a json value to check the "is" predicate.
-    check_json_is =
+    check_json_is_hold =
       let json = { Hold = 0 } in
-      smart_keymap.layered.modifier_key.is_json json
+      smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_toggle =
+      let json = { Toggle = 1 } in
+      smart_keymap.layered.modifier_key.is_json json,
   },
 
   smart_keymap.layered
@@ -87,11 +90,12 @@
           validators.record.validator {
             fields_validator =
               validators.all_of [
-                validators.record.has_any_field_of ["Default", "Hold", "SetActiveLayers"],
-                validators.record.has_only_fields ["Default", "Hold", "SetActiveLayers"],
+                validators.record.has_any_field_of ["Default", "Hold", "SetActiveLayers", "Toggle"],
+                validators.record.has_only_fields ["Default", "Hold", "SetActiveLayers", "Toggle"],
               ],
             field_validators = {
               Hold = validators.is_number,
+              Toggle = validators.is_number,
               SetActiveLayers = validators.is_number,
             },
           },
@@ -116,6 +120,14 @@
                 include key_type,
                 variant = "Hold",
                 rust_expr = "%{module}::ModifierKey::hold(%{std.to_string layer_index})",
+              },
+            { Toggle = layer_index } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Toggle",
+                rust_expr = "%{module}::ModifierKey::toggle(%{std.to_string layer_index})",
               },
             { SetActiveLayers = active_layers_bitset } =>
               {
