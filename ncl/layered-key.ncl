@@ -21,6 +21,18 @@
 
   deactivate_layer = set_layer false,
 
+  toggle_layer = fun active_layers layer_idx =>
+    let idx = layer_idx - 1 in
+    let len = std.array.length active_layers in
+    if idx < len then
+      let is_active = std.array.at idx active_layers in
+      if is_active then
+        set_layer false active_layers layer_idx
+      else
+        set_layer true active_layers layer_idx
+    else
+      set_layer true active_layers layer_idx,
+
   update_layer_state_for_input = fun input layer_state @ { default_layer, active_layers } =>
     input
     |> match {
@@ -30,6 +42,9 @@
       'Release { layer_modifier = { hold }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = deactivate_layer al hold } & layer_state,
+      'Press { layer_modifier = { toggle }, .. } =>
+        let { active_layers = al, ..layer_state } = layer_state in
+        { active_layers = toggle_layer al toggle } & layer_state,
       'Press { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } =>
         let { active_layers, ..layer_state } = layer_state in
         let layer_count = std.array.length active_layers in
