@@ -2,6 +2,10 @@ Feature: Layer Modifier: Set Default Layer
 
   The `K.layer_mod.set_default` key allows setting the Default layer.
 
+  For examples of this feature in other smart keyboard firmware, see e.g.:
+
+  - [QMK's DF(layer)](https://docs.qmk.fm/feature_layers#switching-and-toggling-layers),
+
   Background:
 
     Given a keymap.ncl:
