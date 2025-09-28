@@ -1,4 +1,4 @@
-Feature: Consumer Keys (Media keys)
+Feature: Mouse Keys
 
   HID Mouse usage codes.
 
