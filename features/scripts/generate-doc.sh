@@ -15,6 +15,7 @@ KEYMAP_FEATURE_MD=""
 keymap_key_features=(
     "callback"
     "caps_word"
+    "consumer"
     "custom"
     "keyboard"
     "layered"
