@@ -35,13 +35,13 @@
 
         traverse = fun f acc cv => f acc cv,
 
-        data_and_ref = fun key_data cv @ { json, .. } =>
+        data_and_ref = fun key_data cv @ { json = { custom }, .. } =>
           {
             include key_data,
             ref = {
-              include json,
               include module,
-              rust_expr = "%{module}::Ref(%{json.custom |> std.to_string})",
+              json = custom,
+              rust_expr = "%{module}::Ref(%{custom |> std.to_string})",
             },
           },
       },
