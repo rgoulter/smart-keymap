@@ -1,4 +1,6 @@
-Feature: HID Keyboard Key
+Feature: Keyboard Key
+
+  HID Keyboard usage codes.
 
   Example: keyboard key
     Given a keymap.ncl:
