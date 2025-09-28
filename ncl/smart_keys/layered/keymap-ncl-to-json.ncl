@@ -13,6 +13,16 @@
         actual = K.layer_mod.hold 0 |> keymap_ncl.key.to_json_value,
         expected = { Hold = 0 },
       },
+
+      keymap_example_toggle = {
+        actual = K.layer_mod.toggle 1,
+        expected = { layer_modifier.toggle = 1 },
+      },
+
+      check_json_value_toggle = {
+        actual = K.layer_mod.toggle 1 |> keymap_ncl.key.to_json_value,
+        expected = { Toggle = 1 },
+      },
     },
 
   keymap_ncl.layer_modifier
@@ -25,8 +35,9 @@
         |> match {
           { layer_modifier = { default_ } } => validators.is_number default_,
           { layer_modifier = { hold } } => validators.is_number hold,
+          { layer_modifier = { toggle } } => validators.is_number toggle,
           { layer_modifier = { set_active_layers_to } } => (validators.array.validator validators.is_number) set_active_layers_to,
-          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } }" },
+          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
@@ -38,6 +49,8 @@
             { Default = default_layer },
           { layer_modifier = { hold = hold_layer } } =>
             { Hold = hold_layer },
+          { layer_modifier = { toggle = toggle_layer } } =>
+            { Toggle = toggle_layer },
           { layer_modifier = { set_active_layers_to = active_layers } } =>
             let active_layers_bitset =
               active_layers
@@ -45,7 +58,7 @@
               |> std.array.reduce_left (+)
             in
             { SetActiveLayers = active_layers_bitset },
-          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } }" },
+          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
         }
     },
 
