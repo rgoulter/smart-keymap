@@ -848,67 +848,67 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             Ref::Callback(key_ref) => {
                 let (pkr, pke) =
                     self.callback
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &key::callback::Context, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::CapsWord(key_ref) => {
                 let (pkr, pke) =
                     self.caps_word
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &context.caps_word, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Chorded(key_ref) => {
                 let (pkr, pke) =
                     self.chorded
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &context.chorded, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Consumer(key_ref) => {
                 let (pkr, pke) =
                     self.consumer
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &key::consumer::Context, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Custom(key_ref) => {
-                let (pkr, pke) = self
-                    .custom
-                    .new_pressed_key(keymap_index, context.into(), key_ref);
+                let (pkr, pke) =
+                    self.custom
+                        .new_pressed_key(keymap_index, &key::custom::Context, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Keyboard(key_ref) => {
                 let (pkr, pke) =
                     self.keyboard
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &key::keyboard::Context, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Layered(key_ref) => {
                 let (pkr, pke) =
                     self.layered
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &context.layered, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Mouse(key_ref) => {
-                let (pkr, pke) = self
-                    .mouse
-                    .new_pressed_key(keymap_index, context.into(), key_ref);
+                let (pkr, pke) =
+                    self.mouse
+                        .new_pressed_key(keymap_index, &key::mouse::Context, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Sticky(key_ref) => {
-                let (pkr, pke) = self
-                    .sticky
-                    .new_pressed_key(keymap_index, context.into(), key_ref);
+                let (pkr, pke) =
+                    self.sticky
+                        .new_pressed_key(keymap_index, &context.sticky, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::TapDance(key_ref) => {
                 let (pkr, pke) =
                     self.tap_dance
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &context.tap_dance, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::TapHold(key_ref) => {
                 let (pkr, pke) =
                     self.tap_hold
-                        .new_pressed_key(keymap_index, context.into(), key_ref);
+                        .new_pressed_key(keymap_index, &context.tap_hold, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
         }
@@ -928,7 +928,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let (maybe_npk, pke) = self.chorded.update_pending_state(
                         pending_state,
                         keymap_index,
-                        context.into(),
+                        &context.chorded,
                         key_ref,
                         event,
                     );
@@ -942,7 +942,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let (maybe_npk, pke) = self.tap_dance.update_pending_state(
                         pending_state,
                         keymap_index,
-                        context.into(),
+                        &context.tap_dance,
                         key_ref,
                         event,
                     );
@@ -956,7 +956,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let (maybe_npk, pke) = self.tap_hold.update_pending_state(
                         pending_state,
                         keymap_index,
-                        context.into(),
+                        &context.tap_hold,
                         key_ref,
                         event,
                     );
@@ -983,7 +983,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let pke = self.consumer.update_state(
                         key_state,
                         key_ref,
-                        context.into(),
+                        &key::consumer::Context,
                         keymap_index,
                         event,
                     );
@@ -997,7 +997,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let pke = self.keyboard.update_state(
                         key_state,
                         key_ref,
-                        context.into(),
+                        &key::keyboard::Context,
                         keymap_index,
                         event,
                     );
@@ -1011,7 +1011,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let pke = self.layered.update_state(
                         key_state,
                         key_ref,
-                        context.into(),
+                        &context.layered,
                         keymap_index,
                         event,
                     );
@@ -1025,7 +1025,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let pke = self.sticky.update_state(
                         key_state,
                         key_ref,
-                        context.into(),
+                        &context.sticky,
                         keymap_index,
                         event,
                     );
