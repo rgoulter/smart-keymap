@@ -1,4 +1,4 @@
-Feature: Layers (Default Layer)
+Feature: Layer Modifier: Set Default Layer
 
   The `K.layer_mod.set_default` key allows setting the Default layer.
 
