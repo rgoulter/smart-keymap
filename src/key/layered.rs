@@ -80,21 +80,11 @@ impl ModifierKey {
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
     pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
         match self {
-            ModifierKey::Hold(layer) => {
-                let pks = ModifierKeyState;
-                let event = LayerEvent::LayerActivated(*layer);
-                (pks, event)
-            }
+            ModifierKey::Hold(layer) => (ModifierKeyState, LayerEvent::LayerActivated(*layer)),
             ModifierKey::SetActiveLayers(layer_set) => {
-                let pks = ModifierKeyState;
-                let event = LayerEvent::LayersSet(*layer_set);
-                (pks, event)
+                (ModifierKeyState, LayerEvent::LayersSet(*layer_set))
             }
-            ModifierKey::Default(layer) => {
-                let pks = ModifierKeyState;
-                let event = LayerEvent::DefaultLayerSet(*layer);
-                (pks, event)
-            }
+            ModifierKey::Default(layer) => (ModifierKeyState, LayerEvent::DefaultLayerSet(*layer)),
         }
     }
 }
