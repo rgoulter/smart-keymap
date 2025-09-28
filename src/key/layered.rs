@@ -33,6 +33,8 @@ pub enum Ref {
 pub enum ModifierKey {
     /// Activates the given layer when the held.
     Hold(LayerIndex),
+    /// Toggles whether the given layer is active when pressed.
+    Toggle(LayerIndex),
     /// Sets the set of active layers to the given layers when the key is pressed.
     SetActiveLayers(LayerBitset),
     /// Sets the default layer.
@@ -43,6 +45,11 @@ impl ModifierKey {
     /// Create a new [ModifierKey] that activates the given layer when held.
     pub const fn hold(layer: LayerIndex) -> Self {
         ModifierKey::Hold(layer)
+    }
+
+    /// Create a new [ModifierKey] that toggles the given layer.
+    pub const fn toggle(layer: LayerIndex) -> Self {
+        ModifierKey::Toggle(layer)
     }
 
     /// Create a new [ModifierKey] that sets the active layers to the given slice of layers when pressed.
@@ -81,6 +88,7 @@ impl ModifierKey {
     pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
         match self {
             ModifierKey::Hold(layer) => (ModifierKeyState, LayerEvent::LayerActivated(*layer)),
+            ModifierKey::Toggle(layer) => (ModifierKeyState, LayerEvent::LayerToggled(*layer)),
             ModifierKey::SetActiveLayers(layer_set) => {
                 (ModifierKeyState, LayerEvent::LayersSet(*layer_set))
             }
@@ -175,6 +183,13 @@ impl Context {
             }
             LayerEvent::LayerDeactivated(layer) => {
                 self.active_layers.deactivate(layer);
+            }
+            LayerEvent::LayerToggled(layer) => {
+                if self.active_layers[layer - 1] {
+                    self.active_layers.deactivate(layer);
+                } else {
+                    self.active_layers.activate(layer);
+                }
             }
             LayerEvent::LayersSet(layer_set) => {
                 let max_layer = LAYER_COUNT.min(MAX_BITSET_LAYER + 1);
@@ -336,6 +351,8 @@ pub enum LayerEvent {
     LayerActivated(LayerIndex),
     /// Deactivates the given layer.
     LayerDeactivated(LayerIndex),
+    /// Toggles the given layer.
+    LayerToggled(LayerIndex),
     /// Sets the active layers to the given set of layers.
     LayersSet(LayerBitset),
     /// Changes the default layer.
@@ -369,6 +386,7 @@ impl ModifierKeyState {
                 }
                 _ => None,
             },
+            ModifierKey::Toggle(_) => None,
             ModifierKey::SetActiveLayers(_layer_set) => None,
             ModifierKey::Default(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
@@ -690,5 +708,19 @@ mod tests {
         let expected_active_layers: Vec<LayerIndex> = vec![4, 2, 1];
 
         assert_eq!(expected_active_layers, actual_active_layers);
+    }
+
+    #[test]
+    fn test_pressing_toggle_modifier_key_emits_event_layer_toggled() {
+        // Assemble
+        let layer = 1;
+        let key = ModifierKey::Toggle(layer);
+        let context = Context::default(); // layer 1 is inactive
+
+        // Act
+        let (_pressed_key, layer_event) = key.new_pressed_key();
+
+        // Assert
+        assert_eq!(LayerEvent::LayerToggled(layer), layer_event);
     }
 }
