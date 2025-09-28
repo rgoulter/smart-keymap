@@ -814,6 +814,11 @@ mod tests {
     use key::keyboard;
 
     #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(2, core::mem::size_of::<Ref>());
+    }
+
+    #[test]
     fn test_timeout_resolves_unsatisfied_aux_state_as_passthrough_key() {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = DEFAULT_CONTEXT;

@@ -149,3 +149,13 @@ impl<R: Debug> key::System<R> for System<R> {
         Some(key::KeyOutput::from_mouse_output(mouse_output))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(2, core::mem::size_of::<Ref>());
+    }
+}

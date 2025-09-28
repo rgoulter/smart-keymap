@@ -1062,3 +1062,13 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(3, core::mem::size_of::<Ref>());
+    }
+}
