@@ -114,7 +114,7 @@ pub trait LayerState: Copy + Debug {
 impl<const L: usize> LayerState for [bool; L] {
     fn activate(&mut self, layer_index: LayerIndex) {
         debug_assert!(
-            layer_index < L,
+            layer_index <= L,
             "layer must be less than array length of {}",
             L
         );
@@ -123,7 +123,7 @@ impl<const L: usize> LayerState for [bool; L] {
 
     fn deactivate(&mut self, layer_index: LayerIndex) {
         debug_assert!(
-            layer_index < L,
+            layer_index <= L,
             "layer must be less than array length of {}",
             L
         );
@@ -189,7 +189,7 @@ impl Context {
                 }
             }
             LayerEvent::LayersSet(layer_set) => {
-                let max_layer = LAYER_COUNT.min(MAX_BITSET_LAYER + 1);
+                let max_layer = 1 + LAYER_COUNT.min(MAX_BITSET_LAYER);
 
                 // layer 0 is always active.
                 for li in 1..max_layer {
