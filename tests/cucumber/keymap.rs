@@ -134,19 +134,7 @@ impl Default for KeymapWorld {
 #[derive(Deserialize, Default)]
 struct KeyVecs {
     #[serde(default)]
-    keyboard: Vec<key::keyboard::Key>,
-    #[serde(default)]
     callback: Vec<key::callback::Key>,
-    #[serde(default)]
-    sticky: Vec<key::sticky::Key>,
-    #[serde(default)]
-    tap_dance: Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEFS>>,
-    #[serde(default)]
-    tap_hold: Vec<key::tap_hold::Key<Ref>>,
-    #[serde(default)]
-    layer_modifiers: Vec<key::layered::ModifierKey>,
-    #[serde(default)]
-    layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
     #[serde(default)]
     chorded: Vec<
         key::chorded::Key<
@@ -166,6 +154,18 @@ struct KeyVecs {
             { CHORDED_MAX_PRESSED_INDICES },
         >,
     >,
+    #[serde(default)]
+    keyboard: Vec<key::keyboard::Key>,
+    #[serde(default)]
+    layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
+    #[serde(default)]
+    layer_modifiers: Vec<key::layered::ModifierKey>,
+    #[serde(default)]
+    sticky: Vec<key::sticky::Key>,
+    #[serde(default)]
+    tap_dance: Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEFS>>,
+    #[serde(default)]
+    tap_hold: Vec<key::tap_hold::Key<Ref>>,
 }
 
 #[derive(Deserialize)]
