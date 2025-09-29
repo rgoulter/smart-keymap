@@ -1114,4 +1114,9 @@ mod tests {
     fn test_sizeof_ref() {
         assert_eq!(3, core::mem::size_of::<Ref>());
     }
+
+    #[test]
+    fn test_sizeof_event() {
+        assert_eq!(16, core::mem::size_of::<Event>());
+    }
 }

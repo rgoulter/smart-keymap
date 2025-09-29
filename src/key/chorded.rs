@@ -959,6 +959,11 @@ mod tests {
     }
 
     #[test]
+    fn test_sizeof_event() {
+        assert_eq!(2, core::mem::size_of::<Event>());
+    }
+
+    #[test]
     fn test_timeout_resolves_unsatisfied_aux_state_as_passthrough_key() {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = DEFAULT_CONTEXT;
