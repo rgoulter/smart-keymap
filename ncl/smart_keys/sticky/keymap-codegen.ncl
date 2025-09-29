@@ -109,7 +109,7 @@
               [
                 activation_field_fragment,
                 release_field_fragment,
-                "..smart_keymap::key::sticky::DEFAULT_CONFIG"
+                "..smart_keymap::key::sticky::Config::new()"
               ]
               |> std.array.filter ((!=) "")
               |> std.string.join "\n"
@@ -120,7 +120,7 @@
             }
           "%
           else
-            "smart_keymap::key::sticky::DEFAULT_CONFIG",
+            "smart_keymap::key::sticky::Config::new()",
       },
 
       system = {

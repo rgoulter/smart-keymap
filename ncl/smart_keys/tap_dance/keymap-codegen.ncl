@@ -122,11 +122,11 @@
             m%"
             smart_keymap::key::tap_dance::Config {
                 %{timeout_field_fragment}
-                ..smart_keymap::key::tap_dance::DEFAULT_CONFIG
+                ..smart_keymap::key::tap_dance::Config::new()
             }
           "%
           else
-            "smart_keymap::key::tap_dance::DEFAULT_CONFIG",
+            "smart_keymap::key::tap_dance::Config::new()",
       },
 
       system = {

@@ -122,7 +122,7 @@ pub mod init {
     pub const KEY_REFS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
 
     /// Config used to construct initial context.
-    pub const CONFIG: key_system::Config = key_system::DEFAULT_CONFIG;
+    pub const CONFIG: key_system::Config = key_system::Config::new();
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
