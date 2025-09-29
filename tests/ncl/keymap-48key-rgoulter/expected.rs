@@ -116,16 +116,16 @@ pub mod init {
                 smart_keymap::key::chorded::ChordIndices::from_slice(&[40, 41]),
                 smart_keymap::key::chorded::ChordIndices::from_slice(&[42, 43]),
             ]),
-            ..smart_keymap::key::chorded::DEFAULT_CONFIG
+            ..smart_keymap::key::chorded::Config::new()
         },
-        sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-        tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
+        sticky: smart_keymap::key::sticky::Config::new(),
+        tap_dance: smart_keymap::key::tap_dance::Config::new(),
         tap_hold: smart_keymap::key::tap_hold::Config {
             interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
 
-            ..smart_keymap::key::tap_hold::DEFAULT_CONFIG
+            ..smart_keymap::key::tap_hold::Config::new()
         },
-        ..smart_keymap::key::composite::DEFAULT_CONFIG
+        ..smart_keymap::key::composite::Config::new()
     };
 
     /// Initial [Context] value.
@@ -138,16 +138,16 @@ pub mod init {
                     smart_keymap::key::chorded::ChordIndices::from_slice(&[40, 41]),
                     smart_keymap::key::chorded::ChordIndices::from_slice(&[42, 43]),
                 ]),
-                ..smart_keymap::key::chorded::DEFAULT_CONFIG
+                ..smart_keymap::key::chorded::Config::new()
             },
-            sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-            tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
+            sticky: smart_keymap::key::sticky::Config::new(),
+            tap_dance: smart_keymap::key::tap_dance::Config::new(),
             tap_hold: smart_keymap::key::tap_hold::Config {
                 interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
 
-                ..smart_keymap::key::tap_hold::DEFAULT_CONFIG
+                ..smart_keymap::key::tap_hold::Config::new()
             },
-            ..smart_keymap::key::composite::DEFAULT_CONFIG
+            ..smart_keymap::key::composite::Config::new()
         });
 
     /// The key system.

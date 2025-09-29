@@ -225,11 +225,11 @@
           smart_keymap::key::chorded::Config {
               %{timeout_field_fragment}
               %{chords_field_fragment}
-              ..smart_keymap::key::chorded::DEFAULT_CONFIG
+              ..smart_keymap::key::chorded::Config::new()
           }
         "%
           else
-            "smart_keymap::key::chorded::DEFAULT_CONFIG",
+            "smart_keymap::key::chorded::Config::new()",
       },
 
       system = {

@@ -168,11 +168,11 @@
                 %{timeout_field_fragment}
                 %{interrupt_response_field_fragment}
                 %{required_idle_time_field_fragment}
-                ..smart_keymap::key::tap_hold::DEFAULT_CONFIG
+                ..smart_keymap::key::tap_hold::Config::new()
             }
           "%
           else
-            "smart_keymap::key::tap_hold::DEFAULT_CONFIG",
+            "smart_keymap::key::tap_hold::Config::new()",
       },
 
       system = {

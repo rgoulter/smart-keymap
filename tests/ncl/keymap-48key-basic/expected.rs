@@ -111,12 +111,12 @@ pub mod init {
     pub const CONFIG: smart_keymap::key::composite::Config = smart_keymap::key::composite::Config {
         chorded: smart_keymap::key::chorded::Config {
             chords: smart_keymap::slice::Slice::from_slice(&[]),
-            ..smart_keymap::key::chorded::DEFAULT_CONFIG
+            ..smart_keymap::key::chorded::Config::new()
         },
-        sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-        tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
-        tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
-        ..smart_keymap::key::composite::DEFAULT_CONFIG
+        sticky: smart_keymap::key::sticky::Config::new(),
+        tap_dance: smart_keymap::key::tap_dance::Config::new(),
+        tap_hold: smart_keymap::key::tap_hold::Config::new(),
+        ..smart_keymap::key::composite::Config::new()
     };
 
     /// Initial [Context] value.
@@ -124,12 +124,12 @@ pub mod init {
         smart_keymap::key::composite::Context::from_config(smart_keymap::key::composite::Config {
             chorded: smart_keymap::key::chorded::Config {
                 chords: smart_keymap::slice::Slice::from_slice(&[]),
-                ..smart_keymap::key::chorded::DEFAULT_CONFIG
+                ..smart_keymap::key::chorded::Config::new()
             },
-            sticky: smart_keymap::key::sticky::DEFAULT_CONFIG,
-            tap_dance: smart_keymap::key::tap_dance::DEFAULT_CONFIG,
-            tap_hold: smart_keymap::key::tap_hold::DEFAULT_CONFIG,
-            ..smart_keymap::key::composite::DEFAULT_CONFIG
+            sticky: smart_keymap::key::sticky::Config::new(),
+            tap_dance: smart_keymap::key::tap_dance::Config::new(),
+            tap_hold: smart_keymap::key::tap_hold::Config::new(),
+            ..smart_keymap::key::composite::Config::new()
         });
 
     /// The key system.

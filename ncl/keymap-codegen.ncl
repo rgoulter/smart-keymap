@@ -112,7 +112,7 @@
             sticky: %{smart_keymap.sticky.config.rust_expr},
             tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
             tap_hold: %{smart_keymap.tap_hold.config.rust_expr},
-            ..smart_keymap::key::composite::DEFAULT_CONFIG
+            ..smart_keymap::key::composite::Config::new()
         }"%,
     },
 
