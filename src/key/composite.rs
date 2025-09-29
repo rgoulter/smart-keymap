@@ -64,10 +64,10 @@ pub struct Config {
 
 /// The default config.
 pub const DEFAULT_CONFIG: Config = Config {
-    chorded: key::chorded::DEFAULT_CONFIG,
-    sticky: key::sticky::DEFAULT_CONFIG,
-    tap_dance: key::tap_dance::DEFAULT_CONFIG,
-    tap_hold: key::tap_hold::DEFAULT_CONFIG,
+    chorded: key::chorded::Config::new(),
+    sticky: key::sticky::Config::new(),
+    tap_dance: key::tap_dance::Config::new(),
+    tap_hold: key::tap_hold::Config::new(),
 };
 
 impl Config {
