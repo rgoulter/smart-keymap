@@ -8,8 +8,8 @@ use serde::Deserialize;
 
 use crate::{key, keymap};
 
-use crate::init::LAYER_COUNT as LAYERED_LAYER_COUNT;
-use crate::init::MAX_TAP_DANCE_DEFINITIONS as TAP_DANCE_MAX_DEF_COUNT;
+use crate::init::LAYERED_LAYER_COUNT;
+use crate::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEF_COUNT;
 
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
