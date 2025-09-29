@@ -75,15 +75,25 @@ pub struct Config {
     pub chords: Slice<ChordIndices, MAX_CHORDS>,
 }
 
-fn default_timeout() -> u16 {
-    DEFAULT_CONFIG.timeout
+/// The default timeout.
+pub const DEFAULT_TIMEOUT: u16 = 200;
+
+const fn default_timeout() -> u16 {
+    DEFAULT_TIMEOUT
 }
 
 /// Default config.
 pub const DEFAULT_CONFIG: Config = Config {
-    timeout: 200,
+    timeout: DEFAULT_TIMEOUT,
     chords: Slice::from_slice(&[]),
 };
+
+impl Config {
+    /// Constructs a new config.
+    pub const fn new() -> Self {
+        DEFAULT_CONFIG
+    }
+}
 
 impl Default for Config {
     /// Returns the default context.
