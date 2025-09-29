@@ -17,6 +17,7 @@ use smart_keymap_nickel_helper::{
 use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
 use smart_keymap::init::LAYER_COUNT as LAYERED_LAYER_COUNT;
+use smart_keymap::init::MAX_TAP_DANCE_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
 type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
@@ -134,7 +135,7 @@ struct KeyVecs {
     #[serde(default)]
     sticky: Vec<key::sticky::Key>,
     #[serde(default)]
-    tap_dance: Vec<key::tap_dance::Key<Ref>>,
+    tap_dance: Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEFS>>,
     #[serde(default)]
     tap_hold: Vec<key::tap_hold::Key<Ref>>,
     #[serde(default)]

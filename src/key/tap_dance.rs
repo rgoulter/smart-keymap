@@ -6,8 +6,6 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
-pub use crate::init::MAX_TAP_DANCE_DEFINITIONS;
-
 /// Reference for a tap dance key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Ref(pub u8);
@@ -36,14 +34,37 @@ impl Default for Config {
 
 /// A key with tap-dance functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key<R> {
+pub struct Key<R, const MAX_TAP_DANCE_DEFINITIONS: usize> {
     /// Tap-Dance definitions.
+    #[serde(bound(deserialize = "R: Deserialize<'de>"))]
+    #[serde(deserialize_with = "deserialize_definitions")]
     definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS],
 }
 
-impl<R: Copy> Key<R> {
+/// Deserialize a [Layers].
+fn deserialize_definitions<'de, R, D, const MAX_TAP_DANCE_DEFINITIONS: usize>(
+    deserializer: D,
+) -> Result<[Option<R>; MAX_TAP_DANCE_DEFINITIONS], D::Error>
+where
+    R: Deserialize<'de>,
+    D: serde::Deserializer<'de>,
+{
+    let defs_vec: heapless::Vec<Option<R>, MAX_TAP_DANCE_DEFINITIONS> =
+        Deserialize::deserialize(deserializer)?;
+
+    match defs_vec.into_array() {
+        Ok(arr) => Ok(arr),
+        Err(_) => Err(serde::de::Error::custom(
+            "Unable to deserialize tap_dance definitions",
+        )),
+    }
+}
+
+impl<R: Copy, const MAX_TAP_DANCE_DEFINITIONS: usize> Key<R, MAX_TAP_DANCE_DEFINITIONS> {
     /// Constructs a new tap-dance key.
-    pub const fn new(definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS]) -> Key<R> {
+    pub const fn new(
+        definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS],
+    ) -> Key<R, MAX_TAP_DANCE_DEFINITIONS> {
         Key { definitions }
     }
 
@@ -142,19 +163,31 @@ pub struct KeyState;
 
 /// The [key::System] implementation for tap dance keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<R, Keys: Index<usize, Output = Key<R>>> {
+pub struct System<
+    R,
+    Keys: Index<usize, Output = Key<R, MAX_TAP_DANCE_DEFINITIONS>>,
+    const MAX_TAP_DANCE_DEFINITIONS: usize,
+> {
     keys: Keys,
 }
 
-impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
+impl<
+        R,
+        Keys: Index<usize, Output = Key<R, MAX_TAP_DANCE_DEFINITIONS>>,
+        const MAX_TAP_DANCE_DEFINITIONS: usize,
+    > System<R, Keys, MAX_TAP_DANCE_DEFINITIONS>
+{
     /// Constructs a new [System] with the given key data.
     pub const fn new(key_data: Keys) -> Self {
         Self { keys: key_data }
     }
 }
 
-impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
-    for System<R, Keys>
+impl<
+        R: Copy + Debug,
+        Keys: Debug + Index<usize, Output = Key<R, MAX_TAP_DANCE_DEFINITIONS>>,
+        const MAX_TAP_DANCE_DEFINITIONS: usize,
+    > key::System<R> for System<R, Keys, MAX_TAP_DANCE_DEFINITIONS>
 {
     type Ref = Ref;
     type Context = Context;
