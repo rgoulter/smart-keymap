@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::input;
 
+/// Automation (macro) keys.
+pub mod automation;
 /// Keymap Callback keys
 pub mod callback;
 /// CapsWord key(s).
