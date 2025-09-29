@@ -68,7 +68,7 @@
 
     is_json = fun json => 'Ok == json_validator json,
 
-    expr = fun b => "smart_keymap::key::KeyboardModifiers::from_byte(%{std.to_string b})",
+    rust_expr = fun b => "smart_keymap::key::KeyboardModifiers::from_byte(%{std.to_string b})",
   },
 
   composite = {

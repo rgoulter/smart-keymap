@@ -73,9 +73,9 @@
                 { key_code } =>
                   "smart_keymap::key::keyboard::Key::new(%{std.to_string key_code})",
                 { modifiers } =>
-                  "smart_keymap::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.expr modifiers})",
+                  "smart_keymap::key::keyboard::Key::from_modifiers(%{keyboard_modifiers.rust_expr modifiers})",
                 { key_code, modifiers } =>
-                  "smart_keymap::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.expr modifiers})",
+                  "smart_keymap::key::keyboard::Key::new_with_modifiers(%{std.to_string key_code}, %{keyboard_modifiers.rust_expr modifiers})",
               },
           },
 
@@ -115,7 +115,7 @@
                 rust_expr = m%"
                 %{module}::Key {
                   key_code: %{std.to_string key_code},
-                  modifiers: %{keyboard_modifiers.expr modifiers},
+                  modifiers: %{keyboard_modifiers.rust_expr modifiers},
                 }
               "%,
               }
