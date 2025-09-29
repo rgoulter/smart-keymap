@@ -43,24 +43,37 @@ pub struct Config {
     pub release: StickyKeyRelease,
 }
 
+/// Default activation.
+pub const DEFAULT_ACTIVATION: StickyKeyActivation = StickyKeyActivation::OnStickyKeyRelease;
+
+/// Default sticky release behaviour.
+pub const DEFAULT_RELEASE: StickyKeyRelease = StickyKeyRelease::OnModifiedKeyRelease;
+
 fn default_activation() -> StickyKeyActivation {
-    DEFAULT_CONFIG.activation
+    DEFAULT_ACTIVATION
 }
 
 fn default_release() -> StickyKeyRelease {
-    DEFAULT_CONFIG.release
+    DEFAULT_RELEASE
 }
 
 /// The default [Config].
 pub const DEFAULT_CONFIG: Config = Config {
-    activation: StickyKeyActivation::OnStickyKeyRelease,
-    release: StickyKeyRelease::OnModifiedKeyRelease,
+    activation: DEFAULT_ACTIVATION,
+    release: DEFAULT_RELEASE,
 };
+
+impl Config {
+    /// Constructs a new default config.
+    pub const fn new() -> Self {
+        DEFAULT_CONFIG
+    }
+}
 
 impl Default for Config {
     /// Returns the default context.
     fn default() -> Self {
-        DEFAULT_CONFIG
+        Self::new()
     }
 }
 
