@@ -944,7 +944,6 @@ mod tests {
 
     const MAX_CHORDS: usize = 4;
     const MAX_CHORD_SIZE: usize = 16;
-    const MAX_OVERLAPPING_CHORD_SIZE: usize = 16;
     const MAX_PRESSED_INDICES: usize = MAX_CHORD_SIZE * 2;
 
     const DEFAULT_CONTEXT: Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES> =
