@@ -775,7 +775,7 @@ mod tests {
             const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
                 smart_keymap::key::keyboard::Ref::KeyCode(0x04),
             )];
-            const CONTEXT: Context = Context::from_config(key_system::DEFAULT_CONFIG);
+            const CONTEXT: Context = Context::from_config(key_system::Config::new());
 
             smart_keymap::keymap::Keymap::new(
                 KEY_REFS,
