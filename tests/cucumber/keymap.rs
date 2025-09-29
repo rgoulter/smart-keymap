@@ -16,11 +16,16 @@ use smart_keymap_nickel_helper::{
 
 use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
+use smart_keymap::init::CHORDED_MAX_CHORDS;
+use smart_keymap::init::CHORDED_MAX_CHORD_SIZE;
+use smart_keymap::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE;
 use smart_keymap::init::LAYERED_LAYER_COUNT;
 use smart_keymap::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
 type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
+
+const CHORDED_MAX_PRESSED_INDICES: usize = CHORDED_MAX_CHORD_SIZE * 2;
 
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"
@@ -143,9 +148,24 @@ struct KeyVecs {
     #[serde(default)]
     layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
     #[serde(default)]
-    chorded: Vec<key::chorded::Key<Ref>>,
+    chorded: Vec<
+        key::chorded::Key<
+            Ref,
+            { CHORDED_MAX_CHORDS },
+            { CHORDED_MAX_CHORD_SIZE },
+            { CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+            { CHORDED_MAX_PRESSED_INDICES },
+        >,
+    >,
     #[serde(default)]
-    chorded_auxiliary: Vec<key::chorded::AuxiliaryKey<Ref>>,
+    chorded_auxiliary: Vec<
+        key::chorded::AuxiliaryKey<
+            Ref,
+            { CHORDED_MAX_CHORDS },
+            { CHORDED_MAX_CHORD_SIZE },
+            { CHORDED_MAX_PRESSED_INDICES },
+        >,
+    >,
 }
 
 #[derive(Deserialize)]
