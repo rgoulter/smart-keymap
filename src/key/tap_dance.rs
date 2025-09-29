@@ -53,7 +53,7 @@ pub struct Key<R, const MAX_TAP_DANCE_DEFINITIONS: usize> {
     definitions: [Option<R>; MAX_TAP_DANCE_DEFINITIONS],
 }
 
-/// Deserialize a [Layers].
+/// Deserialize definitions.
 fn deserialize_definitions<'de, R, D, const MAX_TAP_DANCE_DEFINITIONS: usize>(
     deserializer: D,
 ) -> Result<[Option<R>; MAX_TAP_DANCE_DEFINITIONS], D::Error>
