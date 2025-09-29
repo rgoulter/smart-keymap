@@ -8,7 +8,7 @@ use crate::input;
 use crate::key;
 
 /// The type used for layer index.
-pub type LayerIndex = usize;
+pub type LayerIndex = u32;
 
 /// The type used for set of active layers in ModifierKey.
 /// (Limited to [MAX_BITSET_LAYER] layers.)
@@ -58,7 +58,7 @@ impl ModifierKey {
 
         let mut idx = 0;
         while idx < layers.len() {
-            let layer = layers[idx];
+            let layer = layers[idx] as usize;
             if layer < MAX_BITSET_LAYER {
                 bitset |= 1 << layer;
             } else {
@@ -111,6 +111,7 @@ pub trait LayerState: Copy + Debug {
 
 impl<const L: usize> LayerState for [bool; L] {
     fn activate(&mut self, layer_index: LayerIndex) {
+        let layer_index: usize = layer_index as usize;
         debug_assert!(
             layer_index <= L,
             "layer must be less than array length of {}",
@@ -120,6 +121,7 @@ impl<const L: usize> LayerState for [bool; L] {
     }
 
     fn deactivate(&mut self, layer_index: LayerIndex) {
+        let layer_index: usize = layer_index as usize;
         debug_assert!(
             layer_index <= L,
             "layer must be less than array length of {}",
@@ -129,10 +131,13 @@ impl<const L: usize> LayerState for [bool; L] {
     }
 
     fn active_layers(&self) -> impl Iterator<Item = LayerIndex> {
-        self.iter()
-            .enumerate()
-            .rev()
-            .filter_map(|(i, &active)| if active { Some(i + 1) } else { None })
+        self.iter().enumerate().rev().filter_map(|(i, &active)| {
+            if active {
+                Some(i as LayerIndex + 1)
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -180,7 +185,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 self.active_layers.deactivate(layer);
             }
             LayerEvent::LayerToggled(layer) => {
-                if self.active_layers[layer - 1] {
+                if self.active_layers[layer as usize - 1] {
                     self.active_layers.deactivate(layer);
                 } else {
                     self.active_layers.activate(layer);
@@ -192,9 +197,9 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 // layer 0 is always active.
                 for li in 1..max_layer {
                     if (layer_set & (1 << li)) != 0 {
-                        self.active_layers.activate(li);
+                        self.active_layers.activate(li as LayerIndex);
                     } else {
-                        self.active_layers.deactivate(li);
+                        self.active_layers.deactivate(li as LayerIndex);
                     }
                 }
             }
@@ -251,14 +256,14 @@ impl<R: Copy + Debug, const L: usize> Layers<R> for [Option<R>; L] {
         default_layer: Option<LayerIndex>,
     ) -> Option<(LayerIndex, R)> {
         for layer_index in layer_state.active_layers() {
-            if self[layer_index - 1].is_some() {
-                return self[layer_index - 1].map(|k| (layer_index, k));
+            if self[layer_index as usize - 1].is_some() {
+                return self[layer_index as usize - 1].map(|k| (layer_index, k));
             }
         }
 
         match default_layer {
-            Some(layer_index) if self[layer_index - 1].is_some() => {
-                self[layer_index - 1].map(|k| (layer_index, k))
+            Some(layer_index) if self[layer_index as usize - 1].is_some() => {
+                self[layer_index as usize - 1].map(|k| (layer_index, k))
             }
             _ => None,
         }
@@ -525,7 +530,7 @@ mod tests {
 
     #[test]
     fn test_sizeof_event() {
-        assert_eq!(16, core::mem::size_of::<LayerEvent>());
+        assert_eq!(8, core::mem::size_of::<LayerEvent>());
     }
 
     #[test]
