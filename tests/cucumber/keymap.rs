@@ -16,8 +16,8 @@ use smart_keymap_nickel_helper::{
 
 use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
-use smart_keymap::init::LAYER_COUNT as LAYERED_LAYER_COUNT;
-use smart_keymap::init::MAX_TAP_DANCE_DEFINITIONS as TAP_DANCE_MAX_DEFS;
+use smart_keymap::init::LAYERED_LAYER_COUNT;
+use smart_keymap::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
 type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;

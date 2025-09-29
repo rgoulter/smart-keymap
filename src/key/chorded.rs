@@ -5,7 +5,10 @@ use serde::Deserialize;
 
 use crate::{input, key, slice::Slice};
 
-pub use crate::init::{MAX_CHORDS, MAX_CHORD_SIZE, MAX_OVERLAPPING_CHORD_SIZE};
+pub use crate::init::{
+    CHORDED_MAX_CHORDS as MAX_CHORDS, CHORDED_MAX_CHORD_SIZE as MAX_CHORD_SIZE,
+    CHORDED_MAX_OVERLAPPING_CHORD_SIZE as MAX_OVERLAPPING_CHORD_SIZE,
+};
 
 /// Reference for a chorded key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]

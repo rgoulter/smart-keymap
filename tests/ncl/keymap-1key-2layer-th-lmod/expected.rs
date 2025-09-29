@@ -3,19 +3,19 @@ pub mod init {
     use crate as smart_keymap;
 
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
-    pub const LAYER_COUNT: usize = 1;
+    pub const LAYERED_LAYER_COUNT: usize = 1;
 
     /// The maximum number of keys in a chord.
-    pub const MAX_CHORD_SIZE: usize = 0;
+    pub const CHORDED_MAX_CHORD_SIZE: usize = 0;
 
     /// The maximum number of chords.
-    pub const MAX_CHORDS: usize = 0;
+    pub const CHORDED_MAX_CHORDS: usize = 0;
 
     /// The maximum number of overlapping chords for a chorded key.
-    pub const MAX_OVERLAPPING_CHORD_SIZE: usize = 0;
+    pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = 0;
 
     /// The tap-dance definitions.
-    pub const MAX_TAP_DANCE_DEFINITIONS: usize = 0;
+    pub const TAP_DANCE_MAX_DEFINITIONS: usize = 0;
 
     pub use smart_keymap::key::composite::Ref;
 
