@@ -457,8 +457,44 @@ impl KeyOutput {
         key_modifiers: KeyboardModifiers::new(),
     };
 
+    /// Constructs a [KeyOutput] from a key usage.
+    pub const fn from_usage(key_usage: KeyUsage) -> Self {
+        match key_usage {
+            KeyUsage::Keyboard(kc) => Self::from_key_code(kc),
+            KeyUsage::Consumer(cc) => Self::from_consumer_code(cc),
+            KeyUsage::Custom(cu) => Self::from_custom_code(cu),
+            KeyUsage::Mouse(mo) => Self::from_mouse_output(mo),
+        }
+    }
+
+    /// Constructs a [KeyOutput] from a key usage.
+    pub const fn from_usage_with_modifiers(
+        key_usage: KeyUsage,
+        key_modifiers: KeyboardModifiers,
+    ) -> Self {
+        match key_usage {
+            KeyUsage::Keyboard(kc) => {
+                if let Some(usage_key_modifiers) = KeyboardModifiers::from_key_code(kc) {
+                    KeyOutput {
+                        key_code: KeyUsage::Keyboard(0x00),
+                        key_modifiers: usage_key_modifiers.union(&key_modifiers),
+                    }
+                } else {
+                    KeyOutput {
+                        key_code: KeyUsage::Keyboard(kc),
+                        key_modifiers,
+                    }
+                }
+            }
+            _ => KeyOutput {
+                key_code: key_usage,
+                key_modifiers,
+            },
+        }
+    }
+
     /// Constructs a [KeyOutput] from a key code.
-    pub fn from_key_code(key_code: u8) -> Self {
+    pub const fn from_key_code(key_code: u8) -> Self {
         if let Some(key_modifiers) = KeyboardModifiers::from_key_code(key_code) {
             KeyOutput {
                 key_code: KeyUsage::Keyboard(0x00),
@@ -473,7 +509,10 @@ impl KeyOutput {
     }
 
     /// Constructs a [KeyOutput] from a key code with the given keyboard modifiers.
-    pub fn from_key_code_with_modifiers(key_code: u8, key_modifiers: KeyboardModifiers) -> Self {
+    pub const fn from_key_code_with_modifiers(
+        key_code: u8,
+        key_modifiers: KeyboardModifiers,
+    ) -> Self {
         let KeyOutput {
             key_code,
             key_modifiers: km,
@@ -485,7 +524,7 @@ impl KeyOutput {
     }
 
     /// Constructs a [KeyOutput] for just the given keyboard modifiers.
-    pub fn from_key_modifiers(key_modifiers: KeyboardModifiers) -> Self {
+    pub const fn from_key_modifiers(key_modifiers: KeyboardModifiers) -> Self {
         KeyOutput {
             key_code: KeyUsage::Keyboard(0x00),
             key_modifiers,
@@ -493,7 +532,7 @@ impl KeyOutput {
     }
 
     /// Constructs a [KeyOutput] from a consumer code.
-    pub fn from_consumer_code(usage_code: u8) -> Self {
+    pub const fn from_consumer_code(usage_code: u8) -> Self {
         KeyOutput {
             key_code: KeyUsage::Consumer(usage_code),
             key_modifiers: KeyboardModifiers::new(),
@@ -501,7 +540,7 @@ impl KeyOutput {
     }
 
     /// Constructs a [KeyOutput] from a custom code.
-    pub fn from_custom_code(custom_code: u8) -> Self {
+    pub const fn from_custom_code(custom_code: u8) -> Self {
         KeyOutput {
             key_code: KeyUsage::Custom(custom_code),
             key_modifiers: KeyboardModifiers::new(),
@@ -509,7 +548,7 @@ impl KeyOutput {
     }
 
     /// Constructs a [KeyOutput] from a mouse output.
-    pub fn from_mouse_output(mouse_output: MouseOutput) -> Self {
+    pub const fn from_mouse_output(mouse_output: MouseOutput) -> Self {
         KeyOutput {
             key_code: KeyUsage::Mouse(mouse_output),
             key_modifiers: KeyboardModifiers::new(),
@@ -517,12 +556,12 @@ impl KeyOutput {
     }
 
     /// Returns the key code value.
-    pub fn key_code(&self) -> KeyUsage {
+    pub const fn key_code(&self) -> KeyUsage {
         self.key_code
     }
 
     /// Returns the keyboard modifiers of the key output.
-    pub fn key_modifiers(&self) -> KeyboardModifiers {
+    pub const fn key_modifiers(&self) -> KeyboardModifiers {
         self.key_modifiers
     }
 }
