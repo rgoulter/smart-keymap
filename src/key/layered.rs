@@ -524,6 +524,11 @@ mod tests {
     }
 
     #[test]
+    fn test_sizeof_event() {
+        assert_eq!(16, core::mem::size_of::<LayerEvent>());
+    }
+
+    #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
         let layer = 1;
         let key = ModifierKey::Hold(layer);
