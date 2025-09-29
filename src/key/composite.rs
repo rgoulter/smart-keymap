@@ -70,6 +70,18 @@ pub const DEFAULT_CONFIG: Config = Config {
     tap_hold: key::tap_hold::DEFAULT_CONFIG,
 };
 
+impl Config {
+    /// Constructs a new [Config] with default values.
+    pub const fn new() -> Self {
+        Config {
+            chorded: key::chorded::Config::new(),
+            sticky: key::sticky::Config::new(),
+            tap_dance: key::tap_dance::Config::new(),
+            tap_hold: key::tap_hold::Config::new(),
+        }
+    }
+}
+
 /// An aggregate context for [key::Context]s.
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
