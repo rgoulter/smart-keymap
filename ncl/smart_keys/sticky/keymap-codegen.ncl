@@ -41,7 +41,7 @@
               json
               |> match {
                 { sticky_modifiers } =>
-                  "%{module}::Key::new(%{keyboard_modifiers.expr sticky_modifiers})",
+                  "%{module}::Key::new(%{keyboard_modifiers.rust_expr sticky_modifiers})",
               },
           },
 
