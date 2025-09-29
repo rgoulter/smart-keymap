@@ -18,12 +18,24 @@ pub struct Config {
     pub timeout: u16,
 }
 
+/// The default timeout.
+pub const DEFAULT_TIMEOUT: u16 = 200;
+
 fn default_timeout() -> u16 {
-    DEFAULT_CONFIG.timeout
+    DEFAULT_TIMEOUT
 }
 
 /// Default tap dance config.
-pub const DEFAULT_CONFIG: Config = Config { timeout: 200 };
+pub const DEFAULT_CONFIG: Config = Config {
+    timeout: DEFAULT_TIMEOUT,
+};
+
+impl Config {
+    /// Constructs a new default [Config].
+    pub const fn new() -> Self {
+        DEFAULT_CONFIG
+    }
+}
 
 impl Default for Config {
     /// Returns the default context.
