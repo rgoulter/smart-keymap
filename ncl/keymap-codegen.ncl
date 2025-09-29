@@ -77,17 +77,17 @@
         let variant =
           module
           |> match {
-            "smart_keymap::key::keyboard" => "Keyboard",
             "smart_keymap::key::callback" => "Callback",
             "smart_keymap::key::caps_word" => "CapsWord",
+            "smart_keymap::key::chorded" => "Chorded",
             "smart_keymap::key::consumer" => "Consumer",
+            "smart_keymap::key::custom" => "Custom",
+            "smart_keymap::key::keyboard" => "Keyboard",
+            "smart_keymap::key::layered" => "Layered",
             "smart_keymap::key::mouse" => "Mouse",
             "smart_keymap::key::sticky" => "Sticky",
-            "smart_keymap::key::custom" => "Custom",
             "smart_keymap::key::tap_dance" => "TapDance",
             "smart_keymap::key::tap_hold" => "TapHold",
-            "smart_keymap::key::layered" => "Layered",
-            "smart_keymap::key::chorded" => "Chorded",
             _ => std.fail_with "bad ref for composite.ref.wrap: %{std.serialize ref 'Json}",
           }
         in
