@@ -16,6 +16,8 @@ use smart_keymap_nickel_helper::{
 
 use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
 
+use smart_keymap::init::LAYER_COUNT as LAYERED_LAYER_COUNT;
+
 type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 
@@ -138,7 +140,7 @@ struct KeyVecs {
     #[serde(default)]
     layer_modifiers: Vec<key::layered::ModifierKey>,
     #[serde(default)]
-    layered: Vec<key::layered::LayeredKey<Ref>>,
+    layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
     #[serde(default)]
     chorded: Vec<key::chorded::Key<Ref>>,
     #[serde(default)]
