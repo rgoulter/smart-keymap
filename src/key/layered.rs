@@ -7,8 +7,6 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
-pub use crate::init::LAYER_COUNT;
-
 /// The type used for layer index.
 pub type LayerIndex = usize;
 
@@ -140,12 +138,12 @@ impl<const L: usize> LayerState for [bool; L] {
 
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Debug, Clone, Copy)]
-pub struct Context {
+pub struct Context<const LAYER_COUNT: usize> {
     default_layer: Option<LayerIndex>,
     active_layers: [bool; LAYER_COUNT],
 }
 
-impl Context {
+impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     /// Create a new [Context].
     pub const fn new() -> Self {
         Context {
@@ -155,13 +153,13 @@ impl Context {
     }
 }
 
-impl Default for Context {
+impl<const LAYER_COUNT: usize> Default for Context<LAYER_COUNT> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl Context {
+impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     /// Activate the given layer.
     pub fn activate_layer(&mut self, layer: LayerIndex) {
         self.active_layers.activate(layer);
@@ -206,7 +204,7 @@ impl Context {
     }
 }
 
-impl key::Context for Context {
+impl<const LAYER_COUNT: usize> key::Context for Context<LAYER_COUNT> {
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
@@ -280,7 +278,7 @@ impl<R: Copy + Debug, const L: usize> Layers<R> for [Option<R>; L] {
 }
 
 /// Constructs an array of keys for the given array.
-pub const fn layered_keys<K: Copy, const L: usize>(
+pub const fn layered_keys<K: Copy, const L: usize, const LAYER_COUNT: usize>(
     keys: [Option<K>; L],
 ) -> [Option<K>; LAYER_COUNT] {
     let mut layered: [Option<K>; LAYER_COUNT] = [None; LAYER_COUNT];
@@ -301,7 +299,7 @@ pub const fn layered_keys<K: Copy, const L: usize>(
 
 /// A key whose behavior depends on which layer is active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
-pub struct LayeredKey<R: Copy + Debug + PartialEq> {
+pub struct LayeredKey<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> {
     /// The base key, used when no layers are active.
     pub base: R,
     /// The layered keys, used when the corresponding layer is active.
@@ -321,7 +319,7 @@ where
     L::from_iterable(keys_vec).map_err(serde::de::Error::custom)
 }
 
-impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
+impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
     /// Constructs a new [LayeredKey].
     pub const fn new<const L: usize>(base: R, layered: [Option<R>; L]) -> Self {
         let layered = layered_keys(layered);
@@ -329,9 +327,9 @@ impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
     }
 }
 
-impl<R: Copy + Debug + PartialEq> LayeredKey<R> {
+impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
     /// Presses the key, using the highest active key, if any.
-    fn new_pressed_key(&self, context: &Context) -> key::NewPressedKey<R> {
+    fn new_pressed_key(&self, context: &Context<LAYER_COUNT>) -> key::NewPressedKey<R> {
         let (_layer, passthrough_ref) = self
             .layered
             .highest_active_key(context.layer_state(), context.default_layer)
@@ -404,7 +402,8 @@ impl ModifierKeyState {
 pub struct System<
     R: Copy + Debug + PartialEq,
     ModifierKeys: Index<usize, Output = ModifierKey>,
-    LayeredKeys: Index<usize, Output = LayeredKey<R>>,
+    LayeredKeys: Index<usize, Output = LayeredKey<R, LAYER_COUNT>>,
+    const LAYER_COUNT: usize,
 > {
     modifier_keys: ModifierKeys,
     layered_keys: LayeredKeys,
@@ -413,8 +412,9 @@ pub struct System<
 impl<
         R: Copy + Debug + PartialEq,
         ModifierKeys: Index<usize, Output = ModifierKey>,
-        LayeredKeys: Index<usize, Output = LayeredKey<R>>,
-    > System<R, ModifierKeys, LayeredKeys>
+        LayeredKeys: Index<usize, Output = LayeredKey<R, LAYER_COUNT>>,
+        const LAYER_COUNT: usize,
+    > System<R, ModifierKeys, LayeredKeys, LAYER_COUNT>
 {
     /// Constructs a new [System] with the given key data.
     pub const fn new(modifier_keys: ModifierKeys, layered_keys: LayeredKeys) -> Self {
@@ -428,11 +428,12 @@ impl<
 impl<
         R: Copy + Debug + PartialEq,
         ModifierKeys: Debug + Index<usize, Output = ModifierKey>,
-        LayeredKeys: Debug + Index<usize, Output = LayeredKey<R>>,
-    > key::System<R> for System<R, ModifierKeys, LayeredKeys>
+        LayeredKeys: Debug + Index<usize, Output = LayeredKey<R, LAYER_COUNT>>,
+        const LAYER_COUNT: usize,
+    > key::System<R> for System<R, ModifierKeys, LayeredKeys, LAYER_COUNT>
 {
     type Ref = Ref;
-    type Context = Context;
+    type Context = Context<LAYER_COUNT>;
     type Event = LayerEvent;
     type PendingKeyState = PendingKeyState;
     type KeyState = ModifierKeyState;
@@ -513,6 +514,10 @@ mod tests {
 
     use crate::key::System as _;
 
+    const LAYER_COUNT: usize = 8;
+
+    type Context = super::Context<LAYER_COUNT>;
+
     #[test]
     fn test_sizeof_ref() {
         assert_eq!(2, core::mem::size_of::<Ref>());
@@ -582,7 +587,7 @@ mod tests {
 
     #[test]
     fn test_context_handling_event_adjusts_active_layers() {
-        let mut context: Context = Context::default();
+        let mut context = Context::default();
 
         context.handle_event(LayerEvent::LayerActivated(2));
 
@@ -712,7 +717,6 @@ mod tests {
         // Assemble
         let layer = 1;
         let key = ModifierKey::Toggle(layer);
-        let context = Context::default(); // layer 1 is inactive
 
         // Act
         let (_pressed_key, layer_event) = key.new_pressed_key();

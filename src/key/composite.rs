@@ -8,6 +8,8 @@ use serde::Deserialize;
 
 use crate::{key, keymap};
 
+use crate::init::LAYER_COUNT as LAYERED_LAYER_COUNT;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -73,7 +75,7 @@ pub struct Context {
     keymap_context: keymap::KeymapContext,
     caps_word: key::caps_word::Context,
     chorded: key::chorded::Context,
-    layered: key::layered::Context,
+    layered: key::layered::Context<LAYERED_LAYER_COUNT>,
     sticky: key::sticky::Context,
     tap_dance: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
@@ -567,7 +569,7 @@ pub trait Keys {
     /// Type used by [key::layered::System].
     type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
     /// Type used by [key::layered::System].
-    type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref>>;
+    type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
     /// Type used by [key::sticky::System].
     type Sticky: Debug + Index<usize, Output = key::sticky::Key>;
     /// Type used by [key::tap_dance::System].
@@ -618,7 +620,7 @@ impl<
     type ChordedAuxiliary = [key::chorded::AuxiliaryKey<Ref>; CHORDED_AUXILIARY];
     type Keyboard = [key::keyboard::Key; KEYBOARD];
     type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
-    type Layered = [key::layered::LayeredKey<Ref>; LAYERED];
+    type Layered = [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED];
     type Sticky = [key::sticky::Key; STICKY];
     type TapDance = [key::tap_dance::Key<Ref>; TAP_DANCE];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
@@ -636,7 +638,7 @@ impl Keys for KeyVecs {
     type ChordedAuxiliary = Vec<key::chorded::AuxiliaryKey<Ref>>;
     type Keyboard = Vec<key::keyboard::Key>;
     type LayerModifiers = Vec<key::layered::ModifierKey>;
-    type Layered = Vec<key::layered::LayeredKey<Ref>>;
+    type Layered = Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
     type Sticky = Vec<key::sticky::Key>;
     type TapDance = Vec<key::tap_dance::Key<Ref>>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
@@ -651,7 +653,7 @@ pub struct System<D: Keys> {
     chorded: key::chorded::System<Ref, D::Chorded, D::ChordedAuxiliary>,
     custom: key::custom::System<Ref>,
     keyboard: key::keyboard::System<Ref, D::Keyboard>,
-    layered: key::layered::System<Ref, D::LayerModifiers, D::Layered>,
+    layered: key::layered::System<Ref, D::LayerModifiers, D::Layered, LAYERED_LAYER_COUNT>,
     mouse: key::mouse::System<Ref>,
     sticky: key::sticky::System<Ref, D::Sticky>,
     tap_dance: key::tap_dance::System<Ref, D::TapDance>,
@@ -696,7 +698,8 @@ impl<
         layered: key::layered::System<
             Ref,
             [key::layered::ModifierKey; LAYER_MODIFIERS],
-            [key::layered::LayeredKey<Ref>; LAYERED],
+            [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED],
+            LAYERED_LAYER_COUNT,
         >,
         sticky: key::sticky::System<Ref, [key::sticky::Key; STICKY]>,
         tap_dance: key::tap_dance::System<Ref, [key::tap_dance::Key<Ref>; TAP_DANCE]>,
@@ -732,6 +735,7 @@ impl System<KeyVecs> {
             Ref,
             <KeyVecs as Keys>::LayerModifiers,
             <KeyVecs as Keys>::Layered,
+            LAYERED_LAYER_COUNT,
         >,
         chorded: key::chorded::System<
             Ref,
