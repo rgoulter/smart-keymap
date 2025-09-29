@@ -451,6 +451,12 @@ pub struct KeyOutput {
 }
 
 impl KeyOutput {
+    /// A key output with no key code and no modifiers.
+    pub const NO_OUTPUT: KeyOutput = KeyOutput {
+        key_code: KeyUsage::Keyboard(0x00),
+        key_modifiers: KeyboardModifiers::new(),
+    };
+
     /// Constructs a [KeyOutput] from a key code.
     pub fn from_key_code(key_code: u8) -> Self {
         if let Some(key_modifiers) = KeyboardModifiers::from_key_code(key_code) {
