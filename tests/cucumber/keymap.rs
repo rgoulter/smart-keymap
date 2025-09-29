@@ -178,13 +178,13 @@ struct DocstringKeymap {
 
 fn system_from_key_data(keys: KeyVecs) -> System {
     System::vec_based(
-        smart_keymap::key::keyboard::System::new(keys.keyboard),
         smart_keymap::key::callback::System::new(keys.callback),
+        smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
+        smart_keymap::key::keyboard::System::new(keys.keyboard),
+        smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
         smart_keymap::key::sticky::System::new(keys.sticky),
         smart_keymap::key::tap_dance::System::new(keys.tap_dance),
         smart_keymap::key::tap_hold::System::new(keys.tap_hold),
-        smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
-        smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
     )
 }
 

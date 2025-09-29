@@ -838,21 +838,7 @@ impl<
 impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
-        keyboard: key::keyboard::System<Ref, <KeyVecs as Keys>::Keyboard>,
         callback: key::callback::System<Ref, <KeyVecs as Keys>::Callback>,
-        sticky: key::sticky::System<Ref, <KeyVecs as Keys>::Sticky>,
-        tap_dance: key::tap_dance::System<
-            Ref,
-            <KeyVecs as Keys>::TapDance,
-            TAP_DANCE_MAX_DEF_COUNT,
-        >,
-        tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
-        layered: key::layered::System<
-            Ref,
-            <KeyVecs as Keys>::LayerModifiers,
-            <KeyVecs as Keys>::Layered,
-            LAYERED_LAYER_COUNT,
-        >,
         chorded: key::chorded::System<
             Ref,
             <KeyVecs as Keys>::Chorded,
@@ -862,6 +848,20 @@ impl System<KeyVecs> {
             CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
             CHORDED_MAX_PRESSED_INDICES,
         >,
+        keyboard: key::keyboard::System<Ref, <KeyVecs as Keys>::Keyboard>,
+        layered: key::layered::System<
+            Ref,
+            <KeyVecs as Keys>::LayerModifiers,
+            <KeyVecs as Keys>::Layered,
+            LAYERED_LAYER_COUNT,
+        >,
+        sticky: key::sticky::System<Ref, <KeyVecs as Keys>::Sticky>,
+        tap_dance: key::tap_dance::System<
+            Ref,
+            <KeyVecs as Keys>::TapDance,
+            TAP_DANCE_MAX_DEF_COUNT,
+        >,
+        tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
     ) -> Self {
         System {
             callback,
