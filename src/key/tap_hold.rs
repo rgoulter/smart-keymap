@@ -69,20 +69,33 @@ pub struct Config {
     pub required_idle_time: Option<u16>,
 }
 
+/// The default timeout.
+pub const DEFAULT_TIMEOUT: u16 = 200;
+
+/// The default interrupt response.
+pub const DEFAULT_INTERRUPT_RESPONSE: InterruptResponse = InterruptResponse::Ignore;
+
 fn default_timeout() -> u16 {
-    DEFAULT_CONFIG.timeout
+    DEFAULT_TIMEOUT
 }
 
 fn default_interrupt_response() -> InterruptResponse {
-    DEFAULT_CONFIG.interrupt_response
+    DEFAULT_INTERRUPT_RESPONSE
 }
 
 /// Default tap hold config.
 pub const DEFAULT_CONFIG: Config = Config {
-    timeout: 200,
-    interrupt_response: InterruptResponse::Ignore,
+    timeout: DEFAULT_TIMEOUT,
+    interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
 };
+
+impl Config {
+    /// Constructs a new default [Config].
+    pub const fn new() -> Self {
+        DEFAULT_CONFIG
+    }
+}
 
 impl Default for Config {
     /// Returns the default context.
