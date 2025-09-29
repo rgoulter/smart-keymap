@@ -1,14 +1,10 @@
 use core::fmt::Debug;
+use core::marker::PhantomData;
 use core::ops::Index;
 
 use serde::Deserialize;
 
 use crate::{input, key, slice::Slice};
-
-pub use crate::init::{
-    CHORDED_MAX_CHORDS as MAX_CHORDS, CHORDED_MAX_CHORD_SIZE as MAX_CHORD_SIZE,
-    CHORDED_MAX_OVERLAPPING_CHORD_SIZE as MAX_OVERLAPPING_CHORD_SIZE,
-};
 
 /// Reference for a chorded key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -25,16 +21,16 @@ pub type ChordId = u8;
 /// Chords are defined by an (unordered) set of keymap indices into the keymap.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 #[serde(from = "heapless::Vec<u16, MAX_CHORD_SIZE>")]
-pub struct ChordIndices {
+pub struct ChordIndices<const MAX_CHORD_SIZE: usize> {
     /// A slice of keymap indices.
     indices: Slice<u16, MAX_CHORD_SIZE>,
 }
 
-impl ChordIndices {
+impl<const MAX_CHORD_SIZE: usize> ChordIndices<MAX_CHORD_SIZE> {
     /// Constructs a new [ChordIndices] value from the given slice.
     ///
-    /// The given slice must be less than [MAX_CHORD_SIZE] in length.
-    pub const fn from_slice(indices: &[u16]) -> ChordIndices {
+    /// The given slice must be less than `MAX_CHORD_SIZE` in length.
+    pub const fn from_slice(indices: &[u16]) -> ChordIndices<MAX_CHORD_SIZE> {
         ChordIndices {
             indices: Slice::from_slice(indices),
         }
@@ -56,7 +52,9 @@ impl ChordIndices {
     }
 }
 
-impl From<heapless::Vec<u16, MAX_CHORD_SIZE>> for ChordIndices {
+impl<const MAX_CHORD_SIZE: usize> From<heapless::Vec<u16, MAX_CHORD_SIZE>>
+    for ChordIndices<MAX_CHORD_SIZE>
+{
     fn from(v: heapless::Vec<u16, MAX_CHORD_SIZE>) -> Self {
         ChordIndices::from_slice(&v)
     }
@@ -64,7 +62,7 @@ impl From<heapless::Vec<u16, MAX_CHORD_SIZE>> for ChordIndices {
 
 /// Chord definitions.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Config {
+pub struct Config<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> {
     /// The timeout (in number of milliseconds) for a chorded key to resolve.
     ///
     /// (Resolves as passthrough key if no chord is satisfied).
@@ -72,7 +70,7 @@ pub struct Config {
     pub timeout: u16,
 
     /// The keymap chords.
-    pub chords: Slice<ChordIndices, MAX_CHORDS>,
+    pub chords: Slice<ChordIndices<MAX_CHORD_SIZE>, MAX_CHORDS>,
 }
 
 /// The default timeout.
@@ -82,52 +80,54 @@ const fn default_timeout() -> u16 {
     DEFAULT_TIMEOUT
 }
 
-/// Default config.
-pub const DEFAULT_CONFIG: Config = Config {
-    timeout: DEFAULT_TIMEOUT,
-    chords: Slice::from_slice(&[]),
-};
-
-impl Config {
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> Config<MAX_CHORDS, MAX_CHORD_SIZE> {
     /// Constructs a new config.
     pub const fn new() -> Self {
-        DEFAULT_CONFIG
+        Self {
+            timeout: DEFAULT_TIMEOUT,
+            chords: Slice::from_slice(&[]),
+        }
     }
 }
 
-impl Default for Config {
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> Default
+    for Config<MAX_CHORDS, MAX_CHORD_SIZE>
+{
     /// Returns the default context.
     fn default() -> Self {
-        DEFAULT_CONFIG
+        Self::new()
     }
 }
 
 /// State for a key chord.
 #[derive(Debug, Clone, PartialEq)]
-pub struct ChordState {
+pub struct ChordState<const MAX_CHORD_SIZE: usize> {
     /// The chord index in the chorded config.
     pub index: usize,
     /// The chord's indices.
-    pub chord: ChordIndices,
+    pub chord: ChordIndices<MAX_CHORD_SIZE>,
     /// Whether the chord is satisfied by the pressed indices.
     pub is_satisfied: bool,
 }
 
 /// Chord definitions.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Context {
-    config: Config,
-    pressed_indices: [Option<u16>; MAX_CHORD_SIZE * MAX_CHORDS],
+pub struct Context<
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
+    config: Config<MAX_CHORDS, MAX_CHORD_SIZE>,
+    pressed_indices: [Option<u16>; MAX_PRESSED_INDICES],
     pressed_chords: [bool; MAX_CHORDS],
 }
 
-/// Default context.
-pub const DEFAULT_CONTEXT: Context = Context::from_config(DEFAULT_CONFIG);
-
-impl Context {
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
+    Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
     /// Constructs a context from the given config
-    pub const fn from_config(config: Config) -> Context {
-        let pressed_indices = [None; MAX_CHORD_SIZE * MAX_CHORDS];
+    pub const fn from_config(config: Config<MAX_CHORDS, MAX_CHORD_SIZE>) -> Self {
+        let pressed_indices = [None; MAX_PRESSED_INDICES];
         Context {
             config,
             pressed_indices,
@@ -135,7 +135,7 @@ impl Context {
         }
     }
 
-    fn pressed_chord_with_index(&self, keymap_index: u16) -> Option<ChordState> {
+    fn pressed_chord_with_index(&self, keymap_index: u16) -> Option<ChordState<MAX_CHORD_SIZE>> {
         self.pressed_chords
             .iter()
             .enumerate()
@@ -154,8 +154,8 @@ impl Context {
     }
 
     // Span of indices of pressed chords.
-    fn pressed_chords_indices_span(&self) -> heapless::Vec<u16, { MAX_CHORD_SIZE * MAX_CHORDS }> {
-        let mut res: heapless::Vec<u16, { MAX_CHORD_SIZE * MAX_CHORDS }> = heapless::Vec::new();
+    fn pressed_chords_indices_span(&self) -> heapless::Vec<u16, MAX_PRESSED_INDICES> {
+        let mut res: heapless::Vec<u16, MAX_PRESSED_INDICES> = heapless::Vec::new();
 
         let pressed_chords =
             self.pressed_chords
@@ -188,7 +188,7 @@ impl Context {
     pub fn chords_for_keymap_index(
         &self,
         keymap_index: u16,
-    ) -> heapless::Vec<ChordState, { MAX_CHORDS }> {
+    ) -> heapless::Vec<ChordState<MAX_CHORD_SIZE>, { MAX_CHORDS }> {
         match self.pressed_chord_with_index(keymap_index) {
             Some(chord_state) => heapless::Vec::from_slice(&[chord_state]).unwrap(),
             None => {
@@ -296,7 +296,9 @@ impl Context {
     }
 }
 
-impl key::Context for Context {
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
+    key::Context for Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
     type Event = Event;
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
@@ -310,21 +312,44 @@ impl key::Context for Context {
 /// The primary key is the key with the lowest index in the chord,
 ///  and has the key used for the resolved chord.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Key<R: Copy> {
+pub struct Key<
+    R: Copy,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_OVERLAPPING_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
     /// The chorded key
     pub chords: Slice<(ChordId, R), MAX_OVERLAPPING_CHORD_SIZE>,
     /// The passthrough key
     pub passthrough: R,
+    #[serde(default)]
+    marker: PhantomData<(
+        [(); MAX_CHORDS],
+        [(); MAX_CHORD_SIZE],
+        [(); MAX_PRESSED_INDICES],
+    )>,
 }
 
-impl<R: Copy> Key<R> {
+impl<
+        R: Copy,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_OVERLAPPING_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    > Key<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_OVERLAPPING_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        context: &Context,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
         keymap_index: u16,
     ) -> (
-        key::PressedKeyResult<R, PendingKeyState, KeyState>,
+        key::PressedKeyResult<
+            R,
+            PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+            KeyState,
+        >,
         key::KeyEvents<Event>,
     ) {
         let pks = PendingKeyState::new(context, keymap_index);
@@ -383,23 +408,22 @@ impl<R: Copy> Key<R> {
             (pkr, pke)
         }
     }
-}
 
-impl<R: Copy> Key<R> {
     /// Constructs new chorded key.
     pub const fn new(chords: &[(ChordId, R)], passthrough: R) -> Self {
         let chords = Slice::from_slice(chords);
         Key {
             chords,
             passthrough,
+            marker: PhantomData,
         }
     }
 
     fn update_pending_state(
         &self,
-        pending_state: &mut PendingKeyState,
+        pending_state: &mut PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
         keymap_index: u16,
-        context: &Context,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
         event: key::Event<Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Event>) {
         let ch_state = pending_state.handle_event(keymap_index, event);
@@ -458,19 +482,40 @@ impl<R: Copy> Key<R> {
 /// (i.e. After te primary chorded key, the remaining keys
 ///  in the chord are defined with auxiliary chorded keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct AuxiliaryKey<R> {
+pub struct AuxiliaryKey<
+    R,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
     /// The passthrough key
     pub passthrough: R,
+    #[serde(default)]
+    marker: PhantomData<(
+        [(); MAX_CHORDS],
+        [(); MAX_CHORD_SIZE],
+        [(); MAX_PRESSED_INDICES],
+    )>,
 }
 
-impl<R: Copy> AuxiliaryKey<R> {
+impl<
+        R: Copy,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    > AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
     /// Constructs new pressed key.
     pub fn new_pressed_key(
         &self,
-        context: &Context,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
         keymap_index: u16,
     ) -> (
-        key::PressedKeyResult<R, PendingKeyState, KeyState>,
+        key::PressedKeyResult<
+            R,
+            PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+            KeyState,
+        >,
         key::KeyEvents<Event>,
     ) {
         let pks = PendingKeyState::new(context, keymap_index);
@@ -506,17 +551,18 @@ impl<R: Copy> AuxiliaryKey<R> {
             (pkr, pke)
         }
     }
-}
 
-impl<R: Copy> AuxiliaryKey<R> {
     /// Constructs new auxiliary chorded key.
     pub const fn new(passthrough: R) -> Self {
-        AuxiliaryKey { passthrough }
+        AuxiliaryKey {
+            passthrough,
+            marker: PhantomData,
+        }
     }
 
     fn update_pending_state(
         &self,
-        pending_state: &mut PendingKeyState,
+        pending_state: &mut PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Event>) {
@@ -571,27 +617,38 @@ pub enum PendingChordState {
 
 /// State for pressed keys.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PendingKeyState {
+pub struct PendingKeyState<
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
     /// The keymap indices which have been pressed while the key is pending.
     pressed_indices: heapless::Vec<u16, { MAX_CHORD_SIZE }>,
     /// The chords which this pending key could resolve to.
-    possible_chords: heapless::Vec<ChordState, { MAX_CHORDS }>,
+    possible_chords: heapless::Vec<ChordState<MAX_CHORD_SIZE>, { MAX_CHORDS }>,
+    marker: PhantomData<[(); MAX_PRESSED_INDICES]>,
 }
 
-impl PendingKeyState {
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
+    PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
     /// Constructs a new [PendingKeyState].
-    pub fn new(context: &Context, keymap_index: u16) -> Self {
+    pub fn new(
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        keymap_index: u16,
+    ) -> Self {
         let pressed_indices = heapless::Vec::from_slice(&[keymap_index]).unwrap();
         let possible_chords = context.chords_for_keymap_index(keymap_index);
 
         Self {
             pressed_indices,
             possible_chords,
+            marker: PhantomData,
         }
     }
 
     /// Finds the chord state amongst possible_chords which is satisfied (if it exists).
-    fn satisfied_chord(&self) -> Option<&ChordState> {
+    fn satisfied_chord(&self) -> Option<&ChordState<MAX_CHORD_SIZE>> {
         self.possible_chords
             .iter()
             .find(|&ChordState { is_satisfied, .. }| *is_satisfied)
@@ -726,8 +783,21 @@ pub struct KeyState;
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<
     R: Copy + Debug + PartialEq,
-    Keys: Index<usize, Output = Key<R>>,
-    AuxiliaryKeys: Index<usize, Output = AuxiliaryKey<R>>,
+    Keys: Index<
+        usize,
+        Output = Key<
+            R,
+            MAX_CHORDS,
+            MAX_CHORD_SIZE,
+            MAX_OVERLAPPING_CHORD_SIZE,
+            MAX_PRESSED_INDICES,
+        >,
+    >,
+    AuxiliaryKeys: Index<usize, Output = AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>>,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_OVERLAPPING_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
 > {
     keys: Keys,
     auxiliary_keys: AuxiliaryKeys,
@@ -735,9 +805,31 @@ pub struct System<
 
 impl<
         R: Copy + Debug + PartialEq,
-        Keys: Index<usize, Output = Key<R>>,
-        AuxiliaryKeys: Index<usize, Output = AuxiliaryKey<R>>,
-    > System<R, Keys, AuxiliaryKeys>
+        Keys: Index<
+            usize,
+            Output = Key<
+                R,
+                MAX_CHORDS,
+                MAX_CHORD_SIZE,
+                MAX_OVERLAPPING_CHORD_SIZE,
+                MAX_PRESSED_INDICES,
+            >,
+        >,
+        AuxiliaryKeys: Index<usize, Output = AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>>,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_OVERLAPPING_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    >
+    System<
+        R,
+        Keys,
+        AuxiliaryKeys,
+        MAX_CHORDS,
+        MAX_CHORD_SIZE,
+        MAX_OVERLAPPING_CHORD_SIZE,
+        MAX_PRESSED_INDICES,
+    >
 {
     /// Constructs a new [System] with the given key data.
     pub const fn new(keys: Keys, auxiliary_keys: AuxiliaryKeys) -> Self {
@@ -750,14 +842,38 @@ impl<
 
 impl<
         R: Copy + Debug + PartialEq,
-        Keys: Debug + Index<usize, Output = Key<R>>,
-        AuxiliaryKeys: Debug + Index<usize, Output = AuxiliaryKey<R>>,
-    > key::System<R> for System<R, Keys, AuxiliaryKeys>
+        Keys: Debug
+            + Index<
+                usize,
+                Output = Key<
+                    R,
+                    MAX_CHORDS,
+                    MAX_CHORD_SIZE,
+                    MAX_OVERLAPPING_CHORD_SIZE,
+                    MAX_PRESSED_INDICES,
+                >,
+            >,
+        AuxiliaryKeys: Debug
+            + Index<usize, Output = AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>>,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_OVERLAPPING_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    > key::System<R>
+    for System<
+        R,
+        Keys,
+        AuxiliaryKeys,
+        MAX_CHORDS,
+        MAX_CHORD_SIZE,
+        MAX_OVERLAPPING_CHORD_SIZE,
+        MAX_PRESSED_INDICES,
+    >
 {
     type Ref = Ref;
-    type Context = Context;
+    type Context = Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
     type Event = Event;
-    type PendingKeyState = PendingKeyState;
+    type PendingKeyState = PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
     type KeyState = KeyState;
 
     fn new_pressed_key(
@@ -826,6 +942,18 @@ mod tests {
 
     use key::keyboard;
 
+    const MAX_CHORDS: usize = 4;
+    const MAX_CHORD_SIZE: usize = 16;
+    const MAX_OVERLAPPING_CHORD_SIZE: usize = 16;
+    const MAX_PRESSED_INDICES: usize = MAX_CHORD_SIZE * 2;
+
+    const DEFAULT_CONTEXT: Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES> =
+        Context::from_config(Config::new());
+
+    type AuxiliaryKey =
+        super::AuxiliaryKey<keyboard::Ref, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
+    type PendingKeyState = super::PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
+
     #[test]
     fn test_sizeof_ref() {
         assert_eq!(2, core::mem::size_of::<Ref>());
@@ -836,9 +964,7 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = DEFAULT_CONTEXT;
         let expected_ref = keyboard::Ref::KeyCode(0x04);
-        let _chorded_key = AuxiliaryKey {
-            passthrough: expected_ref,
-        };
+        let _chorded_key = AuxiliaryKey::new(expected_ref);
         let keymap_index: u16 = 0;
         let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
 
@@ -856,9 +982,7 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = DEFAULT_CONTEXT;
         let expected_ref = keyboard::Ref::KeyCode(0x04);
-        let _chorded_key = AuxiliaryKey {
-            passthrough: expected_ref,
-        };
+        let _chorded_key = AuxiliaryKey::new(expected_ref);
         let keymap_index: u16 = 0;
         let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
 
@@ -882,10 +1006,10 @@ mod tests {
         // Assemble: an Auxilary chorded key, and its PKS, with chord 01.
         let mut context = Context::from_config(Config {
             chords: Slice::from_slice(&[ChordIndices::from_slice(&[0, 1])]),
-            ..DEFAULT_CONFIG
+            ..Config::new()
         });
         let passthrough = keyboard::Ref::KeyCode(0x04);
-        let _chorded_key = AuxiliaryKey { passthrough };
+        let _chorded_key = AuxiliaryKey::new(passthrough);
         let keymap_index: u16 = 0;
         context.handle_event(key::Event::Input(input::Event::Press { keymap_index: 0 }));
         let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
@@ -903,10 +1027,8 @@ mod tests {
     fn test_release_pending_aux_state_resolves_as_tapped_key() {
         // Assemble: an Auxilary chorded key, and its PKS.
         let context = DEFAULT_CONTEXT;
-        let expected_key = keyboard::Ref::KeyCode(0x04);
-        let _chorded_key = AuxiliaryKey {
-            passthrough: expected_key,
-        };
+        let expected_ref = keyboard::Ref::KeyCode(0x04);
+        let _chorded_key = AuxiliaryKey::new(expected_ref);
         let keymap_index: u16 = 0;
         let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
 
