@@ -9,6 +9,7 @@ use serde::Deserialize;
 use crate::{key, keymap};
 
 use crate::init::LAYER_COUNT as LAYERED_LAYER_COUNT;
+use crate::init::MAX_TAP_DANCE_DEFINITIONS as TAP_DANCE_MAX_DEF_COUNT;
 
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -573,7 +574,7 @@ pub trait Keys {
     /// Type used by [key::sticky::System].
     type Sticky: Debug + Index<usize, Output = key::sticky::Key>;
     /// Type used by [key::tap_dance::System].
-    type TapDance: Debug + Index<usize, Output = key::tap_dance::Key<Ref>>;
+    type TapDance: Debug + Index<usize, Output = key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>>;
     /// Type used by [key::tap_hold::System].
     type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
 }
@@ -622,7 +623,7 @@ impl<
     type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
     type Layered = [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED];
     type Sticky = [key::sticky::Key; STICKY];
-    type TapDance = [key::tap_dance::Key<Ref>; TAP_DANCE];
+    type TapDance = [key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>; TAP_DANCE];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
 }
 
@@ -640,7 +641,7 @@ impl Keys for KeyVecs {
     type LayerModifiers = Vec<key::layered::ModifierKey>;
     type Layered = Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
     type Sticky = Vec<key::sticky::Key>;
-    type TapDance = Vec<key::tap_dance::Key<Ref>>;
+    type TapDance = Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
 }
 
@@ -656,7 +657,7 @@ pub struct System<D: Keys> {
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered, LAYERED_LAYER_COUNT>,
     mouse: key::mouse::System<Ref>,
     sticky: key::sticky::System<Ref, D::Sticky>,
-    tap_dance: key::tap_dance::System<Ref, D::TapDance>,
+    tap_dance: key::tap_dance::System<Ref, D::TapDance, TAP_DANCE_MAX_DEF_COUNT>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
     marker: PhantomData<D>,
 }
@@ -702,7 +703,11 @@ impl<
             LAYERED_LAYER_COUNT,
         >,
         sticky: key::sticky::System<Ref, [key::sticky::Key; STICKY]>,
-        tap_dance: key::tap_dance::System<Ref, [key::tap_dance::Key<Ref>; TAP_DANCE]>,
+        tap_dance: key::tap_dance::System<
+            Ref,
+            [key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>; TAP_DANCE],
+            TAP_DANCE_MAX_DEF_COUNT,
+        >,
         tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
     ) -> Self {
         System {
@@ -729,7 +734,11 @@ impl System<KeyVecs> {
         keyboard: key::keyboard::System<Ref, <KeyVecs as Keys>::Keyboard>,
         callback: key::callback::System<Ref, <KeyVecs as Keys>::Callback>,
         sticky: key::sticky::System<Ref, <KeyVecs as Keys>::Sticky>,
-        tap_dance: key::tap_dance::System<Ref, <KeyVecs as Keys>::TapDance>,
+        tap_dance: key::tap_dance::System<
+            Ref,
+            <KeyVecs as Keys>::TapDance,
+            TAP_DANCE_MAX_DEF_COUNT,
+        >,
         tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
         layered: key::layered::System<
             Ref,
