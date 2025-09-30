@@ -116,6 +116,21 @@
       + (if km.right_gui then 128 else 0),
   },
 
+  keymap_ncl.null_ = {
+    Key = std.contract.from_validator key_validator,
+
+    key_validator = fun k =>
+      k
+      |> match {
+        null => 'Ok,
+        _ => 'Err "not null",
+      },
+
+    is_key = fun k => 'Ok == key_validator k,
+
+    to_json_value = fun k => null,
+  },
+
   keymap_ncl.key = {
     Key = std.contract.from_validator key_validator,
 
