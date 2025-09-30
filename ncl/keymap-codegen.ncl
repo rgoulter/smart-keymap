@@ -143,6 +143,43 @@
       },
   },
 
+  checks.check_key_output = {
+    check_json_validation_of_key_code = {
+      actual = key_output.json_validator { key_code = { Keyboard = 4 } },
+      expected = 'Ok,
+    },
+  },
+
+  key_output = {
+    Json = std.contract.from_validator json_validator,
+
+    json_validator =
+      validators.record.validator {
+        fields_validator = validators.record.has_only_fields ["key_code", "modifiers"],
+        field_validators = {
+          key_code = key_usage.json_validator,
+          modifiers = keyboard_modifiers.json_validator,
+        },
+      },
+
+    is_json = fun json => 'Ok == json_validator json,
+
+    rust_expr = fun json =>
+      json
+      |> match {
+        { key_code } => "smart_keymap::key::KeyOutput::from_usage(%{key_usage.rust_expr key_code})",
+        { modifiers } =>
+          m%"smart_keymap::key::KeyOutput::from_key_modifiers(
+          %{keyboard_modifiers.rust_expr modifiers}
+        )"%,
+        { key_code, modifiers } =>
+          m%"smart_keymap::key::KeyOutput::from_usage_with_modifiers(
+              %{key_usage.rust_expr key_code},
+              %{keyboard_modifiers.rust_expr modifiers}
+            )"%,
+      },
+  },
+
   composite = {
     ref = {
       wrap = fun ref @ { module, json, rust_expr, .. } =>
