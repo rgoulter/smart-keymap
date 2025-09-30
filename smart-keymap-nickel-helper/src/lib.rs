@@ -281,7 +281,8 @@ pub fn nickel_json_value_for_inputs(
                 .write_all(
                     format!(
                         r#"
-                           (import "keymap-ncl-to-json.ncl")
+                           (import "keymap-codegen.ncl")
+                           & (import "keymap-ncl-to-json.ncl")
                            & (import "inputs-to-json.ncl")
                            & ({})
                            & ({{
