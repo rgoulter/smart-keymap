@@ -41,7 +41,7 @@
 
   KeymapLayerString = String,
 
-  KeymapLayer = std.contract.any_of [Array KeymapKey, KeymapLayerString],
+  KeymapLayer = std.contract.any_of [KeymapLayerString, Array KeymapKey],
 
   config | Config = {},
 
