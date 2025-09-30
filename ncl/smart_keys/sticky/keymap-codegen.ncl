@@ -95,13 +95,13 @@
             let sticky_config = json_keymap.config.sticky in
             let activation_field_fragment =
               if std.record.has_field "activation" sticky_config then
-                "activation: smart_keymap::key::sticky::StickyKeyActivation::%{sticky_config.activation},"
+                "activation: %{module}::StickyKeyActivation::%{sticky_config.activation},"
               else
                 ""
             in
             let release_field_fragment =
               if std.record.has_field "release" sticky_config then
-                "release: smart_keymap::key::sticky::StickyKeyRelease::%{sticky_config.release},"
+                "release: %{module}::StickyKeyRelease::%{sticky_config.release},"
               else
                 ""
             in
@@ -109,24 +109,24 @@
               [
                 activation_field_fragment,
                 release_field_fragment,
-                "..smart_keymap::key::sticky::Config::new()"
+                "..%{module}::Config::new()"
               ]
               |> std.array.filter ((!=) "")
               |> std.string.join "\n"
             in
             m%"
-            smart_keymap::key::sticky::Config {
+            %{module}::Config {
                 %{config_fragment}
             }
           "%
           else
-            "smart_keymap::key::sticky::Config::new()",
+            "%{module}::Config::new()",
       },
 
       system = {
         rust_expr =
           let sticky_data = (key_data_and_refs.key_data & { sticky | default = [] }).sticky in
-          "smart_keymap::key::sticky::System::new(%{sticky_data |> lib.array_rust_expr})"
+          "%{module}::System::new(%{sticky_data |> lib.array_rust_expr})"
       },
     },
 }

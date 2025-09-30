@@ -120,19 +120,19 @@
                 ""
             in
             m%"
-            smart_keymap::key::tap_dance::Config {
+            %{module}::Config {
                 %{timeout_field_fragment}
-                ..smart_keymap::key::tap_dance::Config::new()
+                ..%{module}::Config::new()
             }
           "%
           else
-            "smart_keymap::key::tap_dance::Config::new()",
+            "%{module}::Config::new()",
       },
 
       system = {
         rust_expr =
           let tap_dance_data = (key_data_and_refs.key_data & { tap_dance | default = [] }).tap_dance in
-          "smart_keymap::key::tap_dance::System::new(%{tap_dance_data |> lib.array_rust_expr})",
+          "%{module}::System::new(%{tap_dance_data |> lib.array_rust_expr})",
       },
     },
 }

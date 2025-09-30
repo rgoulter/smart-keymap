@@ -292,7 +292,7 @@
           let layer_modifiers_data = (key_data_and_refs.key_data & { layer_modifiers | default = [] }).layer_modifiers in
           let layered_data = (key_data_and_refs.key_data & { layered | default = [] }).layered in
           m%"
-          smart_keymap::key::layered::System::new(
+          %{module}::System::new(
             %{layer_modifiers_data |> lib.array_rust_expr},
             %{layered_data |> lib.array_rust_expr},
           )

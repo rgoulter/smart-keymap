@@ -153,7 +153,7 @@
             in
             let interrupt_response_field_fragment =
               if std.record.has_field "interrupt_response" tap_hold_config then
-                "interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::%{tap_hold_config.interrupt_response},"
+                "interrupt_response: %{module}::InterruptResponse::%{tap_hold_config.interrupt_response},"
               else
                 ""
             in
@@ -164,21 +164,21 @@
                 ""
             in
             m%"
-            smart_keymap::key::tap_hold::Config {
+            %{module}::Config {
                 %{timeout_field_fragment}
                 %{interrupt_response_field_fragment}
                 %{required_idle_time_field_fragment}
-                ..smart_keymap::key::tap_hold::Config::new()
+                ..%{module}::Config::new()
             }
           "%
           else
-            "smart_keymap::key::tap_hold::Config::new()",
+            "%{module}::Config::new()",
       },
 
       system = {
         rust_expr =
           let tap_hold_data = (key_data_and_refs.key_data & { tap_hold | default = [] }).tap_hold in
-          "smart_keymap::key::tap_hold::System::new(%{tap_hold_data |> lib.array_rust_expr})",
+          "%{module}::System::new(%{tap_hold_data |> lib.array_rust_expr})",
       },
     },
 }
