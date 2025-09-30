@@ -32,6 +32,20 @@
           chords = chords_ |> std.array.map (fun [i, chord_key] => [i, keymap_ncl.key.to_json_value chord_key]),
           passthrough = keymap_ncl.key.to_json_value passthrough_key,
         },
+
+      map_accum = fun f acc k @ { chords, passthrough } =>
+        let { acc, chords } =
+          chords
+          |> std.array.fold_left
+            (fun { acc, chords } [i, k] =>
+              let { acc, k } = f acc k in
+              let chords = chords @ [[i, k]] in
+              { include acc, include chords }
+            )
+            { include acc, chords = [] }
+        in
+        let { acc, k = passthrough } = f acc passthrough in
+        { include acc, k = { include chords, include passthrough, }, },
     },
 
   keymap_ncl.chorded_aux
@@ -52,5 +66,9 @@
         {
           passthrough = keymap_ncl.key.to_json_value passthrough_key,
         },
+
+      map_accum = fun f acc k @ { passthrough } =>
+        let { acc, k = passthrough } = f acc passthrough in
+        { include acc, k = { include passthrough }, },
     },
 }

@@ -71,5 +71,17 @@
           hold = keymap_ncl.key.to_json_value hold_key,
           tap = keymap_ncl.key.to_json_value tap_key,
         },
+
+      map_accum = fun f acc k @ { hold = hold_key, ..tap_key } =>
+        let { acc, k = tap_key } = f acc tap_key in
+        let { acc, k = hold_key } = f acc hold_key in
+        {
+          include acc,
+          k =
+            {
+              hold = hold_key,
+            }
+            & tap_key,
+        },
     },
 }

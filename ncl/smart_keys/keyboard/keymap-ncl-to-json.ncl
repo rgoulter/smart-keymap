@@ -41,5 +41,7 @@
         { modifiers = km, ..k } => k & { modifiers = keyboard_modifiers.to_json_value km },
         k => k,
       },
+
+      map_accum = fun f acc k => f acc k,
     },
 }
