@@ -228,7 +228,7 @@ pub fn nickel_json_value_for_keymap(ncl_import_path: String, keymap_ncl: &str) -
             let child_stdin = nickel_command.stdin.as_mut().unwrap();
             child_stdin
                 .write_all(
-                    format!(r#"(import "keymap-ncl-to-json.ncl") & (import "keymap-codegen.ncl") & ({})"#, keymap_ncl).as_bytes(),
+                    format!(r#"(import "keymap-codegen.ncl") & (import "keymap-ncl-to-json.ncl") & ({})"#, keymap_ncl).as_bytes(),
                 )
                 .unwrap_or_else(|e| panic!("Failed to write to stdin: {:?}", e));
 
