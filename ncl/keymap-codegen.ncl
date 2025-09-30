@@ -110,6 +110,39 @@
       "%,
   },
 
+  checks.check_key_usage = {
+    check_json_validation = {
+      actual = key_usage.json_validator { Keyboard = 4 },
+      expected = 'Ok,
+    },
+  },
+
+  key_usage = {
+    Json = std.contract.from_validator json_validator,
+
+    json_validator =
+      validators.record.validator {
+        fields_validator = validators.record.has_any_field_of ["Keyboard", "Consumer", "Custom", "MouseOutput"],
+        field_validators = {
+          Keyboard = validators.is_number,
+          Consumer = validators.is_number,
+          Custom = validators.is_number,
+          MouseOutput = mouse_output.json_validator,
+        },
+      },
+
+    is_json = fun json => 'Ok == json_validator json,
+
+    rust_expr = fun json =>
+      json
+      |> match {
+        { Keyboard } => "smart_keymap::key::KeyUsage::Keyboard(%{std.to_string Keyboard})",
+        { Consumer } => "smart_keymap::key::KeyUsage::Consumer(%{std.to_string Consumer})",
+        { Custom } => "smart_keymap::key::KeyUsage::Custom(%{std.to_string Custom})",
+        { MouseOutput } => "smart_keymap::key::KeyUsage::Mouse(%{mouse_output.rust_expr MouseOutput})",
+      },
+  },
+
   composite = {
     ref = {
       wrap = fun ref @ { module, json, rust_expr, .. } =>
