@@ -56,7 +56,7 @@
             }]"%
               in
               let passthrough_expr = nested.passthrough.rust_expr in
-              "smart_keymap::key::chorded::Key::new(%{chords_expr}, %{passthrough_expr})",
+              "%{module}::Key::new(%{chords_expr}, %{passthrough_expr})",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -147,7 +147,7 @@
             include key_type,
             rust_expr =
               let passthrough_expr = nested.passthrough.rust_expr in
-              "smart_keymap::key::chorded::AuxiliaryKey::new(%{passthrough_expr})",
+              "%{module}::AuxiliaryKey::new(%{passthrough_expr})",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -213,7 +213,7 @@
                 let chords_fragment =
                   chorded_config.chords
                   |> std.array.map (fun indices =>
-                    "smart_keymap::key::chorded::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}])"
+                    "%{module}::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}])"
                   )
                   |> std.string.join ","
                 in
@@ -222,14 +222,14 @@
                 ""
             in
             m%"
-          smart_keymap::key::chorded::Config {
+          %{module}::Config {
               %{timeout_field_fragment}
               %{chords_field_fragment}
-              ..smart_keymap::key::chorded::Config::new()
+              ..%{module}::Config::new()
           }
         "%
           else
-            "smart_keymap::key::chorded::Config::new()",
+            "%{module}::Config::new()",
       },
 
       system = {
@@ -237,7 +237,7 @@
           let chorded_key_data = (key_data_and_refs.key_data & { chorded | default = [] }).chorded in
           let auxiliary_key_data = (key_data_and_refs.key_data & { chorded_auxiliary | default = [] }).chorded_auxiliary in
           m%"
-        smart_keymap::key::chorded::System::new(
+        %{module}::System::new(
             %{chorded_key_data |> lib.array_rust_expr},
             %{auxiliary_key_data |> lib.array_rust_expr},
         )

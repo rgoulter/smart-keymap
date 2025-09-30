@@ -73,7 +73,7 @@
       system = {
         rust_expr =
           let callback_data = (key_data_and_refs.key_data & { callback | default = [] }).callback in
-          "smart_keymap::key::callback::System::new(%{callback_data |> lib.array_rust_expr})",
+          "%{module}::System::new(%{callback_data |> lib.array_rust_expr})",
       },
     },
 }

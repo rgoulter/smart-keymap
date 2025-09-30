@@ -29,7 +29,7 @@
             include json,
             include module,
             include key_type,
-            rust_expr = "smart_keymap::key::caps_word::Key::new()",
+            rust_expr = "%{module}::Key::new()",
           },
 
         traverse = fun f acc cv => f acc cv,

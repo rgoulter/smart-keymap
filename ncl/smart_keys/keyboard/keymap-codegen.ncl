@@ -135,7 +135,7 @@
       system = {
         rust_expr =
           let keyboard_data = (key_data_and_refs.key_data & { keyboard | default = [] }).keyboard in
-          "smart_keymap::key::keyboard::System::new(%{keyboard_data |> lib.array_rust_expr})",
+          "%{module}::System::new(%{keyboard_data |> lib.array_rust_expr})",
       },
     },
 }
