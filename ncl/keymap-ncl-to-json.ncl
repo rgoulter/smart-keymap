@@ -21,23 +21,7 @@
     tap_hold | optional | keymap_ncl.tap_hold.Config,
   },
 
-  KeymapKey =
-    std.contract.any_of [
-      keymap_ncl.keyboard.Key,
-      keymap_ncl.layer_modifier.Key,
-      keymap_ncl.callback.Key,
-      keymap_ncl.caps_word.Key,
-      keymap_ncl.consumer.Key,
-      keymap_ncl.mouse.Key,
-      keymap_ncl.sticky.Key,
-      keymap_ncl.custom.Key,
-      keymap_ncl.layered.Key,
-      keymap_ncl.tap_dance.Key,
-      keymap_ncl.tap_hold.Key,
-      keymap_ncl.chorded.Key,
-      keymap_ncl.chorded_aux.Key,
-      std.contract.from_validator validators.is_null,
-    ],
+  KeymapKey = keymap_ncl.nullable_key.Key,
 
   KeymapLayerString = String,
 
@@ -167,6 +151,25 @@
     to_json_value = fun k =>
       let km = key_module_for_value k in
       km.to_json_value k,
+  },
+
+  keymap_ncl.nullable_key = {
+    Key = std.contract.from_validator key_validator,
+
+    key_validator = fun k =>
+      k
+      |> validators.any_of [
+        keymap_ncl.key.key_validator,
+        keymap_ncl.null_.key_validator,
+      ],
+
+    is_key = fun k => 'Ok == key_validator k,
+
+    to_json_value = match {
+      k if keymap_ncl.key.is_key k => keymap_ncl.key.to_json_value k,
+      k if keymap_ncl.null_.is_key k => keymap_ncl.null_.to_json_value k,
+      _ => std.fail_with "unsupported nullable_key item in keymap.ncl",
+    },
   },
 
   checks.check_words_from_whitespace_delimited_string = {
