@@ -59,7 +59,9 @@
             in
             { SetActiveLayers = active_layers_bitset },
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
-        }
+        },
+
+      map_accum = fun f acc k => f acc k,
     },
 
   checks.layered =
@@ -132,5 +134,20 @@
               (fun k => if k != null then keymap_ncl.key.to_json_value k else null)
               layered_keys,
         },
+
+      map_accum = fun f acc k @ { layered, ..base_key } =>
+        let { acc, layered } =
+          layered
+          |> std.array.fold_left
+            (fun { acc, layered } k =>
+              let { acc, k } = f acc k in
+              let layered = layered @ [k] in
+              { include acc, include layered }
+            )
+            { include acc, layered = [] }
+        in
+        let { acc, k = base_key } = f acc base_key in
+        # n.b.: `.. base_key` results in format error.
+        { include acc, k = { include layered, } & base_key, },
     },
 }

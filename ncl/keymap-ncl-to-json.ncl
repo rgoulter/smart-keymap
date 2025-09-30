@@ -113,6 +113,8 @@
     is_key = fun k => 'Ok == key_validator k,
 
     to_json_value = fun k => null,
+
+    map_accum = fun f acc k => f acc k,
   },
 
   keymap_ncl.key = {
@@ -151,6 +153,10 @@
     to_json_value = fun k =>
       let km = key_module_for_value k in
       km.to_json_value k,
+
+    map_accum = fun f acc k =>
+      let km = key_module_for_value k in
+      km.map_accum f acc k,
   },
 
   keymap_ncl.nullable_key = {
@@ -170,6 +176,13 @@
       k if keymap_ncl.null_.is_key k => keymap_ncl.null_.to_json_value k,
       _ => std.fail_with "unsupported nullable_key item in keymap.ncl",
     },
+
+    map_accum = fun f acc k =>
+      match {
+        k if keymap_ncl.key.is_key k => keymap_ncl.key.map_accum f acc k,
+        k if keymap_ncl.null_.is_key k => keymap_ncl.null_.map_accum f acc k,
+        _ => std.fail_with "unsupported nullable_key item in keymap.ncl",
+      },
   },
 
   checks.check_words_from_whitespace_delimited_string = {

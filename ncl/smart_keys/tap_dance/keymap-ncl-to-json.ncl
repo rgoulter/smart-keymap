@@ -31,5 +31,26 @@
         {
           definitions = [keymap_ncl.key.to_json_value tap_key] @ (std.array.map keymap_ncl.key.to_json_value tap_dances),
         },
-    },
+
+      map_accum = fun f acc k @ { tap_dances, ..tap_key } =>
+        let { acc, tap_dances } =
+          tap_dances
+          |> std.array.fold_left
+            (fun { acc, tap_dances } k =>
+              let { acc, k } = f acc k in
+              let tap_dances = tap_dances @ [k] in
+              { include acc, include tap_dances }
+            )
+            { include acc, tap_dances = [] }
+        in
+        let { acc, k = tap_key } = f acc tap_key in
+        {
+          include acc,
+          k =
+            {
+              include tap_dances,
+            }
+            & tap_key,
+        },
+    }
 }
