@@ -71,6 +71,45 @@
     rust_expr = fun b => "smart_keymap::key::KeyboardModifiers::from_byte(%{std.to_string b})",
   },
 
+  mouse_output = {
+    Json = std.contract.from_validator json_validator,
+
+    json_validator =
+      validators.record.validator {
+        fields_validator = validators.record.has_only_fields ["pressed_buttons", "x", "y", "vertical_scroll", "horizontal_scroll"],
+        field_validators = {
+          pressed_buttons = validators.is_number,
+          x = validators.is_number,
+          y = validators.is_number,
+          vertical_scroll = validators.is_number,
+          horizontal_scroll = validators.is_number,
+        },
+      },
+
+    is_json = fun json => 'Ok == json_validator json,
+
+    rust_expr = fun json =>
+      let { pressed_buttons, x, y, vertical_scroll, horizontal_scroll } =
+        json
+        & {
+          pressed_buttons | default = 0,
+          x | default = 0,
+          y | default = 0,
+          vertical_scroll | default = 0,
+          horizontal_scroll | default = 0
+        }
+      in
+      m%"
+        smart_keymap::key::MouseOutput {
+          pressed_buttons: %{std.to_string json.pressed_buttons},
+          x: %{std.to_string json.x},
+          y: %{std.to_string json.y},
+          vertical_scroll: %{std.to_string json.vertical_scroll},
+          horizontal_scroll: %{std.to_string json.horizontal_scroll},
+        }
+      "%,
+  },
+
   composite = {
     ref = {
       wrap = fun ref @ { module, json, rust_expr, .. } =>
