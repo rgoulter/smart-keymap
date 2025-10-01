@@ -443,6 +443,12 @@ pub enum KeyUsage {
     Mouse(MouseOutput),
 }
 
+impl Default for KeyUsage {
+    fn default() -> Self {
+        KeyUsage::Keyboard(0x00)
+    }
+}
+
 /// Struct for the output from [KeyState].
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyOutput {
