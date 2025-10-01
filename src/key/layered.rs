@@ -165,11 +165,6 @@ impl<const LAYER_COUNT: usize> Default for Context<LAYER_COUNT> {
 }
 
 impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
-    /// Activate the given layer.
-    pub fn activate_layer(&mut self, layer: LayerIndex) {
-        self.active_layers.activate(layer);
-    }
-
     /// Get the active layers.
     pub fn layer_state(&self) -> &[bool; LAYER_COUNT] {
         &self.active_layers
