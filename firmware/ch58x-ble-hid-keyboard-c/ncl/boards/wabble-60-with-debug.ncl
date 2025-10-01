@@ -38,14 +38,14 @@
       = fun { column_index | Number, row_index | Number, .. } =>
         let columnwise_index = column_index * 8 + row_index in
         if columnwise_index >= board.matrix.key_count then
-          'Error "no key at this column/row index."
+          'NoKey
         else
           let physical_column_index = std.number.floor (columnwise_index / 5) in
           let physical_row_index = columnwise_index % 5 in
           let rowwise_index = physical_row_index * 12 + physical_column_index in
           # 'O' = okay, 'X' = used by Row2=PA9=TX1
           let O = 'Ok in
-          let X = 'Error in
+          let X = 'UsedByTx1 in
           let physical_matrix =
             m%"
             OOOOOX    OOOOOO
@@ -66,8 +66,8 @@
           |> std.array.at physical_row_index
           |> std.array.at physical_column_index
           |> match {
-            'Ok => 'Ok rowwise_index,
-            'Error => 'Error "key at this column/row index is not present (used by debug).",
+            'Ok => 'Key rowwise_index,
+            'UsedByTx1 => 'NoKey,
           },
   },
 }
