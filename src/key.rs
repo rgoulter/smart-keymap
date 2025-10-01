@@ -446,7 +446,9 @@ pub enum KeyUsage {
 /// Struct for the output from [KeyState].
 #[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct KeyOutput {
+    #[serde(default)]
     key_code: KeyUsage,
+    #[serde(default)]
     key_modifiers: KeyboardModifiers,
 }
 
