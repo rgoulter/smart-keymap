@@ -32,11 +32,11 @@
       = fun { column_index | Number, row_index | Number, .. } =>
         let columnwise_index = column_index * 8 + row_index in
         if columnwise_index >= board.matrix.key_count then
-          'Error "no key at this column/row index."
+          'NoKey
         else
           let physical_column_index = std.number.floor (columnwise_index / 5) in
           let physical_row_index = columnwise_index % 5 in
           let rowwise_index = physical_row_index * 12 + physical_column_index in
-          'Ok rowwise_index,
+          'Key rowwise_index,
   },
 }
