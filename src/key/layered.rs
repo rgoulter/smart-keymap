@@ -99,11 +99,18 @@ impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
 }
 
+/// Style of activating a layer.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum ActivationStyle {
+    /// Regular layer activation.
+    Regular,
+}
+
 /// State of an individual layer: active or inactive.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Activity {
     /// The layer is active.
-    Active,
+    Active(ActivationStyle),
     /// The layer is inactive.
     Inactive,
 }
@@ -111,14 +118,14 @@ pub enum Activity {
 impl Activity {
     /// Returns true if the layer is active.
     pub fn is_active(&self) -> bool {
-        matches!(self, Activity::Active)
+        matches!(self, Activity::Active(_))
     }
 }
 
 /// Tracks state of active layers.
 pub trait LayerState: Copy + Debug {
     /// Activate the given layer.
-    fn activate(&mut self, layer: LayerIndex);
+    fn activate(&mut self, layer: LayerIndex, style: ActivationStyle);
     /// Deactivate the given layer.
     fn deactivate(&mut self, layer: LayerIndex);
     /// Get the active layers, from highest active layer to lowest.
@@ -126,14 +133,14 @@ pub trait LayerState: Copy + Debug {
 }
 
 impl<const L: usize> LayerState for [Activity; L] {
-    fn activate(&mut self, layer_index: LayerIndex) {
+    fn activate(&mut self, layer_index: LayerIndex, style: ActivationStyle) {
         let layer_index: usize = layer_index as usize;
         debug_assert!(
             layer_index <= L,
             "layer must be less than array length of {}",
             L
         );
-        self[layer_index - 1] = Activity::Active;
+        self[layer_index - 1] = Activity::Active(style);
     }
 
     fn deactivate(&mut self, layer_index: LayerIndex) {
@@ -190,7 +197,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     fn handle_event(&mut self, event: LayerEvent) {
         match event {
             LayerEvent::Activated(layer) => {
-                self.active_layers.activate(layer);
+                self.active_layers.activate(layer, ActivationStyle::Regular);
             }
             LayerEvent::Deactivated(layer) => {
                 self.active_layers.deactivate(layer);
@@ -199,7 +206,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 if self.active_layers[layer as usize - 1].is_active() {
                     self.active_layers.deactivate(layer);
                 } else {
-                    self.active_layers.activate(layer);
+                    self.active_layers.activate(layer, ActivationStyle::Regular);
                 }
             }
             LayerEvent::Set(layer_set) => {
@@ -208,7 +215,8 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 // layer 0 is always active.
                 for li in 1..max_layer {
                     if (layer_set & (1 << li)) != 0 {
-                        self.active_layers.activate(li as LayerIndex);
+                        self.active_layers
+                            .activate(li as LayerIndex, ActivationStyle::Regular);
                     } else {
                         self.active_layers.deactivate(li as LayerIndex);
                     }
@@ -614,7 +622,11 @@ mod tests {
 
         let actual_active_layers = &context.active_layers[0..3];
         assert_eq!(
-            &[Activity::Inactive, Activity::Active, Activity::Inactive],
+            &[
+                Activity::Inactive,
+                Activity::Active(ActivationStyle::Regular),
+                Activity::Inactive
+            ],
             actual_active_layers
         );
     }
@@ -727,9 +739,9 @@ mod tests {
     #[test]
     fn test_layer_state_array_active_layers() {
         let mut layer_state: [Activity; 5] = [Activity::Inactive; 5];
-        layer_state.activate(1);
-        layer_state.activate(2);
-        layer_state.activate(4);
+        layer_state.activate(1, ActivationStyle::Regular);
+        layer_state.activate(2, ActivationStyle::Regular);
+        layer_state.activate(4, ActivationStyle::Regular);
         let actual_active_layers: Vec<LayerIndex> = layer_state.active_layers().collect();
         let expected_active_layers: Vec<LayerIndex> = vec![4, 2, 1];
 
