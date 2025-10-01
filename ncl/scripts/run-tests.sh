@@ -21,6 +21,7 @@ ncl_tests=(
     "keymap-1key-custom"
     "keymap-1key-2layer-th-lmod"
     "keymap-1key-callback-custom"
+    "keymap-1key-automation"
     "keymap-2key-2layer-simple"
     "keymap-2key-2layer-composite"
     "keymap-2key-chorded"
