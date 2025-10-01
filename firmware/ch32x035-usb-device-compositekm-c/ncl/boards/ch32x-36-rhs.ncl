@@ -17,8 +17,8 @@ let C = import "codegen/contracts.ncl" in
     # The CH32X-36 RHS uses a matrix of 4 rows of 5 columns,
     #  and is split with a similar RHS keyboard.
     keymap_index_for_key = fun { column_index | Number, row_index | Number, .. } =>
-      let NO_KEY = 'Error "no key at this column/row index." in
-      let k = fun i => 'Ok i in
+      let NO_KEY = 'NoKey in
+      let k = fun i => 'Key i in
       let map = [
         [k 5,  k  6, k  7, k  8, k  9],
         [k 15, k 16, k 17, k 18, k 19],

@@ -34,7 +34,7 @@
     #
     # Want the keymap index to refer to keys row-wise.
     keymap_index_for_key = fun { column_index | Number, row_index | Number, .. } =>
-      'Ok (row_index * 15 + column_index),
+      'Key (row_index * 15 + column_index),
 
     led = {
       enabled = true,
