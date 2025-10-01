@@ -191,6 +191,8 @@
       "<" = keys.LeftAngleBracket,
       "." = keys.Dot,
       ">" = keys.RightAngleBracket,
+
+      " " = keys.Space,
     },
 
     shifted = {
