@@ -7,8 +7,7 @@ let C = import "codegen/contracts.ncl" in
     target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
     "%,
 
-  sources.keyboard
-    = m%"
+  sources.keyboard = m%"
   #include "keyboard_matrix.h"
 
   void keyboard_init(void) {
