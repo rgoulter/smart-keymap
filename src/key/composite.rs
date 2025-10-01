@@ -8,6 +8,7 @@ use serde::Deserialize;
 
 use crate::{key, keymap};
 
+use crate::init::AUTOMATION_INSTRUCTION_COUNT;
 use crate::init::CHORDED_MAX_CHORDS;
 use crate::init::CHORDED_MAX_CHORD_SIZE;
 use crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE;
@@ -19,6 +20,8 @@ const CHORDED_MAX_PRESSED_INDICES: usize = CHORDED_MAX_CHORD_SIZE * 2;
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
+    /// [key::automation::Ref] variant.
+    Automation(key::automation::Ref),
     /// [key::callback::Ref] variant.
     Callback(key::callback::Ref),
     /// [key::caps_word::Ref] variant.
@@ -53,6 +56,9 @@ impl Default for Ref {
 /// Aggregate config.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
+    /// The automation configuration.
+    #[serde(default)]
+    pub automation: key::automation::Config<AUTOMATION_INSTRUCTION_COUNT>,
     /// The chorded configuration.
     #[serde(default)]
     pub chorded: key::chorded::Config<CHORDED_MAX_CHORDS, CHORDED_MAX_CHORD_SIZE>,
@@ -71,6 +77,7 @@ impl Config {
     /// Constructs a new [Config] with default values.
     pub const fn new() -> Self {
         Config {
+            automation: key::automation::Config::new(),
             chorded: key::chorded::Config::new(),
             sticky: key::sticky::Config::new(),
             tap_dance: key::tap_dance::Config::new(),
@@ -83,6 +90,7 @@ impl Config {
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
     keymap_context: keymap::KeymapContext,
+    automation: key::automation::Context<AUTOMATION_INSTRUCTION_COUNT>,
     caps_word: key::caps_word::Context,
     chorded: key::chorded::Context<
         CHORDED_MAX_CHORDS,
@@ -100,6 +108,7 @@ impl Context {
     pub const fn from_config(config: Config) -> Self {
         Self {
             keymap_context: keymap::KeymapContext::new(),
+            automation: key::automation::Context::from_config(config.automation),
             caps_word: key::caps_word::Context::new(),
             chorded: key::chorded::Context::from_config(config.chorded),
             layered: key::layered::Context::new(),
@@ -121,6 +130,10 @@ impl key::Context for Context {
     type Event = Event;
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         let mut pke = key::KeyEvents::no_events();
+
+        if let Ok(e) = event.try_into_key_event() {
+            pke.extend(self.automation.handle_event(e).into_events());
+        }
 
         if let Ok(e) = event.try_into_key_event() {
             pke.extend(self.caps_word.handle_event(e).into_events());
@@ -153,6 +166,8 @@ impl keymap::SetKeymapContext for Context {
 /// Sum type aggregating the [key::Event] types.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
+    /// An automation event.
+    Automation(key::automation::Event),
     /// A callback event.
     Callback(key::callback::Event),
     /// A caps word event.
@@ -175,6 +190,12 @@ pub enum Event {
     TapDance(key::tap_dance::Event),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
+}
+
+impl From<key::automation::Event> for Event {
+    fn from(ev: key::automation::Event) -> Self {
+        Event::Automation(ev)
+    }
 }
 
 impl From<key::callback::Event> for Event {
@@ -240,6 +261,17 @@ impl From<key::tap_dance::Event> for Event {
 impl From<key::tap_hold::Event> for Event {
     fn from(ev: key::tap_hold::Event) -> Self {
         Event::TapHold(ev)
+    }
+}
+
+impl TryFrom<Event> for key::automation::Event {
+    type Error = key::EventError;
+
+    fn try_from(ev: Event) -> Result<Self, Self::Error> {
+        match ev {
+            Event::Automation(ev) => Ok(ev),
+            _ => Err(key::EventError::UnmappableEvent),
+        }
     }
 }
 
@@ -346,6 +378,8 @@ impl TryFrom<Event> for key::tap_hold::Event {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(clippy::large_enum_variant)]
 pub enum PendingKeyState {
+    /// Pending key state for [key::automation::PendingKeyState].
+    Automation(key::automation::PendingKeyState),
     /// Pending key state for [key::callback::PendingKeyState].
     Callback(key::callback::PendingKeyState),
     /// Pending key state for [key::caps_word::PendingKeyState].
@@ -374,6 +408,12 @@ pub enum PendingKeyState {
     TapDance(key::tap_dance::PendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
     TapHold(key::tap_hold::PendingKeyState),
+}
+
+impl From<key::automation::PendingKeyState> for PendingKeyState {
+    fn from(pks: key::automation::PendingKeyState) -> Self {
+        PendingKeyState::Automation(pks)
+    }
 }
 
 impl From<key::callback::PendingKeyState> for PendingKeyState {
@@ -500,6 +540,8 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::Pendi
 pub enum KeyState {
     /// No-op key state.
     NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
+    /// Key state for [key::automation::KeyState].
+    Automation(key::automation::KeyState),
     /// Key state for [key::callback::KeyState].
     Callback(key::callback::KeyState),
     /// Key state for [key::caps_word::KeyState].
@@ -527,6 +569,12 @@ pub enum KeyState {
 impl From<key::NoOpKeyState> for KeyState {
     fn from(_: key::NoOpKeyState) -> Self {
         KeyState::NoOp
+    }
+}
+
+impl From<key::automation::KeyState> for KeyState {
+    fn from(ks: key::automation::KeyState) -> Self {
+        KeyState::Automation(ks)
     }
 }
 
@@ -598,6 +646,8 @@ impl From<key::sticky::KeyState> for KeyState {
 
 /// Convenience trait for the data storage types.
 pub trait Keys {
+    /// Type used by [key::automation::System].
+    type Automation: Debug + Index<usize, Output = key::automation::Key>;
     /// Type used by [key::callback::System].
     type Callback: Debug + Index<usize, Output = key::callback::Key>;
     /// Type used by [key::chorded::System].
@@ -640,6 +690,7 @@ pub trait Keys {
 /// Array-based data implementations.
 #[derive(Debug)]
 pub struct KeyArrays<
+    const AUTOMATION: usize,
     const CALLBACK: usize,
     const CHORDED: usize,
     const CHORDED_AUXILIARY: usize,
@@ -652,6 +703,7 @@ pub struct KeyArrays<
 >;
 
 impl<
+        const AUTOMATION: usize,
         const CALLBACK: usize,
         const CHORDED: usize,
         const CHORDED_AUXILIARY: usize,
@@ -663,6 +715,7 @@ impl<
         const TAP_HOLD: usize,
     > Keys
     for KeyArrays<
+        AUTOMATION,
         CALLBACK,
         CHORDED,
         CHORDED_AUXILIARY,
@@ -674,6 +727,7 @@ impl<
         TAP_HOLD,
     >
 {
+    type Automation = [key::automation::Key; AUTOMATION];
     type Callback = [key::callback::Key; CALLBACK];
     type Chorded = [key::chorded::Key<
         Ref,
@@ -703,6 +757,7 @@ pub struct KeyVecs;
 
 #[cfg(feature = "std")]
 impl Keys for KeyVecs {
+    type Automation = Vec<key::automation::Key>;
     type Callback = Vec<key::callback::Key>;
     type Chorded = Vec<
         key::chorded::Key<
@@ -732,6 +787,7 @@ impl Keys for KeyVecs {
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<D: Keys> {
+    automation: key::automation::System<Ref, D::Automation, AUTOMATION_INSTRUCTION_COUNT>,
     callback: key::callback::System<Ref, D::Callback>,
     caps_word: key::caps_word::System<Ref>,
     consumer: key::consumer::System<Ref>,
@@ -755,6 +811,7 @@ pub struct System<D: Keys> {
 }
 
 impl<
+        const AUTOMATION: usize,
         const CALLBACK: usize,
         const CHORDED: usize,
         const CHORDED_AUXILIARY: usize,
@@ -767,6 +824,7 @@ impl<
     >
     System<
         KeyArrays<
+            AUTOMATION,
             CALLBACK,
             CHORDED,
             CHORDED_AUXILIARY,
@@ -781,6 +839,11 @@ impl<
 {
     /// Constructs a new [System].
     pub const fn array_based(
+        automation: key::automation::System<
+            Ref,
+            [key::automation::Key; AUTOMATION],
+            AUTOMATION_INSTRUCTION_COUNT,
+        >,
         callback: key::callback::System<Ref, [key::callback::Key; CALLBACK]>,
         chorded: key::chorded::System<
             Ref,
@@ -818,6 +881,7 @@ impl<
         tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
     ) -> Self {
         System {
+            automation,
             callback,
             caps_word: key::caps_word::System::new(),
             consumer: key::consumer::System::new(),
@@ -838,6 +902,11 @@ impl<
 impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
+        automation: key::automation::System<
+            Ref,
+            <KeyVecs as Keys>::Automation,
+            AUTOMATION_INSTRUCTION_COUNT,
+        >,
         callback: key::callback::System<Ref, <KeyVecs as Keys>::Callback>,
         chorded: key::chorded::System<
             Ref,
@@ -864,6 +933,7 @@ impl System<KeyVecs> {
         tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
     ) -> Self {
         System {
+            automation,
             callback,
             caps_word: key::caps_word::System::new(),
             consumer: key::consumer::System::new(),
@@ -897,6 +967,12 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         key::KeyEvents<Self::Event>,
     ) {
         match key_ref {
+            Ref::Automation(key_ref) => {
+                let (pkr, pke) =
+                    self.automation
+                        .new_pressed_key(keymap_index, &context.automation, key_ref);
+                (pkr.into_result(), pke.into_events())
+            }
             Ref::Callback(key_ref) => {
                 let (pkr, pke) =
                     self.callback

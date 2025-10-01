@@ -7,6 +7,7 @@ let rec keys =
     [
       key_extensions.abbreviations,
       key_extensions.aliases,
+      key_extensions.automation,
       key_extensions.callback,
       key_extensions.caps_word,
       key_extensions.consumer,

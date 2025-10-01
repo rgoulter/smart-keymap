@@ -72,6 +72,9 @@ pub mod init {
 
     use composite as key_system;
 
+    /// Number of instructions used by the [crate::key::automation] implementation.
+    pub const AUTOMATION_INSTRUCTION_COUNT: usize = 1024;
+
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 8;
 
@@ -112,6 +115,7 @@ pub mod init {
             DATA_LEN,
             DATA_LEN,
             DATA_LEN,
+            DATA_LEN,
         >,
     >;
 
@@ -129,6 +133,7 @@ pub mod init {
 
     /// Initial [Context] value.
     pub const SYSTEM: System = System::array_based(
+        smart_keymap::key::automation::System::new([]),
         smart_keymap::key::callback::System::new([]),
         smart_keymap::key::chorded::System::new([], []),
         smart_keymap::key::keyboard::System::new([]),

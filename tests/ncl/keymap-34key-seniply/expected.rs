@@ -2,6 +2,9 @@
 pub mod init {
     use crate as smart_keymap;
 
+    /// Number of instructions used by the [crate::key::automation] implementation.
+    pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
+
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 5;
 
@@ -27,6 +30,7 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
+    const AUTOMATION: usize = 0;
     const CALLBACK: usize = 0;
     const CHORDED: usize = 0;
     const CHORDED_AUXILIARY: usize = 0;
@@ -40,6 +44,7 @@ pub mod init {
     /// The System type
     pub type System = smart_keymap::key::composite::System<
         smart_keymap::key::composite::KeyArrays<
+            AUTOMATION,
             CALLBACK,
             CHORDED,
             CHORDED_AUXILIARY,
@@ -95,6 +100,7 @@ pub mod init {
 
     /// The keymap config.
     pub const CONFIG: smart_keymap::key::composite::Config = smart_keymap::key::composite::Config {
+        automation: smart_keymap::key::automation::Config::new(),
         chorded: smart_keymap::key::chorded::Config {
             chords: smart_keymap::slice::Slice::from_slice(&[]),
             ..smart_keymap::key::chorded::Config::new()
@@ -108,6 +114,7 @@ pub mod init {
     /// Initial [Context] value.
     pub const CONTEXT: Context =
         smart_keymap::key::composite::Context::from_config(smart_keymap::key::composite::Config {
+            automation: smart_keymap::key::automation::Config::new(),
             chorded: smart_keymap::key::chorded::Config {
                 chords: smart_keymap::slice::Slice::from_slice(&[]),
                 ..smart_keymap::key::chorded::Config::new()
@@ -120,6 +127,7 @@ pub mod init {
 
     /// The key system.
     pub const SYSTEM: System = smart_keymap::key::composite::System::array_based(
+        smart_keymap::key::automation::System::new([]),
         smart_keymap::key::callback::System::new([]),
         smart_keymap::key::chorded::System::new([], []),
         smart_keymap::key::keyboard::System::new([
