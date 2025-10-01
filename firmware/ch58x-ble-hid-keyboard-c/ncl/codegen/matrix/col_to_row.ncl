@@ -50,8 +50,8 @@ let C = import "codegen/contracts.ncl" in
             let maybe_idx = board.keymap_index_for_key args in
             maybe_idx
             |> match {
-              'Error err => "",
-              'Ok idx_num =>
+              'NoKey  or 'Error _ => "",
+              'Key idx_num or 'Ok idx_num =>
                 let idx = std.to_string idx_num in
                 m%"
                 // Read row %{std.to_string row_index} = %{row.port}%{std.to_string row.pin}
