@@ -64,14 +64,14 @@ let C = import "codegen/contracts.ncl" in
           let maybe_idx = board.keymap_index_for_key args in
           maybe_idx
           |> match {
-            'Error err => "",
-            'Ok idx_num =>
+            'NoKey or 'Error => "",
+            'Key idx_num or 'Ok idx_num =>
               let idx = std.to_string idx_num in
               m%"
               // Read col %{std.to_string column_index} = %{col.port}%{std.to_string col.pin}
               // SW_r_c = SW_%{std.to_string (1 + row_index)}_%{std.to_string (1 + column_index)}
               scan_buf[%{idx}] = GPIO_ReadInputDataBit(GPIO%{col.port}, GPIO_Pin_%{std.to_string col.pin}) != 1;
-      "%
+      "%,
           },
 
         matrix_scan_row = fun args @ { row_index, row, cols, .. } =>
