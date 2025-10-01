@@ -30,7 +30,13 @@ const CHORDED_MAX_PRESSED_INDICES: usize = CHORDED_MAX_CHORD_SIZE * 2;
 /// Keymap with basic keycodes, useful for the "check report equivalences" step.
 const TEST_KEYMAP_NCL: &str = r#"
   let K = import "keys.ncl" in
-  { keys = [ K.A, K.B, K.C, K.Space, K.Backspace, K.LeftShift, K.LeftCtrl ] }
+  {
+    keys = [
+      K.A, K.B, K.C, K.D, K.E, K.F, K.G, K.H, K.I, K.J, K.K, K.L, K.M, K.N, K.O, K.P, K.Q, K.R, K.S, K.T, K.U, K.V, K.W, K.X, K.Y, K.Z,
+      K.N0, K.N1, K.N2, K.N3, K.N4, K.N5, K.N6, K.N7, K.N8, K.N9,
+      K.Space, K.Backspace, K.LeftShift, K.LeftCtrl,
+    ]
+  }
 "#;
 
 #[derive(Debug)]
