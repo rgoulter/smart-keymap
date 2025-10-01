@@ -19,6 +19,7 @@ nickel export \
   --format=json \
   --import-path="${KEYMAP_DIR}" \
   --import-path="${NCL_DIR}" \
+  keymap-codegen.ncl \
   keymap-ncl-to-json.ncl \
   keymap.ncl \
   --field="json_keymap" \
