@@ -1,4 +1,5 @@
-(import "smart_keys/callback/keymap-codegen.ncl")
+(import "smart_keys/automation/keymap-codegen.ncl")
+& (import "smart_keys/callback/keymap-codegen.ncl")
 & (import "smart_keys/caps_word/keymap-codegen.ncl")
 & (import "smart_keys/consumer/keymap-codegen.ncl")
 & (import "smart_keys/chorded/keymap-codegen.ncl")
@@ -186,6 +187,7 @@
         let variant =
           module
           |> match {
+            "smart_keymap::key::automation" => "Automation",
             "smart_keymap::key::callback" => "Callback",
             "smart_keymap::key::caps_word" => "CapsWord",
             "smart_keymap::key::chorded" => "Chorded",
@@ -210,6 +212,7 @@
 
     config = {
       Json = {
+        automation | optional | smart_keymap.automation.config.Json,
         chorded | optional | smart_keymap.chorded.config.Json,
         sticky | optional | smart_keymap.sticky.config.Json,
         tap_dance | optional | smart_keymap.tap_dance.config.Json,
@@ -217,6 +220,7 @@
       },
 
       rust_expr = m%"smart_keymap::key::composite::Config {
+            automation: %{smart_keymap.automation.config.rust_expr},
             chorded: %{smart_keymap.chorded.config.rust_expr},
             sticky: %{smart_keymap.sticky.config.rust_expr},
             tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
@@ -228,6 +232,7 @@
     system = {
       rust_expr = m%"
         smart_keymap::key::composite::System::array_based(
+          %{smart_keymap.automation.system.rust_expr},
           %{smart_keymap.callback.system.rust_expr},
           %{smart_keymap.chorded.system.rust_expr},
           %{smart_keymap.keyboard.system.rust_expr},
@@ -244,6 +249,7 @@
     Json = std.contract.from_validator json_validator,
 
     codegen_modules = [
+      smart_keymap.automation.key,
       smart_keymap.callback.key,
       smart_keymap.caps_word.key,
       smart_keymap.chorded.auxiliary_key,
@@ -297,6 +303,16 @@
     | doc "Record of rust expressions generated from keymap.json"
     =
       let keymap_len = std.array.length json_keymap.keys in
+      let num_automation_instructions =
+        if std.record.has_field "automation" json_keymap.config then
+          let automation_cfg = json_keymap.config.automation in
+          if std.record.has_field "instructions" automation_cfg then
+            std.array.length automation_cfg.instructions
+          else
+            0
+        else
+          0
+      in
       let max_tap_dance_definitions =
         # For each of the keys,
         #  compute max length of any tap dance definitions.
@@ -388,6 +404,9 @@
 pub mod init {
     use crate as smart_keymap;
 
+    /// Number of instructions used by the [crate::key::automation] implementation.
+    pub const AUTOMATION_INSTRUCTION_COUNT: usize = %{std.to_string num_automation_instructions};
+
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = %{std.to_string num_layers};
 
@@ -413,6 +432,7 @@ pub mod init {
 
     pub use smart_keymap::key::composite::KeyState;
 
+    const AUTOMATION: usize = %{data_len_rust_expr "automation"};
     const CALLBACK: usize = %{data_len_rust_expr "callback"};
     const CHORDED: usize = %{data_len_rust_expr "chorded"};
     const CHORDED_AUXILIARY: usize = %{data_len_rust_expr "chorded_auxiliary"};
@@ -426,6 +446,7 @@ pub mod init {
     /// The System type
     pub type System = smart_keymap::key::composite::System<
             smart_keymap::key::composite::KeyArrays<
+                AUTOMATION,
                 CALLBACK,
                 CHORDED,
                 CHORDED_AUXILIARY,

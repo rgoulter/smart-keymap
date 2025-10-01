@@ -1,4 +1,5 @@
-(import "smart_keys/callback/key-extensions.ncl")
+(import "smart_keys/automation/key-extensions.ncl")
+& (import "smart_keys/callback/key-extensions.ncl")
 & (import "smart_keys/caps_word/key-extensions.ncl")
 & (import "smart_keys/consumer/key-extensions.ncl")
 & (import "smart_keys/custom/key-extensions.ncl")

@@ -1,4 +1,5 @@
-(import "smart_keys/callback/keymap-ncl-to-json.ncl")
+(import "smart_keys/automation/keymap-ncl-to-json.ncl")
+& (import "smart_keys/callback/keymap-ncl-to-json.ncl")
 & (import "smart_keys/caps_word/keymap-ncl-to-json.ncl")
 & (import "smart_keys/consumer/keymap-ncl-to-json.ncl")
 & (import "smart_keys/chorded/keymap-ncl-to-json.ncl")
@@ -15,6 +16,7 @@
   Chord = { indices | Array Number, key | KeymapKey },
 
   Config = {
+    automation | optional | keymap_ncl.automation.Config,
     chorded | optional | keymap_ncl.chorded.Config,
     sticky | optional | keymap_ncl.sticky.Config,
     tap_dance | optional | keymap_ncl.tap_dance.Config,
@@ -119,6 +121,7 @@
 
   keymap_ncl.key = {
     key_modules = [
+      keymap_ncl.automation,
       keymap_ncl.callback,
       keymap_ncl.caps_word,
       keymap_ncl.chorded,
@@ -286,10 +289,35 @@
     | default
     | doc "The keymap.json output value."
     =
+      let keys = chorded_keys in
+      # Automation Instructions
+      let { acc = { automation_instructions }, keys } =
+        keys
+        |> std.array.fold_left
+          (fun { acc, keys } k =>
+            let { acc, k } =
+              keymap_ncl.key.map_accum
+                keymap_ncl.automation.transform_keys_to_instructions
+                acc
+                k
+            in
+            let keys = keys @ [k] in
+            { include acc, include keys }
+          )
+          { acc = { automation_instructions = [], }, keys = [] }
+      in
+      let automation_config =
+        if std.array.length automation_instructions > 0 then
+          { automation.instructions = automation_instructions }
+        else
+          {}
+      in
+      let keys_json = keys |> std.array.map keymap_ncl.key.to_json_value in
       let { chorded = km_config_chorded, ..km_config } = config & { chorded = {} } in
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
       let config_json_value =
         km_config
+        & automation_config
         & {
           chorded =
             km_config_chorded
@@ -299,7 +327,7 @@
         }
       in
       {
-        keys = chorded_keys |> std.array.map keymap_ncl.key.to_json_value,
         config = config_json_value,
+        keys = keys_json,
       },
 }

@@ -140,6 +140,8 @@ impl Default for KeymapWorld {
 #[derive(Deserialize, Default)]
 struct KeyVecs {
     #[serde(default)]
+    automation: Vec<key::automation::Key>,
+    #[serde(default)]
     callback: Vec<key::callback::Key>,
     #[serde(default)]
     chorded: Vec<
@@ -184,6 +186,7 @@ struct DocstringKeymap {
 
 fn system_from_key_data(keys: KeyVecs) -> System {
     System::vec_based(
+        smart_keymap::key::automation::System::new(keys.automation),
         smart_keymap::key::callback::System::new(keys.callback),
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
         smart_keymap::key::keyboard::System::new(keys.keyboard),

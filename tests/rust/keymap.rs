@@ -34,6 +34,7 @@ fn basic_keymap_expression() {
             KEY_REFS,
             CONTEXT,
             smart_keymap::key::composite::System::array_based(
+                smart_keymap::key::automation::System::new([]),
                 smart_keymap::key::callback::System::new([]),
                 smart_keymap::key::chorded::System::new([], []),
                 smart_keymap::key::keyboard::System::new([]),
