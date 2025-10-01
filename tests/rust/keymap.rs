@@ -57,7 +57,7 @@ fn basic_keymap_expression() {
         actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     }
 
-    // Assert -- tap-hold key immediately resolves as 'tap'
+    // Assert
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
@@ -100,7 +100,7 @@ fn basic_keymap_expression_macro() {
         actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     }
 
-    // Assert -- tap-hold key immediately resolves as 'tap'
+    // Assert
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
