@@ -99,6 +99,22 @@ impl From<LayerEvent> for () {
     fn from(_: LayerEvent) -> Self {}
 }
 
+/// State of an individual layer: active or inactive.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Activity {
+    /// The layer is active.
+    Active,
+    /// The layer is inactive.
+    Inactive,
+}
+
+impl Activity {
+    /// Returns true if the layer is active.
+    pub fn is_active(&self) -> bool {
+        matches!(self, Activity::Active)
+    }
+}
+
 /// Tracks state of active layers.
 pub trait LayerState: Copy + Debug {
     /// Activate the given layer.
@@ -109,7 +125,7 @@ pub trait LayerState: Copy + Debug {
     fn active_layers(&self) -> impl Iterator<Item = LayerIndex>;
 }
 
-impl<const L: usize> LayerState for [bool; L] {
+impl<const L: usize> LayerState for [Activity; L] {
     fn activate(&mut self, layer_index: LayerIndex) {
         let layer_index: usize = layer_index as usize;
         debug_assert!(
@@ -117,7 +133,7 @@ impl<const L: usize> LayerState for [bool; L] {
             "layer must be less than array length of {}",
             L
         );
-        self[layer_index - 1] = true;
+        self[layer_index - 1] = Activity::Active;
     }
 
     fn deactivate(&mut self, layer_index: LayerIndex) {
@@ -127,12 +143,12 @@ impl<const L: usize> LayerState for [bool; L] {
             "layer must be less than array length of {}",
             L
         );
-        self[layer_index - 1] = false;
+        self[layer_index - 1] = Activity::Inactive;
     }
 
     fn active_layers(&self) -> impl Iterator<Item = LayerIndex> {
-        self.iter().enumerate().rev().filter_map(|(i, &active)| {
-            if active {
+        self.iter().enumerate().rev().filter_map(|(i, activity)| {
+            if activity.is_active() {
                 Some(i as LayerIndex + 1)
             } else {
                 None
@@ -145,7 +161,7 @@ impl<const L: usize> LayerState for [bool; L] {
 #[derive(Debug, Clone, Copy)]
 pub struct Context<const LAYER_COUNT: usize> {
     default_layer: Option<LayerIndex>,
-    active_layers: [bool; LAYER_COUNT],
+    active_layers: [Activity; LAYER_COUNT],
 }
 
 impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
@@ -153,7 +169,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     pub const fn new() -> Self {
         Context {
             default_layer: None,
-            active_layers: [false; LAYER_COUNT],
+            active_layers: [Activity::Inactive; LAYER_COUNT],
         }
     }
 }
@@ -166,7 +182,7 @@ impl<const LAYER_COUNT: usize> Default for Context<LAYER_COUNT> {
 
 impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     /// Get the active layers.
-    pub fn layer_state(&self) -> &[bool; LAYER_COUNT] {
+    pub fn layer_state(&self) -> &[Activity; LAYER_COUNT] {
         &self.active_layers
     }
 
@@ -180,7 +196,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 self.active_layers.deactivate(layer);
             }
             LayerEvent::Toggled(layer) => {
-                if self.active_layers[layer as usize - 1] {
+                if self.active_layers[layer as usize - 1].is_active() {
                     self.active_layers.deactivate(layer);
                 } else {
                     self.active_layers.activate(layer);
@@ -597,7 +613,10 @@ mod tests {
         context.handle_event(LayerEvent::Activated(2));
 
         let actual_active_layers = &context.active_layers[0..3];
-        assert_eq!(&[false, true, false], actual_active_layers);
+        assert_eq!(
+            &[Activity::Inactive, Activity::Active, Activity::Inactive],
+            actual_active_layers
+        );
     }
 
     #[test]
@@ -707,7 +726,7 @@ mod tests {
 
     #[test]
     fn test_layer_state_array_active_layers() {
-        let mut layer_state: [bool; 5] = [false; 5];
+        let mut layer_state: [Activity; 5] = [Activity::Inactive; 5];
         layer_state.activate(1);
         layer_state.activate(2);
         layer_state.activate(4);
