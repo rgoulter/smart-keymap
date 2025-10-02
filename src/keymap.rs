@@ -3,6 +3,8 @@ mod distinct_reports;
 mod event_scheduler;
 /// The HID keyboard reporter.
 pub mod hid_keyboard_reporter;
+#[cfg(feature = "std")]
+mod observed_keymap;
 
 use core::cmp::PartialEq;
 use core::fmt::Debug;
@@ -20,6 +22,8 @@ use key::Event;
 pub use distinct_reports::DistinctReports;
 use event_scheduler::EventScheduler;
 use hid_keyboard_reporter::HIDKeyboardReporter;
+#[cfg(feature = "std")]
+pub use observed_keymap::ObservedKeymap;
 
 /// Maximum number of pressed keys supported.
 pub const MAX_PRESSED_KEYS: usize = 16;
