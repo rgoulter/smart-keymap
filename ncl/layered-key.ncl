@@ -42,10 +42,12 @@
       'Release { layer_modifier = { hold }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = deactivate_layer al hold } & layer_state,
-      'Press { layer_modifier = { toggle }, .. } =>
+      'Press { layer_modifier = { toggle }, .. } or
+      'Tap { layer_modifier = { toggle }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = toggle_layer al toggle } & layer_state,
-      'Press { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } =>
+      'Press { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } or
+      'Tap { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } =>
         let { active_layers, ..layer_state } = layer_state in
         let layer_count = std.array.length active_layers in
         let new_active_layers =

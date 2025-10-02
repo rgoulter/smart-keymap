@@ -37,5 +37,4 @@ ncl-format:
        ncl/keymap-ncl-to-json.ncl \
 	   ncl/keymap-codegen.ncl \
 	   ncl/keys.ncl \
-	   ncl/layered-key.ncl \
 	   ncl/validators.ncl
