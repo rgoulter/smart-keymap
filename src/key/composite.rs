@@ -120,6 +120,19 @@ pub type ConsumerKeyState = key::consumer::KeyState;
 /// Type aliases for convenience.
 pub type ConsumerSystem = key::consumer::System<Ref>;
 
+/// Type aliases for convenience.
+pub type CustomRef = key::custom::Ref;
+/// Type aliases for convenience.
+pub type CustomContext = key::custom::Context;
+/// Type aliases for convenience.
+pub type CustomEvent = key::custom::Event;
+/// Type aliases for convenience.
+pub type CustomPendingKeyState = key::custom::PendingKeyState;
+/// Type aliases for convenience.
+pub type CustomKeyState = key::custom::KeyState;
+/// Type aliases for convenience.
+pub type CustomSystem = key::custom::System<Ref>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -134,7 +147,7 @@ pub enum Ref {
     /// [key::consumer::Ref] variant.
     Consumer(ConsumerRef),
     /// [key::custom::Ref] variant.
-    Custom(key::custom::Ref),
+    Custom(CustomRef),
     /// [key::keyboard::Ref] variant.
     Keyboard(key::keyboard::Ref),
     /// [key::layered::Ref] variant.
@@ -276,7 +289,7 @@ pub enum Event {
     /// A consumer event.
     Consumer(ConsumerEvent),
     /// A custom event.
-    Custom(key::custom::Event),
+    Custom(CustomEvent),
     /// A keyboard event.
     Keyboard(key::keyboard::Event),
     /// A layer modification event.
@@ -321,8 +334,8 @@ impl From<ConsumerEvent> for Event {
     }
 }
 
-impl From<key::custom::Event> for Event {
-    fn from(ev: key::custom::Event) -> Self {
+impl From<CustomEvent> for Event {
+    fn from(ev: CustomEvent) -> Self {
         Event::Custom(ev)
     }
 }
@@ -488,7 +501,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::consumer::PendingKeyState].
     Consumer(ConsumerPendingKeyState),
     /// Pending key state for [key::custom::PendingKeyState].
-    Custom(key::custom::PendingKeyState),
+    Custom(CustomPendingKeyState),
     /// Pending key state for [key::keyboard::PendingKeyState].
     Keyboard(key::keyboard::PendingKeyState),
     /// Pending key state for [key::layered::PendingKeyState].
@@ -533,8 +546,8 @@ impl From<ConsumerPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::custom::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::custom::PendingKeyState) -> Self {
+impl From<CustomPendingKeyState> for PendingKeyState {
+    fn from(pks: CustomPendingKeyState) -> Self {
         PendingKeyState::Custom(pks)
     }
 }
@@ -624,7 +637,7 @@ pub enum KeyState {
     /// Key state for [key::consumer::KeyState].
     Consumer(ConsumerKeyState),
     /// Key state for [key::custom::KeyState].
-    Custom(key::custom::KeyState),
+    Custom(CustomKeyState),
     /// Key state for [key::keyboard::KeyState].
     Keyboard(key::keyboard::KeyState),
     /// Key state for [key::layered::ModifierKeyState].
@@ -675,8 +688,8 @@ impl From<ConsumerKeyState> for KeyState {
     }
 }
 
-impl From<key::custom::KeyState> for KeyState {
-    fn from(ks: key::custom::KeyState) -> Self {
+impl From<CustomKeyState> for KeyState {
+    fn from(ks: CustomKeyState) -> Self {
         KeyState::Custom(ks)
     }
 }
@@ -820,7 +833,7 @@ pub struct System<D: Keys> {
     caps_word: CapsWordSystem,
     consumer: ConsumerSystem,
     chorded: ChordedSystem<D::Chorded, D::ChordedAuxiliary>,
-    custom: key::custom::System<Ref>,
+    custom: CustomSystem,
     keyboard: key::keyboard::System<Ref, D::Keyboard>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered, LAYERED_LAYER_COUNT>,
     mouse: key::mouse::System<Ref>,
