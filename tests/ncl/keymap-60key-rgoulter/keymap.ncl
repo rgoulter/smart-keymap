@@ -1,57 +1,87 @@
 let K = import "keys.ncl" in
 
-let A_A = K.A & K.hold K.LeftAlt in
-let G_O = K.O & K.hold K.LeftGUI in
-let C_E = K.E & K.hold K.LeftCtrl in
-let S_U = K.U & K.hold K.LeftShift in
-let S_H = K.H & K.hold K.RightShift in
-let C_T = K.T & K.hold K.LeftCtrl in
-let G_N = K.N & K.hold K.RightGUI in
-let A_S = K.S & K.hold K.LeftAlt in
-
-let RAISE = K.layer_mod.hold 1 in
-let LOWER = K.layer_mod.hold 2 in
-let ADJUST = K.layer_mod.hold 3 in
-
-let LW_ES = K.ESC & K.hold LOWER in
-let RS_EN = K.ENT & K.hold RAISE in
-
-let TTTTTT = K.TTTT in
+let DVORAK_  = 0 in
+let GAMING_  = 1 in
+let RAISE_  = 2 in
+let LOWER_  = RAISE_ + 1 in
+let ADJUST_ = RAISE_ + 2 in
 
 {
+  chords =
+    let K = import "keys.ncl" in
+    [
+        { indices = [39, 40], key = K.LeftGUI & K.PageUp, },
+        { indices = [43, 44], key = K.LeftGUI & K.PageDown, },
+    ],
+
   config.tap_hold.interrupt_response = "HoldOnKeyTap",
-  config.tap_hold.timeout = 200 / 8,
+
+  custom_keys = fun K =>
+    let HoldLayerMod = fun layer_index => K.hold (K.layer_mod.hold layer_index) in
+    {
+      DVOR = K.layer_mod.set_default DVORAK_,
+      GAME = K.layer_mod.set_default GAMING_,
+
+      ENT_R = K.Return & HoldLayerMod RAISE_,
+      ESC_L = K.Escape & HoldLayerMod LOWER_,
+      ADJ   = K.layer_mod.hold ADJUST_,
+
+      A_A = K.A & K.H_LAlt,
+      G_O = K.O & K.H_LGUI,
+      C_E = K.E & K.H_LCtrl,
+      S_U = K.U & K.H_LShift,
+
+      S_H = K.H & K.H_RShift,
+      C_T = K.T & K.H_LCtrl,
+      G_N = K.N & K.H_RGUI,
+      A_S = K.S & K.H_LAlt,
+
+      SK_S = K.sticky K.LeftShift,
+      SK_C = K.sticky K.LeftCtrl,
+      SK_G = K.sticky K.LeftGUI,
+      SK_A = K.sticky K.LeftAlt,
+    },
+
   layers = [
-    [
-      K.GRV,  K.N1,   K.N2,   K.N3,  K.N4,  K.N5,  K.N6,   K.N7,  K.N8,   K.N9,   K.N0,   K.DEL,
-      K.TAB,  K.QUOT, K.COMM, K.DOT, K.P,   K.Y,   K.F,    K.G,   K.C,    K.R,    K.L,    K.BSPC,
-      K.ESC,  A_A,    G_O,    C_E,   S_U,   K.I,   K.D,    S_H,   C_T,    G_N,    A_S,    K.RET,
-      K.LSFT, K.SCLN, K.Q,    K.J,   K.K,   K.X,   K.B,    K.M,   K.W,    K.V,    K.Z,    K.RSFT,
-      K.LCTL, K.LGUI, K.LALT, K.TAB, LW_ES, K.SPC, K.BSPC, RS_EN, K.DEL,  K.RALT, K.RGUI, K.RCTL,
-    ],
+    # Base: Dvorak
+    m%"
+      `    1    2    3   4     5                  6    7     8    9    0    DEL
+      TAB  '    ,    .   P     Y                  F    G     C    R    L    BSPC
+      ESC  A_A  G_O  C_E S_U   I                  D    S_H   C_T  G_N  A_S  /
+      LSFT ;    Q    J   K     X                  B    M     W    V    Z    RSFT
+      LCTL LGUI LALT TAB ESC_L SPC                BSPC ENT_R DEL  RALT RGUI RCTL
+    "%,
+    # Base: Gaming
+    m%"
+      `    1    2    3   4     5                  6    7     8    9    0    DEL
+      TAB  Q    W    E   R     T                  Y    U     I    O    P    BSPC
+      ESC  A    S    D   F     G                  H    J     K    L    ;    '
+      LSFT Z    X    C   V     B                  N    M     ,    .    /    RSFT
+      LCTL LGUI LALT TAB ESC_L SPC                BSPC ENT_R DEL  RALT RGUI RCTL
+    "%,
     # Raise
-    [
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-      K.GRV,  K.N1,   K.N2,   K.N3,   K.N4,   K.N5,   K.N6,   K.N7,   K.N8,   K.N9,   K.N0,   K.BSLS,
-      K.DEL,  K.F1,   K.F2,   K.F3,   K.F4,   K.F5,   K.F6,   K.MINS, K.EQLS, K.LBRK, K.RBRK, K.SLSH,
-      TTTTTT, K.F7,   K.F8,   K.F9,   K.F10,  K.F11,  K.F12,  TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, ADJUST, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-    ],
+    m%"
+      TTTT TTTT TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+      `    1    2    3    4    5                   6    7    8    9    0    \
+      DEL  F1   F2   F3   F4   F5                  F6   -    =    [    ]    /
+      TTTT F7   F8   F9   F10  F11                 F12  TTTT TTTT TTTT TTTT TTTT
+      TTTT TTTT TTTT TTTT ADJ  TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+    "%,
     # Lower
-    [
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-      K.TILD, K.EXCL, K.AT,   K.HASH, K.DLR,  K.PERC, K.CARE, K.AMP,  K.ASTR, K.LPRN, K.RPRN, K.PIPE,
-      K.INS,  K.F1,   K.F2,   K.F3,   K.F4,   K.F5,   K.F6,   K.UNDS, K.PLUS, K.LCBR, K.RCBR, K.QUES,
-      TTTTTT, K.F7,   K.F8,   K.F9,   K.F10,  K.F11,  K.F12,  TTTTTT, K.HOME, K.PGDN, K.PGUP, K.END,
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, ADJUST, K.LEFT, K.DOWN, K.UP,   K.RGHT,
-    ],
+    m%"
+      TTTT TTTT TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+      ~    !    @    #    $    %                   ^    &    *    (    )    |
+      INS  F1   F2   F3   F4   F5                  F6   _    +    {    }    ?
+      TTTT F7   F8   F9   F10  F11                 F12  TTTT HOME PGDN PGUP END
+      TTTT TTTT TTTT TTTT TTTT TTTT                TTTT ADJ  LEFT DOWN UP   RGHT
+    "%,
     # Adjust
-    [
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, K.PSCR, K.SCRL, K.PAUS, TTTTTT, TTTTTT,
-      K.CAPS, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-      TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT, TTTTTT,
-    ],
+    m%"
+      DVOR GAME TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+      TTTT BOOT TTTT TTTT TTTT TTTT                TTTT PSCR SCRL PAUS TTTT TTTT
+      CAPS SK_A SK_G SK_C SK_S TTTT                TTTT SK_S SK_C SK_G SK_A CWTG
+      TTTT TTTT TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+      TTTT TTTT TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+    "%,
   ],
 }
