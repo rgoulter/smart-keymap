@@ -85,12 +85,14 @@ impl ModifierKey {
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::Activated] event.
     pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
         match self {
-            ModifierKey::Hold(layer) => (ModifierKeyState, LayerEvent::Activated(*layer)),
-            ModifierKey::Toggle(layer) => (ModifierKeyState, LayerEvent::Toggled(*layer)),
+            ModifierKey::Hold(layer) => (ModifierKeyState::new(), LayerEvent::Activated(*layer)),
+            ModifierKey::Toggle(layer) => (ModifierKeyState::new(), LayerEvent::Toggled(*layer)),
             ModifierKey::SetActiveLayers(layer_set) => {
-                (ModifierKeyState, LayerEvent::Set(*layer_set))
+                (ModifierKeyState::new(), LayerEvent::Set(*layer_set))
             }
-            ModifierKey::Default(layer) => (ModifierKeyState, LayerEvent::SetDefault(*layer)),
+            ModifierKey::Default(layer) => {
+                (ModifierKeyState::new(), LayerEvent::SetDefault(*layer))
+            }
         }
     }
 }
@@ -392,11 +394,36 @@ pub enum LayerEvent {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PendingKeyState;
 
+/// Whether the pressed Sticky modifier key is "sticky" or "regular".
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub enum Behavior {
+    /// Key state is "sticky". (Will activate sticky modifier when released).
+    Sticky,
+    /// Key state is "regular". (No sticky modifiers activated when released).
+    Regular,
+}
+
 /// [crate::key::KeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct ModifierKeyState;
+pub struct ModifierKeyState {
+    behavior: Behavior,
+}
 
 impl ModifierKeyState {
+    /// Constructs a regular ModifierKeyState
+    pub fn new() -> Self {
+        Self {
+            behavior: Behavior::Regular,
+        }
+    }
+
+    /// Constructs a sticky ModifierKeyState
+    pub fn sticky() -> Self {
+        Self {
+            behavior: Behavior::Sticky,
+        }
+    }
+
     /// Handle the given event for the given key.
     pub fn handle_event(
         &mut self,
