@@ -64,6 +64,19 @@ pub type CapsWordKeyState = key::caps_word::KeyState;
 /// Type aliases for convenience.
 pub type CapsWordSystem = key::caps_word::System<Ref>;
 
+/// Type aliases for convenience.
+pub type ConsumerRef = key::consumer::Ref;
+/// Type aliases for convenience.
+pub type ConsumerContext = key::consumer::Context;
+/// Type aliases for convenience.
+pub type ConsumerEvent = key::consumer::Event;
+/// Type aliases for convenience.
+pub type ConsumerPendingKeyState = key::consumer::PendingKeyState;
+/// Type aliases for convenience.
+pub type ConsumerKeyState = key::consumer::KeyState;
+/// Type aliases for convenience.
+pub type ConsumerSystem = key::consumer::System<Ref>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -76,7 +89,7 @@ pub enum Ref {
     /// [key::chorded::Ref] variant.
     Chorded(key::chorded::Ref),
     /// [key::consumer::Ref] variant.
-    Consumer(key::consumer::Ref),
+    Consumer(ConsumerRef),
     /// [key::custom::Ref] variant.
     Custom(key::custom::Ref),
     /// [key::keyboard::Ref] variant.
@@ -222,7 +235,7 @@ pub enum Event {
     /// A chorded event.
     Chorded(key::chorded::Event),
     /// A consumer event.
-    Consumer(key::consumer::Event),
+    Consumer(ConsumerEvent),
     /// A custom event.
     Custom(key::custom::Event),
     /// A keyboard event.
@@ -263,8 +276,8 @@ impl From<key::chorded::Event> for Event {
     }
 }
 
-impl From<key::consumer::Event> for Event {
-    fn from(ev: key::consumer::Event) -> Self {
+impl From<ConsumerEvent> for Event {
+    fn from(ev: ConsumerEvent) -> Self {
         Event::Consumer(ev)
     }
 }
@@ -344,7 +357,7 @@ impl TryFrom<Event> for key::chorded::Event {
     }
 }
 
-impl TryFrom<Event> for key::consumer::Event {
+impl TryFrom<Event> for ConsumerEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -440,7 +453,7 @@ pub enum PendingKeyState {
         >,
     ),
     /// Pending key state for [key::consumer::PendingKeyState].
-    Consumer(key::consumer::PendingKeyState),
+    Consumer(ConsumerPendingKeyState),
     /// Pending key state for [key::custom::PendingKeyState].
     Custom(key::custom::PendingKeyState),
     /// Pending key state for [key::keyboard::PendingKeyState].
@@ -495,8 +508,8 @@ impl
     }
 }
 
-impl From<key::consumer::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::consumer::PendingKeyState) -> Self {
+impl From<ConsumerPendingKeyState> for PendingKeyState {
+    fn from(pks: ConsumerPendingKeyState) -> Self {
         PendingKeyState::Consumer(pks)
     }
 }
@@ -596,7 +609,7 @@ pub enum KeyState {
     /// Key state for [key::chorded::KeyState].
     Chorded(key::chorded::KeyState),
     /// Key state for [key::consumer::KeyState].
-    Consumer(key::consumer::KeyState),
+    Consumer(ConsumerKeyState),
     /// Key state for [key::custom::KeyState].
     Custom(key::custom::KeyState),
     /// Key state for [key::keyboard::KeyState].
@@ -643,8 +656,8 @@ impl From<key::chorded::KeyState> for KeyState {
     }
 }
 
-impl From<key::consumer::KeyState> for KeyState {
-    fn from(ks: key::consumer::KeyState) -> Self {
+impl From<ConsumerKeyState> for KeyState {
+    fn from(ks: ConsumerKeyState) -> Self {
         KeyState::Consumer(ks)
     }
 }
@@ -837,7 +850,7 @@ pub struct System<D: Keys> {
     automation: AutomationSystem<D::Automation>,
     callback: CallbackSystem<D::Callback>,
     caps_word: CapsWordSystem,
-    consumer: key::consumer::System<Ref>,
+    consumer: ConsumerSystem,
     chorded: key::chorded::System<
         Ref,
         D::Chorded,
