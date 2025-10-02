@@ -22,9 +22,8 @@
         K.string_macro "a",
       expected =
         let ko = { key_code = { Keyboard = 4 } } in
-        let press_ins = { Press = ko } in
-        let release_ins = { Release = ko } in
-        let ins = [press_ins, release_ins] in
+        let tap_ins = { Tap = ko } in
+        let ins = [tap_ins] in
         { automation_instructions = ins },
     },
   },
