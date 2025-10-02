@@ -195,6 +195,23 @@ pub type StickyKeyState = key::sticky::KeyState;
 /// Type aliases for convenience.
 pub type StickySystem<D> = key::sticky::System<Ref, D>;
 
+/// Type aliases for convenience.
+pub type TapDanceRef = key::tap_dance::Ref;
+/// Type aliases for convenience.
+pub type TapDanceKey = key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>;
+/// Type aliases for convenience.
+pub type TapDanceConfig = key::tap_dance::Config;
+/// Type aliases for convenience.
+pub type TapDanceContext = key::tap_dance::Context;
+/// Type aliases for convenience.
+pub type TapDanceEvent = key::tap_dance::Event;
+/// Type aliases for convenience.
+pub type TapDancePendingKeyState = key::tap_dance::PendingKeyState;
+/// Type aliases for convenience.
+pub type TapDanceKeyState = key::tap_dance::KeyState;
+/// Type aliases for convenience.
+pub type TapDanceSystem<D> = key::tap_dance::System<Ref, D, TAP_DANCE_MAX_DEF_COUNT>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -219,7 +236,7 @@ pub enum Ref {
     /// [key::sticky::Ref] variant.
     Sticky(StickyRef),
     /// [key::tap_dance::Ref] variant.
-    TapDance(key::tap_dance::Ref),
+    TapDance(TapDanceRef),
     /// [key::tap_hold::Ref] variant.
     TapHold(key::tap_hold::Ref),
 }
@@ -245,7 +262,7 @@ pub struct Config {
     pub sticky: StickyConfig,
     /// The tap dance configuration.
     #[serde(default)]
-    pub tap_dance: key::tap_dance::Config,
+    pub tap_dance: TapDanceConfig,
     /// The tap hold configuration.
     #[serde(default)]
     pub tap_hold: key::tap_hold::Config,
@@ -273,7 +290,7 @@ pub struct Context {
     chorded: ChordedContext,
     layered: LayeredContext,
     sticky: StickyContext,
-    tap_dance: key::tap_dance::Context,
+    tap_dance: TapDanceContext,
     tap_hold: key::tap_hold::Context,
 }
 
@@ -361,7 +378,7 @@ pub enum Event {
     /// A sticky modifier event.
     Sticky(StickyEvent),
     /// A tap-dance event.
-    TapDance(key::tap_dance::Event),
+    TapDance(TapDanceEvent),
     /// A tap-hold event.
     TapHold(key::tap_hold::Event),
 }
@@ -426,8 +443,8 @@ impl From<StickyEvent> for Event {
     }
 }
 
-impl From<key::tap_dance::Event> for Event {
-    fn from(ev: key::tap_dance::Event) -> Self {
+impl From<TapDanceEvent> for Event {
+    fn from(ev: TapDanceEvent) -> Self {
         Event::TapDance(ev)
     }
 }
@@ -526,7 +543,7 @@ impl TryFrom<Event> for StickyEvent {
     }
 }
 
-impl TryFrom<Event> for key::tap_dance::Event {
+impl TryFrom<Event> for TapDanceEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -573,7 +590,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::sticky::PendingKeyState].
     Sticky(StickyPendingKeyState),
     /// Pending key state for [key::tap_dance::PendingKeyState].
-    TapDance(key::tap_dance::PendingKeyState),
+    TapDance(TapDancePendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
     TapHold(key::tap_hold::PendingKeyState),
 }
@@ -638,8 +655,8 @@ impl From<StickyPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::tap_dance::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::tap_dance::PendingKeyState) -> Self {
+impl From<TapDancePendingKeyState> for PendingKeyState {
+    fn from(pks: TapDancePendingKeyState) -> Self {
         PendingKeyState::TapDance(pks)
     }
 }
@@ -661,7 +678,7 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut ChordedPendingKeySta
     }
 }
 
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_dance::PendingKeyState {
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut TapDancePendingKeyState {
     type Error = ();
 
     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
@@ -709,7 +726,7 @@ pub enum KeyState {
     /// Key state for [key::sticky::KeyState].
     Sticky(StickyKeyState),
     /// Key state for [key::tap_dance::KeyState].
-    TapDance(key::tap_dance::KeyState),
+    TapDance(TapDanceKeyState),
     /// Key state for [key::tap_hold::KeyState].
     TapHold(key::tap_hold::KeyState),
 }
@@ -774,8 +791,8 @@ impl From<MouseKeyState> for KeyState {
     }
 }
 
-impl From<key::tap_dance::KeyState> for KeyState {
-    fn from(ks: key::tap_dance::KeyState) -> Self {
+impl From<TapDanceKeyState> for KeyState {
+    fn from(ks: TapDanceKeyState) -> Self {
         KeyState::TapDance(ks)
     }
 }
@@ -811,7 +828,7 @@ pub trait Keys {
     /// Type used by [key::sticky::System].
     type Sticky: Debug + Index<usize, Output = StickyKey>;
     /// Type used by [key::tap_dance::System].
-    type TapDance: Debug + Index<usize, Output = key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>>;
+    type TapDance: Debug + Index<usize, Output = TapDanceKey>;
     /// Type used by [key::tap_hold::System].
     type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
 }
@@ -864,7 +881,7 @@ impl<
     type LayerModifiers = [LayeredModifierKey; LAYER_MODIFIERS];
     type Layered = [LayeredKey; LAYERED];
     type Sticky = [StickyKey; STICKY];
-    type TapDance = [key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>; TAP_DANCE];
+    type TapDance = [TapDanceKey; TAP_DANCE];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
 }
 
@@ -883,7 +900,7 @@ impl Keys for KeyVecs {
     type LayerModifiers = Vec<LayeredModifierKey>;
     type Layered = Vec<LayeredKey>;
     type Sticky = Vec<StickyKey>;
-    type TapDance = Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>>;
+    type TapDance = Vec<TapDanceKey>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
 }
 
@@ -900,7 +917,7 @@ pub struct System<D: Keys> {
     layered: LayeredSystem<D::LayerModifiers, D::Layered>,
     mouse: MouseSystem,
     sticky: StickySystem<D::Sticky>,
-    tap_dance: key::tap_dance::System<Ref, D::TapDance, TAP_DANCE_MAX_DEF_COUNT>,
+    tap_dance: TapDanceSystem<D::TapDance>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
     marker: PhantomData<D>,
 }
@@ -940,11 +957,7 @@ impl<
         keyboard: KeyboardSystem<[KeyboardKey; KEYBOARD]>,
         layered: LayeredSystem<[LayeredModifierKey; LAYER_MODIFIERS], [LayeredKey; LAYERED]>,
         sticky: StickySystem<[StickyKey; STICKY]>,
-        tap_dance: key::tap_dance::System<
-            Ref,
-            [key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>; TAP_DANCE],
-            TAP_DANCE_MAX_DEF_COUNT,
-        >,
+        tap_dance: TapDanceSystem<[TapDanceKey; TAP_DANCE]>,
         tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
     ) -> Self {
         System {
@@ -975,11 +988,7 @@ impl System<KeyVecs> {
         keyboard: KeyboardSystem<Vec<KeyboardKey>>,
         layered: LayeredSystem<Vec<LayeredModifierKey>, Vec<LayeredKey>>,
         sticky: StickySystem<Vec<StickyKey>>,
-        tap_dance: key::tap_dance::System<
-            Ref,
-            <KeyVecs as Keys>::TapDance,
-            TAP_DANCE_MAX_DEF_COUNT,
-        >,
+        tap_dance: TapDanceSystem<Vec<TapDanceKey>>,
         tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
     ) -> Self {
         System {
