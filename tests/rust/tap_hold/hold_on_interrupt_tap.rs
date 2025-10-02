@@ -1,14 +1,12 @@
 use smart_keymap::input;
-use smart_keymap::keymap;
+use smart_keymap::keymap::ObservedKeymap;
 
 use smart_keymap_macros::keymap;
-
-use keymap::DistinctReports;
 
 #[test]
 fn rolled_presses_resolves_tap() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -19,27 +17,16 @@ fn rolled_presses_resolves_tap() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     // Roll the keys: press 0, press 1, release 0, release 1
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     let expected_reports: &[[u8; 8]] = &[
@@ -49,13 +36,14 @@ fn rolled_presses_resolves_tap() {
         [0, 0, 0x05, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn interrupting_tap_resolves_hold() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -66,24 +54,15 @@ fn interrupting_tap_resolves_hold() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     // Press the TH key, then interrupt it with a tap.
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -93,6 +72,7 @@ fn interrupting_tap_resolves_hold() {
         [0x01, 0, 0x05, 0, 0, 0, 0, 0],
         [0x01, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
@@ -109,7 +89,7 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
     // - Release C
 
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -122,33 +102,18 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     // Press the TH key, then interrupt it with a tap.
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -161,6 +126,7 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
         [0, 0, 0x06, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
@@ -177,7 +143,7 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
     // - Release TH(C)
 
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -190,33 +156,18 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     // Press the TH key, then interrupt it with a tap.
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -229,6 +180,7 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
         [0, 0, 0x06, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
@@ -243,7 +195,7 @@ fn tap_th_after_rolling_th_kbd() {
     // - Release TH(C)
 
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -256,33 +208,18 @@ fn tap_th_after_rolling_th_kbd() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     // Press the TH key, then interrupt it with a tap.
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -295,6 +232,7 @@ fn tap_th_after_rolling_th_kbd() {
         [0, 0, 0x06, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
@@ -307,7 +245,7 @@ fn tap_th_then_tap_th() {
     // - Release TH(C)
 
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -320,26 +258,15 @@ fn tap_th_then_tap_th() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 2 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -350,5 +277,6 @@ fn tap_th_then_tap_th() {
         [0, 0, 0x06, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
