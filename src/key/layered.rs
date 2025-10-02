@@ -207,6 +207,9 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
             LayerEvent::Deactivated(layer) => {
                 self.active_layers.deactivate(layer);
             }
+            LayerEvent::StickyActivated(layer) => {
+                self.active_layers.activate(layer, ActivationStyle::Sticky);
+            }
             LayerEvent::Toggled(layer) => {
                 if self.active_layers[layer as usize - 1].is_active() {
                     self.active_layers.deactivate(layer);
@@ -377,6 +380,8 @@ pub enum LayerEvent {
     Deactivated(LayerIndex),
     /// Toggles the given layer.
     Toggled(LayerIndex),
+    /// Activates the given layer.
+    StickyActivated(LayerIndex),
     /// Sets the active layers to the given set of layers.
     Set(LayerBitset),
     /// Changes the default layer.
