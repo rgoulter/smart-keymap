@@ -26,8 +26,7 @@ Feature: Sticky Modifiers Key (configure release: OnNextKeyPress)
     When the keymap registers the following input
       """
       [
-        press (K.sticky K.LeftShift),
-        release (K.sticky K.LeftShift),
+        tap (K.sticky K.LeftShift),
         press K.A,
         press K.B,
       ]

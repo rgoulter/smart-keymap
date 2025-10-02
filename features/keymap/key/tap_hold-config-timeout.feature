@@ -17,9 +17,9 @@ Feature: TapHold Key (configure resolve-as-hold timeout)
       """
       [
         press (K.A & K.hold K.LeftCtrl),
+        wait 60,
       ]
       """
-    And the keymap ticks 60 times
     Then the HID keyboard report should equal
       """
       { modifiers = { left_ctrl = true } }

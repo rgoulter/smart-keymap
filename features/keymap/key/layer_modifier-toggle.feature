@@ -44,8 +44,7 @@ Feature: Layer Modifier: Toggle
     When the keymap registers the following input
       """
       [
-        press (K.layer_mod.toggle 1),
-        release (K.layer_mod.toggle 1),
+        tap (K.layer_mod.toggle 1),
         press (K.layer_mod.toggle 1),
         press (K.A),
       ]

@@ -38,22 +38,15 @@ Feature: TapHold Key (configure required_idle_time)
     When the keymap registers the following input
       """
       [
-        press (K.A),
-        release (K.A),
-      ]
-      """
-    And the keymap ticks 50 times
-    And the keymap registers the following input
-      """
-      [
+        tap (K.A),
+        wait 50,
         press (K.B & K.hold K.LeftCtrl),
       ]
       """
     Then the output should be equivalent to output from
       """
       [
-        press (K.A),
-        release (K.A),
+        tap (K.A),
         press (K.B),
       ]
       """
@@ -66,25 +59,16 @@ Feature: TapHold Key (configure required_idle_time)
     When the keymap registers the following input
       """
       [
-        press (K.A),
-        release (K.A),
-      ]
-      """
-    And the keymap ticks 110 times
-    And the keymap registers the following input
-      """
-      [
-        press (K.B & K.hold K.LeftCtrl),
-        release (K.B & K.hold K.LeftCtrl),
+        tap (K.A),
+        wait 110,
+        tap (K.B & K.hold K.LeftCtrl),
       ]
       """
     Then the output should be equivalent to output from
       """
       [
-        press (K.A),
-        release (K.A),
-        press (K.B),
-        release (K.B),
+        tap (K.A),
+        tap (K.B),
       ]
       """
 
@@ -94,23 +78,16 @@ Feature: TapHold Key (configure required_idle_time)
     When the keymap registers the following input
       """
       [
-        press (K.A),
-        release (K.A),
-      ]
-      """
-    And the keymap ticks 110 times
-    And the keymap registers the following input
-      """
-      [
+        tap (K.A),
+        wait 110,
         press (K.B & K.hold K.LeftCtrl),
+        wait 250,
       ]
       """
-    And the keymap ticks 250 times
     Then the output should be equivalent to output from
       """
       [
-        press (K.A),
-        release (K.A),
+        tap (K.A),
         press (K.LeftCtrl),
       ]
       """

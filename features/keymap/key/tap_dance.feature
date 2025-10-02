@@ -60,18 +60,14 @@ Feature: TapDance Key
     When the keymap registers the following input
       """
       [
-        press (K.A & { tap_dances = [K.B, K.C] }),
-        release (K.A & { tap_dances = [K.B, K.C] }),
-        press (K.A & { tap_dances = [K.B, K.C] }),
-        release (K.A & { tap_dances = [K.B, K.C] }),
-        press (K.A & { tap_dances = [K.B, K.C] }),
-        release (K.A & { tap_dances = [K.B, K.C] }),
+        tap (K.A & { tap_dances = [K.B, K.C] }),
+        tap (K.A & { tap_dances = [K.B, K.C] }),
+        tap (K.A & { tap_dances = [K.B, K.C] }),
       ]
       """
     Then the output should be equivalent to output from
       """
       [
-        press K.C,
-        release K.C,
+        tap K.C,
       ]
       """
