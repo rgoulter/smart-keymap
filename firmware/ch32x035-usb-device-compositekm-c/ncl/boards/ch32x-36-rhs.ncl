@@ -15,7 +15,7 @@ let C = import "codegen/contracts.ncl" in
       },
 
     # The CH32X-36 RHS uses a matrix of 4 rows of 5 columns,
-    #  and is split with a similar RHS keyboard.
+    #  and is split with a similar LHS keyboard.
     keymap_index_for_key = fun { column_index | Number, row_index | Number, .. } =>
       # The keyboard has 36 keys,
       #  but the RHS only has half of these.
