@@ -1,3 +1,5 @@
+use smart_keymap::keymap::ObservedKeymap;
+
 #[test]
 fn test_simple_1char_string_macro() {
     // This test demonstrates using smart_keymap::keymap::Keymap directly,
@@ -5,11 +7,8 @@ fn test_simple_1char_string_macro() {
 
     // Assemble
     use smart_keymap::input;
-    use smart_keymap::keymap;
 
-    use keymap::DistinctReports;
-
-    let mut keymap = smart_keymap_macros::keymap!(
+    let mut keymap = ObservedKeymap::new(smart_keymap_macros::keymap!(
         r#"
         let K = import "keys.ncl" in
 
@@ -20,19 +19,13 @@ fn test_simple_1char_string_macro() {
             ],
         }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act -- tap macro key
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -41,6 +34,7 @@ fn test_simple_1char_string_macro() {
         [0, 0, 0x04, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
@@ -51,11 +45,8 @@ fn test_simple_string_macro() {
 
     // Assemble
     use smart_keymap::input;
-    use smart_keymap::keymap;
 
-    use keymap::DistinctReports;
-
-    let mut keymap = smart_keymap_macros::keymap!(
+    let mut keymap = ObservedKeymap::new(smart_keymap_macros::keymap!(
         r#"
         let K = import "keys.ncl" in
 
@@ -66,19 +57,13 @@ fn test_simple_string_macro() {
             ],
         }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act -- tap macro key
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -91,5 +76,6 @@ fn test_simple_string_macro() {
         [0, 0, 0x06, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
