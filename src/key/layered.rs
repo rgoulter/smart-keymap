@@ -33,6 +33,11 @@ pub enum ModifierKey {
     Hold(LayerIndex),
     /// Toggles whether the given layer is active when pressed.
     Toggle(LayerIndex),
+    /// Sticky layer modifier, similar to sticky modifier key.
+    ///
+    /// Acts the same as `Hold` variant if interrupted.
+    /// If tapped, then the layer is activated for the next key tap.
+    Sticky(LayerIndex),
     /// Sets the set of active layers to the given layers when the key is pressed.
     SetActiveLayers(LayerBitset),
     /// Sets the default layer.
@@ -83,16 +88,25 @@ impl ModifierKey {
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::Activated] event.
-    pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
+    pub fn new_pressed_key(&self) -> (ModifierKeyState, Option<LayerEvent>) {
         match self {
-            ModifierKey::Hold(layer) => (ModifierKeyState::new(), LayerEvent::Activated(*layer)),
-            ModifierKey::Toggle(layer) => (ModifierKeyState::new(), LayerEvent::Toggled(*layer)),
+            ModifierKey::Hold(layer) => {
+                (ModifierKeyState::new(), Some(LayerEvent::Activated(*layer)))
+            }
+            ModifierKey::Toggle(layer) => {
+                (ModifierKeyState::new(), Some(LayerEvent::Toggled(*layer)))
+            }
+            ModifierKey::Sticky(layer) => (
+                ModifierKeyState::sticky(),
+                Some(LayerEvent::StickyActivated(*layer)),
+            ),
             ModifierKey::SetActiveLayers(layer_set) => {
-                (ModifierKeyState::new(), LayerEvent::Set(*layer_set))
+                (ModifierKeyState::new(), Some(LayerEvent::Set(*layer_set)))
             }
-            ModifierKey::Default(layer) => {
-                (ModifierKeyState::new(), LayerEvent::SetDefault(*layer))
-            }
+            ModifierKey::Default(layer) => (
+                ModifierKeyState::new(),
+                Some(LayerEvent::SetDefault(*layer)),
+            ),
         }
     }
 }
@@ -443,6 +457,24 @@ impl ModifierKeyState {
                 _ => None,
             },
             ModifierKey::Toggle(_) => None,
+            ModifierKey::Sticky(layer) => match event {
+                key::Event::Input(input::Event::Press { keymap_index: _ }) => {
+                    if self.behavior == Behavior::Sticky {
+                        // Another key pressed while sticky modifier is held; make self regular
+                        self.behavior = Behavior::Regular;
+                        // Change the layer state to *regular*
+                        Some(LayerEvent::Activated(*layer))
+                    } else {
+                        None
+                    }
+                }
+                key::Event::Input(input::Event::Release { keymap_index: ki })
+                    if keymap_index == ki && self.behavior == Behavior::Regular =>
+                {
+                    Some(LayerEvent::Deactivated(*layer))
+                }
+                _ => None,
+            },
             ModifierKey::SetActiveLayers(_layer_set) => None,
             ModifierKey::Default(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
@@ -511,9 +543,14 @@ impl<
         match key_ref {
             Ref::Modifier(i) => {
                 let key = self.modifier_keys[i as usize];
-                let (m_ks, lmod_ev) = key.new_pressed_key();
+                let (m_ks, maybe_lmod_ev) = key.new_pressed_key();
                 let pks = key::PressedKeyResult::Resolved(m_ks);
-                let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev));
+                let pke = match maybe_lmod_ev {
+                    Some(lmod_ev) => {
+                        key::KeyEvents::event(key::Event::key_event(keymap_index, lmod_ev))
+                    }
+                    None => key::KeyEvents::no_events(),
+                };
                 (pks, pke)
             }
             Ref::Layered(i) => {
@@ -596,7 +633,7 @@ mod tests {
 
         let (_pressed_key, layer_event) = key.new_pressed_key();
 
-        assert_eq!(LayerEvent::Activated(layer), layer_event);
+        assert_eq!(Some(LayerEvent::Activated(layer)), layer_event);
     }
 
     #[test]
@@ -795,6 +832,6 @@ mod tests {
         let (_pressed_key, layer_event) = key.new_pressed_key();
 
         // Assert
-        assert_eq!(LayerEvent::Toggled(layer), layer_event);
+        assert_eq!(Some(LayerEvent::Toggled(layer)), layer_event);
     }
 }
