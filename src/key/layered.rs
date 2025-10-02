@@ -82,15 +82,15 @@ impl ModifierKey {
 
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
-    /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::LayerActivated] event.
+    /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::Activated] event.
     pub fn new_pressed_key(&self) -> (ModifierKeyState, LayerEvent) {
         match self {
-            ModifierKey::Hold(layer) => (ModifierKeyState, LayerEvent::LayerActivated(*layer)),
-            ModifierKey::Toggle(layer) => (ModifierKeyState, LayerEvent::LayerToggled(*layer)),
+            ModifierKey::Hold(layer) => (ModifierKeyState, LayerEvent::Activated(*layer)),
+            ModifierKey::Toggle(layer) => (ModifierKeyState, LayerEvent::Toggled(*layer)),
             ModifierKey::SetActiveLayers(layer_set) => {
-                (ModifierKeyState, LayerEvent::LayersSet(*layer_set))
+                (ModifierKeyState, LayerEvent::Set(*layer_set))
             }
-            ModifierKey::Default(layer) => (ModifierKeyState, LayerEvent::DefaultLayerSet(*layer)),
+            ModifierKey::Default(layer) => (ModifierKeyState, LayerEvent::SetDefault(*layer)),
         }
     }
 }
@@ -173,20 +173,20 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     /// Updates the context with the [LayerEvent].
     fn handle_event(&mut self, event: LayerEvent) {
         match event {
-            LayerEvent::LayerActivated(layer) => {
+            LayerEvent::Activated(layer) => {
                 self.active_layers.activate(layer);
             }
-            LayerEvent::LayerDeactivated(layer) => {
+            LayerEvent::Deactivated(layer) => {
                 self.active_layers.deactivate(layer);
             }
-            LayerEvent::LayerToggled(layer) => {
+            LayerEvent::Toggled(layer) => {
                 if self.active_layers[layer as usize - 1] {
                     self.active_layers.deactivate(layer);
                 } else {
                     self.active_layers.activate(layer);
                 }
             }
-            LayerEvent::LayersSet(layer_set) => {
+            LayerEvent::Set(layer_set) => {
                 let max_layer = 1 + LAYER_COUNT.min(MAX_BITSET_LAYER);
 
                 // layer 0 is always active.
@@ -198,8 +198,8 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                     }
                 }
             }
-            LayerEvent::DefaultLayerSet(0) => self.default_layer = None,
-            LayerEvent::DefaultLayerSet(layer) => self.default_layer = Some(layer),
+            LayerEvent::SetDefault(0) => self.default_layer = None,
+            LayerEvent::SetDefault(layer) => self.default_layer = Some(layer),
         }
     }
 }
@@ -343,15 +343,15 @@ impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LayerEvent {
     /// Activates the given layer.
-    LayerActivated(LayerIndex),
+    Activated(LayerIndex),
     /// Deactivates the given layer.
-    LayerDeactivated(LayerIndex),
+    Deactivated(LayerIndex),
     /// Toggles the given layer.
-    LayerToggled(LayerIndex),
+    Toggled(LayerIndex),
     /// Sets the active layers to the given set of layers.
-    LayersSet(LayerBitset),
+    Set(LayerBitset),
     /// Changes the default layer.
-    DefaultLayerSet(LayerIndex),
+    SetDefault(LayerIndex),
 }
 
 /// Struct for layer system pending key state. (No pending state).
@@ -374,7 +374,7 @@ impl ModifierKeyState {
             ModifierKey::Hold(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
-                        Some(LayerEvent::LayerDeactivated(*layer))
+                        Some(LayerEvent::Deactivated(*layer))
                     } else {
                         None
                     }
@@ -386,7 +386,7 @@ impl ModifierKeyState {
             ModifierKey::Default(layer) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
-                        Some(LayerEvent::DefaultLayerSet(*layer))
+                        Some(LayerEvent::SetDefault(*layer))
                     } else {
                         None
                     }
@@ -535,7 +535,7 @@ mod tests {
 
         let (_pressed_key, layer_event) = key.new_pressed_key();
 
-        assert_eq!(LayerEvent::LayerActivated(layer), layer_event);
+        assert_eq!(LayerEvent::Activated(layer), layer_event);
     }
 
     #[test]
@@ -559,7 +559,7 @@ mod tests {
         // Assert: the pressed key should have emitted a layer deactivation event
         let first_ev = actual_events.into_iter().next();
         if let Some(actual_layer_event) = first_ev {
-            let expected_layer_event = LayerEvent::LayerDeactivated(layer);
+            let expected_layer_event = LayerEvent::Deactivated(layer);
             assert_eq!(expected_layer_event, actual_layer_event);
         } else {
             panic!("Expected Some LayerDeactivated event");
@@ -594,7 +594,7 @@ mod tests {
     fn test_context_handling_event_adjusts_active_layers() {
         let mut context = Context::default();
 
-        context.handle_event(LayerEvent::LayerActivated(2));
+        context.handle_event(LayerEvent::Activated(2));
 
         let actual_active_layers = &context.active_layers[0..3];
         assert_eq!(&[false, true, false], actual_active_layers);
@@ -639,9 +639,9 @@ mod tests {
         let system = System::new([], [layered_key]);
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(1));
-        context.handle_event(LayerEvent::LayerActivated(2));
-        context.handle_event(LayerEvent::LayerActivated(3));
+        context.handle_event(LayerEvent::Activated(1));
+        context.handle_event(LayerEvent::Activated(2));
+        context.handle_event(LayerEvent::Activated(3));
         let keymap_index = 9; // arbitrary
         let key_ref = Ref::Layered(0);
         let (pkr, _pke) = system.new_pressed_key(keymap_index, &context, key_ref);
@@ -668,9 +668,9 @@ mod tests {
         let system = System::new([], [layered_key]);
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(1));
-        context.handle_event(LayerEvent::LayerActivated(2));
-        context.handle_event(LayerEvent::LayerActivated(3));
+        context.handle_event(LayerEvent::Activated(1));
+        context.handle_event(LayerEvent::Activated(2));
+        context.handle_event(LayerEvent::Activated(3));
         let keymap_index = 9; // arbitrary
         let key_ref = Ref::Layered(0);
         let (pkr, _pke) = system.new_pressed_key(keymap_index, &context, key_ref);
@@ -693,8 +693,8 @@ mod tests {
         let system = System::new([], [layered_key]);
 
         // Act: activate all layers, press layered key
-        context.handle_event(LayerEvent::LayerActivated(1));
-        context.handle_event(LayerEvent::LayerActivated(3));
+        context.handle_event(LayerEvent::Activated(1));
+        context.handle_event(LayerEvent::Activated(3));
         let keymap_index = 9; // arbitrary
         let key_ref = Ref::Layered(0);
         let (pkr, _pke) = system.new_pressed_key(keymap_index, &context, key_ref);
@@ -727,6 +727,6 @@ mod tests {
         let (_pressed_key, layer_event) = key.new_pressed_key();
 
         // Assert
-        assert_eq!(LayerEvent::LayerToggled(layer), layer_event);
+        assert_eq!(LayerEvent::Toggled(layer), layer_event);
     }
 }
