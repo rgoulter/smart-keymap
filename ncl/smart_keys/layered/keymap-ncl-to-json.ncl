@@ -35,6 +35,7 @@
         |> match {
           { layer_modifier = { default_ } } => validators.is_number default_,
           { layer_modifier = { hold } } => validators.is_number hold,
+          { layer_modifier = { sticky } } => validators.is_number sticky,
           { layer_modifier = { toggle } } => validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
           { layer_modifier = { set_active_layers_to } } => (validators.array.validator validators.is_number) set_active_layers_to,
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
@@ -51,6 +52,8 @@
             { Hold = hold_layer },
           { layer_modifier = { toggle = toggle_layer } } =>
             { Toggle = toggle_layer },
+          { layer_modifier = { sticky = sticky_layer } } =>
+            { Sticky = sticky_layer },
           { layer_modifier = { set_active_layers_to = active_layers } } =>
             let active_layers_bitset =
               active_layers
