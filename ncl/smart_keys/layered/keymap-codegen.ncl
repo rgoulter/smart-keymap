@@ -90,12 +90,13 @@
           validators.record.validator {
             fields_validator =
               validators.all_of [
-                validators.record.has_any_field_of ["Default", "Hold", "SetActiveLayers", "Toggle"],
-                validators.record.has_only_fields ["Default", "Hold", "SetActiveLayers", "Toggle"],
+                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
+                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
               ],
             field_validators = {
               Hold = validators.is_number,
               Toggle = validators.is_number,
+              Sticky = validators.is_number,
               SetActiveLayers = validators.is_number,
             },
           },
@@ -128,6 +129,14 @@
                 include key_type,
                 variant = "Toggle",
                 rust_expr = "%{module}::ModifierKey::toggle(%{std.to_string layer_index})",
+              },
+            { Sticky = layer_index } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Sticky",
+                rust_expr = "%{module}::ModifierKey::sticky(%{std.to_string layer_index})",
               },
             { SetActiveLayers = active_layers_bitset } =>
               {
