@@ -205,9 +205,16 @@ enum Input {
     Release { keymap_index: u16 },
 }
 
-fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[input::Event]) {
+fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[Input]) {
     for &input in inputs {
-        keymap.handle_input(input);
+        match input {
+            Input::Press { keymap_index } => {
+                keymap.handle_input(input::Event::Press { keymap_index })
+            }
+            Input::Release { keymap_index } => {
+                keymap.handle_input(input::Event::Release { keymap_index })
+            }
+        }
     }
 }
 
@@ -218,14 +225,14 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
     world.keymap = LoadedKeymap::new(load_keymap(keymap_ncl));
 }
 
-fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<input::Event> {
+fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<Input> {
     match nickel_json_value_for_inputs(
         format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
         keymap_ncl,
         inputs_ncl,
     ) {
         Ok(json) => {
-            let inputs_result: serde_json::Result<Vec<input::Event>> = serde_json::from_str(&json);
+            let inputs_result: serde_json::Result<Vec<Input>> = serde_json::from_str(&json);
             match inputs_result {
                 Ok(inputs) => inputs,
                 Err(e) => {
