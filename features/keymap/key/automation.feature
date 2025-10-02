@@ -15,7 +15,7 @@ Feature: Automation Key
 
   - [ZMK's macro behaviors](https://zmk.dev/docs/keymaps/behaviors/macros)
 
-  Example: string macro key
+  Example: automation key
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
