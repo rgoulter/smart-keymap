@@ -133,6 +133,21 @@ pub type CustomKeyState = key::custom::KeyState;
 /// Type aliases for convenience.
 pub type CustomSystem = key::custom::System<Ref>;
 
+/// Type aliases for convenience.
+pub type KeyboardRef = key::keyboard::Ref;
+/// Type aliases for convenience.
+pub type KeyboardKey = key::keyboard::Key;
+/// Type aliases for convenience.
+pub type KeyboardContext = key::keyboard::Context;
+/// Type aliases for convenience.
+pub type KeyboardEvent = key::keyboard::Event;
+/// Type aliases for convenience.
+pub type KeyboardPendingKeyState = key::keyboard::PendingKeyState;
+/// Type aliases for convenience.
+pub type KeyboardKeyState = key::keyboard::KeyState;
+/// Type aliases for convenience.
+pub type KeyboardSystem<D> = key::keyboard::System<Ref, D>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -149,7 +164,7 @@ pub enum Ref {
     /// [key::custom::Ref] variant.
     Custom(CustomRef),
     /// [key::keyboard::Ref] variant.
-    Keyboard(key::keyboard::Ref),
+    Keyboard(KeyboardRef),
     /// [key::layered::Ref] variant.
     Layered(key::layered::Ref),
     /// [key::mouse::Ref] variant.
@@ -291,7 +306,7 @@ pub enum Event {
     /// A custom event.
     Custom(CustomEvent),
     /// A keyboard event.
-    Keyboard(key::keyboard::Event),
+    Keyboard(KeyboardEvent),
     /// A layer modification event.
     Layered(key::layered::LayerEvent),
     /// A mouse event.
@@ -340,8 +355,8 @@ impl From<CustomEvent> for Event {
     }
 }
 
-impl From<key::keyboard::Event> for Event {
-    fn from(ev: key::keyboard::Event) -> Self {
+impl From<KeyboardEvent> for Event {
+    fn from(ev: KeyboardEvent) -> Self {
         Event::Keyboard(ev)
     }
 }
@@ -420,7 +435,7 @@ impl TryFrom<Event> for ConsumerEvent {
     }
 }
 
-impl TryFrom<Event> for key::keyboard::Event {
+impl TryFrom<Event> for KeyboardEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -503,7 +518,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::custom::PendingKeyState].
     Custom(CustomPendingKeyState),
     /// Pending key state for [key::keyboard::PendingKeyState].
-    Keyboard(key::keyboard::PendingKeyState),
+    Keyboard(KeyboardPendingKeyState),
     /// Pending key state for [key::layered::PendingKeyState].
     Layered(key::layered::PendingKeyState),
     /// Pending key state for [key::mouse::PendingKeyState].
@@ -552,8 +567,8 @@ impl From<CustomPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::keyboard::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::keyboard::PendingKeyState) -> Self {
+impl From<KeyboardPendingKeyState> for PendingKeyState {
+    fn from(pks: KeyboardPendingKeyState) -> Self {
         PendingKeyState::Keyboard(pks)
     }
 }
@@ -639,7 +654,7 @@ pub enum KeyState {
     /// Key state for [key::custom::KeyState].
     Custom(CustomKeyState),
     /// Key state for [key::keyboard::KeyState].
-    Keyboard(key::keyboard::KeyState),
+    Keyboard(KeyboardKeyState),
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(key::layered::ModifierKeyState),
     /// Key state for [key::mouse::KeyState].
@@ -694,8 +709,8 @@ impl From<CustomKeyState> for KeyState {
     }
 }
 
-impl From<key::keyboard::KeyState> for KeyState {
-    fn from(ks: key::keyboard::KeyState) -> Self {
+impl From<KeyboardKeyState> for KeyState {
+    fn from(ks: KeyboardKeyState) -> Self {
         KeyState::Keyboard(ks)
     }
 }
@@ -741,7 +756,7 @@ pub trait Keys {
     /// Type used by [key::chorded::System].
     type ChordedAuxiliary: Debug + Index<usize, Output = ChordedAuxiliaryKey>;
     /// Type used by [key::keyboard::System].
-    type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
+    type Keyboard: Debug + Index<usize, Output = KeyboardKey>;
     /// Type used by [key::layered::System].
     type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
     /// Type used by [key::layered::System].
@@ -798,7 +813,7 @@ impl<
     type Callback = [CallbackKey; CALLBACK];
     type Chorded = [ChordedKey; CHORDED];
     type ChordedAuxiliary = [ChordedAuxiliaryKey; CHORDED_AUXILIARY];
-    type Keyboard = [key::keyboard::Key; KEYBOARD];
+    type Keyboard = [KeyboardKey; KEYBOARD];
     type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
     type Layered = [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED];
     type Sticky = [key::sticky::Key; STICKY];
@@ -817,7 +832,7 @@ impl Keys for KeyVecs {
     type Callback = Vec<CallbackKey>;
     type Chorded = Vec<ChordedKey>;
     type ChordedAuxiliary = Vec<ChordedAuxiliaryKey>;
-    type Keyboard = Vec<key::keyboard::Key>;
+    type Keyboard = Vec<KeyboardKey>;
     type LayerModifiers = Vec<key::layered::ModifierKey>;
     type Layered = Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
     type Sticky = Vec<key::sticky::Key>;
@@ -834,7 +849,7 @@ pub struct System<D: Keys> {
     consumer: ConsumerSystem,
     chorded: ChordedSystem<D::Chorded, D::ChordedAuxiliary>,
     custom: CustomSystem,
-    keyboard: key::keyboard::System<Ref, D::Keyboard>,
+    keyboard: KeyboardSystem<D::Keyboard>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered, LAYERED_LAYER_COUNT>,
     mouse: key::mouse::System<Ref>,
     sticky: key::sticky::System<Ref, D::Sticky>,
@@ -875,7 +890,7 @@ impl<
         automation: AutomationSystem<[AutomationKey; AUTOMATION]>,
         callback: CallbackSystem<[CallbackKey; CALLBACK]>,
         chorded: ChordedSystem<[ChordedKey; CHORDED], [ChordedAuxiliaryKey; CHORDED_AUXILIARY]>,
-        keyboard: key::keyboard::System<Ref, [key::keyboard::Key; KEYBOARD]>,
+        keyboard: KeyboardSystem<[KeyboardKey; KEYBOARD]>,
         layered: key::layered::System<
             Ref,
             [key::layered::ModifierKey; LAYER_MODIFIERS],
@@ -915,7 +930,7 @@ impl System<KeyVecs> {
         automation: AutomationSystem<Vec<AutomationKey>>,
         callback: CallbackSystem<Vec<CallbackKey>>,
         chorded: ChordedSystem<Vec<ChordedKey>, Vec<ChordedAuxiliaryKey>>,
-        keyboard: key::keyboard::System<Ref, <KeyVecs as Keys>::Keyboard>,
+        keyboard: KeyboardSystem<Vec<KeyboardKey>>,
         layered: key::layered::System<
             Ref,
             <KeyVecs as Keys>::LayerModifiers,
