@@ -203,6 +203,8 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
 enum Input {
     Press { keymap_index: u16 },
     Release { keymap_index: u16 },
+    Tap { keymap_index: u16 },
+    Wait { duration: u16 },
 }
 
 fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[Input]) {
@@ -213,6 +215,15 @@ fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[Input]) {
             }
             Input::Release { keymap_index } => {
                 keymap.handle_input(input::Event::Release { keymap_index })
+            }
+            Input::Tap { keymap_index } => {
+                keymap.handle_input(input::Event::Press { keymap_index });
+                keymap.handle_input(input::Event::Release { keymap_index });
+            }
+            Input::Wait { duration } => {
+                for _ in 0..duration {
+                    keymap.tick();
+                }
             }
         }
     }
