@@ -13,6 +13,7 @@ NCL_DIR="${REPOSITORY_DIR}/ncl"
 KEYMAP_FEATURE_MD=""
 
 keymap_key_features=(
+    "automation"
     "automation-string"
     "callback"
     "caps_word"
