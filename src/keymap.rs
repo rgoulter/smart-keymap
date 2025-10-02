@@ -227,7 +227,7 @@ impl<
         Ev: Debug,
         PKS: Debug,
         KS: Debug,
-        S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+        S: Debug,
     > core::fmt::Debug for Keymap<I, R, Ctx, Ev, PKS, KS, S>
 {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
