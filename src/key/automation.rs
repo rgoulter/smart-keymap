@@ -19,6 +19,19 @@ pub struct Execution {
     pub length: u16,
 }
 
+impl Execution {
+    /// An empty execution.
+    pub const EMPTY: Self = Self {
+        start: 0,
+        length: 0,
+    };
+
+    /// Returns true if the execution is empty (length == 0).
+    pub const fn is_empty(&self) -> bool {
+        self.length == 0
+    }
+}
+
 /// Definition for a automation key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key {
