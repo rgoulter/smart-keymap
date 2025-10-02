@@ -1,14 +1,12 @@
 use smart_keymap::input;
-use smart_keymap::keymap;
+use smart_keymap::keymap::ObservedKeymap;
 
 use smart_keymap_macros::keymap;
-
-use keymap::DistinctReports;
 
 #[test]
 fn key_taps() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -18,24 +16,14 @@ fn key_taps() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     // Tap (press, release) the layered key of the tap-hold key
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
-        keymap.tick();
-    }
-
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -44,5 +32,6 @@ fn key_taps() {
         [0, 0, 0x04, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
