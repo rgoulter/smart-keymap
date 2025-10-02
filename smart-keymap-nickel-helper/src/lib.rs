@@ -288,7 +288,16 @@ pub fn nickel_json_value_for_inputs(
                            & ({{
                                  inputs =
                                     let K = import "keys.ncl" in
-                                    let {{ press, release, .. }} = import "inputs.ncl" in
+                                    let {{
+                                      press,
+                                      press_keymap_index,
+                                      release,
+                                      release_keymap_index,
+                                      tap,
+                                      tap_keymap_index,
+                                      wait,
+                                      ..
+                                    }} = import "inputs.ncl" in
                                     {},
                               }})
                         "#,
