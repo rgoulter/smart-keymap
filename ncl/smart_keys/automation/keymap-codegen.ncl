@@ -28,10 +28,11 @@
           validators.any_of [
             validators.is_string, # NoOp
             validators.record.validator {
-              fields_validator = validators.record.has_any_field_of ["Press", "Release", "Wait"],
+              fields_validator = validators.record.has_any_field_of ["Press", "Release", "Tap", "Wait"],
               field_validators = {
                 Press = key_output.json_validator,
                 Release = key_output.json_validator,
+                Tap = key_output.json_validator,
                 Wait = validators.is_number,
               },
             },
@@ -45,6 +46,7 @@
             "NoOp" => "%{module}::Instruction::NoOp",
             { Press } => "%{module}::Instruction::Press(%{key_output.rust_expr Press})",
             { Release } => "%{module}::Instruction::Release(%{key_output.rust_expr Release})",
+            { Tap } => "%{module}::Instruction::Tap(%{key_output.rust_expr Tap})",
             { Wait } => "%{module}::Instruction::Wait(%{std.to_string Wait})",
           },
       },
