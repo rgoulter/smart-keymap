@@ -303,9 +303,14 @@ impl Config {
 pub struct Context {
     keymap_context: keymap::KeymapContext,
     automation: AutomationContext,
+    callback: CallbackContext,
     caps_word: CapsWordContext,
     chorded: ChordedContext,
+    consumer: ConsumerContext,
+    custom: CustomContext,
+    keyboard: KeyboardContext,
     layered: LayeredContext,
+    mouse: MouseContext,
     sticky: StickyContext,
     tap_dance: TapDanceContext,
     tap_hold: TapHoldContext,
@@ -317,9 +322,14 @@ impl Context {
         Self {
             keymap_context: keymap::KeymapContext::new(),
             automation: key::automation::Context::from_config(config.automation),
+            callback: key::callback::Context,
             caps_word: key::caps_word::Context::new(),
             chorded: key::chorded::Context::from_config(config.chorded),
+            consumer: key::consumer::Context,
+            custom: key::custom::Context,
+            keyboard: key::keyboard::Context,
             layered: key::layered::Context::new(),
+            mouse: key::mouse::Context,
             sticky: key::sticky::Context::from_config(config.sticky),
             tap_dance: key::tap_dance::Context::from_config(config.tap_dance),
             tap_hold: key::tap_hold::Context::from_config(config.tap_hold),
@@ -1052,7 +1062,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             Ref::Callback(key_ref) => {
                 let (pkr, pke) =
                     self.callback
-                        .new_pressed_key(keymap_index, &key::callback::Context, key_ref);
+                        .new_pressed_key(keymap_index, &context.callback, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::CapsWord(key_ref) => {
@@ -1070,19 +1080,19 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             Ref::Consumer(key_ref) => {
                 let (pkr, pke) =
                     self.consumer
-                        .new_pressed_key(keymap_index, &key::consumer::Context, key_ref);
+                        .new_pressed_key(keymap_index, &context.consumer, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Custom(key_ref) => {
                 let (pkr, pke) =
                     self.custom
-                        .new_pressed_key(keymap_index, &key::custom::Context, key_ref);
+                        .new_pressed_key(keymap_index, &context.custom, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Keyboard(key_ref) => {
                 let (pkr, pke) =
                     self.keyboard
-                        .new_pressed_key(keymap_index, &key::keyboard::Context, key_ref);
+                        .new_pressed_key(keymap_index, &context.keyboard, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Layered(key_ref) => {
@@ -1092,9 +1102,9 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Mouse(key_ref) => {
-                let (pkr, pke) =
-                    self.mouse
-                        .new_pressed_key(keymap_index, &key::mouse::Context, key_ref);
+                let (pkr, pke) = self
+                    .mouse
+                    .new_pressed_key(keymap_index, &context.mouse, key_ref);
                 (pkr.into_result(), pke.into_events())
             }
             Ref::Sticky(key_ref) => {
@@ -1187,7 +1197,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let pke = self.consumer.update_state(
                         key_state,
                         key_ref,
-                        &key::consumer::Context,
+                        &context.consumer,
                         keymap_index,
                         event,
                     );
@@ -1201,7 +1211,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
                     let pke = self.keyboard.update_state(
                         key_state,
                         key_ref,
-                        &key::keyboard::Context,
+                        &context.keyboard,
                         keymap_index,
                         event,
                     );
