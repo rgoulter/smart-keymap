@@ -24,6 +24,8 @@ use smart_keymap::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
 type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
+type ObservedKeymap =
+    keymap::ObservedKeymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 
 const CHORDED_MAX_PRESSED_INDICES: usize = CHORDED_MAX_CHORD_SIZE * 2;
 
@@ -42,33 +44,20 @@ const TEST_KEYMAP_NCL: &str = r#"
 #[derive(Debug)]
 enum LoadedKeymap {
     NoKeymap,
-    Keymap {
-        keymap: Keymap,
-        distinct_reports: keymap::DistinctReports,
-    },
+    Keymap { keymap: ObservedKeymap },
 }
 
 impl LoadedKeymap {
     pub fn keymap(keymap: Keymap) -> Self {
         LoadedKeymap::Keymap {
-            keymap,
-            distinct_reports: keymap::DistinctReports::new(),
+            keymap: ObservedKeymap::new(keymap),
         }
     }
 
     pub fn handle_input(&mut self, ev: input::Event) {
         match self {
-            LoadedKeymap::Keymap {
-                keymap,
-                distinct_reports,
-            } => {
+            LoadedKeymap::Keymap { keymap } => {
                 keymap.handle_input(ev);
-                distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
-                for _ in 0..smart_keymap::keymap::INPUT_QUEUE_TICK_DELAY {
-                    keymap.tick();
-                    distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-                }
             }
             _ => panic!("No keymap loaded"),
         }
@@ -76,12 +65,8 @@ impl LoadedKeymap {
 
     pub fn tick(&mut self) {
         match self {
-            LoadedKeymap::Keymap {
-                keymap,
-                distinct_reports,
-            } => {
+            LoadedKeymap::Keymap { keymap } => {
                 keymap.tick();
-                distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
             }
             _ => panic!("No keymap loaded"),
         }
@@ -89,39 +74,28 @@ impl LoadedKeymap {
 
     pub fn boot_keyboard_report(&self) -> [u8; 8] {
         match self {
-            LoadedKeymap::Keymap { keymap, .. } => {
-                smart_keymap::keymap::KeymapOutput::new(keymap.pressed_keys())
-                    .as_hid_boot_keyboard_report()
-            }
+            LoadedKeymap::Keymap { keymap } => keymap.boot_keyboard_report(),
             _ => panic!("No keymap loaded"),
         }
     }
 
     pub fn distinct_reports(&self) -> &keymap::DistinctReports {
         match self {
-            LoadedKeymap::Keymap {
-                distinct_reports, ..
-            } => distinct_reports,
+            LoadedKeymap::Keymap { keymap } => keymap.distinct_reports(),
             _ => panic!("No keymap loaded"),
         }
     }
 
     pub fn tick_until_no_scheduled_events(&mut self) {
         match self {
-            LoadedKeymap::Keymap {
-                keymap,
-                distinct_reports,
-                ..
-            } => {
-                while keymap.has_scheduled_events() {
-                    keymap.tick();
-                    distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-                }
+            LoadedKeymap::Keymap { keymap } => {
+                keymap.tick_until_no_scheduled_events();
             }
             _ => panic!("No keymap loaded"),
         }
     }
 }
+
 #[derive(Debug, World)]
 pub struct KeymapWorld {
     keymap_ncl: String,
