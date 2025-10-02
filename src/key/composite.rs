@@ -49,6 +49,21 @@ pub type CallbackKeyState = key::callback::KeyState;
 /// Type aliases for convenience.
 pub type CallbackSystem<D> = key::callback::System<Ref, D>;
 
+/// Type aliases for convenience.
+pub type CapsWordRef = key::caps_word::Ref;
+/// Type aliases for convenience.
+pub type CapsWordKey = key::caps_word::Key;
+/// Type aliases for convenience.
+pub type CapsWordContext = key::caps_word::Context;
+/// Type aliases for convenience.
+pub type CapsWordEvent = key::caps_word::Event;
+/// Type aliases for convenience.
+pub type CapsWordPendingKeyState = key::caps_word::PendingKeyState;
+/// Type aliases for convenience.
+pub type CapsWordKeyState = key::caps_word::KeyState;
+/// Type aliases for convenience.
+pub type CapsWordSystem = key::caps_word::System<Ref>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -57,7 +72,7 @@ pub enum Ref {
     /// [key::callback::Ref] variant.
     Callback(CallbackRef),
     /// [key::caps_word::Ref] variant.
-    CapsWord(key::caps_word::Ref),
+    CapsWord(CapsWordRef),
     /// [key::chorded::Ref] variant.
     Chorded(key::chorded::Ref),
     /// [key::consumer::Ref] variant.
@@ -123,7 +138,7 @@ impl Config {
 pub struct Context {
     keymap_context: keymap::KeymapContext,
     automation: AutomationContext,
-    caps_word: key::caps_word::Context,
+    caps_word: CapsWordContext,
     chorded: key::chorded::Context<
         CHORDED_MAX_CHORDS,
         CHORDED_MAX_CHORD_SIZE,
@@ -203,7 +218,7 @@ pub enum Event {
     /// A callback event.
     Callback(CallbackEvent),
     /// A caps word event.
-    CapsWord(key::caps_word::Event),
+    CapsWord(CapsWordEvent),
     /// A chorded event.
     Chorded(key::chorded::Event),
     /// A consumer event.
@@ -236,8 +251,8 @@ impl From<CallbackEvent> for Event {
     }
 }
 
-impl From<key::caps_word::Event> for Event {
-    fn from(ev: key::caps_word::Event) -> Self {
+impl From<CapsWordEvent> for Event {
+    fn from(ev: CapsWordEvent) -> Self {
         Event::CapsWord(ev)
     }
 }
@@ -307,7 +322,7 @@ impl TryFrom<Event> for AutomationEvent {
     }
 }
 
-impl TryFrom<Event> for key::caps_word::Event {
+impl TryFrom<Event> for CapsWordEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -415,7 +430,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::callback::PendingKeyState].
     Callback(CallbackPendingKeyState),
     /// Pending key state for [key::caps_word::PendingKeyState].
-    CapsWord(key::caps_word::PendingKeyState),
+    CapsWord(CapsWordPendingKeyState),
     /// Pending key state for [key::chorded::PendingKeyState].
     Chorded(
         key::chorded::PendingKeyState<
@@ -454,8 +469,8 @@ impl From<CallbackPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::caps_word::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::caps_word::PendingKeyState) -> Self {
+impl From<CapsWordPendingKeyState> for PendingKeyState {
+    fn from(pks: CapsWordPendingKeyState) -> Self {
         PendingKeyState::CapsWord(pks)
     }
 }
@@ -577,7 +592,7 @@ pub enum KeyState {
     /// Key state for [key::callback::KeyState].
     Callback(CallbackKeyState),
     /// Key state for [key::caps_word::KeyState].
-    CapsWord(key::caps_word::KeyState),
+    CapsWord(CapsWordKeyState),
     /// Key state for [key::chorded::KeyState].
     Chorded(key::chorded::KeyState),
     /// Key state for [key::consumer::KeyState].
@@ -616,8 +631,8 @@ impl From<CallbackKeyState> for KeyState {
     }
 }
 
-impl From<key::caps_word::KeyState> for KeyState {
-    fn from(ks: key::caps_word::KeyState) -> Self {
+impl From<CapsWordKeyState> for KeyState {
+    fn from(ks: CapsWordKeyState) -> Self {
         KeyState::CapsWord(ks)
     }
 }
@@ -821,7 +836,7 @@ impl Keys for KeyVecs {
 pub struct System<D: Keys> {
     automation: AutomationSystem<D::Automation>,
     callback: CallbackSystem<D::Callback>,
-    caps_word: key::caps_word::System<Ref>,
+    caps_word: CapsWordSystem,
     consumer: key::consumer::System<Ref>,
     chorded: key::chorded::System<
         Ref,
