@@ -65,6 +65,49 @@ pub type CapsWordKeyState = key::caps_word::KeyState;
 pub type CapsWordSystem = key::caps_word::System<Ref>;
 
 /// Type aliases for convenience.
+pub type ChordedRef = key::chorded::Ref;
+/// Type aliases for convenience.
+pub type ChordedKey = key::chorded::Key<
+    Ref,
+    CHORDED_MAX_CHORDS,
+    CHORDED_MAX_CHORD_SIZE,
+    CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
+    CHORDED_MAX_PRESSED_INDICES,
+>;
+/// Type aliases for convenience.
+pub type ChordedAuxiliaryKey = key::chorded::AuxiliaryKey<
+    Ref,
+    CHORDED_MAX_CHORDS,
+    CHORDED_MAX_CHORD_SIZE,
+    CHORDED_MAX_PRESSED_INDICES,
+>;
+/// Type aliases for convenience.
+pub type ChordedConfig = key::chorded::Config<CHORDED_MAX_CHORDS, CHORDED_MAX_CHORD_SIZE>;
+/// Type aliases for convenience.
+pub type ChordedContext =
+    key::chorded::Context<CHORDED_MAX_CHORDS, CHORDED_MAX_CHORD_SIZE, CHORDED_MAX_PRESSED_INDICES>;
+/// Type aliases for convenience.
+pub type ChordedEvent = key::chorded::Event;
+/// Type aliases for convenience.
+pub type ChordedPendingKeyState = key::chorded::PendingKeyState<
+    CHORDED_MAX_CHORDS,
+    CHORDED_MAX_CHORD_SIZE,
+    CHORDED_MAX_PRESSED_INDICES,
+>;
+/// Type aliases for convenience.
+pub type ChordedKeyState = key::chorded::KeyState;
+/// Type aliases for convenience.
+pub type ChordedSystem<D, AuxD> = key::chorded::System<
+    Ref,
+    D,
+    AuxD,
+    CHORDED_MAX_CHORDS,
+    CHORDED_MAX_CHORD_SIZE,
+    CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
+    CHORDED_MAX_PRESSED_INDICES,
+>;
+
+/// Type aliases for convenience.
 pub type ConsumerRef = key::consumer::Ref;
 /// Type aliases for convenience.
 pub type ConsumerContext = key::consumer::Context;
@@ -87,7 +130,7 @@ pub enum Ref {
     /// [key::caps_word::Ref] variant.
     CapsWord(CapsWordRef),
     /// [key::chorded::Ref] variant.
-    Chorded(key::chorded::Ref),
+    Chorded(ChordedRef),
     /// [key::consumer::Ref] variant.
     Consumer(ConsumerRef),
     /// [key::custom::Ref] variant.
@@ -152,11 +195,7 @@ pub struct Context {
     keymap_context: keymap::KeymapContext,
     automation: AutomationContext,
     caps_word: CapsWordContext,
-    chorded: key::chorded::Context<
-        CHORDED_MAX_CHORDS,
-        CHORDED_MAX_CHORD_SIZE,
-        CHORDED_MAX_PRESSED_INDICES,
-    >,
+    chorded: ChordedContext,
     layered: key::layered::Context<LAYERED_LAYER_COUNT>,
     sticky: key::sticky::Context,
     tap_dance: key::tap_dance::Context,
@@ -233,7 +272,7 @@ pub enum Event {
     /// A caps word event.
     CapsWord(CapsWordEvent),
     /// A chorded event.
-    Chorded(key::chorded::Event),
+    Chorded(ChordedEvent),
     /// A consumer event.
     Consumer(ConsumerEvent),
     /// A custom event.
@@ -270,8 +309,8 @@ impl From<CapsWordEvent> for Event {
     }
 }
 
-impl From<key::chorded::Event> for Event {
-    fn from(ev: key::chorded::Event) -> Self {
+impl From<ChordedEvent> for Event {
+    fn from(ev: ChordedEvent) -> Self {
         Event::Chorded(ev)
     }
 }
@@ -346,7 +385,7 @@ impl TryFrom<Event> for CapsWordEvent {
     }
 }
 
-impl TryFrom<Event> for key::chorded::Event {
+impl TryFrom<Event> for ChordedEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -445,13 +484,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::caps_word::PendingKeyState].
     CapsWord(CapsWordPendingKeyState),
     /// Pending key state for [key::chorded::PendingKeyState].
-    Chorded(
-        key::chorded::PendingKeyState<
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
-    ),
+    Chorded(ChordedPendingKeyState),
     /// Pending key state for [key::consumer::PendingKeyState].
     Consumer(ConsumerPendingKeyState),
     /// Pending key state for [key::custom::PendingKeyState].
@@ -488,22 +521,8 @@ impl From<CapsWordPendingKeyState> for PendingKeyState {
     }
 }
 
-impl
-    From<
-        key::chorded::PendingKeyState<
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
-    > for PendingKeyState
-{
-    fn from(
-        pks: key::chorded::PendingKeyState<
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
-    ) -> Self {
+impl From<ChordedPendingKeyState> for PendingKeyState {
+    fn from(pks: ChordedPendingKeyState) -> Self {
         PendingKeyState::Chorded(pks)
     }
 }
@@ -556,13 +575,7 @@ impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
     }
 }
 
-impl<'pks> TryFrom<&'pks mut PendingKeyState>
-    for &'pks mut key::chorded::PendingKeyState<
-        CHORDED_MAX_CHORDS,
-        CHORDED_MAX_CHORD_SIZE,
-        CHORDED_MAX_PRESSED_INDICES,
-    >
-{
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut ChordedPendingKeyState {
     type Error = ();
 
     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
@@ -607,7 +620,7 @@ pub enum KeyState {
     /// Key state for [key::caps_word::KeyState].
     CapsWord(CapsWordKeyState),
     /// Key state for [key::chorded::KeyState].
-    Chorded(key::chorded::KeyState),
+    Chorded(ChordedKeyState),
     /// Key state for [key::consumer::KeyState].
     Consumer(ConsumerKeyState),
     /// Key state for [key::custom::KeyState].
@@ -650,8 +663,8 @@ impl From<CapsWordKeyState> for KeyState {
     }
 }
 
-impl From<key::chorded::KeyState> for KeyState {
-    fn from(ks: key::chorded::KeyState) -> Self {
+impl From<ChordedKeyState> for KeyState {
+    fn from(ks: ChordedKeyState) -> Self {
         KeyState::Chorded(ks)
     }
 }
@@ -711,28 +724,9 @@ pub trait Keys {
     /// Type used by [key::callback::System].
     type Callback: Debug + Index<usize, Output = CallbackKey>;
     /// Type used by [key::chorded::System].
-    type Chorded: Debug
-        + Index<
-            usize,
-            Output = key::chorded::Key<
-                Ref,
-                CHORDED_MAX_CHORDS,
-                CHORDED_MAX_CHORD_SIZE,
-                CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-                CHORDED_MAX_PRESSED_INDICES,
-            >,
-        >;
+    type Chorded: Debug + Index<usize, Output = ChordedKey>;
     /// Type used by [key::chorded::System].
-    type ChordedAuxiliary: Debug
-        + Index<
-            usize,
-            Output = key::chorded::AuxiliaryKey<
-                Ref,
-                CHORDED_MAX_CHORDS,
-                CHORDED_MAX_CHORD_SIZE,
-                CHORDED_MAX_PRESSED_INDICES,
-            >,
-        >;
+    type ChordedAuxiliary: Debug + Index<usize, Output = ChordedAuxiliaryKey>;
     /// Type used by [key::keyboard::System].
     type Keyboard: Debug + Index<usize, Output = key::keyboard::Key>;
     /// Type used by [key::layered::System].
@@ -789,19 +783,8 @@ impl<
 {
     type Automation = [AutomationKey; AUTOMATION];
     type Callback = [CallbackKey; CALLBACK];
-    type Chorded = [key::chorded::Key<
-        Ref,
-        CHORDED_MAX_CHORDS,
-        CHORDED_MAX_CHORD_SIZE,
-        CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-        CHORDED_MAX_PRESSED_INDICES,
-    >; CHORDED];
-    type ChordedAuxiliary = [key::chorded::AuxiliaryKey<
-        Ref,
-        CHORDED_MAX_CHORDS,
-        CHORDED_MAX_CHORD_SIZE,
-        CHORDED_MAX_PRESSED_INDICES,
-    >; CHORDED_AUXILIARY];
+    type Chorded = [ChordedKey; CHORDED];
+    type ChordedAuxiliary = [ChordedAuxiliaryKey; CHORDED_AUXILIARY];
     type Keyboard = [key::keyboard::Key; KEYBOARD];
     type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
     type Layered = [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED];
@@ -819,23 +802,8 @@ pub struct KeyVecs;
 impl Keys for KeyVecs {
     type Automation = Vec<AutomationKey>;
     type Callback = Vec<CallbackKey>;
-    type Chorded = Vec<
-        key::chorded::Key<
-            Ref,
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
-    >;
-    type ChordedAuxiliary = Vec<
-        key::chorded::AuxiliaryKey<
-            Ref,
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
-    >;
+    type Chorded = Vec<ChordedKey>;
+    type ChordedAuxiliary = Vec<ChordedAuxiliaryKey>;
     type Keyboard = Vec<key::keyboard::Key>;
     type LayerModifiers = Vec<key::layered::ModifierKey>;
     type Layered = Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
@@ -851,15 +819,7 @@ pub struct System<D: Keys> {
     callback: CallbackSystem<D::Callback>,
     caps_word: CapsWordSystem,
     consumer: ConsumerSystem,
-    chorded: key::chorded::System<
-        Ref,
-        D::Chorded,
-        D::ChordedAuxiliary,
-        CHORDED_MAX_CHORDS,
-        CHORDED_MAX_CHORD_SIZE,
-        CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-        CHORDED_MAX_PRESSED_INDICES,
-    >,
+    chorded: ChordedSystem<D::Chorded, D::ChordedAuxiliary>,
     custom: key::custom::System<Ref>,
     keyboard: key::keyboard::System<Ref, D::Keyboard>,
     layered: key::layered::System<Ref, D::LayerModifiers, D::Layered, LAYERED_LAYER_COUNT>,
@@ -901,26 +861,7 @@ impl<
     pub const fn array_based(
         automation: AutomationSystem<[AutomationKey; AUTOMATION]>,
         callback: CallbackSystem<[CallbackKey; CALLBACK]>,
-        chorded: key::chorded::System<
-            Ref,
-            [key::chorded::Key<
-                Ref,
-                CHORDED_MAX_CHORDS,
-                CHORDED_MAX_CHORD_SIZE,
-                CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-                CHORDED_MAX_PRESSED_INDICES,
-            >; CHORDED],
-            [key::chorded::AuxiliaryKey<
-                Ref,
-                CHORDED_MAX_CHORDS,
-                CHORDED_MAX_CHORD_SIZE,
-                CHORDED_MAX_PRESSED_INDICES,
-            >; CHORDED_AUXILIARY],
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
+        chorded: ChordedSystem<[ChordedKey; CHORDED], [ChordedAuxiliaryKey; CHORDED_AUXILIARY]>,
         keyboard: key::keyboard::System<Ref, [key::keyboard::Key; KEYBOARD]>,
         layered: key::layered::System<
             Ref,
@@ -960,15 +901,7 @@ impl System<KeyVecs> {
     pub const fn vec_based(
         automation: AutomationSystem<Vec<AutomationKey>>,
         callback: CallbackSystem<Vec<CallbackKey>>,
-        chorded: key::chorded::System<
-            Ref,
-            <KeyVecs as Keys>::Chorded,
-            <KeyVecs as Keys>::ChordedAuxiliary,
-            CHORDED_MAX_CHORDS,
-            CHORDED_MAX_CHORD_SIZE,
-            CHORDED_MAX_OVERLAPPING_CHORD_SIZE,
-            CHORDED_MAX_PRESSED_INDICES,
-        >,
+        chorded: ChordedSystem<Vec<ChordedKey>, Vec<ChordedAuxiliaryKey>>,
         keyboard: key::keyboard::System<Ref, <KeyVecs as Keys>::Keyboard>,
         layered: key::layered::System<
             Ref,
