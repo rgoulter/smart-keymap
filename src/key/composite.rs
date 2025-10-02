@@ -148,6 +148,23 @@ pub type KeyboardKeyState = key::keyboard::KeyState;
 /// Type aliases for convenience.
 pub type KeyboardSystem<D> = key::keyboard::System<Ref, D>;
 
+/// Type aliases for convenience.
+pub type LayeredRef = key::layered::Ref;
+/// Type aliases for convenience.
+pub type LayeredKey = key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>;
+/// Type aliases for convenience.
+pub type LayeredModifierKey = key::layered::ModifierKey;
+/// Type aliases for convenience.
+pub type LayeredContext = key::layered::Context<LAYERED_LAYER_COUNT>;
+/// Type aliases for convenience.
+pub type LayeredEvent = key::layered::LayerEvent;
+/// Type aliases for convenience.
+pub type LayeredPendingKeyState = key::layered::PendingKeyState;
+/// Type aliases for convenience.
+pub type LayeredKeyState = key::layered::ModifierKeyState;
+/// Type aliases for convenience.
+pub type LayeredSystem<LM, L> = key::layered::System<Ref, LM, L, LAYERED_LAYER_COUNT>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -166,7 +183,7 @@ pub enum Ref {
     /// [key::keyboard::Ref] variant.
     Keyboard(KeyboardRef),
     /// [key::layered::Ref] variant.
-    Layered(key::layered::Ref),
+    Layered(LayeredRef),
     /// [key::mouse::Ref] variant.
     Mouse(key::mouse::Ref),
     /// [key::sticky::Ref] variant.
@@ -224,7 +241,7 @@ pub struct Context {
     automation: AutomationContext,
     caps_word: CapsWordContext,
     chorded: ChordedContext,
-    layered: key::layered::Context<LAYERED_LAYER_COUNT>,
+    layered: LayeredContext,
     sticky: key::sticky::Context,
     tap_dance: key::tap_dance::Context,
     tap_hold: key::tap_hold::Context,
@@ -308,7 +325,7 @@ pub enum Event {
     /// A keyboard event.
     Keyboard(KeyboardEvent),
     /// A layer modification event.
-    Layered(key::layered::LayerEvent),
+    Layered(LayeredEvent),
     /// A mouse event.
     Mouse(key::mouse::Event),
     /// A sticky modifier event.
@@ -361,8 +378,8 @@ impl From<KeyboardEvent> for Event {
     }
 }
 
-impl From<key::layered::LayerEvent> for Event {
-    fn from(ev: key::layered::LayerEvent) -> Self {
+impl From<LayeredEvent> for Event {
+    fn from(ev: LayeredEvent) -> Self {
         Event::Layered(ev)
     }
 }
@@ -446,7 +463,7 @@ impl TryFrom<Event> for KeyboardEvent {
     }
 }
 
-impl TryFrom<Event> for key::layered::LayerEvent {
+impl TryFrom<Event> for LayeredEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -520,7 +537,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::keyboard::PendingKeyState].
     Keyboard(KeyboardPendingKeyState),
     /// Pending key state for [key::layered::PendingKeyState].
-    Layered(key::layered::PendingKeyState),
+    Layered(LayeredPendingKeyState),
     /// Pending key state for [key::mouse::PendingKeyState].
     Mouse(key::mouse::PendingKeyState),
     /// Pending key state for [key::sticky::PendingKeyState].
@@ -573,8 +590,8 @@ impl From<KeyboardPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::layered::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::layered::PendingKeyState) -> Self {
+impl From<LayeredPendingKeyState> for PendingKeyState {
+    fn from(pks: LayeredPendingKeyState) -> Self {
         PendingKeyState::Layered(pks)
     }
 }
@@ -656,7 +673,7 @@ pub enum KeyState {
     /// Key state for [key::keyboard::KeyState].
     Keyboard(KeyboardKeyState),
     /// Key state for [key::layered::ModifierKeyState].
-    LayerModifier(key::layered::ModifierKeyState),
+    LayerModifier(LayeredKeyState),
     /// Key state for [key::mouse::KeyState].
     Mouse(key::mouse::KeyState),
     /// Key state for [key::sticky::KeyState].
@@ -715,8 +732,8 @@ impl From<KeyboardKeyState> for KeyState {
     }
 }
 
-impl From<key::layered::ModifierKeyState> for KeyState {
-    fn from(ks: key::layered::ModifierKeyState) -> Self {
+impl From<LayeredKeyState> for KeyState {
+    fn from(ks: LayeredKeyState) -> Self {
         KeyState::LayerModifier(ks)
     }
 }
@@ -758,9 +775,9 @@ pub trait Keys {
     /// Type used by [key::keyboard::System].
     type Keyboard: Debug + Index<usize, Output = KeyboardKey>;
     /// Type used by [key::layered::System].
-    type LayerModifiers: Debug + Index<usize, Output = key::layered::ModifierKey>;
+    type LayerModifiers: Debug + Index<usize, Output = LayeredModifierKey>;
     /// Type used by [key::layered::System].
-    type Layered: Debug + Index<usize, Output = key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
+    type Layered: Debug + Index<usize, Output = LayeredKey>;
     /// Type used by [key::sticky::System].
     type Sticky: Debug + Index<usize, Output = key::sticky::Key>;
     /// Type used by [key::tap_dance::System].
@@ -814,8 +831,8 @@ impl<
     type Chorded = [ChordedKey; CHORDED];
     type ChordedAuxiliary = [ChordedAuxiliaryKey; CHORDED_AUXILIARY];
     type Keyboard = [KeyboardKey; KEYBOARD];
-    type LayerModifiers = [key::layered::ModifierKey; LAYER_MODIFIERS];
-    type Layered = [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED];
+    type LayerModifiers = [LayeredModifierKey; LAYER_MODIFIERS];
+    type Layered = [LayeredKey; LAYERED];
     type Sticky = [key::sticky::Key; STICKY];
     type TapDance = [key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>; TAP_DANCE];
     type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
@@ -833,8 +850,8 @@ impl Keys for KeyVecs {
     type Chorded = Vec<ChordedKey>;
     type ChordedAuxiliary = Vec<ChordedAuxiliaryKey>;
     type Keyboard = Vec<KeyboardKey>;
-    type LayerModifiers = Vec<key::layered::ModifierKey>;
-    type Layered = Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>;
+    type LayerModifiers = Vec<LayeredModifierKey>;
+    type Layered = Vec<LayeredKey>;
     type Sticky = Vec<key::sticky::Key>;
     type TapDance = Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEF_COUNT>>;
     type TapHold = Vec<key::tap_hold::Key<Ref>>;
@@ -850,7 +867,7 @@ pub struct System<D: Keys> {
     chorded: ChordedSystem<D::Chorded, D::ChordedAuxiliary>,
     custom: CustomSystem,
     keyboard: KeyboardSystem<D::Keyboard>,
-    layered: key::layered::System<Ref, D::LayerModifiers, D::Layered, LAYERED_LAYER_COUNT>,
+    layered: LayeredSystem<D::LayerModifiers, D::Layered>,
     mouse: key::mouse::System<Ref>,
     sticky: key::sticky::System<Ref, D::Sticky>,
     tap_dance: key::tap_dance::System<Ref, D::TapDance, TAP_DANCE_MAX_DEF_COUNT>,
@@ -891,12 +908,7 @@ impl<
         callback: CallbackSystem<[CallbackKey; CALLBACK]>,
         chorded: ChordedSystem<[ChordedKey; CHORDED], [ChordedAuxiliaryKey; CHORDED_AUXILIARY]>,
         keyboard: KeyboardSystem<[KeyboardKey; KEYBOARD]>,
-        layered: key::layered::System<
-            Ref,
-            [key::layered::ModifierKey; LAYER_MODIFIERS],
-            [key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>; LAYERED],
-            LAYERED_LAYER_COUNT,
-        >,
+        layered: LayeredSystem<[LayeredModifierKey; LAYER_MODIFIERS], [LayeredKey; LAYERED]>,
         sticky: key::sticky::System<Ref, [key::sticky::Key; STICKY]>,
         tap_dance: key::tap_dance::System<
             Ref,
@@ -931,12 +943,7 @@ impl System<KeyVecs> {
         callback: CallbackSystem<Vec<CallbackKey>>,
         chorded: ChordedSystem<Vec<ChordedKey>, Vec<ChordedAuxiliaryKey>>,
         keyboard: KeyboardSystem<Vec<KeyboardKey>>,
-        layered: key::layered::System<
-            Ref,
-            <KeyVecs as Keys>::LayerModifiers,
-            <KeyVecs as Keys>::Layered,
-            LAYERED_LAYER_COUNT,
-        >,
+        layered: LayeredSystem<Vec<LayeredModifierKey>, Vec<LayeredKey>>,
         sticky: key::sticky::System<Ref, <KeyVecs as Keys>::Sticky>,
         tap_dance: key::tap_dance::System<
             Ref,
