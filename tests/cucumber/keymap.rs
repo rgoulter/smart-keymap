@@ -199,6 +199,12 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
     }
 }
 
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+enum Input {
+    Press { keymap_index: u16 },
+    Release { keymap_index: u16 },
+}
+
 fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[input::Event]) {
     for &input in inputs {
         keymap.handle_input(input);
