@@ -1,14 +1,12 @@
 use smart_keymap::input;
-use smart_keymap::keymap;
+use smart_keymap::keymap::ObservedKeymap;
 
 use smart_keymap_macros::keymap;
-
-use keymap::DistinctReports;
 
 #[test]
 fn tap_chord_acts_as_chorded_tap() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -21,26 +19,15 @@ fn tap_chord_acts_as_chorded_tap() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -49,13 +36,14 @@ fn tap_chord_acts_as_chorded_tap() {
         [0, 0, 0x06, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn hold_chord_acts_as_chorded_hold() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -68,20 +56,13 @@ fn hold_chord_acts_as_chorded_hold() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -89,13 +70,14 @@ fn hold_chord_acts_as_chorded_hold() {
         [0, 0, 0, 0, 0, 0, 0, 0],
         [4, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn tap_chorded_key_acts_as_passthrough_tap() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -108,20 +90,13 @@ fn tap_chorded_key_acts_as_passthrough_tap() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -130,13 +105,14 @@ fn tap_chorded_key_acts_as_passthrough_tap() {
         [0, 0, 0x04, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn hold_chorded_key_acts_as_passthrough_hold() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -149,17 +125,12 @@ fn hold_chorded_key_acts_as_passthrough_hold() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -167,13 +138,14 @@ fn hold_chorded_key_acts_as_passthrough_hold() {
         [0, 0, 0, 0, 0, 0, 0, 0],
         [1, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn tap_auxiliary_key_acts_as_passthrough_tap() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -186,20 +158,13 @@ fn tap_auxiliary_key_acts_as_passthrough_tap() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -208,13 +173,14 @@ fn tap_auxiliary_key_acts_as_passthrough_tap() {
         [0, 0, 0x05, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn hold_auxiliary_key_acts_as_passthrough_hold() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -227,17 +193,12 @@ fn hold_auxiliary_key_acts_as_passthrough_hold() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-    while keymap.has_scheduled_events() {
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-    }
+    keymap.tick_until_no_scheduled_events();
 
     // Assert
     #[rustfmt::skip]
@@ -245,5 +206,6 @@ fn hold_auxiliary_key_acts_as_passthrough_hold() {
         [0, 0, 0, 0, 0, 0, 0, 0],
         [2, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
