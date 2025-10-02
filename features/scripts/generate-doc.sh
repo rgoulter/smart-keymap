@@ -23,6 +23,7 @@ keymap_key_features=(
     "layer_modifier-default"
     "layer_modifier-hold"
     "layer_modifier-set_active_layers"
+    "layer_modifier-sticky"
     "layer_modifier-toggle"
     "mouse"
     "sticky_modifiers"
