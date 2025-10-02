@@ -1,14 +1,12 @@
 use smart_keymap::input;
-use smart_keymap::keymap;
+use smart_keymap::keymap::ObservedKeymap;
 
 use smart_keymap_macros::keymap;
-
-use keymap::DistinctReports;
 
 #[test]
 fn tap_set_active_layers_activates_layers() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -18,8 +16,7 @@ fn tap_set_active_layers_activates_layers() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     #[rustfmt::skip]
@@ -34,12 +31,7 @@ fn tap_set_active_layers_activates_layers() {
 
     for &keymap_index in tap_indices {
         keymap.handle_input(input::Event::Press { keymap_index });
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
         keymap.handle_input(input::Event::Release { keymap_index });
-        keymap.tick();
-        actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
     }
 
     // Assert
@@ -55,13 +47,14 @@ fn tap_set_active_layers_activates_layers() {
         [0, 0, 0x07, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
 
 #[test]
 fn press_set_active_layers_activates_layers() {
     // Assemble
-    let mut keymap = keymap!(
+    let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
@@ -71,17 +64,11 @@ fn press_set_active_layers_activates_layers() {
                 ],
             }
         "#
-    );
-    let mut actual_reports = DistinctReports::new();
+    ));
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    keymap.tick();
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    keymap.tick();
-    actual_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
     // Assert
     #[rustfmt::skip]
@@ -89,5 +76,6 @@ fn press_set_active_layers_activates_layers() {
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0x05, 0, 0, 0, 0, 0],
     ];
+    let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
