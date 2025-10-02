@@ -61,15 +61,6 @@ impl LoadedKeymap {
         }
     }
 
-    pub fn handle_input(&mut self, ev: input::Event) {
-        match self {
-            LoadedKeymap::Keymap { keymap } => {
-                keymap.handle_input(ev);
-            }
-            _ => panic!("No keymap loaded"),
-        }
-    }
-
     pub fn tick(&mut self) {
         match self {
             LoadedKeymap::Keymap { keymap } => {
@@ -208,6 +199,12 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
     }
 }
 
+fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[input::Event]) {
+    for &input in inputs {
+        keymap.handle_input(input);
+    }
+}
+
 #[given("a keymap.ncl:")]
 fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
     let keymap_ncl = step.docstring().unwrap();
@@ -249,9 +246,7 @@ fn perform_input(world: &mut KeymapWorld, step: &Step) {
     let inputs_ncl = step.docstring().unwrap();
     let inputs = inputs_from_ncl(world.keymap_ncl.as_str(), inputs_ncl);
 
-    for input in inputs {
-        world.keymap.handle_input(input);
-    }
+    handle_inputs(world.keymap.keymap(), &inputs);
 }
 
 #[when(expr = "the keymap ticks {int} times")]
@@ -305,9 +300,7 @@ fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
     let inputs_ncl = step.docstring().unwrap();
     let inputs = inputs_from_ncl(TEST_KEYMAP_NCL, inputs_ncl);
 
-    for input in inputs {
-        test_keymap.handle_input(input);
-    }
+    handle_inputs(&mut test_keymap, &inputs);
 
     world.keymap.tick_until_no_scheduled_events();
 
