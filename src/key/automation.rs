@@ -30,6 +30,14 @@ impl Execution {
     pub const fn is_empty(&self) -> bool {
         self.length == 0
     }
+
+    /// Increments the execution to the next instruction.
+    pub fn incr(&mut self) {
+        if self.length > 0 {
+            self.start += 1;
+            self.length -= 1;
+        }
+    }
 }
 
 /// Definition for a automation key.
