@@ -251,11 +251,9 @@ impl<
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
         Ev: Copy + Debug,
         PKS: Debug,
-        KS: Copy + Debug,
+        KS: Copy + Debug + From<key::NoOpKeyState>,
         S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
     > Keymap<I, R, Ctx, Ev, PKS, KS, S>
-where
-    KS: From<key::NoOpKeyState>,
 {
     /// Constructs a new keymap with the given key definitions and context.
     pub const fn new(key_refs: I, context: Ctx, key_system: S) -> Self {
