@@ -59,6 +59,8 @@ pub enum Instruction {
     Press(key::KeyOutput),
     /// Release a key.
     Release(key::KeyOutput),
+    /// Taps a key.
+    Tap(key::KeyOutput),
     /// Wait for a number of ticks.
     Wait(u16),
 }
@@ -273,6 +275,25 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
             ));
 
             let mut pke = key::KeyEvents::scheduled_event(sch_ev);
+            if let Some(key_ev) = next_key_ev {
+                let sch_ev = key::ScheduledEvent::after(config.instruction_duration, key_ev);
+                pke.add_event(sch_ev);
+            }
+
+            pke
+        }
+        Instruction::Tap(key_output) => {
+            let sch_press_ev =
+                key::ScheduledEvent::immediate(key::Event::Input(input::Event::VirtualKeyPress {
+                    key_output,
+                }));
+            let sch_release_ev = key::ScheduledEvent::after(
+                config.instruction_duration,
+                key::Event::Input(input::Event::VirtualKeyRelease { key_output }),
+            );
+
+            let mut pke = key::KeyEvents::scheduled_event(sch_press_ev);
+            pke.add_event(sch_release_ev);
             if let Some(key_ev) = next_key_ev {
                 let sch_ev = key::ScheduledEvent::after(config.instruction_duration, key_ev);
                 pke.add_event(sch_ev);
