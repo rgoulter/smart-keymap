@@ -50,6 +50,11 @@ impl ModifierKey {
         ModifierKey::Hold(layer)
     }
 
+    /// Create a new [ModifierKey] that activates the layer when held, or makes it sticky when tapped.
+    pub const fn sticky(layer: LayerIndex) -> Self {
+        ModifierKey::Sticky(layer)
+    }
+
     /// Create a new [ModifierKey] that toggles the given layer.
     pub const fn toggle(layer: LayerIndex) -> Self {
         ModifierKey::Toggle(layer)
