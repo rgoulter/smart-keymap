@@ -212,6 +212,23 @@ pub type TapDanceKeyState = key::tap_dance::KeyState;
 /// Type aliases for convenience.
 pub type TapDanceSystem<D> = key::tap_dance::System<Ref, D, TAP_DANCE_MAX_DEF_COUNT>;
 
+/// Type aliases for convenience.
+pub type TapHoldRef = key::tap_hold::Ref;
+/// Type aliases for convenience.
+pub type TapHoldKey = key::tap_hold::Key<Ref>;
+/// Type aliases for convenience.
+pub type TapHoldConfig = key::tap_hold::Config;
+/// Type aliases for convenience.
+pub type TapHoldContext = key::tap_hold::Context;
+/// Type aliases for convenience.
+pub type TapHoldEvent = key::tap_hold::Event;
+/// Type aliases for convenience.
+pub type TapHoldPendingKeyState = key::tap_hold::PendingKeyState;
+/// Type aliases for convenience.
+pub type TapHoldKeyState = key::tap_hold::KeyState;
+/// Type aliases for convenience.
+pub type TapHoldSystem<D> = key::tap_hold::System<Ref, D>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -238,7 +255,7 @@ pub enum Ref {
     /// [key::tap_dance::Ref] variant.
     TapDance(TapDanceRef),
     /// [key::tap_hold::Ref] variant.
-    TapHold(key::tap_hold::Ref),
+    TapHold(TapHoldRef),
 }
 
 #[cfg(feature = "std")]
@@ -265,7 +282,7 @@ pub struct Config {
     pub tap_dance: TapDanceConfig,
     /// The tap hold configuration.
     #[serde(default)]
-    pub tap_hold: key::tap_hold::Config,
+    pub tap_hold: TapHoldConfig,
 }
 
 impl Config {
@@ -291,7 +308,7 @@ pub struct Context {
     layered: LayeredContext,
     sticky: StickyContext,
     tap_dance: TapDanceContext,
-    tap_hold: key::tap_hold::Context,
+    tap_hold: TapHoldContext,
 }
 
 impl Context {
@@ -380,7 +397,7 @@ pub enum Event {
     /// A tap-dance event.
     TapDance(TapDanceEvent),
     /// A tap-hold event.
-    TapHold(key::tap_hold::Event),
+    TapHold(TapHoldEvent),
 }
 
 impl From<AutomationEvent> for Event {
@@ -449,8 +466,8 @@ impl From<TapDanceEvent> for Event {
     }
 }
 
-impl From<key::tap_hold::Event> for Event {
-    fn from(ev: key::tap_hold::Event) -> Self {
+impl From<TapHoldEvent> for Event {
+    fn from(ev: TapHoldEvent) -> Self {
         Event::TapHold(ev)
     }
 }
@@ -554,7 +571,7 @@ impl TryFrom<Event> for TapDanceEvent {
     }
 }
 
-impl TryFrom<Event> for key::tap_hold::Event {
+impl TryFrom<Event> for TapHoldEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -592,7 +609,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::tap_dance::PendingKeyState].
     TapDance(TapDancePendingKeyState),
     /// Pending key state for [key::tap_hold::PendingKeyState].
-    TapHold(key::tap_hold::PendingKeyState),
+    TapHold(TapHoldPendingKeyState),
 }
 
 impl From<AutomationPendingKeyState> for PendingKeyState {
@@ -661,8 +678,8 @@ impl From<TapDancePendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::tap_hold::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::tap_hold::PendingKeyState) -> Self {
+impl From<TapHoldPendingKeyState> for PendingKeyState {
+    fn from(pks: TapHoldPendingKeyState) -> Self {
         PendingKeyState::TapHold(pks)
     }
 }
@@ -689,7 +706,7 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut TapDancePendingKeySt
     }
 }
 
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut key::tap_hold::PendingKeyState {
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut TapHoldPendingKeyState {
     type Error = ();
 
     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
@@ -728,7 +745,7 @@ pub enum KeyState {
     /// Key state for [key::tap_dance::KeyState].
     TapDance(TapDanceKeyState),
     /// Key state for [key::tap_hold::KeyState].
-    TapHold(key::tap_hold::KeyState),
+    TapHold(TapHoldKeyState),
 }
 
 impl From<key::NoOpKeyState> for KeyState {
@@ -797,8 +814,8 @@ impl From<TapDanceKeyState> for KeyState {
     }
 }
 
-impl From<key::tap_hold::KeyState> for KeyState {
-    fn from(ks: key::tap_hold::KeyState) -> Self {
+impl From<TapHoldKeyState> for KeyState {
+    fn from(ks: TapHoldKeyState) -> Self {
         KeyState::TapHold(ks)
     }
 }
@@ -830,7 +847,7 @@ pub trait Keys {
     /// Type used by [key::tap_dance::System].
     type TapDance: Debug + Index<usize, Output = TapDanceKey>;
     /// Type used by [key::tap_hold::System].
-    type TapHold: Debug + Index<usize, Output = key::tap_hold::Key<Ref>>;
+    type TapHold: Debug + Index<usize, Output = TapHoldKey>;
 }
 
 /// Array-based data implementations.
@@ -882,7 +899,7 @@ impl<
     type Layered = [LayeredKey; LAYERED];
     type Sticky = [StickyKey; STICKY];
     type TapDance = [TapDanceKey; TAP_DANCE];
-    type TapHold = [key::tap_hold::Key<Ref>; TAP_HOLD];
+    type TapHold = [TapHoldKey; TAP_HOLD];
 }
 
 /// Vec-based data implementations.
@@ -901,7 +918,7 @@ impl Keys for KeyVecs {
     type Layered = Vec<LayeredKey>;
     type Sticky = Vec<StickyKey>;
     type TapDance = Vec<TapDanceKey>;
-    type TapHold = Vec<key::tap_hold::Key<Ref>>;
+    type TapHold = Vec<TapHoldKey>;
 }
 
 /// Aggregate [key::System] implementation.
@@ -918,7 +935,7 @@ pub struct System<D: Keys> {
     mouse: MouseSystem,
     sticky: StickySystem<D::Sticky>,
     tap_dance: TapDanceSystem<D::TapDance>,
-    tap_hold: key::tap_hold::System<Ref, D::TapHold>,
+    tap_hold: TapHoldSystem<D::TapHold>,
     marker: PhantomData<D>,
 }
 
@@ -958,7 +975,7 @@ impl<
         layered: LayeredSystem<[LayeredModifierKey; LAYER_MODIFIERS], [LayeredKey; LAYERED]>,
         sticky: StickySystem<[StickyKey; STICKY]>,
         tap_dance: TapDanceSystem<[TapDanceKey; TAP_DANCE]>,
-        tap_hold: key::tap_hold::System<Ref, [key::tap_hold::Key<Ref>; TAP_HOLD]>,
+        tap_hold: TapHoldSystem<[TapHoldKey; TAP_HOLD]>,
     ) -> Self {
         System {
             automation,
@@ -989,7 +1006,7 @@ impl System<KeyVecs> {
         layered: LayeredSystem<Vec<LayeredModifierKey>, Vec<LayeredKey>>,
         sticky: StickySystem<Vec<StickyKey>>,
         tap_dance: TapDanceSystem<Vec<TapDanceKey>>,
-        tap_hold: key::tap_hold::System<Ref, <KeyVecs as Keys>::TapHold>,
+        tap_hold: TapHoldSystem<Vec<TapHoldKey>>,
     ) -> Self {
         System {
             automation,
