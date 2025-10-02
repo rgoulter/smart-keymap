@@ -165,6 +165,19 @@ pub type LayeredKeyState = key::layered::ModifierKeyState;
 /// Type aliases for convenience.
 pub type LayeredSystem<LM, L> = key::layered::System<Ref, LM, L, LAYERED_LAYER_COUNT>;
 
+/// Type aliases for convenience.
+pub type MouseRef = key::mouse::Ref;
+/// Type aliases for convenience.
+pub type MouseContext = key::mouse::Context;
+/// Type aliases for convenience.
+pub type MouseEvent = key::mouse::Event;
+/// Type aliases for convenience.
+pub type MousePendingKeyState = key::mouse::PendingKeyState;
+/// Type aliases for convenience.
+pub type MouseKeyState = key::mouse::KeyState;
+/// Type aliases for convenience.
+pub type MouseSystem = key::mouse::System<Ref>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
@@ -185,7 +198,7 @@ pub enum Ref {
     /// [key::layered::Ref] variant.
     Layered(LayeredRef),
     /// [key::mouse::Ref] variant.
-    Mouse(key::mouse::Ref),
+    Mouse(MouseRef),
     /// [key::sticky::Ref] variant.
     Sticky(key::sticky::Ref),
     /// [key::tap_dance::Ref] variant.
@@ -327,7 +340,7 @@ pub enum Event {
     /// A layer modification event.
     Layered(LayeredEvent),
     /// A mouse event.
-    Mouse(key::mouse::Event),
+    Mouse(MouseEvent),
     /// A sticky modifier event.
     Sticky(key::sticky::Event),
     /// A tap-dance event.
@@ -384,8 +397,8 @@ impl From<LayeredEvent> for Event {
     }
 }
 
-impl From<key::mouse::Event> for Event {
-    fn from(ev: key::mouse::Event) -> Self {
+impl From<MouseEvent> for Event {
+    fn from(ev: MouseEvent) -> Self {
         Event::Mouse(ev)
     }
 }
@@ -474,7 +487,7 @@ impl TryFrom<Event> for LayeredEvent {
     }
 }
 
-impl TryFrom<Event> for key::mouse::Event {
+impl TryFrom<Event> for MouseEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -539,7 +552,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::layered::PendingKeyState].
     Layered(LayeredPendingKeyState),
     /// Pending key state for [key::mouse::PendingKeyState].
-    Mouse(key::mouse::PendingKeyState),
+    Mouse(MousePendingKeyState),
     /// Pending key state for [key::sticky::PendingKeyState].
     Sticky(key::sticky::PendingKeyState),
     /// Pending key state for [key::tap_dance::PendingKeyState].
@@ -596,8 +609,8 @@ impl From<LayeredPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::mouse::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::mouse::PendingKeyState) -> Self {
+impl From<MousePendingKeyState> for PendingKeyState {
+    fn from(pks: MousePendingKeyState) -> Self {
         PendingKeyState::Mouse(pks)
     }
 }
@@ -675,7 +688,7 @@ pub enum KeyState {
     /// Key state for [key::layered::ModifierKeyState].
     LayerModifier(LayeredKeyState),
     /// Key state for [key::mouse::KeyState].
-    Mouse(key::mouse::KeyState),
+    Mouse(MouseKeyState),
     /// Key state for [key::sticky::KeyState].
     Sticky(key::sticky::KeyState),
     /// Key state for [key::tap_dance::KeyState].
@@ -738,8 +751,8 @@ impl From<LayeredKeyState> for KeyState {
     }
 }
 
-impl From<key::mouse::KeyState> for KeyState {
-    fn from(ks: key::mouse::KeyState) -> Self {
+impl From<MouseKeyState> for KeyState {
+    fn from(ks: MouseKeyState) -> Self {
         KeyState::Mouse(ks)
     }
 }
@@ -868,7 +881,7 @@ pub struct System<D: Keys> {
     custom: CustomSystem,
     keyboard: KeyboardSystem<D::Keyboard>,
     layered: LayeredSystem<D::LayerModifiers, D::Layered>,
-    mouse: key::mouse::System<Ref>,
+    mouse: MouseSystem,
     sticky: key::sticky::System<Ref, D::Sticky>,
     tap_dance: key::tap_dance::System<Ref, D::TapDance, TAP_DANCE_MAX_DEF_COUNT>,
     tap_hold: key::tap_hold::System<Ref, D::TapHold>,
