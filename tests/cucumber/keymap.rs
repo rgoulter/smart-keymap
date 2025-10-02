@@ -48,7 +48,7 @@ enum LoadedKeymap {
 }
 
 impl LoadedKeymap {
-    pub fn keymap(keymap: Keymap) -> Self {
+    pub fn new(keymap: Keymap) -> Self {
         LoadedKeymap::Keymap {
             keymap: ObservedKeymap::new(keymap),
         }
@@ -205,7 +205,7 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
 fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
     let keymap_ncl = step.docstring().unwrap();
     world.keymap_ncl = keymap_ncl.into();
-    world.keymap = LoadedKeymap::keymap(load_keymap(keymap_ncl));
+    world.keymap = LoadedKeymap::new(load_keymap(keymap_ncl));
 }
 
 fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<input::Event> {
