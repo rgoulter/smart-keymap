@@ -1279,6 +1279,6 @@ mod tests {
 
     #[test]
     fn test_sizeof_event() {
-        assert_eq!(8, core::mem::size_of::<Event>());
+        assert_eq!(12, core::mem::size_of::<Event>());
     }
 }

@@ -6,6 +6,8 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 
+const EXECUTION_QUEUE_SIZE: usize = 8;
+
 /// Reference for a automation key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Ref(pub u8);
@@ -142,12 +144,43 @@ impl<const INSTRUCTION_COUNT: usize> Default for Config<INSTRUCTION_COUNT> {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context<const INSTRUCTION_COUNT: usize> {
     config: Config<INSTRUCTION_COUNT>,
+    execution_queue: [Execution; EXECUTION_QUEUE_SIZE],
 }
 
 impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
     /// Constructs a new [Context] with the given [Config].
     pub const fn from_config(config: Config<INSTRUCTION_COUNT>) -> Self {
-        Self { config }
+        let execution_queue = [Execution::EMPTY; EXECUTION_QUEUE_SIZE];
+        Self {
+            config,
+            execution_queue,
+        }
+    }
+
+    /// Enqueues a new execution onto the execution queue.
+    pub fn enqueue(&mut self, new_execution: Execution) -> usize {
+        for (i, exec) in self.execution_queue.iter_mut().enumerate() {
+            if exec.is_empty() {
+                *exec = new_execution;
+                return i;
+            }
+        }
+
+        // Queue is full, drop the new execution.
+        EXECUTION_QUEUE_SIZE
+    }
+
+    fn execute_head(&mut self, keymap_index: u16) -> key::KeyEvents<Event> {
+        let pke = key_events_for(self.config, keymap_index, self.execution_queue[0]);
+
+        self.execution_queue[0].incr();
+
+        if self.execution_queue[0].is_empty() {
+            self.execution_queue.rotate_left(1);
+            self.execution_queue[EXECUTION_QUEUE_SIZE - 1] = Execution::EMPTY;
+        }
+
+        pke
     }
 }
 
@@ -157,9 +190,29 @@ impl<const INSTRUCTION_COUNT: usize> key::Context for Context<INSTRUCTION_COUNT>
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         match event {
             key::Event::Key {
-                key_event: Event(execution),
+                key_event: Event::Enqueue(execution),
                 keymap_index,
-            } => key_events_for(self.config, keymap_index, execution),
+            } => {
+                let exec_immediately = self.execution_queue[0].is_empty();
+
+                self.enqueue(execution);
+
+                if exec_immediately {
+                    self.execute_head(keymap_index)
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
+            key::Event::Key {
+                key_event: Event::NextInstruction,
+                keymap_index,
+            } => {
+                if !self.execution_queue[0].is_empty() {
+                    self.execute_head(keymap_index)
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
             _ => key::KeyEvents::no_events(),
         }
     }
@@ -167,7 +220,12 @@ impl<const INSTRUCTION_COUNT: usize> key::Context for Context<INSTRUCTION_COUNT>
 
 /// The event type for automation keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Event(Execution);
+pub enum Event {
+    /// Enqueues an execution onto the Context's execution queue.
+    Enqueue(Execution),
+    /// Indicates to the context to execute the next instruction.
+    NextInstruction,
+}
 
 /// Converts the instruction to a scheduled event, if applicable.
 pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
@@ -180,10 +238,7 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
     let next_key_ev = if length > 1 {
         Some(key::Event::Key {
             keymap_index,
-            key_event: Event(Execution {
-                start: start + 1,
-                length: length - 1,
-            }),
+            key_event: Event::NextInstruction,
         })
     } else {
         None
@@ -275,7 +330,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key>, const INSTRUCTIO
     fn new_pressed_key(
         &self,
         keymap_index: u16,
-        context: &Self::Context,
+        _context: &Self::Context,
         Ref(key_index): Ref,
     ) -> (
         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
@@ -286,7 +341,11 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key>, const INSTRUCTIO
         let Key {
             automation_instructions: execution,
         } = self.keys[key_index as usize];
-        let pke = key_events_for(context.config, keymap_index, execution);
+        let key_ev = key::Event::Key {
+            keymap_index,
+            key_event: Event::Enqueue(execution),
+        };
+        let pke = key::KeyEvents::event(key_ev);
 
         (pkr, pke)
     }
@@ -333,6 +392,6 @@ mod tests {
 
     #[test]
     fn test_sizeof_event() {
-        assert_eq!(4, core::mem::size_of::<Event>());
+        assert_eq!(6, core::mem::size_of::<Event>());
     }
 }
