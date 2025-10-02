@@ -17,11 +17,28 @@ use crate::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEF_COUNT;
 
 const CHORDED_MAX_PRESSED_INDICES: usize = CHORDED_MAX_CHORD_SIZE * 2;
 
+/// Type aliases for convenience.
+pub type AutomationRef = key::automation::Ref;
+/// Type aliases for convenience.
+pub type AutomationKey = key::automation::Key;
+/// Type aliases for convenience.
+pub type AutomationConfig = key::automation::Config<AUTOMATION_INSTRUCTION_COUNT>;
+/// Type aliases for convenience.
+pub type AutomationContext = key::automation::Context<AUTOMATION_INSTRUCTION_COUNT>;
+/// Type aliases for convenience.
+pub type AutomationEvent = key::automation::Event;
+/// Type aliases for convenience.
+pub type AutomationPendingKeyState = key::automation::PendingKeyState;
+/// Type aliases for convenience.
+pub type AutomationKeyState = key::automation::KeyState;
+/// Type aliases for convenience.
+pub type AutomationSystem<D> = key::automation::System<Ref, D, AUTOMATION_INSTRUCTION_COUNT>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
     /// [key::automation::Ref] variant.
-    Automation(key::automation::Ref),
+    Automation(AutomationRef),
     /// [key::callback::Ref] variant.
     Callback(key::callback::Ref),
     /// [key::caps_word::Ref] variant.
@@ -58,7 +75,7 @@ impl Default for Ref {
 pub struct Config {
     /// The automation configuration.
     #[serde(default)]
-    pub automation: key::automation::Config<AUTOMATION_INSTRUCTION_COUNT>,
+    pub automation: AutomationConfig,
     /// The chorded configuration.
     #[serde(default)]
     pub chorded: key::chorded::Config<CHORDED_MAX_CHORDS, CHORDED_MAX_CHORD_SIZE>,
@@ -90,7 +107,7 @@ impl Config {
 #[derive(Debug, Clone, Copy)]
 pub struct Context {
     keymap_context: keymap::KeymapContext,
-    automation: key::automation::Context<AUTOMATION_INSTRUCTION_COUNT>,
+    automation: AutomationContext,
     caps_word: key::caps_word::Context,
     chorded: key::chorded::Context<
         CHORDED_MAX_CHORDS,
@@ -167,7 +184,7 @@ impl keymap::SetKeymapContext for Context {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Event {
     /// An automation event.
-    Automation(key::automation::Event),
+    Automation(AutomationEvent),
     /// A callback event.
     Callback(key::callback::Event),
     /// A caps word event.
@@ -192,8 +209,8 @@ pub enum Event {
     TapHold(key::tap_hold::Event),
 }
 
-impl From<key::automation::Event> for Event {
-    fn from(ev: key::automation::Event) -> Self {
+impl From<AutomationEvent> for Event {
+    fn from(ev: AutomationEvent) -> Self {
         Event::Automation(ev)
     }
 }
@@ -264,7 +281,7 @@ impl From<key::tap_hold::Event> for Event {
     }
 }
 
-impl TryFrom<Event> for key::automation::Event {
+impl TryFrom<Event> for AutomationEvent {
     type Error = key::EventError;
 
     fn try_from(ev: Event) -> Result<Self, Self::Error> {
@@ -379,7 +396,7 @@ impl TryFrom<Event> for key::tap_hold::Event {
 #[allow(clippy::large_enum_variant)]
 pub enum PendingKeyState {
     /// Pending key state for [key::automation::PendingKeyState].
-    Automation(key::automation::PendingKeyState),
+    Automation(AutomationPendingKeyState),
     /// Pending key state for [key::callback::PendingKeyState].
     Callback(key::callback::PendingKeyState),
     /// Pending key state for [key::caps_word::PendingKeyState].
@@ -410,8 +427,8 @@ pub enum PendingKeyState {
     TapHold(key::tap_hold::PendingKeyState),
 }
 
-impl From<key::automation::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::automation::PendingKeyState) -> Self {
+impl From<AutomationPendingKeyState> for PendingKeyState {
+    fn from(pks: AutomationPendingKeyState) -> Self {
         PendingKeyState::Automation(pks)
     }
 }
@@ -541,7 +558,7 @@ pub enum KeyState {
     /// No-op key state.
     NoOp, // e.g. chorded::AuxiliaryKey's state is a no-op
     /// Key state for [key::automation::KeyState].
-    Automation(key::automation::KeyState),
+    Automation(AutomationKeyState),
     /// Key state for [key::callback::KeyState].
     Callback(key::callback::KeyState),
     /// Key state for [key::caps_word::KeyState].
@@ -572,8 +589,8 @@ impl From<key::NoOpKeyState> for KeyState {
     }
 }
 
-impl From<key::automation::KeyState> for KeyState {
-    fn from(ks: key::automation::KeyState) -> Self {
+impl From<AutomationKeyState> for KeyState {
+    fn from(ks: AutomationKeyState) -> Self {
         KeyState::Automation(ks)
     }
 }
@@ -647,7 +664,7 @@ impl From<key::sticky::KeyState> for KeyState {
 /// Convenience trait for the data storage types.
 pub trait Keys {
     /// Type used by [key::automation::System].
-    type Automation: Debug + Index<usize, Output = key::automation::Key>;
+    type Automation: Debug + Index<usize, Output = AutomationKey>;
     /// Type used by [key::callback::System].
     type Callback: Debug + Index<usize, Output = key::callback::Key>;
     /// Type used by [key::chorded::System].
@@ -727,7 +744,7 @@ impl<
         TAP_HOLD,
     >
 {
-    type Automation = [key::automation::Key; AUTOMATION];
+    type Automation = [AutomationKey; AUTOMATION];
     type Callback = [key::callback::Key; CALLBACK];
     type Chorded = [key::chorded::Key<
         Ref,
@@ -757,7 +774,7 @@ pub struct KeyVecs;
 
 #[cfg(feature = "std")]
 impl Keys for KeyVecs {
-    type Automation = Vec<key::automation::Key>;
+    type Automation = Vec<AutomationKey>;
     type Callback = Vec<key::callback::Key>;
     type Chorded = Vec<
         key::chorded::Key<
@@ -787,7 +804,7 @@ impl Keys for KeyVecs {
 /// Aggregate [key::System] implementation.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<D: Keys> {
-    automation: key::automation::System<Ref, D::Automation, AUTOMATION_INSTRUCTION_COUNT>,
+    automation: AutomationSystem<D::Automation>,
     callback: key::callback::System<Ref, D::Callback>,
     caps_word: key::caps_word::System<Ref>,
     consumer: key::consumer::System<Ref>,
@@ -839,11 +856,7 @@ impl<
 {
     /// Constructs a new [System].
     pub const fn array_based(
-        automation: key::automation::System<
-            Ref,
-            [key::automation::Key; AUTOMATION],
-            AUTOMATION_INSTRUCTION_COUNT,
-        >,
+        automation: AutomationSystem<[AutomationKey; AUTOMATION]>,
         callback: key::callback::System<Ref, [key::callback::Key; CALLBACK]>,
         chorded: key::chorded::System<
             Ref,
@@ -902,11 +915,7 @@ impl<
 impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
-        automation: key::automation::System<
-            Ref,
-            <KeyVecs as Keys>::Automation,
-            AUTOMATION_INSTRUCTION_COUNT,
-        >,
+        automation: AutomationSystem<Vec<AutomationKey>>,
         callback: key::callback::System<Ref, <KeyVecs as Keys>::Callback>,
         chorded: key::chorded::System<
             Ref,
