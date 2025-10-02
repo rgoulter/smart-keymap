@@ -293,22 +293,20 @@ fn check_tick_report(world: &mut KeymapWorld, step: &Step) {
 
 #[then("the output should be equivalent to output from")]
 fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
-    let mut test_keymap = load_keymap(TEST_KEYMAP_NCL);
-    let mut expected_reports = keymap::DistinctReports::new();
+    let mut test_keymap = ObservedKeymap::new(load_keymap(TEST_KEYMAP_NCL));
 
     let inputs_ncl = step.docstring().unwrap();
     let inputs = inputs_from_ncl(TEST_KEYMAP_NCL, inputs_ncl);
 
     for input in inputs {
         test_keymap.handle_input(input);
-        test_keymap.tick();
-        expected_reports.update(test_keymap.report_output().as_hid_boot_keyboard_report());
     }
 
     world.keymap.tick_until_no_scheduled_events();
 
+    let expected_reports = test_keymap.distinct_reports();
     let actual_reports = world.keymap.distinct_reports();
-    assert_eq!(&expected_reports, actual_reports);
+    assert_eq!(expected_reports, actual_reports);
 }
 
 fn main() {
