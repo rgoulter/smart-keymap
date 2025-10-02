@@ -33,7 +33,7 @@ Feature: Layer Modifier: Set Active Layers To
       """
       [
         press (K.layer_mod.set_active_layers_to [1]),
-        press (K.B),
+        press_keymap_index 1,
       ]
       """
     Then the output should be equivalent to output from

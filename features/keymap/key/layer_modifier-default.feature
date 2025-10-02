@@ -32,9 +32,8 @@ Feature: Layer Modifier: Set Default Layer
     When the keymap registers the following input
       """
       [
-        press (K.layer_mod.set_default 1),
-        release (K.layer_mod.set_default 1),
-        press (K.B),
+        tap (K.layer_mod.set_default 1),
+        press_keymap_index 2
       ]
       """
     Then the HID keyboard report should equal

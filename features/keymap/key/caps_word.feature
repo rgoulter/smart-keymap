@@ -33,26 +33,19 @@ Feature: Caps Word Key
     When the keymap registers the following input
       """
       [
-        press K.caps_word.toggle,
-        release K.caps_word.toggle,
-        press K.A,
-        release K.A,
-        press K.Space,
-        release K.Space,
-        press K.A,
-        release K.A,
+        tap K.caps_word.toggle,
+        tap K.A,
+        tap K.Space,
+        tap K.A,
       ]
       """
     Then the output should be equivalent to output from
       """
       [
         press (K.LeftShift),
-        press K.A,
-        release K.A,
+        tap K.A,
         release (K.LeftShift),
-        press K.Space,
-        release K.Space,
-        press K.A,
-        release K.A,
+        tap K.Space,
+        tap K.A,
       ]
       """

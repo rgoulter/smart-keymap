@@ -34,8 +34,7 @@ Feature: Sticky Modifiers Key
     When the keymap registers the following input
       """
       [
-        press (K.sticky K.LeftShift),
-        release (K.sticky K.LeftShift),
+        tap (K.sticky K.LeftShift),
         press K.A,
       ]
       """
@@ -51,10 +50,8 @@ Feature: Sticky Modifiers Key
     When the keymap registers the following input
       """
       [
-        press (K.sticky K.LeftShift),
-        release (K.sticky K.LeftShift),
-        press (K.sticky K.LeftCtrl),
-        release (K.sticky K.LeftCtrl),
+        tap (K.sticky K.LeftShift),
+        tap (K.sticky K.LeftCtrl),
         press K.A,
       ]
       """
@@ -71,18 +68,15 @@ Feature: Sticky Modifiers Key
     When the keymap registers the following input
       """
       [
-        press (K.sticky K.LeftShift),
-        release (K.sticky K.LeftShift),
-        press K.A,
-        release K.A,
+        tap (K.sticky K.LeftShift),
+        tap K.A,
       ]
       """
     Then the output should be equivalent to output from
       """
       [
         press (K.LeftShift),
-        press K.A,
-        release K.A,
+        tap K.A,
         release (K.LeftShift),
       ]
       """
@@ -92,21 +86,17 @@ Feature: Sticky Modifiers Key
       """
       [
         press (K.sticky K.LeftShift),
-        press K.A,
-        release K.A,
+        tap K.A,
         release (K.sticky K.LeftShift),
-        press K.B,
-        release K.B,
+        tap K.B,
       ]
       """
     Then the output should be equivalent to output from
       """
       [
         press (K.LeftShift),
-        press K.A,
-        release K.A,
+        tap K.A,
         release (K.LeftShift),
-        press K.B,
-        release K.B,
+        tap K.B,
       ]
       """

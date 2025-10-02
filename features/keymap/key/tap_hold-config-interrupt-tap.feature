@@ -60,15 +60,13 @@ Feature: TapHold Key (configure interrupt response: hold on tap)
       """
       [
         press (K.A & K.hold K.LeftCtrl),
-        press (K.B),
-        release (K.B),
+        tap (K.B),
       ]
       """
     Then the output should be equivalent to output from
       """
       [
         press (K.LeftCtrl),
-        press (K.B),
-        release (K.B),
+        tap (K.B),
       ]
       """

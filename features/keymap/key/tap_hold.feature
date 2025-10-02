@@ -37,8 +37,7 @@ Feature: TapHold Key
     When the keymap registers the following input
       """
       [
-        press (K.A & K.hold K.LeftCtrl),
-        release (K.A & K.hold K.LeftCtrl),
+        tap (K.A & K.hold K.LeftCtrl),
       ]
       """
     Then the HID keyboard report should equal

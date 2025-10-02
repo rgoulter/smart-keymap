@@ -61,8 +61,7 @@ Feature: TapHold Key (configure interrupt response: ignore)
       """
       [
         press (K.A & K.hold K.LeftCtrl),
-        press (K.B),
-        release (K.B),
+        tap (K.B),
         release (K.A & K.hold K.LeftCtrl),
       ]
       """
@@ -70,8 +69,7 @@ Feature: TapHold Key (configure interrupt response: ignore)
       """
       [
         press (K.A),
-        press (K.B),
-        release (K.B),
+        tap (K.B),
         release (K.A),
       ]
       """

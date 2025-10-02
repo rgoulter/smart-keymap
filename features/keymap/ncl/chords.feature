@@ -62,12 +62,7 @@ Feature: Chords
       """
       [
         press K.A,
-      ]
-      """
-    And the keymap ticks 250 times
-    And the keymap registers the following input
-      """
-      [
+        wait 250,
         press K.B,
       ]
       """
