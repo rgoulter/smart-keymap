@@ -54,6 +54,13 @@ impl LoadedKeymap {
         }
     }
 
+    pub fn keymap(&mut self) -> &mut ObservedKeymap {
+        match self {
+            LoadedKeymap::Keymap { keymap, .. } => keymap,
+            _ => panic!("No keymap loaded"),
+        }
+    }
+
     pub fn handle_input(&mut self, ev: input::Event) {
         match self {
             LoadedKeymap::Keymap { keymap } => {
