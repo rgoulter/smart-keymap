@@ -3,7 +3,7 @@ pub mod init {
     use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
-    pub const AUTOMATION_INSTRUCTION_COUNT: usize = 2;
+    pub const AUTOMATION_INSTRUCTION_COUNT: usize = 1;
 
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 0;
@@ -69,12 +69,7 @@ pub mod init {
     pub const CONFIG: smart_keymap::key::composite::Config = smart_keymap::key::composite::Config {
         automation: smart_keymap::key::automation::Config {
             instructions: smart_keymap::key::automation::instructions([
-                smart_keymap::key::automation::Instruction::Press(
-                    smart_keymap::key::KeyOutput::from_usage(
-                        smart_keymap::key::KeyUsage::Keyboard(4),
-                    ),
-                ),
-                smart_keymap::key::automation::Instruction::Release(
+                smart_keymap::key::automation::Instruction::Tap(
                     smart_keymap::key::KeyOutput::from_usage(
                         smart_keymap::key::KeyUsage::Keyboard(4),
                     ),
@@ -98,12 +93,7 @@ pub mod init {
         smart_keymap::key::composite::Context::from_config(smart_keymap::key::composite::Config {
             automation: smart_keymap::key::automation::Config {
                 instructions: smart_keymap::key::automation::instructions([
-                    smart_keymap::key::automation::Instruction::Press(
-                        smart_keymap::key::KeyOutput::from_usage(
-                            smart_keymap::key::KeyUsage::Keyboard(4),
-                        ),
-                    ),
-                    smart_keymap::key::automation::Instruction::Release(
+                    smart_keymap::key::automation::Instruction::Tap(
                         smart_keymap::key::KeyOutput::from_usage(
                             smart_keymap::key::KeyUsage::Keyboard(4),
                         ),
@@ -127,7 +117,7 @@ pub mod init {
         smart_keymap::key::automation::System::new([smart_keymap::key::automation::Key {
             automation_instructions: smart_keymap::key::automation::Execution {
                 start: 0,
-                length: 2,
+                length: 1,
             },
         }]),
         smart_keymap::key::callback::System::new([]),

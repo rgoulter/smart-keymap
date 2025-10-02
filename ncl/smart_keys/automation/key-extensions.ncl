@@ -12,8 +12,7 @@
               let { key_code = kc } = K."%{char}" in
               let ko = { key_code = { Keyboard = kc } } in
               [
-                { Press = ko, },
-                { Release = ko, },
+                { Tap = ko, },
               ]
             )
             |> std.array.flatten,
