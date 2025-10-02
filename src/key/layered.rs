@@ -104,6 +104,11 @@ impl From<LayerEvent> for () {
 pub enum ActivationStyle {
     /// Regular layer activation.
     Regular,
+    /// Sticky layer activation.
+    ///
+    /// Sticky layer activation is similar to sticky key modifiers.
+    /// The sticky layer activation is implemented using the sticky layer modifier key.
+    Sticky,
 }
 
 /// State of an individual layer: active or inactive.
