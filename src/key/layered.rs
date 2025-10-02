@@ -190,6 +190,8 @@ impl<const L: usize> LayerState for [Activity; L] {
 pub struct Context<const LAYER_COUNT: usize> {
     default_layer: Option<LayerIndex>,
     active_layers: [Activity; LAYER_COUNT],
+    // Keymap index which was pressed while a layer was sticky.
+    pressed_keymap_index: Option<u16>,
 }
 
 impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
@@ -198,6 +200,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
         Context {
             default_layer: None,
             active_layers: [Activity::Inactive; LAYER_COUNT],
+            pressed_keymap_index: None,
         }
     }
 }
@@ -214,6 +217,13 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
         &self.active_layers
     }
 
+    fn sticky_layer(&self) -> Option<LayerIndex> {
+        self.active_layers
+            .iter()
+            .position(|&a| a == Activity::Active(ActivationStyle::Sticky))
+            .map(|i| i as LayerIndex + 1)
+    }
+
     /// Updates the context with the [LayerEvent].
     fn handle_layer_event(&mut self, event: LayerEvent) {
         match event {
@@ -225,6 +235,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
             }
             LayerEvent::StickyActivated(layer) => {
                 self.active_layers.activate(layer, ActivationStyle::Sticky);
+                self.pressed_keymap_index = None;
             }
             LayerEvent::Toggled(layer) => {
                 if self.active_layers[layer as usize - 1].is_active() {
@@ -254,6 +265,26 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     /// Updates the context with the [key::Event].
     fn handle_event(&mut self, event: key::Event<LayerEvent>) {
         match event {
+            key::Event::Input(input::Event::Press { keymap_index, .. }) => {
+                if let Some(sticky_layer_index) = self.sticky_layer() {
+                    if self.pressed_keymap_index.is_some() {
+                        // The sticky layer modifier has already been used;
+                        // the sticky layer should be deactivated for subsequent presses.
+                        self.active_layers.deactivate(sticky_layer_index);
+                        self.pressed_keymap_index = None;
+                    } else {
+                        self.pressed_keymap_index = Some(keymap_index);
+                    }
+                }
+            }
+            key::Event::Input(input::Event::Release { keymap_index, .. }) => {
+                if let Some(sticky_layer_index) = self.sticky_layer() {
+                    if self.pressed_keymap_index == Some(keymap_index) {
+                        self.active_layers.deactivate(sticky_layer_index);
+                        self.pressed_keymap_index = None;
+                    }
+                }
+            }
             key::Event::Key { key_event, .. } => {
                 self.handle_layer_event(key_event);
             }
