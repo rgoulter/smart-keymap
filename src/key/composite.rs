@@ -34,13 +34,28 @@ pub type AutomationKeyState = key::automation::KeyState;
 /// Type aliases for convenience.
 pub type AutomationSystem<D> = key::automation::System<Ref, D, AUTOMATION_INSTRUCTION_COUNT>;
 
+/// Type aliases for convenience.
+pub type CallbackRef = key::callback::Ref;
+/// Type aliases for convenience.
+pub type CallbackKey = key::callback::Key;
+/// Type aliases for convenience.
+pub type CallbackContext = key::callback::Context;
+/// Type aliases for convenience.
+pub type CallbackEvent = key::callback::Event;
+/// Type aliases for convenience.
+pub type CallbackPendingKeyState = key::callback::PendingKeyState;
+/// Type aliases for convenience.
+pub type CallbackKeyState = key::callback::KeyState;
+/// Type aliases for convenience.
+pub type CallbackSystem<D> = key::callback::System<Ref, D>;
+
 /// Aggregate enum for key references.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
     /// [key::automation::Ref] variant.
     Automation(AutomationRef),
     /// [key::callback::Ref] variant.
-    Callback(key::callback::Ref),
+    Callback(CallbackRef),
     /// [key::caps_word::Ref] variant.
     CapsWord(key::caps_word::Ref),
     /// [key::chorded::Ref] variant.
@@ -186,7 +201,7 @@ pub enum Event {
     /// An automation event.
     Automation(AutomationEvent),
     /// A callback event.
-    Callback(key::callback::Event),
+    Callback(CallbackEvent),
     /// A caps word event.
     CapsWord(key::caps_word::Event),
     /// A chorded event.
@@ -215,8 +230,8 @@ impl From<AutomationEvent> for Event {
     }
 }
 
-impl From<key::callback::Event> for Event {
-    fn from(ev: key::callback::Event) -> Self {
+impl From<CallbackEvent> for Event {
+    fn from(ev: CallbackEvent) -> Self {
         Event::Callback(ev)
     }
 }
@@ -398,7 +413,7 @@ pub enum PendingKeyState {
     /// Pending key state for [key::automation::PendingKeyState].
     Automation(AutomationPendingKeyState),
     /// Pending key state for [key::callback::PendingKeyState].
-    Callback(key::callback::PendingKeyState),
+    Callback(CallbackPendingKeyState),
     /// Pending key state for [key::caps_word::PendingKeyState].
     CapsWord(key::caps_word::PendingKeyState),
     /// Pending key state for [key::chorded::PendingKeyState].
@@ -433,8 +448,8 @@ impl From<AutomationPendingKeyState> for PendingKeyState {
     }
 }
 
-impl From<key::callback::PendingKeyState> for PendingKeyState {
-    fn from(pks: key::callback::PendingKeyState) -> Self {
+impl From<CallbackPendingKeyState> for PendingKeyState {
+    fn from(pks: CallbackPendingKeyState) -> Self {
         PendingKeyState::Callback(pks)
     }
 }
@@ -560,7 +575,7 @@ pub enum KeyState {
     /// Key state for [key::automation::KeyState].
     Automation(AutomationKeyState),
     /// Key state for [key::callback::KeyState].
-    Callback(key::callback::KeyState),
+    Callback(CallbackKeyState),
     /// Key state for [key::caps_word::KeyState].
     CapsWord(key::caps_word::KeyState),
     /// Key state for [key::chorded::KeyState].
@@ -595,8 +610,8 @@ impl From<AutomationKeyState> for KeyState {
     }
 }
 
-impl From<key::callback::KeyState> for KeyState {
-    fn from(ks: key::callback::KeyState) -> Self {
+impl From<CallbackKeyState> for KeyState {
+    fn from(ks: CallbackKeyState) -> Self {
         KeyState::Callback(ks)
     }
 }
@@ -666,7 +681,7 @@ pub trait Keys {
     /// Type used by [key::automation::System].
     type Automation: Debug + Index<usize, Output = AutomationKey>;
     /// Type used by [key::callback::System].
-    type Callback: Debug + Index<usize, Output = key::callback::Key>;
+    type Callback: Debug + Index<usize, Output = CallbackKey>;
     /// Type used by [key::chorded::System].
     type Chorded: Debug
         + Index<
@@ -745,7 +760,7 @@ impl<
     >
 {
     type Automation = [AutomationKey; AUTOMATION];
-    type Callback = [key::callback::Key; CALLBACK];
+    type Callback = [CallbackKey; CALLBACK];
     type Chorded = [key::chorded::Key<
         Ref,
         CHORDED_MAX_CHORDS,
@@ -775,7 +790,7 @@ pub struct KeyVecs;
 #[cfg(feature = "std")]
 impl Keys for KeyVecs {
     type Automation = Vec<AutomationKey>;
-    type Callback = Vec<key::callback::Key>;
+    type Callback = Vec<CallbackKey>;
     type Chorded = Vec<
         key::chorded::Key<
             Ref,
@@ -805,7 +820,7 @@ impl Keys for KeyVecs {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<D: Keys> {
     automation: AutomationSystem<D::Automation>,
-    callback: key::callback::System<Ref, D::Callback>,
+    callback: CallbackSystem<D::Callback>,
     caps_word: key::caps_word::System<Ref>,
     consumer: key::consumer::System<Ref>,
     chorded: key::chorded::System<
@@ -857,7 +872,7 @@ impl<
     /// Constructs a new [System].
     pub const fn array_based(
         automation: AutomationSystem<[AutomationKey; AUTOMATION]>,
-        callback: key::callback::System<Ref, [key::callback::Key; CALLBACK]>,
+        callback: CallbackSystem<[CallbackKey; CALLBACK]>,
         chorded: key::chorded::System<
             Ref,
             [key::chorded::Key<
@@ -916,7 +931,7 @@ impl System<KeyVecs> {
     /// Constructs a new [System].
     pub const fn vec_based(
         automation: AutomationSystem<Vec<AutomationKey>>,
-        callback: key::callback::System<Ref, <KeyVecs as Keys>::Callback>,
+        callback: CallbackSystem<Vec<CallbackKey>>,
         chorded: key::chorded::System<
             Ref,
             <KeyVecs as Keys>::Chorded,
