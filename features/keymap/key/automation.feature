@@ -50,3 +50,29 @@ Feature: Automation Key
         tap K.C,
       ]
       """
+
+  Example: on_press, while_pressed, on_release
+    The automation key's key instructions support `on_press`,
+     `while_pressed`, `on_release` instructions:
+
+    Given a keymap.ncl:
+      """
+      let K = import "keys.ncl" in
+      let { string_to_instructions, .. } = import "smart_keys/automation/lib.ncl" in
+
+      let MY_MACRO = {
+          automation_instructions = {
+              on_press = "ab" |> string_to_instructions,
+              while_pressed = [
+                    { Tap = { key_code = { Keyboard = 0x06 } } },
+                    { Wait = 1000 },
+              ],
+              on_release = "de" |> string_to_instructions,
+          },
+      } in
+      {
+        keys = [
+            MY_MACRO,
+        ],
+      }
+      """
