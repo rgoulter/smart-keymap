@@ -321,3 +321,94 @@ fn test_macro_press_and_release() {
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn test_macro_press_and_release_taps() {
+    // Assemble
+    use smart_keymap::input;
+
+    let mut keymap = ObservedKeymap::new(smart_keymap_macros::keymap!(
+        r#"
+        let K = import "keys.ncl" in
+
+        let MY_MACRO = {
+            automation_instructions = {
+                on_press = [
+                    { Tap = { key_code = { Keyboard = 0x04 } } },
+                ],
+                on_release = [
+                    { Tap = { key_code = { Keyboard = 0x06 } } },
+                ],
+            }
+        }
+        in
+        {
+            keys = [
+                MY_MACRO,
+            ],
+        }
+        "#
+    ));
+
+    // Act -- press macro key; wait 3500
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert -- the macro should have repeated 3 times
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x06, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn test_macro_string_to_instructions() {
+    // Assemble
+    use smart_keymap::input;
+
+    let mut keymap = ObservedKeymap::new(smart_keymap_macros::keymap!(
+        r#"
+        let K = import "keys.ncl" in
+        let { string_to_instructions, .. } = import "smart_keys/automation/lib.ncl" in
+
+        let MY_MACRO = {
+            automation_instructions = {
+                on_press = "a" |> string_to_instructions,
+                on_release = "c" |> string_to_instructions,
+            }
+        }
+        in
+        {
+            keys = [
+                MY_MACRO,
+            ],
+        }
+        "#
+    ));
+
+    // Act -- press macro key; wait 3500
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert -- the macro should have repeated 3 times
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, 0x04, 0x06, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
