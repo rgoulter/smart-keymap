@@ -206,7 +206,7 @@ impl<const INSTRUCTION_COUNT: usize> key::Context for Context<INSTRUCTION_COUNT>
             key::Event::Key {
                 key_event: Event::Enqueue(execution),
                 keymap_index,
-            } => {
+            } if !execution.is_empty() => {
                 let exec_immediately = self.execution_queue[0].is_empty();
 
                 self.enqueue(execution);
