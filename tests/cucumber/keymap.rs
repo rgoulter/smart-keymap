@@ -231,7 +231,7 @@ fn handle_inputs(keymap: &mut ObservedKeymap, inputs: &[Input]) {
 
 #[given("a keymap.ncl:")]
 fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
-    let keymap_ncl = step.docstring().unwrap();
+    let keymap_ncl = step.docstring().expect("docstring should be provided");
     world.keymap_ncl = keymap_ncl.into();
     world.keymap = LoadedKeymap::new(load_keymap(keymap_ncl));
 }
@@ -267,7 +267,7 @@ fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<Input> {
 
 #[when("the keymap registers the following input")]
 fn perform_input(world: &mut KeymapWorld, step: &Step) {
-    let inputs_ncl = step.docstring().unwrap();
+    let inputs_ncl = step.docstring().expect("docstring should be provided");
     let inputs = inputs_from_ncl(world.keymap_ncl.as_str(), inputs_ncl);
 
     handle_inputs(world.keymap.keymap(), &inputs);
@@ -282,13 +282,14 @@ fn when_keymap_tick(world: &mut KeymapWorld, num_ticks: u16) {
 
 #[then("the HID keyboard report should equal")]
 fn check_report(world: &mut KeymapWorld, step: &Step) {
-    let hid_report_ncl = step.docstring().unwrap();
+    let hid_report_ncl = step.docstring().expect("docstring should be provided");
     match nickel_to_json_for_hid_report(
         format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
         hid_report_ncl,
     ) {
         Ok(json) => {
-            let expected_report: Vec<u8> = serde_json::from_str(&json).unwrap();
+            let expected_report: Vec<u8> = serde_json::from_str(&json)
+                .expect("failed to deserialize expected HID report JSON");
 
             let actual_report = world.keymap.boot_keyboard_report();
 
@@ -300,13 +301,14 @@ fn check_report(world: &mut KeymapWorld, step: &Step) {
 
 #[then("the HID keyboard report from the next tick() should equal")]
 fn check_tick_report(world: &mut KeymapWorld, step: &Step) {
-    let hid_report_ncl = step.docstring().unwrap();
+    let hid_report_ncl = step.docstring().expect("docstring should be provided");
     match nickel_to_json_for_hid_report(
         format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
         hid_report_ncl,
     ) {
         Ok(json) => {
-            let expected_report: Vec<u8> = serde_json::from_str(&json).unwrap();
+            let expected_report: Vec<u8> = serde_json::from_str(&json)
+                .expect("failed to deserialize expected HID report JSON");
 
             world.keymap.tick();
             let actual_report = world.keymap.boot_keyboard_report();
@@ -321,7 +323,7 @@ fn check_tick_report(world: &mut KeymapWorld, step: &Step) {
 fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
     let mut test_keymap = ObservedKeymap::new(load_keymap(TEST_KEYMAP_NCL));
 
-    let inputs_ncl = step.docstring().unwrap();
+    let inputs_ncl = step.docstring().expect("docstring should be provided");
     let inputs = inputs_from_ncl(TEST_KEYMAP_NCL, inputs_ncl);
 
     handle_inputs(&mut test_keymap, &inputs);
