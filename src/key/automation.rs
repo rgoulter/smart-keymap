@@ -189,13 +189,24 @@ impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
     }
 
     fn execute_head(&mut self, keymap_index: u16) -> key::KeyEvents<Event> {
-        let pke = key_events_for(self.config, keymap_index, self.execution_queue[0]);
+        let mut pke = key_events_for(self.config, keymap_index, self.execution_queue[0]);
 
         self.execution_queue[0].incr();
 
         if self.execution_queue[0].is_empty() {
             self.execution_queue.rotate_left(1);
             self.execution_queue[EXECUTION_QUEUE_SIZE - 1] = Execution::EMPTY;
+
+            // If there's more to execute, schedule it to execute.
+            if !self.execution_queue[0].is_empty() {
+                pke.add_event(key::ScheduledEvent::after(
+                    self.config.instruction_duration,
+                    key::Event::Key {
+                        keymap_index,
+                        key_event: Event::NextInstruction,
+                    },
+                ));
+            }
         }
 
         pke
