@@ -445,9 +445,14 @@ pub enum KeyUsage {
     Mouse(MouseOutput),
 }
 
+impl KeyUsage {
+    /// A key usage with no key code.
+    pub const NO_USAGE: KeyUsage = KeyUsage::Keyboard(0x00);
+}
+
 impl Default for KeyUsage {
     fn default() -> Self {
-        KeyUsage::Keyboard(0x00)
+        KeyUsage::NO_USAGE
     }
 }
 
