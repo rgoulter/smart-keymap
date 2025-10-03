@@ -457,12 +457,35 @@ impl Default for KeyUsage {
 }
 
 /// Struct for the output from [KeyState].
-#[derive(Deserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub struct KeyOutput {
     #[serde(default)]
     key_code: KeyUsage,
     #[serde(default)]
     key_modifiers: KeyboardModifiers,
+}
+
+impl core::fmt::Debug for KeyOutput {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        match (
+            self.key_code != KeyUsage::NO_USAGE,
+            self.key_modifiers != KeyboardModifiers::NONE,
+        ) {
+            (true, true) => f
+                .debug_struct("KeyOutput")
+                .field("key_code", &self.key_code)
+                .field("key_modifiers", &self.key_modifiers)
+                .finish(),
+            (false, true) => f
+                .debug_struct("KeyOutput")
+                .field("key_modifiers", &self.key_modifiers)
+                .finish(),
+            _ => f
+                .debug_struct("KeyOutput")
+                .field("key_code", &self.key_code)
+                .finish(),
+        }
+    }
 }
 
 impl KeyOutput {
