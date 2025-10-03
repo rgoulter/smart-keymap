@@ -42,11 +42,18 @@ impl Execution {
     }
 }
 
+/// Instructions for a automation key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct KeyInstructions {
+    /// The automation instructions to execute when the key is pressed.
+    pub on_press: Execution,
+}
+
 /// Definition for a automation key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key {
-    /// The automation instructions to execute when the key is pressed.
-    pub automation_instructions: Execution,
+    /// The automation instructions for the key.
+    pub automation_instructions: KeyInstructions,
 }
 
 /// An instruction for a automation key.
@@ -360,7 +367,11 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key>, const INSTRUCTIO
         let pkr = key::PressedKeyResult::Resolved(KeyState);
 
         let Key {
-            automation_instructions: execution,
+            automation_instructions:
+                KeyInstructions {
+                    on_press: execution,
+                    ..
+                },
         } = self.keys[key_index as usize];
         let key_ev = key::Event::Key {
             keymap_index,

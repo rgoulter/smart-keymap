@@ -72,6 +72,25 @@
           }"%,
       },
 
+      key_instructions = {
+        Json = std.contract.from_validator json_validator,
+
+        json_validator =
+          validators.record.validator {
+            fields_validator = validators.record.has_only_fields ["on_press"],
+            field_validators = {
+              on_press = execution.json_validator,
+            },
+          },
+
+        is_json = fun json => 'Ok == json_validator json,
+
+        rust_expr = fun { on_press } =>
+          m%"%{module}::KeyInstructions {
+            on_press: %{execution.rust_expr on_press},
+          }"%,
+      },
+
       key = {
         Json = std.contract.from_validator json_validator,
 
@@ -82,7 +101,7 @@
             fields_validator =
               validators.record.has_exact_fields ["automation_instructions"],
             field_validators = {
-              automation_instructions = execution.json_validator,
+              automation_instructions = key_instructions.json_validator,
             },
           },
 
@@ -104,7 +123,7 @@
             include json,
             rust_expr = m%"
             %{module}::Key {
-              automation_instructions: %{execution.rust_expr json.automation_instructions},
+              automation_instructions: %{key_instructions.rust_expr json.automation_instructions},
             }
           "%,
           }

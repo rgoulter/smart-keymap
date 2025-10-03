@@ -12,7 +12,7 @@
         let press_ins = { Press = ko } in
         let release_ins = { Release = ko } in
         let ins = [press_ins, release_ins] in
-        keymap_ncl.automation.key_validator { automation_instructions = ins },
+        keymap_ncl.automation.key_validator { automation_instructions.on_press = ins },
       expected = 'Ok,
     },
 
@@ -24,7 +24,7 @@
         let ko = { key_code = { Keyboard = 4 } } in
         let tap_ins = { Tap = ko } in
         let ins = [tap_ins] in
-        { automation_instructions = ins },
+        { automation_instructions.on_press = ins },
     },
   },
 
@@ -32,7 +32,7 @@
     check_key_validation = {
       actual =
         let exec = { start = 0, length = 6 } in
-        keymap_ncl.automation.key_validator { automation_instructions = exec },
+        keymap_ncl.automation.key_validator { automation_instructions.on_press = exec },
       expected = 'Ok,
     },
   },
@@ -47,16 +47,30 @@
 
       Key = std.contract.from_validator key_validator,
 
+      key_instructions = {
+        ncl_validator =
+          validators.record.validator {
+            fields_validator =
+              validators.record.has_only_fields ["on_press"],
+            field_validators =
+              let instructions_or_execution =
+                validators.any_of [
+                  smart_keymap.automation.execution.json_validator,
+                  validators.array.validator smart_keymap.automation.instruction.json_validator
+                ]
+              in
+              {
+                on_press = instructions_or_execution,
+              },
+          },
+      },
+
       key_validator =
         validators.record.validator {
           fields_validator =
             validators.record.has_only_fields ["automation_instructions"],
           field_validators = {
-            automation_instructions =
-              validators.any_of [
-                smart_keymap.automation.execution.json_validator,
-                validators.array.validator smart_keymap.automation.instruction.json_validator
-              ],
+            automation_instructions = key_instructions.ncl_validator,
           },
         },
 
@@ -71,23 +85,25 @@
       transform_keys_to_instructions = fun acc k =>
         k
         |> match {
-          { automation_instructions } if std.is_array automation_instructions =>
-            let k =
-              let start = std.array.length acc.automation_instructions in
-              let length = std.array.length automation_instructions in
+          { automation_instructions = key_instructions } =>
+            let { automation_instructions = acc_instructions, ..other_acc } = acc in
+            let transform = fun acc_instructions instructions =>
+              let start = std.array.length acc_instructions in
+              let length = std.array.length instructions in
+              let acc_instructions = acc_instructions @ instructions in
               {
-                automation_instructions = {
-                  include start,
-                  include length,
-                },
+                execution = { include start, include length, },
+                include acc_instructions,
               }
             in
-            let { automation_instructions = acc_instructions, ..other_acc } = acc in
-            let automation_instructions = acc_instructions @ automation_instructions in
+            let { acc_instructions, execution = on_press } = transform acc_instructions key_instructions.on_press in
+            let k = {
+              automation_instructions = { include on_press },
+            }
+            in
+            let automation_instructions = acc_instructions in
             let acc = other_acc & { include automation_instructions, } in
             { include acc, include k },
-          { automation_instructions } =>
-            std.fail_with "Expected automation_instructions to be an array",
           _ => { include acc, include k },
         },
 

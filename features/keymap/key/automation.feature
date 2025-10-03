@@ -21,7 +21,7 @@ Feature: Automation Key
       let K = import "keys.ncl" in
 
       let MY_MACRO = {
-          automation_instructions = [
+          automation_instructions.on_press = [
               { Press = { key_code = { Keyboard = 0x04 } } },
               { Release = { key_code = { Keyboard = 0x04 } } },
               { Press = { key_code = { Keyboard = 0x05 } } },
