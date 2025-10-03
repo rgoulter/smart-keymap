@@ -3,7 +3,7 @@
     automation = {
       string_macro = fun s =>
         {
-          automation_instructions =
+          automation_instructions.on_press =
             let K = import "keys.ncl" in
             s
             |> std.string.characters
