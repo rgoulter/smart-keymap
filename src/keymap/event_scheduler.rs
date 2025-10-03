@@ -59,7 +59,7 @@ impl<E: Debug> EventScheduler<E> {
         //  highest at *start*.
         let pos = self
             .scheduled_events
-            .binary_search_by(|sch_item| sch_item.time.cmp(&delay).reverse())
+            .binary_search_by(|ScheduledEvent { time: cmp_time, .. }| cmp_time.cmp(&time).reverse())
             .unwrap_or_else(|e| e);
         self.scheduled_events
             .insert(pos, ScheduledEvent { time, event })
