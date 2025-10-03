@@ -924,7 +924,7 @@ impl<
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        panic!()
+        unimplemented!("chorded keys have no KeyState")
     }
 
     fn key_output(
@@ -932,7 +932,7 @@ impl<
         _key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        panic!()
+        unimplemented!("chorded keys have no KeyState")
     }
 }
 

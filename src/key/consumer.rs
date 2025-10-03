@@ -72,7 +72,7 @@ impl<R: Debug> key::System<R> for System<R> {
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("consumer keys have no PendingKeyState")
     }
 
     fn update_state(

@@ -379,7 +379,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key>, const INSTRUCTIO
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("automation keys have no PendingKeyState")
     }
 
     fn update_state(

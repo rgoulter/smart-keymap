@@ -92,7 +92,7 @@ impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for Syst
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("callback keys have no PendingKeyState")
     }
 
     fn update_state(
@@ -103,7 +103,7 @@ impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for Syst
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        panic!()
+        unimplemented!("callback keys have no KeyState")
     }
 
     fn key_output(
@@ -111,7 +111,7 @@ impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for Syst
         _key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        panic!()
+        unimplemented!("callback keys have no KeyState")
     }
 }
 

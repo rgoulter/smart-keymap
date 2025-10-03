@@ -613,7 +613,7 @@ impl<
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("layered keys have no PendingKeyState")
     }
 
     fn update_state(

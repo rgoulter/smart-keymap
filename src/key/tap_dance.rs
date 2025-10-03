@@ -275,7 +275,7 @@ impl<
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        panic!() // tap dance has no key state
+        unimplemented!("tap_dance keys have no KeyState")
     }
 
     fn key_output(
@@ -283,7 +283,7 @@ impl<
         _key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        panic!() // tap dance has no key state
+        unimplemented!("tap_dance keys have no KeyState")
     }
 }
 

@@ -371,7 +371,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        panic!() // tap_hold has no key state
+        unimplemented!("tap_hold keys have no KeyState")
     }
 
     fn key_output(
@@ -379,7 +379,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         _key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        panic!() // tap_hold has no key state
+        unimplemented!("tap_hold keys have no KeyState")
     }
 }
 

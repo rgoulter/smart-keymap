@@ -416,7 +416,7 @@ impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for Syst
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("sticky keys have no PendingKeyState")
     }
 
     fn update_state(

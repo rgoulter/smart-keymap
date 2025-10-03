@@ -71,7 +71,7 @@ impl<R: Debug> key::System<R> for System<R> {
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("custom keys have no PendingKeyState")
     }
 
     fn update_state(
@@ -82,7 +82,7 @@ impl<R: Debug> key::System<R> for System<R> {
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        panic!()
+        unimplemented!("custom keys have no Events")
     }
 
     fn key_output(

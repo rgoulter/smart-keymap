@@ -196,7 +196,7 @@ impl<R: Debug> key::System<R> for System<R> {
         _key_ref: Ref,
         _event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        panic!()
+        unimplemented!("caps_word keys have no PendingKeyState")
     }
 
     fn update_state(
@@ -207,7 +207,7 @@ impl<R: Debug> key::System<R> for System<R> {
         _keymap_index: u16,
         _event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        panic!()
+        unimplemented!("caps_word keys have no KeyState")
     }
 
     fn key_output(
@@ -215,7 +215,7 @@ impl<R: Debug> key::System<R> for System<R> {
         _key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        panic!()
+        unimplemented!("caps_word keys have no KeyState")
     }
 }
 
