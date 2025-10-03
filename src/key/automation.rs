@@ -122,7 +122,7 @@ fn default_instruction_duration() -> u16 {
 }
 
 /// The default instruction duration.
-pub const DEFAULT_INSTRUCTION_DURATION: u16 = 1;
+pub const DEFAULT_INSTRUCTION_DURATION: u16 = 10;
 
 impl<const INSTRUCTION_COUNT: usize> Config<INSTRUCTION_COUNT> {
     /// Constructs a new default [Config].
