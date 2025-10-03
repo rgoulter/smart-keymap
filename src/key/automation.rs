@@ -234,6 +234,8 @@ pub enum Event {
     Enqueue(Execution),
     /// Indicates to the context to execute the next instruction.
     NextInstruction,
+    /// Indicates that the execution has finished.
+    ExecutionFinished,
 }
 
 /// Converts the instruction to a scheduled event, if applicable.
@@ -245,22 +247,21 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
     let instruction = config.instructions[start as usize];
 
     let next_key_ev = if length > 1 {
-        Some(key::Event::Key {
+        key::Event::Key {
             keymap_index,
             key_event: Event::NextInstruction,
-        })
+        }
     } else {
-        None
+        key::Event::Key {
+            keymap_index,
+            key_event: Event::ExecutionFinished,
+        }
     };
 
     match instruction {
         Instruction::NoOp => {
-            if let Some(key_ev) = next_key_ev {
-                let sch_ev = key::ScheduledEvent::after(config.instruction_duration, key_ev);
-                key::KeyEvents::scheduled_event(sch_ev)
-            } else {
-                key::KeyEvents::no_events()
-            }
+            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
+            key::KeyEvents::scheduled_event(sch_ev)
         }
         Instruction::Press(key_output) => {
             let sch_ev =
@@ -269,10 +270,8 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
                 }));
 
             let mut pke = key::KeyEvents::scheduled_event(sch_ev);
-            if let Some(key_ev) = next_key_ev {
-                let sch_ev = key::ScheduledEvent::after(config.instruction_duration, key_ev);
-                pke.add_event(sch_ev);
-            }
+            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
+            pke.add_event(sch_ev);
 
             pke
         }
@@ -282,10 +281,8 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
             ));
 
             let mut pke = key::KeyEvents::scheduled_event(sch_ev);
-            if let Some(key_ev) = next_key_ev {
-                let sch_ev = key::ScheduledEvent::after(config.instruction_duration, key_ev);
-                pke.add_event(sch_ev);
-            }
+            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
+            pke.add_event(sch_ev);
 
             pke
         }
@@ -301,20 +298,14 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
 
             let mut pke = key::KeyEvents::scheduled_event(sch_press_ev);
             pke.add_event(sch_release_ev);
-            if let Some(key_ev) = next_key_ev {
-                let sch_ev = key::ScheduledEvent::after(config.instruction_duration, key_ev);
-                pke.add_event(sch_ev);
-            }
+            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
+            pke.add_event(sch_ev);
 
             pke
         }
         Instruction::Wait(ticks) => {
-            if let Some(key_ev) = next_key_ev {
-                let sch_ev = key::ScheduledEvent::after(ticks, key_ev);
-                key::KeyEvents::scheduled_event(sch_ev)
-            } else {
-                key::KeyEvents::no_events()
-            }
+            let sch_ev = key::ScheduledEvent::after(ticks, next_key_ev);
+            key::KeyEvents::scheduled_event(sch_ev)
         }
     }
 }
