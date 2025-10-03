@@ -168,6 +168,11 @@ impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
 
     /// Enqueues a new execution onto the execution queue.
     pub fn enqueue(&mut self, new_execution: Execution) -> usize {
+        // Ignore empty executions.
+        if new_execution.is_empty() {
+            return EXECUTION_QUEUE_SIZE;
+        }
+
         for (i, exec) in self.execution_queue.iter_mut().enumerate() {
             if exec.is_empty() {
                 *exec = new_execution;
