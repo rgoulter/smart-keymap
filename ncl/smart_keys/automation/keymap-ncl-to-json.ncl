@@ -51,7 +51,7 @@
         ncl_validator =
           validators.record.validator {
             fields_validator =
-              validators.record.has_only_fields ["on_press"],
+              validators.record.has_only_fields ["on_press", "while_pressed", "on_release"],
             field_validators =
               let instructions_or_execution =
                 validators.any_of [
@@ -61,6 +61,8 @@
               in
               {
                 on_press = instructions_or_execution,
+                while_pressed = instructions_or_execution,
+                on_release = instructions_or_execution,
               },
           },
       },
@@ -96,9 +98,23 @@
                 include acc_instructions,
               }
             in
+            let key_instructions =
+              key_instructions
+              & {
+                on_press | default = [],
+                while_pressed | default = [],
+                on_release | default = []
+              }
+            in
             let { acc_instructions, execution = on_press } = transform acc_instructions key_instructions.on_press in
+            let { acc_instructions, execution = while_pressed } = transform acc_instructions key_instructions.while_pressed in
+            let { acc_instructions, execution = on_release } = transform acc_instructions key_instructions.on_release in
             let k = {
-              automation_instructions = { include on_press },
+              automation_instructions = {
+                include on_press,
+                include while_pressed,
+                include on_release,
+              },
             }
             in
             let automation_instructions = acc_instructions in

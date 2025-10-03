@@ -47,6 +47,10 @@ impl Execution {
 pub struct KeyInstructions {
     /// The automation instructions to execute when the key is pressed.
     pub on_press: Execution,
+    /// The automation instructions to execute while the key is pressed.
+    pub while_pressed: Execution,
+    /// The automation instructions to execute when the key is released.
+    pub on_release: Execution,
 }
 
 /// Definition for a automation key.
@@ -392,12 +396,51 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key>, const INSTRUCTIO
     fn update_state(
         &self,
         _key_state: &mut Self::KeyState,
-        _ref: &Self::Ref,
+        Ref(key_index): &Self::Ref,
         _context: &Self::Context,
-        _keymap_index: u16,
-        _event: key::Event<Self::Event>,
+        keymap_index: u16,
+        event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
-        key::KeyEvents::no_events()
+        match event {
+            key::Event::Key {
+                key_event: Event::ExecutionFinished,
+                keymap_index: ev_kmi,
+            } if keymap_index == ev_kmi => {
+                // Execution finished while key is pressed;
+                //  enqueue the while_pressed instructions.
+                let Key {
+                    automation_instructions:
+                        KeyInstructions {
+                            while_pressed: execution,
+                            ..
+                        },
+                } = self.keys[*key_index as usize];
+                let key_ev = key::Event::Key {
+                    keymap_index,
+                    key_event: Event::Enqueue(execution),
+                };
+                key::KeyEvents::event(key_ev)
+            }
+            key::Event::Input(input::Event::Release {
+                keymap_index: ev_kmi,
+            }) if keymap_index == ev_kmi => {
+                // Key released.
+                //  enqueue the on_release instructions.
+                let Key {
+                    automation_instructions:
+                        KeyInstructions {
+                            on_release: execution,
+                            ..
+                        },
+                } = self.keys[*key_index as usize];
+                let key_ev = key::Event::Key {
+                    keymap_index,
+                    key_event: Event::Enqueue(execution),
+                };
+                key::KeyEvents::event(key_ev)
+            }
+            _ => key::KeyEvents::no_events(),
+        }
     }
 
     fn key_output(
