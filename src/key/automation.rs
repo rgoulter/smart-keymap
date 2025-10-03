@@ -386,7 +386,12 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key>, const INSTRUCTIO
         } = self.keys[key_index as usize];
         let key_ev = key::Event::Key {
             keymap_index,
-            key_event: Event::Enqueue(execution),
+            key_event: if !execution.is_empty() {
+                Event::Enqueue(execution)
+            } else {
+                // Trigger "while_pressed"
+                Event::ExecutionFinished
+            },
         };
         let pke = key::KeyEvents::event(key_ev);
 
