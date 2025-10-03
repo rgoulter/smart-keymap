@@ -156,10 +156,10 @@
 
     json_validator =
       validators.record.validator {
-        fields_validator = validators.record.has_only_fields ["key_code", "modifiers"],
+        fields_validator = validators.record.has_only_fields ["key_code", "key_modifiers"],
         field_validators = {
           key_code = key_usage.json_validator,
-          modifiers = keyboard_modifiers.json_validator,
+          key_modifiers = keyboard_modifiers.json_validator,
         },
       },
 
@@ -169,14 +169,14 @@
       json
       |> match {
         { key_code } => "smart_keymap::key::KeyOutput::from_usage(%{key_usage.rust_expr key_code})",
-        { modifiers } =>
+        { key_modifiers } =>
           m%"smart_keymap::key::KeyOutput::from_key_modifiers(
-          %{keyboard_modifiers.rust_expr modifiers}
+          %{keyboard_modifiers.rust_expr key_modifiers}
         )"%,
-        { key_code, modifiers } =>
+        { key_code, key_modifiers } =>
           m%"smart_keymap::key::KeyOutput::from_usage_with_modifiers(
               %{key_usage.rust_expr key_code},
-              %{keyboard_modifiers.rust_expr modifiers}
+              %{keyboard_modifiers.rust_expr key_modifiers}
             )"%,
       },
   },
