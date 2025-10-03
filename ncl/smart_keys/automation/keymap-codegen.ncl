@@ -77,17 +77,21 @@
 
         json_validator =
           validators.record.validator {
-            fields_validator = validators.record.has_only_fields ["on_press"],
+            fields_validator = validators.record.has_only_fields ["on_press", "while_pressed", "on_release"],
             field_validators = {
               on_press = execution.json_validator,
+              while_pressed = execution.json_validator,
+              on_release = execution.json_validator,
             },
           },
 
         is_json = fun json => 'Ok == json_validator json,
 
-        rust_expr = fun { on_press } =>
+        rust_expr = fun { on_press, while_pressed, on_release } =>
           m%"%{module}::KeyInstructions {
             on_press: %{execution.rust_expr on_press},
+            while_pressed: %{execution.rust_expr while_pressed},
+            on_release: %{execution.rust_expr on_release},
           }"%,
       },
 

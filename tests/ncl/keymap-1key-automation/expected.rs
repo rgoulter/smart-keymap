@@ -115,9 +115,19 @@ pub mod init {
     /// The key system.
     pub const SYSTEM: System = smart_keymap::key::composite::System::array_based(
         smart_keymap::key::automation::System::new([smart_keymap::key::automation::Key {
-            automation_instructions: smart_keymap::key::automation::Execution {
-                start: 0,
-                length: 1,
+            automation_instructions: smart_keymap::key::automation::KeyInstructions {
+                on_press: smart_keymap::key::automation::Execution {
+                    start: 0,
+                    length: 1,
+                },
+                while_pressed: smart_keymap::key::automation::Execution {
+                    start: 1,
+                    length: 0,
+                },
+                on_release: smart_keymap::key::automation::Execution {
+                    start: 1,
+                    length: 0,
+                },
             },
         }]),
         smart_keymap::key::callback::System::new([]),
