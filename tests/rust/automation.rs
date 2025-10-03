@@ -2,9 +2,6 @@ use smart_keymap::keymap::ObservedKeymap;
 
 #[test]
 fn test_simple_1char_string_macro() {
-    // This test demonstrates using smart_keymap::keymap::Keymap directly,
-    //  by using the keymap! macro.
-
     // Assemble
     use smart_keymap::input;
 
