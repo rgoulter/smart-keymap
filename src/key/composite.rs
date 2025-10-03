@@ -1192,6 +1192,20 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
         event: key::Event<Self::Event>,
     ) -> key::KeyEvents<Self::Event> {
         match (key_ref, key_state) {
+            (Ref::Automation(key_ref), KeyState::Automation(key_state)) => {
+                if let Ok(event) = event.try_into_key_event() {
+                    let pke = self.automation.update_state(
+                        key_state,
+                        key_ref,
+                        &context.automation,
+                        keymap_index,
+                        event,
+                    );
+                    pke.into_events()
+                } else {
+                    key::KeyEvents::no_events()
+                }
+            }
             (Ref::Consumer(key_ref), KeyState::Consumer(key_state)) => {
                 if let Ok(event) = event.try_into_key_event() {
                     let pke = self.consumer.update_state(
