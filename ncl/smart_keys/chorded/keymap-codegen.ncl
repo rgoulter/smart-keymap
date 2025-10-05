@@ -196,12 +196,19 @@
 
         Json = {
           chords | optional | Array ChordIndicesJson,
+          required_idle_time | optional | Number,
           timeout | optional | Number,
         },
 
         rust_expr =
           if std.record.has_field "chorded" json_keymap.config then
             let chorded_config = json_keymap.config.chorded in
+            let required_idle_time_field_fragment =
+              if std.record.has_field "required_idle_time" chorded_config then
+                "required_idle_time: Some(%{std.to_string chorded_config.required_idle_time}),"
+              else
+                ""
+            in
             let timeout_field_fragment =
               if std.record.has_field "timeout" chorded_config then
                 "timeout: %{std.to_string chorded_config.timeout},"
@@ -223,6 +230,7 @@
             in
             m%"
           %{module}::Config {
+              %{required_idle_time_field_fragment}
               %{timeout_field_fragment}
               %{chords_field_fragment}
               ..%{module}::Config::new()
