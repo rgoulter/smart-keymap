@@ -277,6 +277,13 @@ to work with smart_keymap lib.
 
 See [firmware/ch32x035-usb-device-compositekm-c](firmware/ch32x035-usb-device-compositekm-c/README.MD) for more details.
 
+### CH58X BLE HID Keyboard
+
+The example BLE HID keyboard software from the EVT has been adapted
+to work with smart_keymap lib.
+
+See [firmware/ch58x-ble-hid-keyboard-c](firmware/ch58x-ble-hid-keyboard-c/README.MD) for more details.
+
 ## License
 
 Licensed under either of
