@@ -5,6 +5,7 @@
     | doc "for key::chorded::Key."
     = {
       Config = {
+        required_idle_time | optional | Number,
         timeout | optional | Number,
       },
 
