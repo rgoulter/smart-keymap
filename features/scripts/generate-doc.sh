@@ -40,6 +40,7 @@ keymap_key_features=(
 
 keymap_ncl_features=(
     "chords"
+    "chords-config-required_idle_time"
     "layer_string"
     "layers"
 )
