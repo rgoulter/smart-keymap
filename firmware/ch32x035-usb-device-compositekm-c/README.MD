@@ -15,14 +15,22 @@ The firmware has been modified to use `libsmart_keymap`.
 
 ## Building
 
+With [devenv](https://devenv.sh/) and [direnv](https://direnv.net/) installed,
+ in this directory run:
+
+```
+direnv allow
+```
+
+And the required tools will be downloaded, & available in the shell.
+
 The task-runner [just](https://just.systems/man/en/) is used
  for convenient invocation of build tasks.
 
+### libsmart_keymap
+
 The `smart-keymap`'s justfile provides an `install` recipe
  for conveniently building & installing the `libsmart_keymap.a`.
-
-This directory's `justfile` provides a `flash` recipe for conveniently
- building & flashing the HID keyboard firmware.
 
 From the `smart-keymap` root directory,
 the firmware can be flashed with the keymap `tests/ncl/{test_keymap}/keymap.ncl`
@@ -30,10 +38,28 @@ by running e.g.:
 
 ``` sh
 just \
-  test_keymap=keymap-48key-checkkeys \
+  keymap=tests/ncl/keymap-48key-checkkeys/keymap.ncl \
   dest_dir="firmware/ch32x035-usb-device-compositekm-c/libsmartkeymap/" \
-  install && \
-just firmware/ch32x035-usb-device-compositekm-c/flash
+  install
+```
+
+### Firmware
+
+This directory's `justfile` provides a `build` recipe for conveniently
+ building the HID keyboard firmware.
+
+``` sh
+just \
+  board=ncl/boards/ch32x-48.ncl \
+  build
+```
+
+Flashing, similarly:
+
+``` sh
+just \
+  board=ncl/boards/ch32x-48.ncl \
+  flash
 ```
 
 ### Flashing the CH32X
