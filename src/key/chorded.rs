@@ -4,7 +4,7 @@ use core::ops::Index;
 
 use serde::Deserialize;
 
-use crate::{input, key, slice::Slice};
+use crate::{input, key, keymap, slice::Slice};
 
 /// Reference for a chorded key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -71,6 +71,13 @@ pub struct Config<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> {
 
     /// The keymap chords.
     pub chords: Slice<ChordIndices<MAX_CHORD_SIZE>, MAX_CHORDS>,
+
+    /// Amount of time (in milliseconds) the keymap must have been idle
+    ///  in order for chorded key to activate.
+    ///
+    /// This reduces disruption from unexpected chord resolutions
+    ///  when typing quickly.
+    pub required_idle_time: Option<u16>,
 }
 
 /// The default timeout.
@@ -86,6 +93,7 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> Config<MAX_CHORDS, MA
         Self {
             timeout: DEFAULT_TIMEOUT,
             chords: Slice::from_slice(&[]),
+            required_idle_time: None,
         }
     }
 }
@@ -120,6 +128,7 @@ pub struct Context<
     config: Config<MAX_CHORDS, MAX_CHORD_SIZE>,
     pressed_indices: [Option<u16>; MAX_PRESSED_INDICES],
     pressed_chords: [bool; MAX_CHORDS],
+    idle_time_ms: u32,
 }
 
 impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
@@ -132,7 +141,26 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
             config,
             pressed_indices,
             pressed_chords: [false; MAX_CHORDS],
+            idle_time_ms: 0,
         }
+    }
+
+    /// Updates the context with the given keymap context.
+    pub fn update_keymap_context(
+        &mut self,
+        keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
+    ) {
+        self.idle_time_ms = *idle_time_ms;
+    }
+
+    fn sufficient_idle_time(&self) -> bool {
+        let sufficient_idle_time =
+            self.idle_time_ms >= self.config.required_idle_time.unwrap_or(0) as u32;
+        // If pressed_indices[1] is some,
+        //  it means that it was pressed after sufficient idle time,
+        //  so idle time doesn't disqualify further chord resolution.
+        let first_chord_key_already_pending = self.pressed_indices[1].is_some();
+        sufficient_idle_time || first_chord_key_already_pending
     }
 
     fn pressed_chord_with_index(&self, keymap_index: u16) -> Option<ChordState<MAX_CHORD_SIZE>> {
@@ -354,7 +382,11 @@ impl<
     ) {
         let pks = PendingKeyState::new(context, keymap_index);
 
-        let chord_resolution = pks.check_resolution();
+        let chord_resolution = if context.sufficient_idle_time() {
+            pks.check_resolution()
+        } else {
+            PendingChordState::Resolved(ChordResolution::Passthrough)
+        };
 
         if let PendingChordState::Resolved(resolution) = chord_resolution {
             let maybe_new_key_ref = match resolution {
@@ -520,7 +552,11 @@ impl<
     ) {
         let pks = PendingKeyState::new(context, keymap_index);
 
-        let chord_resolution = pks.check_resolution();
+        let chord_resolution = if context.sufficient_idle_time() {
+            pks.check_resolution()
+        } else {
+            PendingChordState::Resolved(ChordResolution::Passthrough)
+        };
 
         if let PendingChordState::Resolved(resolution) = chord_resolution {
             match resolution {
