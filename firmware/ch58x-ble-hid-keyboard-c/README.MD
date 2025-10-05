@@ -8,7 +8,20 @@ The firmware has been modified to:
 - and the [WABBLE-60
  keyboard](https://github.com/rgoulter/keyboard-labs/releases/tag/wabble-60-rev2024.2).
 
+## Dependencies
+
+With [devenv](https://devenv.sh/) and [direnv](https://direnv.net/) installed,
+ in this directory run:
+
+```
+direnv allow
+```
+
+And the required tools will be downloaded, & available in the shell.
+
 ## Building
+
+### libsmart_keymap
 
 The firmware should be linked using a `libsmart_keymap.a`
  built with the `checkkeys_60key_keymap.rs` keymap
@@ -17,36 +30,31 @@ The firmware should be linked using a `libsmart_keymap.a`
 e.g. with the `just` and the repository's root `justfile`:
 
 ```
-just build-test-keymap-rv-checkkeys_60key
+just \
+  dest_dir=firmware/ch58x-ble-hid-keyboard-c/libsmartkeymap/ \
+  keymap=tests/ncl/keymap-60key-rgoulter/keymap.ncl \
+  install
 ```
 
 The `include/smart_keymap.h` and
 `target/riscv32imac-unknown-none-elf/release/libsmart_keymap.a`
-files should be copied into the `libsmartkeymap/` directory.
+files are copied into the `libsmartkeymap/` directory.
+
+### Board-specific Codegen
 
 Matrix key scanning is generated from files under `ncl/`.
 
-To generate the `generated/keyboard.c` for the WABBLE-60, run:
+To generate this for the CH58X BLE HID firmware, in this directory run:
 
 ```
-make
+just board=ncl/boards/wabble-60.ncl build
 ```
 
-An appropriate toolchain should be on `PATH`. e.g. using the package from the
-Nix flake from <https://github.com/rgoulter/ch32>:
+To flash, similarly:
 
 ```
-nix shell github:rgoulter/ch32#mrs-riscv-embedded-gcc12
+just board=ncl/boards/wabble-60.ncl flash
 ```
-
-Then the firmware can be built with:
-
-```
-cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
-make
-```
-
-and flashed using `wchlink`.
 
 ### LSP Configuration for clangd
 
