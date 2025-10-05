@@ -377,6 +377,7 @@ impl keymap::SetKeymapContext for Context {
     fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
         self.keymap_context = context;
 
+        self.chorded.update_keymap_context(&context);
         self.tap_hold.update_keymap_context(&context);
     }
 }
