@@ -129,6 +129,7 @@ pub struct Context<
     pressed_indices: [Option<u16>; MAX_PRESSED_INDICES],
     pressed_chords: [bool; MAX_CHORDS],
     idle_time_ms: u32,
+    ignore_idle_time: bool,
 }
 
 impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
@@ -142,6 +143,7 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
             pressed_indices,
             pressed_chords: [false; MAX_CHORDS],
             idle_time_ms: 0,
+            ignore_idle_time: false,
         }
     }
 
@@ -157,24 +159,7 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
         let sufficient_idle_time =
             self.idle_time_ms >= self.config.required_idle_time.unwrap_or(0) as u32;
 
-        // Pressing the chord itself can be done
-        //  within the required idle time;
-        //  that is, the latest pressed index shares at least one chord
-        //  with the previous pressed index.
-        let pressed_indices: heapless::Vec<u16, MAX_PRESSED_INDICES> =
-            self.pressed_indices.iter().filter_map(|&i| i).collect();
-        let continues_chord_press = if pressed_indices.len() >= 2 {
-            let i = pressed_indices[pressed_indices.len() - 2];
-            let j = pressed_indices[pressed_indices.len() - 1];
-            self.config
-                .chords
-                .iter()
-                .any(|chord| chord.has_index(j) && chord.has_index(i))
-        } else {
-            false
-        };
-
-        sufficient_idle_time || continues_chord_press
+        sufficient_idle_time || self.ignore_idle_time
     }
 
     fn pressed_chord_with_index(&self, keymap_index: u16) -> Option<ChordState<MAX_CHORD_SIZE>> {
@@ -311,6 +296,9 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
         match event {
             key::Event::Input(input::Event::Press { keymap_index }) => {
                 self.press_index(keymap_index);
+
+                let span = self.pressed_chords_indices_span();
+                self.ignore_idle_time = span.contains(&keymap_index);
             }
             key::Event::Input(input::Event::Release { keymap_index }) => {
                 self.release_index(keymap_index);
