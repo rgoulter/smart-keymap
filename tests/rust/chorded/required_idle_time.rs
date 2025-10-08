@@ -255,3 +255,59 @@ fn press_chord_resolves_as_chord_following_key_press_after_required_idle_time_al
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn quick_press_chord_resolves_as_chord_following_tap_chord() {
+    // Assemble
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.chorded.required_idle_time = 100,
+                chords = [
+                    { indices = [0, 1], key = K.C, },
+                ],
+                keys = [
+                    K.A, K.B, K.D,
+                ],
+            }
+        "#
+    ));
+
+    // Act -- tap 'd', then after required idle time, press the chord
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+
+    for _ in 0..150 {
+        keymap.tick();
+    }
+
+    // Tap the chord
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+    for _ in 0..50 {
+        keymap.tick();
+    }
+
+    // Quickly re-press the chord
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x07, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x06, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
