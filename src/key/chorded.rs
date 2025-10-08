@@ -130,6 +130,7 @@ pub struct Context<
     pressed_chords: [bool; MAX_CHORDS],
     idle_time_ms: u32,
     ignore_idle_time: bool,
+    latest_resolved_chord: Option<ChordId>,
 }
 
 impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
@@ -144,6 +145,7 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
             pressed_chords: [false; MAX_CHORDS],
             idle_time_ms: 0,
             ignore_idle_time: false,
+            latest_resolved_chord: None,
         }
     }
 
@@ -297,8 +299,26 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
             key::Event::Input(input::Event::Press { keymap_index }) => {
                 self.press_index(keymap_index);
 
+                // Consider whether the key press supports
+                //  ignoring required idle time for a chorded key,
+                //  or supports quickly re-tapping a chorded key.
                 let span = self.pressed_chords_indices_span();
-                self.ignore_idle_time = span.contains(&keymap_index);
+                if span.contains(&keymap_index) {
+                    // Key presses of an active chord ignore required idle time.
+                    self.ignore_idle_time = true;
+                } else {
+                    // Otherwise, check against the latest resolved chord.
+                    if let Some(chord_id) = self.latest_resolved_chord {
+                        let chord_indices = self.config.chords[chord_id as usize];
+                        self.ignore_idle_time = chord_indices.has_index(keymap_index);
+                    } else {
+                        self.ignore_idle_time = false;
+
+                        // Chords not active, and this press was outside the latest active chord,
+                        //  so clear the latest resolved chord.
+                        self.latest_resolved_chord = None;
+                    }
+                }
             }
             key::Event::Input(input::Event::Release { keymap_index }) => {
                 self.release_index(keymap_index);
@@ -320,6 +340,7 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
                 key_event: Event::ChordResolved(ChordResolution::Chord(chord_id)),
             } => {
                 self.pressed_chords[chord_id as usize] = true;
+                self.latest_resolved_chord = Some(chord_id);
             }
             _ => {}
         }
