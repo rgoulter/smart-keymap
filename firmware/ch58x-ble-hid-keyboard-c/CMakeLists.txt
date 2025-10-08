@@ -21,6 +21,8 @@ target_include_directories(HID_Keyboard
     Profile/include
 )
 
+target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
+
 add_subdirectory(generated)
 target_link_libraries(HID_Keyboard keyboard_codegen)
 
