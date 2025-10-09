@@ -149,6 +149,23 @@ struct PendingState<R, Ev, PKS> {
     queued_events: heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
 }
 
+/// Commands for managing Bluetooth profiles. (BLE pairing and bonding).
+#[derive(Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
+pub enum BluetoothProfileCommand {
+    /// Disconnect the current profile.
+    Disconnect,
+    /// Clear the current profile. (Start pairing mode).
+    Clear,
+    /// Clear all profiles. (Start pairing mode).
+    ClearAll,
+    /// Switch to the previous profile.
+    Previous,
+    /// Switch to the next profile.
+    Next,
+    /// Switch to the given profile index.
+    Select(u8),
+}
+
 /// Callbacks for effect keys in the keymap.
 #[derive(Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum KeymapCallback {
@@ -156,6 +173,8 @@ pub enum KeymapCallback {
     Reset,
     /// Reset the keyboard to bootloader
     ResetToBootloader,
+    /// Reset the keyboard to bootloader
+    Bluetooth(BluetoothProfileCommand),
     /// A custom callback. Its behaviour is specific to the firmware implementation.
     Custom(u8, u8),
 }
