@@ -162,6 +162,72 @@ pub struct KeymapHidReport {
     pub mouse: KeymapHidMouseReport,
 }
 
+/// Commands for managing Bluetooth profiles. (BLE pairing and bonding).
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[repr(C)]
+pub enum BluetoothProfileCommand {
+    /// Disconnect the current profile.
+    BluetoothProfileDisconnect,
+    /// Clear the current profile. (Start pairing mode).
+    BluetoothProfileClear,
+    /// Clear all profiles. (Start pairing mode).
+    BluetoothProfileClearAll,
+    /// Switch to the previous profile.
+    BluetoothProfilePrevious,
+    /// Switch to the next profile.
+    BluetoothProfileNext,
+    /// Switch to the given profile index.
+    BluetoothProfileSelect0,
+    /// Switch to the given profile index.
+    BluetoothProfileSelect1,
+    /// Switch to the given profile index.
+    BluetoothProfileSelect2,
+    /// Switch to the given profile index.
+    BluetoothProfileSelect3,
+    /// Switch to the given profile index.
+    BluetoothProfileSelect4,
+    /// Switch to the given profile index.
+    BluetoothProfileSelect5,
+}
+
+impl From<BluetoothProfileCommand> for keymap::BluetoothProfileCommand {
+    fn from(cmd: BluetoothProfileCommand) -> Self {
+        match cmd {
+            BluetoothProfileCommand::BluetoothProfileDisconnect => {
+                keymap::BluetoothProfileCommand::Disconnect
+            }
+            BluetoothProfileCommand::BluetoothProfileClear => {
+                keymap::BluetoothProfileCommand::Clear
+            }
+            BluetoothProfileCommand::BluetoothProfileClearAll => {
+                keymap::BluetoothProfileCommand::ClearAll
+            }
+            BluetoothProfileCommand::BluetoothProfilePrevious => {
+                keymap::BluetoothProfileCommand::Previous
+            }
+            BluetoothProfileCommand::BluetoothProfileNext => keymap::BluetoothProfileCommand::Next,
+            BluetoothProfileCommand::BluetoothProfileSelect0 => {
+                keymap::BluetoothProfileCommand::Select(0)
+            }
+            BluetoothProfileCommand::BluetoothProfileSelect1 => {
+                keymap::BluetoothProfileCommand::Select(1)
+            }
+            BluetoothProfileCommand::BluetoothProfileSelect2 => {
+                keymap::BluetoothProfileCommand::Select(2)
+            }
+            BluetoothProfileCommand::BluetoothProfileSelect3 => {
+                keymap::BluetoothProfileCommand::Select(3)
+            }
+            BluetoothProfileCommand::BluetoothProfileSelect4 => {
+                keymap::BluetoothProfileCommand::Select(4)
+            }
+            BluetoothProfileCommand::BluetoothProfileSelect5 => {
+                keymap::BluetoothProfileCommand::Select(5)
+            }
+        }
+    }
+}
+
 static mut KEYMAP: Keymap = new_keymap();
 
 /// Initialize the global keymap instance.
@@ -292,6 +358,19 @@ pub unsafe extern "C" fn keymap_register_custom_callback(
     unsafe {
         let callback_id = keymap::KeymapCallback::Custom(custom_0, custom_1);
         KEYMAP.set_callback_extern(callback_id, callback_fn);
+    }
+}
+
+/// Registers a bluetooth callback with the keymap.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_register_bluetooth_callback(
+    cmd: BluetoothProfileCommand,
+    callback_fn: extern "C" fn() -> (),
+) {
+    unsafe {
+        let callback = keymap::KeymapCallback::Bluetooth(cmd.into());
+        KEYMAP.set_callback_extern(callback, callback_fn);
     }
 }
 
