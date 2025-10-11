@@ -52,6 +52,12 @@
     else
       'Error { message = "Expected string" },
 
+  equals_string = fun target v =>
+    if target == v then
+      'Ok
+    else
+      'Error { message = "Expected string to equal %{target}" },
+
   is_elem_of = fun array v =>
     if std.array.elem v array then
       'Ok
