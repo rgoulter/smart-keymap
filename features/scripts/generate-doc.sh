@@ -16,6 +16,7 @@ keymap_key_features=(
     "automation"
     "automation-string"
     "callback"
+    "callback-bluetooth"
     "caps_word"
     "consumer"
     "custom"
