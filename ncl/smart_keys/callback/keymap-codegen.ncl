@@ -23,6 +23,25 @@
                 validators.any_of [
                   validators.is_string,
                   validators.record.validator {
+                    fields_validator = validators.record.has_exact_fields ["Bluetooth"],
+                    field_validators = {
+                      Bluetooth =
+                        validators.any_of [
+                          validators.equals_string "Clear",
+                          validators.equals_string "ClearAll",
+                          validators.equals_string "Disconnect",
+                          validators.equals_string "Next",
+                          validators.equals_string "Previous",
+                          validators.record.validator {
+                            fields_validator = validators.record.has_exact_fields ["Select"],
+                            field_validators = {
+                              Select = validators.is_number,
+                            },
+                          },
+                        ],
+                    },
+                  },
+                  validators.record.validator {
                     fields_validator = validators.record.has_exact_fields ["Custom"],
                     field_validators = {
                       Custom = validators.is_array,
@@ -43,6 +62,18 @@
               let cb_expr =
                 keymap_callback
                 |> match {
+                  { Bluetooth = { Select } } =>
+                    m%"
+                      smart_keymap::keymap::KeymapCallback::Bluetooth(
+                        BluetoothProfileCommand::Select(%{Select |> std.to_string})
+                      )
+                    "%,
+                  { Bluetooth } =>
+                    m%"
+                      smart_keymap::keymap::KeymapCallback::Bluetooth(
+                        BluetoothProfileCommand::%{Bluetooth}
+                      )
+                    "%,
                   { Custom = [i, j] } =>
                     "smart_keymap::keymap::KeymapCallback::Custom(%{i |> std.to_string}, %{j |> std.to_string})",
                   _ => "smart_keymap::keymap::KeymapCallback::%{keymap_callback}"
