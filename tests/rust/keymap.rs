@@ -11,6 +11,8 @@ mod tap_hold;
 
 mod ms_per_tick;
 
+mod event_based;
+
 use smart_keymap::keymap::ObservedKeymap;
 
 #[test]
