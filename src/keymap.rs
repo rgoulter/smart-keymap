@@ -417,6 +417,8 @@ impl<
     }
 
     /// Handles input events.
+    ///
+    /// Discards the input event if the input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
         self.idle_time = 0;
 
@@ -721,6 +723,30 @@ impl<
         });
 
         pressed_key_codes.collect()
+    }
+
+    fn tick_by(&mut self, delta_ms: u32) {
+        if delta_ms == 0 {
+            self.tick();
+        } else {
+            for _ in 0..(delta_ms / self.ms_per_tick as u32) {
+                self.tick();
+            }
+        }
+    }
+
+    /// Handles input events.
+    ///
+    /// Discards the input event if the input queue is full.
+    ///
+    /// Returns the time in ms until the next scheduled event, if any.
+    ///  (Time until next tick, if any, will always be >0, so 0 can be used as "NO EVENTS")
+    pub fn handle_input_after_time(&mut self, delta_ms: u32, ev: input::Event) -> Option<u32> {
+        self.tick_by(delta_ms);
+        self.handle_input(ev);
+        let next_event_time = self.event_scheduler.next_event_time();
+        debug_assert!(next_event_time != Some(0));
+        next_event_time
     }
 
     /// Updates the keymap indicating a report is sent; returns the reportable keymap output.
