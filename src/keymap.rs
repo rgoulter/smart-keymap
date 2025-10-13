@@ -30,9 +30,6 @@ pub const MAX_PRESSED_KEYS: usize = 16;
 
 const MAX_QUEUED_INPUT_EVENTS: usize = 32;
 
-/// Number of ticks before the next input event is processed in tick().
-pub const INPUT_QUEUE_TICK_DELAY: u8 = 1;
-
 /// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
 #[derive(Debug, PartialEq)]
 pub struct KeymapOutput {
@@ -239,7 +236,6 @@ pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState<R, Ev, PKS>>,
     input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
-    input_queue_delay_counter: u8,
     callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
 }
 
@@ -261,7 +257,6 @@ impl<
             .field("idle_time", &self.idle_time)
             .field("hid_reporter", &self.hid_reporter)
             .field("input_queue", &self.input_queue)
-            .field("input_queue_delay_counter", &self.input_queue_delay_counter)
             .field("pending_key_state", &self.pending_key_state)
             .field("pressed_inputs", &self.pressed_inputs)
             .finish_non_exhaustive()
@@ -291,7 +286,6 @@ impl<
             hid_reporter: HIDKeyboardReporter::new(),
             pending_key_state: None,
             input_queue: heapless::spsc::Queue::new(),
-            input_queue_delay_counter: 0,
             callbacks: heapless::LinearMap::new(),
         }
     }
@@ -305,7 +299,6 @@ impl<
         while !self.input_queue.is_empty() {
             self.input_queue.dequeue().unwrap();
         }
-        self.input_queue_delay_counter = 0;
         self.ms_per_tick = 1;
         self.idle_time = 0;
     }
@@ -426,11 +419,8 @@ impl<
 
         self.input_queue.enqueue(ev).unwrap();
 
-        if self.input_queue_delay_counter == 0 {
-            let ie = self.input_queue.dequeue().unwrap();
-            self.process_input(ie);
-            self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
-        }
+        let ie = self.input_queue.dequeue().unwrap();
+        self.process_input(ie);
     }
 
     fn has_pressed_input_with_keymap_index(&self, keymap_index: u16) -> bool {
@@ -694,14 +684,9 @@ impl<
         };
         self.context.set_keymap_context(km_context);
 
-        if !self.input_queue.is_empty() && self.input_queue_delay_counter == 0 {
+        if !self.input_queue.is_empty() {
             let ie = self.input_queue.dequeue().unwrap();
             self.process_input(ie);
-            self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
-        }
-
-        if self.input_queue_delay_counter > 0 {
-            self.input_queue_delay_counter -= 1;
         }
 
         self.event_scheduler.tick(self.ms_per_tick);
