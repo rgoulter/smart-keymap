@@ -749,6 +749,20 @@ impl<
         next_event_time
     }
 
+    /// If the event scheduler has a next scheduled event,
+    ///  it ticks the keymap forward to that event,
+    ///  returning the time in ms until the following event.
+    ///
+    /// Otherwise, does nothing and returns None.
+    pub fn tick_to_next_scheduled_event(&mut self) -> Option<u32> {
+        if let Some(delta_ms) = self.event_scheduler.next_event_time() {
+            self.tick_by(delta_ms);
+            self.event_scheduler.next_event_time()
+        } else {
+            None
+        }
+    }
+
     /// Updates the keymap indicating a report is sent; returns the reportable keymap output.
     pub fn report_output(&mut self) -> KeymapOutput {
         self.hid_reporter.update(self.pressed_keys());
