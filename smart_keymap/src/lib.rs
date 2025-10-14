@@ -162,6 +162,37 @@ pub struct KeymapHidReport {
     pub mouse: KeymapHidMouseReport,
 }
 
+impl KeymapHidReport {
+    fn update_from_keymap_output(&mut self, keymap_output: &keymap::KeymapOutput) {
+        unsafe {
+            let keyboard_report = keymap_output.as_hid_boot_keyboard_report();
+            core::ptr::copy_nonoverlapping(
+                keyboard_report.as_ptr(),
+                self.keyboard.as_mut_ptr(),
+                keyboard_report.len(),
+            );
+
+            self.custom.fill(0);
+            let custom_codes = &keymap_output.pressed_custom_codes();
+            core::ptr::copy_nonoverlapping(
+                custom_codes.as_ptr(),
+                self.custom.as_mut_ptr(),
+                KEYMAP_HID_REPORT_CUSTOM_LEN.min(custom_codes.len()),
+            );
+
+            self.consumer.fill(0);
+            let consumer_codes = &keymap_output.pressed_consumer_codes();
+            core::ptr::copy_nonoverlapping(
+                consumer_codes.as_ptr(),
+                self.consumer.as_mut_ptr(),
+                KEYMAP_HID_REPORT_CONSUMER_LEN.min(consumer_codes.len()),
+            );
+
+            self.mouse = keymap_output.pressed_mouse_output().into();
+        }
+    }
+}
+
 /// Commands for managing Bluetooth profiles. (BLE pairing and bonding).
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(C)]
