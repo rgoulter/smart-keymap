@@ -319,6 +319,62 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
     }
 }
 
+/// Event-based keymap interface. Registers an input event with the keymap.
+///
+/// Not to be called alongside `keymap_register_input_*` and `keymap_tick` functions.
+///
+/// Returns the time in ms until the next scheduled event, or 0 if no event is scheduled.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_register_input_after_ms(
+    delta_ms: u32,
+    event: KeymapInputEvent,
+    report: &mut KeymapHidReport,
+) -> u32 {
+    unsafe {
+        let next_ev = KEYMAP.handle_input_after_time(delta_ms, event.into());
+
+        let keymap_output = KEYMAP.report_output();
+
+        report.update_from_keymap_output(&keymap_output);
+
+        if let Some(next_ms) = next_ev {
+            debug_assert!(next_ms > 0);
+        }
+
+        next_ev.map_or(0, |t| t as u32)
+    }
+}
+
+/// Event-based keymap interface. Indicates the time until the next scheduled event has elapsed.
+///
+/// Not to be called alongside `keymap_register_input_*` and `keymap_tick` functions.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_next_event_timeout(report: &mut KeymapHidReport) -> u32 {
+    unsafe {
+        let next_ev = KEYMAP.tick_to_next_scheduled_event();
+
+        let keymap_output = KEYMAP.report_output();
+
+        report.update_from_keymap_output(&keymap_output);
+
+        if let Some(next_ms) = next_ev {
+            debug_assert!(next_ms > 0);
+        }
+
+        next_ev.map_or(0, |t| t as u32)
+    }
+}
+
 /// Registers a callback with the keymap.
 ///
 /// callback_id should be one of:
