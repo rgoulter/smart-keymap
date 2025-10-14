@@ -315,30 +315,7 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
 
         let keymap_output = KEYMAP.report_output();
 
-        let keyboard_report = keymap_output.as_hid_boot_keyboard_report();
-        core::ptr::copy_nonoverlapping(
-            keyboard_report.as_ptr(),
-            report.keyboard.as_mut_ptr(),
-            keyboard_report.len(),
-        );
-
-        report.custom.fill(0);
-        let custom_codes = &keymap_output.pressed_custom_codes();
-        core::ptr::copy_nonoverlapping(
-            custom_codes.as_ptr(),
-            report.custom.as_mut_ptr(),
-            KEYMAP_HID_REPORT_CUSTOM_LEN.min(custom_codes.len()),
-        );
-
-        report.consumer.fill(0);
-        let consumer_codes = &keymap_output.pressed_consumer_codes();
-        core::ptr::copy_nonoverlapping(
-            consumer_codes.as_ptr(),
-            report.consumer.as_mut_ptr(),
-            KEYMAP_HID_REPORT_CONSUMER_LEN.min(consumer_codes.len()),
-        );
-
-        report.mouse = keymap_output.pressed_mouse_output().into();
+        report.update_from_keymap_output(&keymap_output);
     }
 }
 
