@@ -162,6 +162,37 @@ pub struct KeymapHidReport {
     pub mouse: KeymapHidMouseReport,
 }
 
+impl KeymapHidReport {
+    fn update_from_keymap_output(&mut self, keymap_output: &keymap::KeymapOutput) {
+        unsafe {
+            let keyboard_report = keymap_output.as_hid_boot_keyboard_report();
+            core::ptr::copy_nonoverlapping(
+                keyboard_report.as_ptr(),
+                self.keyboard.as_mut_ptr(),
+                keyboard_report.len(),
+            );
+
+            self.custom.fill(0);
+            let custom_codes = &keymap_output.pressed_custom_codes();
+            core::ptr::copy_nonoverlapping(
+                custom_codes.as_ptr(),
+                self.custom.as_mut_ptr(),
+                KEYMAP_HID_REPORT_CUSTOM_LEN.min(custom_codes.len()),
+            );
+
+            self.consumer.fill(0);
+            let consumer_codes = &keymap_output.pressed_consumer_codes();
+            core::ptr::copy_nonoverlapping(
+                consumer_codes.as_ptr(),
+                self.consumer.as_mut_ptr(),
+                KEYMAP_HID_REPORT_CONSUMER_LEN.min(consumer_codes.len()),
+            );
+
+            self.mouse = keymap_output.pressed_mouse_output().into();
+        }
+    }
+}
+
 /// Commands for managing Bluetooth profiles. (BLE pairing and bonding).
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 #[repr(C)]
@@ -296,30 +327,63 @@ pub unsafe extern "C" fn keymap_tick(report: &mut KeymapHidReport) {
 
         let keymap_output = KEYMAP.report_output();
 
-        let keyboard_report = keymap_output.as_hid_boot_keyboard_report();
-        core::ptr::copy_nonoverlapping(
-            keyboard_report.as_ptr(),
-            report.keyboard.as_mut_ptr(),
-            keyboard_report.len(),
-        );
+        report.update_from_keymap_output(&keymap_output);
+    }
+}
 
-        report.custom.fill(0);
-        let custom_codes = &keymap_output.pressed_custom_codes();
-        core::ptr::copy_nonoverlapping(
-            custom_codes.as_ptr(),
-            report.custom.as_mut_ptr(),
-            KEYMAP_HID_REPORT_CUSTOM_LEN.min(custom_codes.len()),
-        );
+/// Event-based keymap interface. Registers an input event with the keymap.
+///
+/// Not to be called alongside `keymap_register_input_*` and `keymap_tick` functions.
+///
+/// Returns the time in ms until the next scheduled event, or 0 if no event is scheduled.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_register_input_after_ms(
+    delta_ms: u32,
+    event: KeymapInputEvent,
+    report: &mut KeymapHidReport,
+) -> u32 {
+    unsafe {
+        let next_ev = KEYMAP.handle_input_after_time(delta_ms, event.into());
 
-        report.consumer.fill(0);
-        let consumer_codes = &keymap_output.pressed_consumer_codes();
-        core::ptr::copy_nonoverlapping(
-            consumer_codes.as_ptr(),
-            report.consumer.as_mut_ptr(),
-            KEYMAP_HID_REPORT_CONSUMER_LEN.min(consumer_codes.len()),
-        );
+        let keymap_output = KEYMAP.report_output();
 
-        report.mouse = keymap_output.pressed_mouse_output().into();
+        report.update_from_keymap_output(&keymap_output);
+
+        if let Some(next_ms) = next_ev {
+            assert!(next_ms > 0);
+        }
+
+        next_ev.map_or(0, |t| t as u32)
+    }
+}
+
+/// Event-based keymap interface. Indicates the time until the next scheduled event has elapsed.
+///
+/// Not to be called alongside `keymap_register_input_*` and `keymap_tick` functions.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_next_event_timeout(report: &mut KeymapHidReport) -> u32 {
+    unsafe {
+        let next_ev = KEYMAP.tick_to_next_scheduled_event();
+
+        let keymap_output = KEYMAP.report_output();
+
+        report.update_from_keymap_output(&keymap_output);
+
+        if let Some(next_ms) = next_ev {
+            assert!(next_ms > 0);
+        }
+
+        next_ev.map_or(0, |t| t as u32)
     }
 }
 

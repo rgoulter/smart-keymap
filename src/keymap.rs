@@ -4,6 +4,8 @@ mod event_scheduler;
 /// The HID keyboard reporter.
 pub mod hid_keyboard_reporter;
 #[cfg(feature = "std")]
+mod observed_eb_keymap;
+#[cfg(feature = "std")]
 mod observed_keymap;
 
 use core::cmp::PartialEq;
@@ -22,6 +24,8 @@ use key::Event;
 pub use distinct_reports::DistinctReports;
 use event_scheduler::EventScheduler;
 use hid_keyboard_reporter::HIDKeyboardReporter;
+#[cfg(feature = "std")]
+pub use observed_eb_keymap::ObservedKeymap as ObservedEventBasedKeymap;
 #[cfg(feature = "std")]
 pub use observed_keymap::ObservedKeymap;
 
@@ -417,6 +421,8 @@ impl<
     }
 
     /// Handles input events.
+    ///
+    /// Discards the input event if the input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
         self.idle_time = 0;
 
@@ -721,6 +727,38 @@ impl<
         });
 
         pressed_key_codes.collect()
+    }
+
+    fn tick_by(&mut self, delta_ms: u32) {
+        for _ in 0..(delta_ms / self.ms_per_tick as u32) {
+            self.tick();
+        }
+    }
+
+    /// Handles input events.
+    ///
+    /// Discards the input event if the input queue is full.
+    ///
+    /// Returns the time in ms until the next scheduled event, if any.
+    ///  (Time until next tick, if any, will always be >0, so 0 can be used as "NO EVENTS")
+    pub fn handle_input_after_time(&mut self, delta_ms: u32, ev: input::Event) -> Option<u32> {
+        self.tick_by(delta_ms);
+        self.handle_input(ev);
+        self.event_scheduler.next_event_time()
+    }
+
+    /// If the event scheduler has a next scheduled event,
+    ///  it ticks the keymap forward to that event,
+    ///  returning the time in ms until the following event.
+    ///
+    /// Otherwise, does nothing and returns None.
+    pub fn tick_to_next_scheduled_event(&mut self) -> Option<u32> {
+        if let Some(delta_ms) = self.event_scheduler.next_event_time() {
+            self.tick_by(delta_ms);
+            self.event_scheduler.next_event_time()
+        } else {
+            None
+        }
     }
 
     /// Updates the keymap indicating a report is sent; returns the reportable keymap output.
