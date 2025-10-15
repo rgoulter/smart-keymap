@@ -117,3 +117,47 @@ fn held_press_resolves_as_hold() {
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn tick_to_next_scheduled_event_does_not_invoke_later_events() {
+    // Assemble
+    let mut keymap = ObservedEventBasedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.timeout = 200,
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B & K.hold K.LeftShift,
+                ],
+            }
+        "#
+    ));
+
+    // Act
+    // Event based interface 'fires' tick_to_next_scheduled_event
+    //  after the time from each handle_input_ call.
+
+    // Pressing TapHold key: A timeout is scheduled "at time 200"
+    let _ = keymap.handle_input_after_time(0, input::Event::Press { keymap_index: 0 });
+    let _ = keymap.handle_input_after_time(100, input::Event::Release { keymap_index: 0 });
+
+    // Press a different TapHold key before the timeout from the first key has fired.
+    let _ = keymap.handle_input_after_time(150, input::Event::Press { keymap_index: 1 });
+    let _ = keymap.tick_to_next_scheduled_event(); // "at time 200" (first key's timeout)
+    let _ = keymap.handle_input_after_time(250, input::Event::Release { keymap_index: 1 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x4, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x5, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
