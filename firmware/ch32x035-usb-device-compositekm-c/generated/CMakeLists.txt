@@ -1,7 +1,7 @@
-add_library(keyboard_codegen INTERFACE)
+add_library(keyboard INTERFACE)
 
-target_include_directories(keyboard_codegen INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
-target_include_directories(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
+target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 set(CODEGEN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(NCL_DIR ${CMAKE_SOURCE_DIR}/ncl)
@@ -133,7 +133,7 @@ endforeach()
 
 set_source_files_properties(${GENERATED_FILES} PROPERTIES GENERATED TRUE)
 
-target_sources(keyboard_codegen PUBLIC ${GENERATED_FILES})
+target_sources(keyboard PUBLIC ${GENERATED_FILES})
 
 foreach(id IN LISTS CODEGEN_CMAKELISTS_IDS)
     include(${CODEGEN_DIR}/${id}.cmake OPTIONAL)

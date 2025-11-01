@@ -43,7 +43,7 @@ let C = import "contracts.ncl" in
     if board.led.enabled then
       {
         keyboard_led = m%"
-    target_compile_definitions(keyboard_codegen INTERFACE KEYBOARD_LED_ENABLED)
+    target_compile_definitions(keyboard INTERFACE KEYBOARD_LED_ENABLED)
     "%,
       }
     else
