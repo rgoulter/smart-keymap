@@ -49,9 +49,9 @@ let C = import "contracts.ncl" in
     if board.split.enabled then
       {
         keyboard_split = m%"
-          target_compile_definitions(keyboard_codegen INTERFACE KEYBOARD_SPLIT)
-          target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_rx_dma.c)
-          target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_tx_dma.c)
+          target_compile_definitions(keyboard INTERFACE KEYBOARD_SPLIT)
+          target_sources(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_rx_dma.c)
+          target_sources(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_tx_dma.c)
     "%,
       }
     else

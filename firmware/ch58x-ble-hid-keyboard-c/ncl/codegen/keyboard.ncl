@@ -4,7 +4,7 @@ let C = import "codegen/contracts.ncl" in
   contracts = {},
 
   cmakelists.keyboard = m%"
-    target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
+    target_sources(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c)
     "%,
 
   sources.keyboard = m%"

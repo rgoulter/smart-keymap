@@ -30,7 +30,7 @@ let C = import "codegen/contracts.ncl" in
     | C.GpioPins,
 
   cmakelists.keyboard_matrix = m%"
-    target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c)
+    target_sources(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c)
     "%,
 
   includes.keyboard_matrix = m%"

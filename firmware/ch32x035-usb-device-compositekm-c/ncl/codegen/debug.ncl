@@ -17,10 +17,10 @@ let C = import "contracts.ncl" in
 
   cmakelists.debug =
     let debug_config = board.debug in
-    let debug_def = "target_compile_definitions(keyboard_codegen INTERFACE DEBUG=%{std.to_string debug_config.tx})" in
+    let debug_def = "target_compile_definitions(keyboard INTERFACE DEBUG=%{std.to_string debug_config.tx})" in
     let debug_af_def =
       if std.record.has_field "usart_af" debug_config then
-        m%"target_compile_definitions(keyboard_codegen INTERFACE DEBUG_AF=%{std.to_string debug_config.usart_af})"%
+        m%"target_compile_definitions(keyboard INTERFACE DEBUG_AF=%{std.to_string debug_config.usart_af})"%
       else
         ""
     in
