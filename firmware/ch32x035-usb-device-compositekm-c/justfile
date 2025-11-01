@@ -11,7 +11,10 @@ generate-keyboard:
 cmake-generate: _libsmartkeymap generate-keyboard
   mkdir -p build
   cd build && \
-    cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
+    cmake \
+      --toolchain=../../toolchains/riscv-none-elf.cmake \
+      -D BOARD={{board}} \
+      ..
 
 build: cmake-generate
   cd build && \

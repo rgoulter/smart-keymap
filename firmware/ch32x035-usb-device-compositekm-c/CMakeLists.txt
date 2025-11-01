@@ -4,6 +4,10 @@ project(usb-device-compositekm)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(NOT DEFINED BOARD)
+  set(BOARD "ncl/boards/weact-ch32x-core-board.ncl" CACHE STRING "Board to build for")
+endif()
+
 add_executable(usb-device-compositekm
   User/ch32x035_it.c
   User/ch32x035_usbfs_device.c
