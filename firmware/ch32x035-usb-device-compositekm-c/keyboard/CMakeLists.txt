@@ -1,5 +1,11 @@
 add_library(keyboard INTERFACE)
 
+target_sources(keyboard PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_rx_dma.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_tx_dma.c
+)
+
 target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
