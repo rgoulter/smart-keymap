@@ -16,7 +16,7 @@ NICKEL_QUERY_CMAKELISTS_CMD := \
     --field=cmakelists_filenames \
     --format=raw \
     $(CODEGEN_DEPS) \
-    $(NCL_DIR).ncl
+    ncl/codegen.ncl
 
 NICKEL_QUERY_INCLUDES_CMD := \
   nickel export \
@@ -24,7 +24,7 @@ NICKEL_QUERY_INCLUDES_CMD := \
     --field=includes_filenames \
     --format=raw \
     $(CODEGEN_DEPS) \
-    $(NCL_DIR).ncl
+    ncl/codegen.ncl
 
 NICKEL_QUERY_SOURCES_CMD := \
   nickel export \
@@ -32,7 +32,7 @@ NICKEL_QUERY_SOURCES_CMD := \
     --field=source_filenames \
     --format=raw \
     $(CODEGEN_DEPS) \
-    $(NCL_DIR).ncl
+    ncl/codegen.ncl
 
 CMAKELISTS_IDS := $(shell $(NICKEL_QUERY_CMAKELISTS_CMD))
 INCLUDES_IDS := $(shell $(NICKEL_QUERY_INCLUDES_CMD))
