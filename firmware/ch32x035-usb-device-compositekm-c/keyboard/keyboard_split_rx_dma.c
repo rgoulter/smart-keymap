@@ -1,3 +1,4 @@
+#ifdef KEYBOARD_SPLIT
 #include "keyboard_split.h"
 
 #include <stdbool.h>
@@ -139,3 +140,4 @@ void keyboard_split_init_rx(void) {
 
   USART_DMACmd(KEYBOARD_SPLIT_USART, USART_DMAReq_Rx, ENABLE);
 }
+#endif

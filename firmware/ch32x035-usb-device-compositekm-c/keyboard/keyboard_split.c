@@ -1,3 +1,4 @@
+#ifdef KEYBOARD_SPLIT
 #include "keyboard_split.h"
 
 #include "ch32x035.h"
@@ -43,3 +44,4 @@ void keyboard_split_init(void) {
   keyboard_split_init_rx();
   keyboard_split_init_tx();
 }
+#endif

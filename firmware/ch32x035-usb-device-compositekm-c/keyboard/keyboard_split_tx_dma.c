@@ -1,3 +1,4 @@
+#ifdef KEYBOARD_SPLIT
 #include "keyboard_split.h"
 
 #include <stdbool.h>
@@ -140,3 +141,4 @@ int keyboard_split_write(KeymapInputEvent ev) {
 
   return 0;
 }
+#endif
