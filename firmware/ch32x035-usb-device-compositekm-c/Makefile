@@ -1,14 +1,12 @@
 BOARD=ncl/boards/weact-ch32x-core-board.ncl
 
 .PHONY: all
-
-include generated/codegen.mk
 all: libsmartkeymap
 
 include ncl/ncl.mk
 
 .PHONY: clean
-clean: .clean-codegen
+clean:
 
 .PHONY: test
 test:
