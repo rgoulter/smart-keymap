@@ -107,13 +107,7 @@ let C = import "contracts.ncl" in
 
           #include "ch32x035_rcc.h"
 
-          #include "smart_keymap.h"
-
           %{defines}
-
-          void keyboard_split_init(void);
-
-          int keyboard_split_write(KeymapInputEvent ev);
     "%,
       }
     else
