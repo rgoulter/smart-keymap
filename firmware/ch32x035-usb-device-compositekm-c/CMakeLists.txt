@@ -11,7 +11,7 @@ endif()
 enable_language(C ASM)
 
 add_executable(usb-device-compositekm)
-add_subdirectory(User)
+add_subdirectory(app)
 
 add_subdirectory(keyboard)
 target_link_libraries(usb-device-compositekm keyboard)
