@@ -23,18 +23,6 @@ let C = import "contracts.ncl" in
   board
     | C.Board,
 
-  gpio_pins
-    | C.GpioPins
-    =
-      if board.split.enabled then
-        {
-          keyboard_split = m%"
-          keyboard_split_init();
-          "%,
-        }
-      else
-        {},
-
   init_fragments =
     if board.split.enabled then
       {
