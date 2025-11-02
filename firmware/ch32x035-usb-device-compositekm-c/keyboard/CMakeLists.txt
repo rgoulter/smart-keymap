@@ -100,7 +100,8 @@ endforeach()
 set(GENERATED_FILES "")
 
 foreach(id IN LISTS CODEGEN_INCLUDES_IDS)
-    set(header_file ${CODEGEN_DIR}/${id}.h)
+    set(header_file ${CODEGEN_DIR}/generated/${id}.h)
+    file(MAKE_DIRECTORY ${CODEGEN_DIR}/generated)
     message(STATUS "Scheduling generation of ${id}.h from Nickel")
     list(APPEND GENERATED_FILES ${header_file})
     add_custom_command(
