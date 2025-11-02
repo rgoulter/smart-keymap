@@ -30,6 +30,8 @@ set(
     "${NCL_CODEGEN_DIR}/keyboard_led.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_matrix.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_split.ncl"
+    "${NCL_CODEGEN_DIR}/matrix/col_to_row.ncl"
+    "${NCL_CODEGEN_DIR}/matrix/row_to_col.ncl"
 )
 
 # Set CODEGEN_CMAKELISTS_IDS from the codegen.ncl.

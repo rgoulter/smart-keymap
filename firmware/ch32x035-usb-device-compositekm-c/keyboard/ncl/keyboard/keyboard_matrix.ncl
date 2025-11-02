@@ -1,8 +1,6 @@
 let C = import "keyboard/contracts.ncl" in
 
-(import "matrix/row_to_col.ncl")
-& (import "matrix/col_to_row.ncl")
-& {
+{
   contracts = {
     Board = {
       matrix
