@@ -1,8 +1,9 @@
 add_library(keyboard_codegen INTERFACE)
 
+target_include_directories(keyboard_codegen INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
-set(CODEGEN_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(CODEGEN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(NCL_DIR ${CMAKE_SOURCE_DIR}/ncl)
 set(NCL_CODEGEN_DIR ${NCL_DIR}/codegen)
 
