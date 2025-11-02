@@ -8,19 +8,10 @@ if(NOT DEFINED BOARD)
   set(BOARD "ncl/boards/weact-ch32x-core-board.ncl" CACHE STRING "Board to build for")
 endif()
 
-add_executable(usb-device-compositekm
-  User/ch32x035_it.c
-  User/ch32x035_usbfs_device.c
-  User/main.c
-  User/system_ch32x035.c
-  User/usb_desc.c
-  User/usbd_composite_km.c
-)
-target_include_directories(usb-device-compositekm PUBLIC User)
-
-
-
 enable_language(C ASM)
+
+add_executable(usb-device-compositekm)
+add_subdirectory(User)
 
 add_subdirectory(keyboard)
 target_link_libraries(usb-device-compositekm keyboard)
