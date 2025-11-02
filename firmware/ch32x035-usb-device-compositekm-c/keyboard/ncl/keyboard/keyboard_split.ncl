@@ -26,16 +26,6 @@ let C = import "contracts.ncl" in
   gpio_pins
     | C.GpioPins,
 
-  init_fragments =
-    if board.split.enabled then
-      {
-        keyboard_split = m%"
-          keyboard_split_init();
-          "%,
-      }
-    else
-      {},
-
   cmakelists =
     if board.split.enabled then
       {

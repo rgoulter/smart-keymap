@@ -38,12 +38,6 @@ let C = import "contracts.ncl" in
     else
       "",
 
-  split_init_fragment =
-    if std.record.has_field "keyboard_split" init_fragments then
-      init_fragments.keyboard_split
-    else
-      "",
-
   sources.keyboard = m%"
   #include <stdbool.h>
 
@@ -83,7 +77,9 @@ let C = import "contracts.ncl" in
 
       %{led_init_fragment}
 
-      %{split_init_fragment}
+  #ifdef KEYBOARD_SPLIT
+      keyboard_split_init();
+  #endif
   }
   "%,
 }
