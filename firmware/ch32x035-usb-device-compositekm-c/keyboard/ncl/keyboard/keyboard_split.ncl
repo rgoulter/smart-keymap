@@ -23,6 +23,9 @@ let C = import "contracts.ncl" in
   board
     | C.Board,
 
+  gpio_pins
+    | C.GpioPins,
+
   init_fragments =
     if board.split.enabled then
       {
