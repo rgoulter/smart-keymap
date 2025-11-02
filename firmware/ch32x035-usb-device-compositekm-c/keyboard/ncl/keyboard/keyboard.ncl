@@ -32,12 +32,6 @@ let C = import "contracts.ncl" in
 
   init_fragments,
 
-  led_init_fragment =
-    if std.record.has_field "keyboard_led" init_fragments then
-      init_fragments.keyboard_led
-    else
-      "",
-
   sources.keyboard = m%"
   #include <stdbool.h>
 
@@ -75,7 +69,9 @@ let C = import "contracts.ncl" in
 
       %{disable_swd_fragment}
 
-      %{led_init_fragment}
+  #ifdef KEYBOARD_LED_ENABLED
+      keyboard_led_init();
+  #endif
 
   #ifdef KEYBOARD_SPLIT
       keyboard_split_init();

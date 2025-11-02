@@ -22,23 +22,6 @@ let C = import "contracts.ncl" in
   board
     | C.Board,
 
-  init_fragments =
-    if board.led.enabled then
-      {
-        keyboard_led = m%"
-          // Init LED
-          {
-            GPIO_InitTypeDef GPIO_InitStructure = {0};
-            GPIO_InitStructure.GPIO_Pin = GPIO_Pin_%{std.to_string board.led.pin.pin};
-            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-            GPIO_Init(GPIO%{board.led.pin.port}, &GPIO_InitStructure);
-          }
-          "%,
-      }
-    else
-      {},
-
   cmakelists =
     if board.led.enabled then
       {
@@ -54,6 +37,7 @@ let C = import "contracts.ncl" in
       {
         keyboard_led = m%"
   #pragma once
+  void keyboard_led_init(void);
   void keyboard_led_tick(void);
     "%,
       }
@@ -72,6 +56,14 @@ let C = import "contracts.ncl" in
 
   static uint16_t keyboard_led_timer = 0;
   static uint8_t keyboard_led_state = 0;
+
+  void keyboard_led_init(void) {
+      GPIO_InitTypeDef GPIO_InitStructure = {0};
+      GPIO_InitStructure.GPIO_Pin = GPIO_Pin_%{std.to_string board.led.pin.pin};
+      GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+      GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+      GPIO_Init(GPIO%{board.led.pin.port}, &GPIO_InitStructure);
+  }
 
   void keyboard_led_tick(void) {
       // Toggle the LED every 1000 ticks
