@@ -58,8 +58,7 @@ let C = import "contracts.ncl" in
   void keyboard_init(void) {
       keyboard_matrix_init();
 
-      %{matrix_scan.is_sw_1_1_pressed}
-      if (sw_1_1_is_pressed) {
+      if (keyboard_matrix_is_sw_1_1_pressed()) {
           keyboard_reset_to_bootloader();
       }
 

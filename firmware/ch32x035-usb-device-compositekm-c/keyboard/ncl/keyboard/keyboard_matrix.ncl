@@ -67,6 +67,7 @@ let C = import "keyboard/contracts.ncl" in
 
   includes.keyboard_matrix = m%"
     #pragma once
+    bool keyboard_matrix_is_sw_1_1_pressed();
 
     void keyboard_matrix_init(void);
 
@@ -101,6 +102,11 @@ let C = import "keyboard/contracts.ncl" in
       #ifdef KEYBOARD_SPLIT
       keyboard_split_write(ev);
       #endif
+  }
+
+  bool keyboard_matrix_is_sw_1_1_pressed() {
+      %{matrix_scan.is_sw_1_1_pressed}
+      return sw_1_1_is_pressed;
   }
 
   %{keyboard_matrix_scan board.matrix}
