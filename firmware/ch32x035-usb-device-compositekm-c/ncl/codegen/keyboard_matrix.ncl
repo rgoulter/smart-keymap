@@ -65,10 +65,6 @@ let C = import "codegen/contracts.ncl" in
   }
   "%,
 
-  cmakelists.keyboard_matrix = m%"
-    target_sources(keyboard_codegen INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c)
-    "%,
-
   includes.keyboard_matrix = m%"
     #pragma once
 
