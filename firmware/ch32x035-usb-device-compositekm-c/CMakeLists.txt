@@ -22,7 +22,7 @@ target_include_directories(usb-device-compositekm PUBLIC User)
 
 enable_language(C ASM)
 
-add_subdirectory(generated)
+add_subdirectory(keyboard)
 target_link_libraries(usb-device-compositekm keyboard)
 
 add_subdirectory(sdk sdk)
