@@ -5,10 +5,7 @@ default: build
 _libsmartkeymap:
   make libsmartkeymap
 
-generate-keyboard:
-  make codegen BOARD={{board}}
-
-cmake-generate: _libsmartkeymap generate-keyboard
+cmake-generate: _libsmartkeymap
   mkdir -p build
   cd build && \
     cmake \

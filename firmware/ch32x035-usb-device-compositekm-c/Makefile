@@ -1,9 +1,9 @@
 BOARD=ncl/boards/weact-ch32x-core-board.ncl
 
 .PHONY: all
-all: codegen libsmartkeymap
 
 include generated/codegen.mk
+all: libsmartkeymap
 
 include ncl/ncl.mk
 
@@ -22,13 +22,6 @@ test:
 .PHONY: format
 format:
 	find User -name '*.c' -or -name '*.h' | xargs clang-format -i
-
-.PHONY: codegen
-codegen: $(CODEGEN_TARGETS)
-
-.PHONY: generated-ch32x-48
-generated-ch32x-48: BOARD=ncl/boards/ch32x-48.ncl
-generated-ch32x-48: codegen
 
 .PHONY: libsmartkeymap
 libsmartkeymap: libsmartkeymap/smart_keymap.h libsmartkeymap/libsmart_keymap.a;

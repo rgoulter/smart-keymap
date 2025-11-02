@@ -42,10 +42,7 @@ CODEGEN_CMAKELISTS_TARGETS := $(patsubst %,$(CODEGEN_DIR)/%.cmake,$(CMAKELISTS_I
 CODEGEN_INCLUDES_TARGETS := $(patsubst %,$(CODEGEN_DIR)/%.h,$(INCLUDES_IDS))
 CODEGEN_SOURCE_TARGETS := $(patsubst %,$(CODEGEN_DIR)/%.c,$(SOURCE_IDS))
 
-CODEGEN_TARGETS := \
-	$(CODEGEN_CMAKELISTS_TARGETS) \
-	$(CODEGEN_INCLUDES_TARGETS) \
-	$(CODEGEN_SOURCE_TARGETS)
+CODEGEN_TARGETS := ""
 
 .PHONY: .clean-codegen
 .clean-codegen:
@@ -63,13 +60,8 @@ $(CODEGEN_DIR)/.board.stamp: FORCE_STAMP
 	@scripts/board-stamp.sh "$@" "$(BOARD)"
 
 $(CODEGEN_DIR)/%.cmake: $(NCL_DIR)/%.ncl $(CODEGEN_DEPS) $(CODEGEN_DIR)/.board.stamp
-	@echo "Generating $@"
-	@nickel export \
-    --import-path=ncl/ \
-	  --format=raw \
-	  --field=cmakelists.$* \
-	  $(CODEGEN_DEPS) \
-	  > $@
+
+
 
 $(CODEGEN_DIR)/%.h: $(NCL_DIR)/%.ncl $(CODEGEN_DEPS) $(CODEGEN_DIR)/.board.stamp
 	@echo "Generating $@"
