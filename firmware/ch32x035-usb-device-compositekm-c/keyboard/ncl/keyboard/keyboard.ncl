@@ -30,8 +30,6 @@ let C = import "contracts.ncl" in
     else
       "",
 
-  init_fragments,
-
   sources.keyboard = m%"
   #include <stdbool.h>
 
