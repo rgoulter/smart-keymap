@@ -20,15 +20,14 @@ let C = import "contracts.ncl" in
   board
     | C.Board,
 
-  disable_swd_fragment =
-    if board.disable_swd then
-      m%"
-        // Disable SWD
-        RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
-        GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
-        "%
-    else
-      "",
+  cmakelists.keyboard =
+    let disable_swd_def =
+      if board.disable_swd then
+        ["target_compile_definitions(keyboard INTERFACE KEYBOARD_DISABLE_SWD)"]
+      else
+        []
+    in
+    disable_swd_def |> std.string.join "\n",
 
   sources.keyboard = m%"
   #include <stdbool.h>
@@ -64,7 +63,11 @@ let C = import "contracts.ncl" in
 
       keymap_register_callback(KEYMAP_CALLBACK_BOOTLOADER, keyboard_reset_to_bootloader);
 
-      %{disable_swd_fragment}
+  #ifdef KEYBOARD_DISABLE_SWD
+      // Disable SWD
+      RCC_APB2PeriphClockCmd(RCC_APB2Periph_AFIO, ENABLE);
+      GPIO_PinRemapConfig(GPIO_Remap_SWJ_Disable, ENABLE);
+  #endif
 
   #ifdef KEYBOARD_LED_ENABLED
       keyboard_led_init();
