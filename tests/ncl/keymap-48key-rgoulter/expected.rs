@@ -6,7 +6,7 @@ pub mod init {
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
 
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
-    pub const LAYERED_LAYER_COUNT: usize = 8;
+    pub const LAYERED_LAYER_COUNT: usize = 9;
 
     /// The maximum number of keys in a chord.
     pub const CHORDED_MAX_CHORD_SIZE: usize = 2;
@@ -36,10 +36,10 @@ pub mod init {
     const CHORDED_AUXILIARY: usize = 4;
     const KEYBOARD: usize = 20;
     const LAYERED: usize = 48;
-    const LAYER_MODIFIERS: usize = 38;
-    const STICKY: usize = 0;
-    const TAP_DANCE: usize = 24;
-    const TAP_HOLD: usize = 36;
+    const LAYER_MODIFIERS: usize = 50;
+    const STICKY: usize = 24;
+    const TAP_DANCE: usize = 30;
+    const TAP_HOLD: usize = 42;
 
     /// The System type
     pub type System = smart_keymap::key::composite::System<
@@ -211,7 +211,7 @@ pub mod init {
                     &[(
                         2,
                         smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(19),
+                            smart_keymap::key::tap_hold::Ref(20),
                         ),
                     )],
                     smart_keymap::key::composite::Ref::Layered(
@@ -222,7 +222,7 @@ pub mod init {
                     &[(
                         3,
                         smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(26),
+                            smart_keymap::key::tap_hold::Ref(29),
                         ),
                     )],
                     smart_keymap::key::composite::Ref::Layered(
@@ -337,44 +337,56 @@ pub mod init {
         ]),
         smart_keymap::key::layered::System::new(
             [
+                smart_keymap::key::layered::ModifierKey::default(3),
+                smart_keymap::key::layered::ModifierKey::default(3),
+                smart_keymap::key::layered::ModifierKey::default(3),
                 smart_keymap::key::layered::ModifierKey::default(2),
                 smart_keymap::key::layered::ModifierKey::default(2),
                 smart_keymap::key::layered::ModifierKey::default(2),
+                smart_keymap::key::layered::ModifierKey::default(0),
+                smart_keymap::key::layered::ModifierKey::default(0),
+                smart_keymap::key::layered::ModifierKey::default(0),
+                smart_keymap::key::layered::ModifierKey::default(1),
+                smart_keymap::key::layered::ModifierKey::default(1),
+                smart_keymap::key::layered::ModifierKey::default(1),
                 smart_keymap::key::layered::ModifierKey::default(1),
                 smart_keymap::key::layered::ModifierKey::default(1),
                 smart_keymap::key::layered::ModifierKey::default(1),
                 smart_keymap::key::layered::ModifierKey::default(0),
                 smart_keymap::key::layered::ModifierKey::default(0),
                 smart_keymap::key::layered::ModifierKey::default(0),
-                smart_keymap::key::layered::ModifierKey::default(0),
-                smart_keymap::key::layered::ModifierKey::default(0),
-                smart_keymap::key::layered::ModifierKey::default(0),
-                smart_keymap::key::layered::ModifierKey::default(1),
-                smart_keymap::key::layered::ModifierKey::default(1),
-                smart_keymap::key::layered::ModifierKey::default(1),
                 smart_keymap::key::layered::ModifierKey::default(2),
                 smart_keymap::key::layered::ModifierKey::default(2),
                 smart_keymap::key::layered::ModifierKey::default(2),
-                smart_keymap::key::layered::ModifierKey::hold(7),
-                smart_keymap::key::layered::ModifierKey::hold(7),
-                smart_keymap::key::layered::ModifierKey::hold(7),
-                smart_keymap::key::layered::ModifierKey::hold(7),
+                smart_keymap::key::layered::ModifierKey::default(3),
+                smart_keymap::key::layered::ModifierKey::default(3),
+                smart_keymap::key::layered::ModifierKey::default(3),
                 smart_keymap::key::layered::ModifierKey::hold(8),
                 smart_keymap::key::layered::ModifierKey::hold(8),
                 smart_keymap::key::layered::ModifierKey::hold(8),
+                smart_keymap::key::layered::ModifierKey::hold(8),
+                smart_keymap::key::layered::ModifierKey::hold(8),
+                smart_keymap::key::layered::ModifierKey::hold(9),
+                smart_keymap::key::layered::ModifierKey::hold(9),
+                smart_keymap::key::layered::ModifierKey::hold(9),
+                smart_keymap::key::layered::ModifierKey::hold(9),
+                smart_keymap::key::layered::ModifierKey::hold(7),
+                smart_keymap::key::layered::ModifierKey::hold(7),
+                smart_keymap::key::layered::ModifierKey::hold(7),
+                smart_keymap::key::layered::ModifierKey::hold(7),
                 smart_keymap::key::layered::ModifierKey::hold(6),
-                smart_keymap::key::layered::ModifierKey::hold(6),
-                smart_keymap::key::layered::ModifierKey::hold(6),
+                smart_keymap::key::layered::ModifierKey::hold(5),
+                smart_keymap::key::layered::ModifierKey::hold(5),
+                smart_keymap::key::layered::ModifierKey::hold(5),
                 smart_keymap::key::layered::ModifierKey::hold(5),
                 smart_keymap::key::layered::ModifierKey::hold(4),
                 smart_keymap::key::layered::ModifierKey::hold(4),
                 smart_keymap::key::layered::ModifierKey::hold(4),
-                smart_keymap::key::layered::ModifierKey::hold(3),
-                smart_keymap::key::layered::ModifierKey::hold(3),
-                smart_keymap::key::layered::ModifierKey::hold(3),
-                smart_keymap::key::layered::ModifierKey::hold(5),
-                smart_keymap::key::layered::ModifierKey::hold(5),
-                smart_keymap::key::layered::ModifierKey::hold(5),
+                smart_keymap::key::layered::ModifierKey::hold(4),
+                smart_keymap::key::layered::ModifierKey::hold(6),
+                smart_keymap::key::layered::ModifierKey::hold(6),
+                smart_keymap::key::layered::ModifierKey::hold(6),
+                smart_keymap::key::layered::ModifierKey::hold(6),
             ],
             [
                 smart_keymap::key::layered::LayeredKey::new(
@@ -382,6 +394,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(52),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(52),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(20),
                         )),
@@ -414,6 +429,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(54),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(26),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -444,6 +462,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(55),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(55),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(8),
                         )),
@@ -476,6 +497,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(19),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(21),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -507,6 +531,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(28),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(23),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -521,7 +548,43 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(70),
                         )),
-                        None,
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(12),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(13),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(14),
+                        )),
+                    ],
+                ),
+                smart_keymap::key::layered::LayeredKey::new(
+                    smart_keymap::key::composite::Ref::Keyboard(
+                        smart_keymap::key::keyboard::Ref::KeyCode(0),
+                    ),
+                    [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -538,34 +601,6 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                    ],
-                ),
-                smart_keymap::key::layered::LayeredKey::new(
-                    smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(0),
-                    ),
-                    [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -598,62 +633,13 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(28),
+                            smart_keymap::key::keyboard::Ref::KeyCode(9),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(28),
                         )),
-                        None,
-                        None,
-                        None,
-                        None,
                         Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                    ],
-                ),
-                smart_keymap::key::layered::LayeredKey::new(
-                    smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(10),
-                    ),
-                    [
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(24),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(24),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::TapDance(
-                            smart_keymap::key::tap_dance::Ref(12),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::TapDance(
-                            smart_keymap::key::tap_dance::Ref(13),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::TapDance(
-                            smart_keymap::key::tap_dance::Ref(14),
-                        )),
-                        None,
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                    ],
-                ),
-                smart_keymap::key::layered::LayeredKey::new(
-                    smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(6),
-                    ),
-                    [
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(12),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(12),
+                            smart_keymap::key::keyboard::Ref::KeyCode(28),
                         )),
                         Some(smart_keymap::key::composite::Ref::TapDance(
                             smart_keymap::key::tap_dance::Ref(15),
@@ -675,14 +661,17 @@ pub mod init {
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(21),
+                        smart_keymap::key::keyboard::Ref::KeyCode(10),
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(18),
+                            smart_keymap::key::keyboard::Ref::KeyCode(10),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(18),
+                            smart_keymap::key::keyboard::Ref::KeyCode(24),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(24),
                         )),
                         Some(smart_keymap::key::composite::Ref::TapDance(
                             smart_keymap::key::tap_dance::Ref(18),
@@ -704,14 +693,17 @@ pub mod init {
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(15),
+                        smart_keymap::key::keyboard::Ref::KeyCode(6),
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(19),
+                            smart_keymap::key::keyboard::Ref::KeyCode(6),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(19),
+                            smart_keymap::key::keyboard::Ref::KeyCode(12),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(12),
                         )),
                         Some(smart_keymap::key::composite::Ref::TapDance(
                             smart_keymap::key::tap_dance::Ref(21),
@@ -732,8 +724,75 @@ pub mod init {
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
+                    smart_keymap::key::composite::Ref::Keyboard(
+                        smart_keymap::key::keyboard::Ref::KeyCode(21),
+                    ),
+                    [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(21),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(18),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(18),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(24),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(25),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(26),
+                        )),
+                        None,
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                    ],
+                ),
+                smart_keymap::key::layered::LayeredKey::new(
+                    smart_keymap::key::composite::Ref::Keyboard(
+                        smart_keymap::key::keyboard::Ref::KeyCode(15),
+                    ),
+                    [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(15),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(19),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(19),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(27),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(28),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapDance(
+                            smart_keymap::key::tap_dance::Ref(29),
+                        )),
+                        None,
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                    ],
+                ),
+                smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(0)),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(4),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(1),
                         )),
@@ -749,18 +808,23 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(68),
                         )),
-                        None,
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(0),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(1),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(2),
                         )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(2)),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(18),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(3),
                         )),
@@ -776,18 +840,23 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(61),
                         )),
-                        None,
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(3),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(4),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(5),
                         )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(4)),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(8),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(5),
                         )),
@@ -803,18 +872,23 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(62),
                         )),
-                        None,
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(6),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(7),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(8),
                         )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(6)),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(24),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(7),
                         )),
@@ -830,12 +904,14 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(63),
                         )),
-                        None,
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(9),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(10),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(11),
                         )),
                     ],
                 ),
@@ -844,6 +920,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(12),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(12),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(10),
                         )),
@@ -897,6 +976,9 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
@@ -904,6 +986,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(0),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -936,6 +1021,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(7),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(11),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -958,15 +1046,24 @@ pub mod init {
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(8)),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(11),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(9),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(13),
                         )),
-                        None,
-                        None,
-                        None,
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(12),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(13),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(14),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(81),
                         )),
@@ -983,15 +1080,24 @@ pub mod init {
                         10,
                     )),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(23),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(11),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(14),
                         )),
-                        None,
-                        None,
-                        None,
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(15),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(16),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(17),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(82),
                         )),
@@ -1008,15 +1114,24 @@ pub mod init {
                         12,
                     )),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(17),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(13),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(15),
                         )),
-                        None,
-                        None,
-                        None,
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(18),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(19),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(20),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(79),
                         )),
@@ -1033,15 +1148,24 @@ pub mod init {
                         14,
                     )),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(22),
+                        )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(15),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(51),
                         )),
-                        None,
-                        None,
-                        None,
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(21),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(22),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Sticky(
+                            smart_keymap::key::sticky::Ref(23),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(57),
                         )),
@@ -1058,6 +1182,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(51),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(51),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(29),
                         )),
@@ -1088,6 +1215,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(20),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(27),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -1116,6 +1246,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(13),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(13),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(6),
                         )),
@@ -1146,6 +1279,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(14),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(25),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -1174,6 +1310,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(27),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(27),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(5),
                         )),
@@ -1227,6 +1366,9 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
@@ -1234,6 +1376,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(0),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -1266,6 +1411,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(5),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(17),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -1296,6 +1444,9 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(16),
                         )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(16),
+                        )),
                         None,
                         None,
                         None,
@@ -1315,6 +1466,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(26),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(26),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(54),
                         )),
@@ -1341,6 +1495,9 @@ pub mod init {
                     ),
                     [
                         Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(25),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(55),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
@@ -1365,6 +1522,9 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(29),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(29),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(52),
                         )),
@@ -1414,34 +1574,6 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
-                    ],
-                ),
-                smart_keymap::key::layered::LayeredKey::new(
-                    smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(0),
-                    ),
-                    [
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -1452,6 +1584,43 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(0),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                    ],
+                ),
+                smart_keymap::key::layered::LayeredKey::new(
+                    smart_keymap::key::composite::Ref::Keyboard(
+                        smart_keymap::key::keyboard::Ref::KeyCode(0),
+                    ),
+                    [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -1489,6 +1658,9 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(18),
                         )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(19),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(55),
                         )),
@@ -1500,21 +1672,22 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
+                        None,
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(
-                        20,
+                        21,
                     )),
                     [
                         Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(21),
+                            smart_keymap::key::tap_hold::Ref(22),
                         )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(22),
+                            smart_keymap::key::tap_hold::Ref(23),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(24),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(39),
@@ -1524,9 +1697,7 @@ pub mod init {
                         )),
                         None,
                         None,
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
+                        None,
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -1534,14 +1705,17 @@ pub mod init {
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(
-                        23,
+                        25,
                     )),
                     [
                         Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(24),
+                            smart_keymap::key::tap_hold::Ref(26),
                         )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(25),
+                            smart_keymap::key::tap_hold::Ref(27),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(28),
                         )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(45),
@@ -1550,36 +1724,11 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCodeAndModifier(19),
                         )),
                         None,
-                        None,
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                    ],
-                ),
-                smart_keymap::key::layered::LayeredKey::new(
-                    smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(
-                        27,
-                    )),
-                    [
-                        Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(28),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(29),
-                        )),
                         None,
                         None,
-                        None,
-                        None,
-                        Some(smart_keymap::key::composite::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::Button(1),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Consumer(
-                            smart_keymap::key::consumer::Ref::UsageCode(205),
-                        )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
@@ -1593,8 +1742,41 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::TapHold(
                             smart_keymap::key::tap_hold::Ref(32),
                         )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(33),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         None,
                         None,
+                        None,
+                        Some(smart_keymap::key::composite::Ref::Mouse(
+                            smart_keymap::key::mouse::Ref::Button(1),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Consumer(
+                            smart_keymap::key::consumer::Ref::UsageCode(205),
+                        )),
+                    ],
+                ),
+                smart_keymap::key::layered::LayeredKey::new(
+                    smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(
+                        34,
+                    )),
+                    [
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(35),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(36),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(37),
+                        )),
+                        None,
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         None,
                         None,
                         Some(smart_keymap::key::composite::Ref::Mouse(
@@ -1607,18 +1789,23 @@ pub mod init {
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     smart_keymap::key::composite::Ref::TapHold(smart_keymap::key::tap_hold::Ref(
-                        33,
+                        38,
                     )),
                     [
                         Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(34),
+                            smart_keymap::key::tap_hold::Ref(39),
                         )),
                         Some(smart_keymap::key::composite::Ref::TapHold(
-                            smart_keymap::key::tap_hold::Ref(35),
+                            smart_keymap::key::tap_hold::Ref(40),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::TapHold(
+                            smart_keymap::key::tap_hold::Ref(41),
                         )),
                         None,
                         None,
-                        None,
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         None,
                         Some(smart_keymap::key::composite::Ref::Mouse(
                             smart_keymap::key::mouse::Ref::Button(3),
@@ -1657,34 +1844,6 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
-                    ],
-                ),
-                smart_keymap::key::layered::LayeredKey::new(
-                    smart_keymap::key::composite::Ref::Keyboard(
-                        smart_keymap::key::keyboard::Ref::KeyCode(0),
-                    ),
-                    [
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
-                        Some(smart_keymap::key::composite::Ref::Keyboard(
-                            smart_keymap::key::keyboard::Ref::KeyCode(0),
-                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -1695,6 +1854,43 @@ pub mod init {
                         smart_keymap::key::keyboard::Ref::KeyCode(0),
                     ),
                     [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                    ],
+                ),
+                smart_keymap::key::layered::LayeredKey::new(
+                    smart_keymap::key::composite::Ref::Keyboard(
+                        smart_keymap::key::keyboard::Ref::KeyCode(0),
+                    ),
+                    [
+                        Some(smart_keymap::key::composite::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
                         )),
@@ -1723,7 +1919,32 @@ pub mod init {
                 ),
             ],
         ),
-        smart_keymap::key::sticky::System::new([]),
+        smart_keymap::key::sticky::System::new([
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(2)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(1)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(8)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+            smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
+        ]),
         smart_keymap::key::tap_dance::System::new([
             smart_keymap::key::tap_dance::Key::from_definitions(&[
                 smart_keymap::key::composite::Ref::Keyboard(
@@ -1891,6 +2112,54 @@ pub mod init {
                 smart_keymap::key::composite::Ref::Keyboard(
                     smart_keymap::key::keyboard::Ref::KeyCode(0),
                 ),
+                smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(18),
+                ),
+            ]),
+            smart_keymap::key::tap_dance::Key::from_definitions(&[
+                smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(0),
+                ),
+                smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(19),
+                ),
+            ]),
+            smart_keymap::key::tap_dance::Key::from_definitions(&[
+                smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(0),
+                ),
+                smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(20),
+                ),
+            ]),
+            smart_keymap::key::tap_dance::Key::from_definitions(&[
+                smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(0),
+                ),
+                smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(21),
+                ),
+            ]),
+            smart_keymap::key::tap_dance::Key::from_definitions(&[
+                smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(0),
+                ),
+                smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(22),
+                ),
+            ]),
+            smart_keymap::key::tap_dance::Key::from_definitions(&[
+                smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(0),
+                ),
+                smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(23),
+                ),
+            ]),
+            smart_keymap::key::tap_dance::Key::from_definitions(&[
+                smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(0),
+                ),
                 smart_keymap::key::composite::Ref::Callback(smart_keymap::key::callback::Ref(3)),
             ]),
             smart_keymap::key::tap_dance::Key::from_definitions(&[
@@ -2040,60 +2309,12 @@ pub mod init {
                     smart_keymap::key::keyboard::Ref::KeyCode(43),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
-                    smart_keymap::key::layered::Ref::Modifier(18),
-                ),
-            },
-            smart_keymap::key::tap_hold::Key {
-                tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(43),
-                ),
-                hold: smart_keymap::key::composite::Ref::Layered(
-                    smart_keymap::key::layered::Ref::Modifier(19),
-                ),
-            },
-            smart_keymap::key::tap_hold::Key {
-                tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(43),
-                ),
-                hold: smart_keymap::key::composite::Ref::Layered(
-                    smart_keymap::key::layered::Ref::Modifier(20),
-                ),
-            },
-            smart_keymap::key::tap_hold::Key {
-                tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(43),
-                ),
-                hold: smart_keymap::key::composite::Ref::Layered(
-                    smart_keymap::key::layered::Ref::Modifier(21),
-                ),
-            },
-            smart_keymap::key::tap_hold::Key {
-                tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(41),
-                ),
-                hold: smart_keymap::key::composite::Ref::Layered(
-                    smart_keymap::key::layered::Ref::Modifier(22),
-                ),
-            },
-            smart_keymap::key::tap_hold::Key {
-                tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(41),
-                ),
-                hold: smart_keymap::key::composite::Ref::Layered(
-                    smart_keymap::key::layered::Ref::Modifier(23),
-                ),
-            },
-            smart_keymap::key::tap_hold::Key {
-                tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(41),
-                ),
-                hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(24),
                 ),
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(44),
+                    smart_keymap::key::keyboard::Ref::KeyCode(43),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(25),
@@ -2101,7 +2322,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(44),
+                    smart_keymap::key::keyboard::Ref::KeyCode(43),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(26),
@@ -2109,7 +2330,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(44),
+                    smart_keymap::key::keyboard::Ref::KeyCode(43),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(27),
@@ -2117,7 +2338,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                    smart_keymap::key::keyboard::Ref::KeyCode(43),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(28),
@@ -2125,7 +2346,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                    smart_keymap::key::keyboard::Ref::KeyCode(41),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(29),
@@ -2133,7 +2354,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                    smart_keymap::key::keyboard::Ref::KeyCode(41),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(30),
@@ -2141,7 +2362,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                    smart_keymap::key::keyboard::Ref::KeyCode(41),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(31),
@@ -2149,7 +2370,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                    smart_keymap::key::keyboard::Ref::KeyCode(41),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(32),
@@ -2157,7 +2378,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                    smart_keymap::key::keyboard::Ref::KeyCode(44),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(33),
@@ -2165,7 +2386,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                    smart_keymap::key::keyboard::Ref::KeyCode(44),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(34),
@@ -2173,7 +2394,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                    smart_keymap::key::keyboard::Ref::KeyCode(44),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(35),
@@ -2181,7 +2402,7 @@ pub mod init {
             },
             smart_keymap::key::tap_hold::Key {
                 tap: smart_keymap::key::composite::Ref::Keyboard(
-                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                    smart_keymap::key::keyboard::Ref::KeyCode(44),
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(36),
@@ -2193,6 +2414,102 @@ pub mod init {
                 ),
                 hold: smart_keymap::key::composite::Ref::Layered(
                     smart_keymap::key::layered::Ref::Modifier(37),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(38),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(39),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(40),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(40),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(41),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(42),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(43),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(44),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(42),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(45),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(46),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(47),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(48),
+                ),
+            },
+            smart_keymap::key::tap_hold::Key {
+                tap: smart_keymap::key::composite::Ref::Keyboard(
+                    smart_keymap::key::keyboard::Ref::KeyCode(76),
+                ),
+                hold: smart_keymap::key::composite::Ref::Layered(
+                    smart_keymap::key::layered::Ref::Modifier(49),
                 ),
             },
         ]),
