@@ -63,6 +63,13 @@ let C = import "keyboard/contracts.ncl" in
   }
   "%,
 
+  cmakelists.keyboard_matrix =
+    [
+      "target_compile_definitions(keyboard INTERFACE KEYBOARD_MATRIX_ROW_COUNT=%{board.matrix.rows |> std.array.length |> std.to_string})",
+      "target_compile_definitions(keyboard INTERFACE KEYBOARD_MATRIX_COL_COUNT=%{board.matrix.cols |> std.array.length |> std.to_string})",
+    ]
+    |> std.string.join "\n",
+
   includes.keyboard_matrix = m%"
     #pragma once
     "%,
