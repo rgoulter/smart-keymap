@@ -6,16 +6,14 @@ _libsmartkeymap:
   make libsmartkeymap
 
 cmake-generate: _libsmartkeymap
-  mkdir -p build
-  cd build && \
-    cmake \
-      --toolchain=../../toolchains/riscv-none-elf.cmake \
-      -D BOARD={{board}} \
-      ..
+  cmake \
+    -S . \
+    -B build \
+    --toolchain=../../toolchains/riscv-none-elf.cmake \
+    -D BOARD={{board}}
 
 build: cmake-generate
-  cd build && \
-    make
+  cmake --build build
 
 await-bootloader:
   timeout 30 ./scripts/wchisp-await-bootloader.sh
