@@ -37,10 +37,6 @@ let C = import "keyboard/contracts.ncl" in
     ]
     |> std.string.join "\n",
 
-  includes.keyboard_matrix = m%"
-    #pragma once
-    "%,
-
   sources.keyboard_matrix = m%"
   #include <stdbool.h>
 
