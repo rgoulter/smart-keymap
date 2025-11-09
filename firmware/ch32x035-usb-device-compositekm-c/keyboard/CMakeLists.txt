@@ -8,6 +8,8 @@ target_sources(keyboard PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_rx_dma.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_tx_dma.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/matrix/col_to_row.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/matrix/row_to_col.c
 )
 
 target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
@@ -33,8 +35,6 @@ set(
     "${NCL_CODEGEN_DIR}/keyboard_led.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_matrix.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_split.ncl"
-    "${NCL_CODEGEN_DIR}/matrix/col_to_row.ncl"
-    "${NCL_CODEGEN_DIR}/matrix/row_to_col.ncl"
 )
 
 # Set CODEGEN_CMAKELISTS_IDS from the codegen.ncl.
