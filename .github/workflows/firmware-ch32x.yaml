@@ -100,3 +100,39 @@ jobs:
             tail -n2 | \
             awk '{ printf "| %s | %s | %s | %s |\n", $1, $2" "$3, $4" "$5, $6 }'
           } >> $GITHUB_STEP_SUMMARY
+
+      - name: Build Firmware (Col-to-Row, CH32X-75)
+        shell: bash
+        run: |
+          cd ${FIRMWARE}
+          cmake \
+              -S . \
+              -B build-ch32x-75 \
+              --toolchain=../../toolchains/riscv-none-elf.cmake \
+              -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+              -D BOARD=ncl/boards/ch32x-75.ncl
+          cmake --build build-ch32x-75
+
+      - name: Build Firmware (Split, CH32X-36 LHS)
+        shell: bash
+        run: |
+          cd ${FIRMWARE}
+          cmake \
+              -S . \
+              -B build-ch32x-36-lhs \
+              --toolchain=../../toolchains/riscv-none-elf.cmake \
+              -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+              -D BOARD=ncl/boards/ch32x-36-lhs.ncl
+          cmake --build build-ch32x-36-lhs
+
+      - name: Build Firmware (CH32X-36 RHS)
+        shell: bash
+        run: |
+          cd ${FIRMWARE}
+          cmake \
+              -S . \
+              -B build-ch32x-36-rhs \
+              --toolchain=../../toolchains/riscv-none-elf.cmake \
+              -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+              -D BOARD=ncl/boards/ch32x-36-rhs.ncl
+          cmake --build build-ch32x-36-rhs
