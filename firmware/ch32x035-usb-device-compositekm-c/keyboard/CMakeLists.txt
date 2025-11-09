@@ -4,6 +4,7 @@ target_sources(keyboard PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_gpio.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_led.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_rx_dma.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_tx_dma.c
