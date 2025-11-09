@@ -11,6 +11,7 @@ target_sources(keyboard PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_touchkey.c
     ${CMAKE_CURRENT_SOURCE_DIR}/matrix/col_to_row.c
     ${CMAKE_CURRENT_SOURCE_DIR}/matrix/row_to_col.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/matrix/touchkey_mutual.c
 )
 
 target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
