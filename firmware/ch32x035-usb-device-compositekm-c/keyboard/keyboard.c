@@ -29,7 +29,8 @@ void keyboard_init(void) {
     keyboard_reset_to_bootloader();
   }
 
-  keymap_register_callback(KEYMAP_CALLBACK_BOOTLOADER, keyboard_reset_to_bootloader);
+  keymap_register_callback(KEYMAP_CALLBACK_BOOTLOADER,
+                           keyboard_reset_to_bootloader);
 
 #ifdef KEYBOARD_DISABLE_SWD
   // Disable SWD
