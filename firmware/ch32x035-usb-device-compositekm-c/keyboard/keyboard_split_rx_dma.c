@@ -24,11 +24,9 @@ static struct {
     .rx_buffer = {0},
 };
 
-void KEYBOARD_SPLIT_USART_IRQ_HANDLER(void)
-    __attribute__((interrupt()));
+void KEYBOARD_SPLIT_USART_IRQ_HANDLER(void) __attribute__((interrupt()));
 
-void KEYBOARD_SPLIT_RX_DMA_IRQ_HANDLER(void)
-    __attribute__((interrupt()));
+void KEYBOARD_SPLIT_RX_DMA_IRQ_HANDLER(void) __attribute__((interrupt()));
 
 void keymap_split_receive_bytes(uint8_t *buf, uint16_t len) {
   KeymapInputEvent ev;

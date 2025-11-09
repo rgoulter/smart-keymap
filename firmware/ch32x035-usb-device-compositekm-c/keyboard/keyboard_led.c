@@ -22,10 +22,10 @@ void keyboard_led_tick(void) {
   // Toggle the LED every 1000 ticks
   keyboard_led_timer++;
   if (keyboard_led_timer > 1000) {
-      keyboard_led_timer = 0;
-      keyboard_led_state = 1 - keyboard_led_state;
+    keyboard_led_timer = 0;
+    keyboard_led_state = 1 - keyboard_led_state;
 
-      GPIO_WriteBit(KEYBOARD_LED_PORT, KEYBOARD_LED_PIN, keyboard_led_state);
+    GPIO_WriteBit(KEYBOARD_LED_PORT, KEYBOARD_LED_PIN, keyboard_led_state);
   }
 }
 #endif
