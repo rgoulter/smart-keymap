@@ -125,7 +125,8 @@ foreach(id IN LISTS CODEGEN_INCLUDES_IDS)
 endforeach()
 
 foreach(id IN LISTS CODEGEN_SOURCE_IDS)
-    set(source_file ${CODEGEN_DIR}/${id}.c)
+    set(source_file ${CODEGEN_DIR}/generated/${id}.c)
+    file(MAKE_DIRECTORY ${CODEGEN_DIR}/generated)
     message(STATUS "Scheduling generation of ${id}.c from Nickel")
     list(APPEND GENERATED_FILES ${source_file})
     add_custom_command(
