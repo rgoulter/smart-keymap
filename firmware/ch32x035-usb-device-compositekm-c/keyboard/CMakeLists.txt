@@ -29,6 +29,7 @@ set(
     "${NCL_CODEGEN_DIR}/debug.ncl"
     "${NCL_CODEGEN_DIR}/gpio.ncl"
     "${NCL_CODEGEN_DIR}/keyboard.ncl"
+    "${NCL_CODEGEN_DIR}/keyboard_gpio.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_led.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_matrix.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_split.ncl"
