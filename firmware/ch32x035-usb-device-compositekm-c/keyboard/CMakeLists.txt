@@ -2,6 +2,7 @@ add_library(keyboard INTERFACE)
 
 target_sources(keyboard PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_gpio.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_led.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split.c
     ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_split_rx_dma.c
