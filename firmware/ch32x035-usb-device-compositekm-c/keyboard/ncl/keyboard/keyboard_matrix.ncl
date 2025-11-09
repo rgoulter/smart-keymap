@@ -66,6 +66,7 @@ let C = import "keyboard/contracts.ncl" in
   cmakelists.keyboard_matrix =
     [
       "target_compile_definitions(keyboard INTERFACE KEYBOARD_MATRIX_IMPL_%{board.matrix.implementation |> std.string.uppercase})",
+      "target_compile_definitions(keyboard INTERFACE KEYBOARD_MATRIX_KEY_COUNT=%{board.matrix.key_count |> std.to_string})",
       "target_compile_definitions(keyboard INTERFACE KEYBOARD_MATRIX_ROW_COUNT=%{board.matrix.rows |> std.array.length |> std.to_string})",
       "target_compile_definitions(keyboard INTERFACE KEYBOARD_MATRIX_COL_COUNT=%{board.matrix.cols |> std.array.length |> std.to_string})",
     ]
