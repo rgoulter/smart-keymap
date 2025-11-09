@@ -73,16 +73,17 @@ jobs:
           cp include/smart_keymap.h ${FIRMWARE}/libsmartkeymap/
           cp target/${CH32X_TARGET}/release/libsmart_keymap.a ${FIRMWARE}/libsmartkeymap/
 
-      - name: Build Firmware
+      - name: Build Firmware (Row-to-Col, CH32X-48)
         shell: bash
         run: |
           cd ${FIRMWARE}
-          make BOARD=ncl/boards/ch32x-48.ncl
-          mkdir build
-          cd build
-          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
-          cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
-          make | tee make.log
+          cmake \
+              -S . \
+              -B build-ch32x-48 \
+              --toolchain=../../toolchains/riscv-none-elf.cmake \
+              -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+              -D BOARD=ncl/boards/ch32x-48.ncl
+          cmake --build build-ch32x-48 | tee make.log
           {
             # Extract this part from the log:
             #     Memory region         Used Size  Region Size  %age Used
