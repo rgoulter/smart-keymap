@@ -10,6 +10,7 @@ cmake-generate: _libsmartkeymap
     -S . \
     -B build \
     --toolchain=../../toolchains/riscv-none-elf.cmake \
+    -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
     -D BOARD={{board}}
 
 build: cmake-generate
