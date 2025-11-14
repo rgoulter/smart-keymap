@@ -106,27 +106,41 @@ void USART_Printf_Init(uint32_t baudrate)
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
 
 #if(DEBUG == DEBUG_UART1)
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1 | RCC_APB2Periph_GPIOB, ENABLE);
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_USART1, ENABLE);
 
+#  ifdef DEBUG_AF
+#    error "DEBUG_AF set to unsupported value"
+#  else
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_10;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
+#  endif
 
 #elif(DEBUG == DEBUG_UART2)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
 
+#  ifdef DEBUG_AF
+#    error "DEBUG_AF set to unsupported value"
+#  else
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
     GPIO_Init(GPIOA, &GPIO_InitStructure);
+#  endif
 
 #elif(DEBUG == DEBUG_UART3)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART3, ENABLE);
-    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
 
+#  ifdef DEBUG_AF
+#    error "DEBUG_AF set to unsupported value"
+#  else
+    RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_3;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
+#  endif
 
 #elif(DEBUG == DEBUG_UART4)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART4, ENABLE);
+
 #  ifdef DEBUG_AF
 #    if(DEBUG_AF == 1)
         RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
@@ -140,7 +154,7 @@ void USART_Printf_Init(uint32_t baudrate)
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOB, ENABLE);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_0;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
-#endif
+#  endif
 
 #endif
 
