@@ -11,10 +11,10 @@ let C = import "keyboard/contracts.ncl" in
         cols = [p.A4, p.A6, p.A7, p.B1],
         # Drive rows
         rows = [
+            p.A0,
             p.A5,
-            # p.A10,
         ],
-        key_count = 4,
+        key_count = 8,
 
         implementation = "touchkey_mutual",
       },
@@ -22,12 +22,12 @@ let C = import "keyboard/contracts.ncl" in
     keymap_index_for_key = fun { column_index | Number, row_index | Number, .. } =>
       let [
         k00, k01, k02, k03,
-        # k04, k05, k06, k07,
+        k04, k05, k06, k07,
       ] = std.array.generate (fun i => 'Key i) matrix.key_count in
       let NO = 'NoKey in
       let matrix = [
         [k00, k01, k02, k03],
-        # [k04, k05, k06, k07],
+        [k04, k05, k06, k07],
       ]
       in
       matrix
