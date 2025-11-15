@@ -24,7 +24,7 @@ let C = import "keyboard/contracts.ncl" in
         k10, k11, k12, k13, k14, k15, k16, k17, k18, k19,
         k20, k21, k22, k23, k24, k25, k26, k27, k28, k29,
                   k30, k31, k32, k33, k34, k35,
-      ] = std.array.generate (fun i => 'Key i) 36 in
+      ] = std.array.generate (fun i => 'Key i) matrix.key_count in
       let NO = 'NoKey in
       let matrix = [
         [k05, k06, k07, k08, k09],
