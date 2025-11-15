@@ -102,6 +102,19 @@ jobs:
             awk '{ printf "| %s | %s | %s | %s |\n", $1, $2" "$3, $4" "$5, $6 }'
           } >> $GITHUB_STEP_SUMMARY
 
+      - name: Build Firmware (Col-to-Row, CH32X-48 rev2025.2)
+        shell: bash
+        run: |
+          cd ${FIRMWARE}
+          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cmake \
+              -S . \
+              -B build-ch32x-48-rev2025_2 \
+              --toolchain=../../toolchains/riscv-none-elf.cmake \
+              -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+              -D BOARD=ncl/boards/ch32x-48/rev2025_2.ncl
+          cmake --build build-ch32x-48-rev2025_2
+
       - name: Build Firmware (Col-to-Row, CH32X-75)
         shell: bash
         run: |
