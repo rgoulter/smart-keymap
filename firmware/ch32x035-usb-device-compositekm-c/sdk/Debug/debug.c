@@ -120,7 +120,14 @@ void USART_Printf_Init(uint32_t baudrate)
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_USART2, ENABLE);
 
 #  ifdef DEBUG_AF
-#    error "DEBUG_AF set to unsupported value"
+#    if(DEBUG_AF == 2)
+        RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA | RCC_APB2Periph_AFIO, ENABLE);
+        GPIO_InitStructure.GPIO_Pin = GPIO_Pin_15;
+        GPIO_Init(GPIOA, &GPIO_InitStructure);
+        GPIO_PinRemapConfig(GPIO_PartialRemap1_USART2, ENABLE);
+#    else
+#      error "DEBUG_AF set to unsupported value"
+#    endif
 #  else
     RCC_APB2PeriphClockCmd(RCC_APB2Periph_GPIOA, ENABLE);
     GPIO_InitStructure.GPIO_Pin = GPIO_Pin_2;
