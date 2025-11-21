@@ -13,11 +13,12 @@ pub(crate) const MAX_SCHEDULED_EVENTS: usize = 32;
 pub(crate) struct ScheduledEvent<E: Debug> {
     time: u32,
     event: Event<E>,
+    live: bool,
 }
 
 #[derive(Debug)]
 pub(crate) struct EventScheduler<E: Debug> {
-    pub(crate) pending_events: heapless::spsc::Queue<Event<E>, { MAX_PENDING_EVENTS }>,
+    pub(crate) pending_events: heapless::spsc::Queue<Option<Event<E>>, { MAX_PENDING_EVENTS }>,
     pub(crate) scheduled_events: heapless::Vec<ScheduledEvent<E>, { MAX_SCHEDULED_EVENTS }>,
     pub(crate) schedule_counter: u32,
 }
@@ -32,7 +33,7 @@ impl<E: Debug> EventScheduler<E> {
     }
 
     pub fn init(&mut self) {
-        while self.pending_events.dequeue().is_some() {}
+        while self.pending_events.dequeue().flatten().is_some() {}
         self.scheduled_events.clear();
         self.schedule_counter = 0;
     }
@@ -49,7 +50,7 @@ impl<E: Debug> EventScheduler<E> {
     }
 
     pub fn enqueue_event(&mut self, event: Event<E>) {
-        self.pending_events.enqueue(event).unwrap();
+        self.pending_events.enqueue(Some(event)).unwrap();
     }
 
     pub fn schedule_after(&mut self, delay: u32, event: Event<E>) {
@@ -62,17 +63,29 @@ impl<E: Debug> EventScheduler<E> {
             .binary_search_by(|ScheduledEvent { time: cmp_time, .. }| cmp_time.cmp(&time).reverse())
             .unwrap_or_else(|e| e);
         self.scheduled_events
-            .insert(pos, ScheduledEvent { time, event })
+            .insert(
+                pos,
+                ScheduledEvent {
+                    time,
+                    event,
+                    live: true,
+                },
+            )
             .unwrap();
     }
 
     pub fn cancel_events_for_keymap_index(&mut self, keymap_index: u16) {
         self.scheduled_events
-            .retain(|ScheduledEvent { event, .. }| match event {
-                &Event::Key {
+            .iter_mut()
+            .for_each(|scheduled_event| {
+                if let Event::Key {
                     keymap_index: ki, ..
-                } => ki != keymap_index,
-                _ => true,
+                } = scheduled_event.event
+                {
+                    if ki == keymap_index {
+                        scheduled_event.live = false;
+                    }
+                }
             });
     }
 
@@ -85,14 +98,16 @@ impl<E: Debug> EventScheduler<E> {
                 false
             };
         if scheduled_ready {
-            if let Some(ScheduledEvent { event, .. }) = self.scheduled_events.pop() {
-                self.pending_events.enqueue(event).unwrap();
+            if let Some(ScheduledEvent { event, live, .. }) = self.scheduled_events.pop() {
+                let ev = if live { Some(event) } else { None };
+
+                self.pending_events.enqueue(ev).unwrap();
             }
         }
     }
 
     pub fn dequeue(&mut self) -> Option<Event<E>> {
-        self.pending_events.dequeue()
+        self.pending_events.dequeue().flatten()
     }
 
     /// Returns the time until the soonest scheduled event (0 if pending), or None if there are no pending nor scheduled events
