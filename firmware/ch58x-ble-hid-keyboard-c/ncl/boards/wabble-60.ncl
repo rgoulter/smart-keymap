@@ -1,14 +1,10 @@
+let C = import "keyboard/contracts.ncl" in
+
 {
   gpio_pins,
 
-  board = {
+  board | C.Board = {
     matrix
-      | {
-        cols | Array { port | String, pin | Number },
-        rows | Array { port | String, pin | Number },
-        key_count | Number,
-        implementation | String,
-      }
       | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
       =
         let gp = gpio_pins in
