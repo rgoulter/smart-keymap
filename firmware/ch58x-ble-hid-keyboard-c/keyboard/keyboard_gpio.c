@@ -41,6 +41,21 @@ void keyboard_gpio_configure_output(keyboard_gpio_t gpio_source) {
   }
 }
 
+void keyboard_gpio_configure_irq_mode(keyboard_gpio_t gpio_source,
+                                      GPIOITModeTpDef mode) {
+  uint32_t pin = to_ch58x_pin(gpio_source);
+  switch (gpio_source.port) {
+  case KEYBOARD_GPIO_PORT_A:
+    GPIOA_ITModeCfg(pin, mode);
+    break;
+  case KEYBOARD_GPIO_PORT_B:
+    GPIOB_ITModeCfg(pin, mode);
+    break;
+  default:
+    break;
+  }
+}
+
 void keyboard_gpio_set(keyboard_gpio_t gpio_source) {
   uint32_t pin = to_ch58x_pin(gpio_source);
   switch (gpio_source.port) {
