@@ -10,5 +10,6 @@ typedef struct {
   uint8_t row;
   uint8_t column;
 } keyboard_matrix_coordinate_t;
-void keyboard_matrix_init(void);
 void keyboard_matrix_scan(void);
+void keyboard_matrix_configure_for_scanning(void);
+void keyboard_matrix_configure_for_interrupt(void);
