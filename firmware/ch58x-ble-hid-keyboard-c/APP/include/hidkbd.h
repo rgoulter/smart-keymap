@@ -34,6 +34,10 @@ extern "C" {
 #define REPORT_KEYBOARD_EVT 0x0010
 #define REPORT_MOUSE_EVT 0x0020
 #define REPORT_CONSUMER_EVT 0x0040
+#define KEYBOARD_WAKE_EVT 0x0080
+#define KEYBOARD_SCAN_EVT 0x0100
+#define KEYMAP_TIMEOUT_EVT 0x0200
+#define KEYMAP_TICK_EVT 0x0400
 /*********************************************************************
  * MACROS
  */
