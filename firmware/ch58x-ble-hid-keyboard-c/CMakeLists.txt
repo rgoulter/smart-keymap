@@ -5,6 +5,10 @@ enable_language(C ASM)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+if(NOT DEFINED BOARD)
+  set(BOARD "ncl/boards/wabble-60.ncl" CACHE STRING "Board to build for")
+endif()
+
 add_executable(HID_Keyboard
     APP/hidkbd.c
     APP/hidkbd_main.c
