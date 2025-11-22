@@ -5,17 +5,15 @@ default: build
 _libsmartkeymap:
   make libsmartkeymap
 
-generate-keyboard:
-  make codegen BOARD={{board}}
-
-cmake-generate: _libsmartkeymap generate-keyboard
-  mkdir -p build
-  cd build && \
-    cmake --toolchain=../../toolchains/riscv-none-elf.cmake ..
+cmake-generate: _libsmartkeymap
+  cmake \
+    -S . \
+    -B build \
+    --toolchain=../../toolchains/riscv-none-elf.cmake \
+    -D BOARD={{board}}
 
 build: cmake-generate
-  cd build && \
-    make
+  cmake --build build
 
 await-bootloader:
   timeout 30 ./scripts/wchisp-await-bootloader.sh
