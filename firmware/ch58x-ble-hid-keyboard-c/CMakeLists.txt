@@ -27,7 +27,7 @@ target_include_directories(HID_Keyboard
 
 target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
 
-add_subdirectory(generated)
+add_subdirectory(keyboard)
 target_link_libraries(HID_Keyboard keyboard)
 
 add_subdirectory(sdk sdk)
