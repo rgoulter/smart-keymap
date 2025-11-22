@@ -1,12 +1,10 @@
 BOARD=ncl/boards/wabble-60.ncl
 
 .PHONY: all
-all: generated/keyboard.c libsmartkeymap
-
-include generated/codegen.mk
+all: libsmartkeymap
 
 .PHONY: clean
-clean: .clean-codegen
+clean:
 
 .PHONY: test
 test:
@@ -22,13 +20,6 @@ test:
 format:
 	find APP -name '*.c' -or -name '*.h' | xargs clang-format -i
 	find Profile -name '*.c' -or -name '*.h' | xargs clang-format -i
-
-.PHONY: codegen
-codegen: $(CODEGEN_TARGETS)
-
-.PHONY: generated-wabble-60
-generated-wabble-60: BOARD=ncl/boards/wabble-60.ncl
-generated-wabble-60: codegen
 
 .PHONY: libsmartkeymap
 libsmartkeymap: libsmartkeymap/smart_keymap.h libsmartkeymap/libsmart_keymap.a;

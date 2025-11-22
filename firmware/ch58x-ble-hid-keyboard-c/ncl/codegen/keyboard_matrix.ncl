@@ -29,10 +29,6 @@ let C = import "codegen/contracts.ncl" in
   gpio_pins
     | C.GpioPins,
 
-  cmakelists.keyboard_matrix = m%"
-    target_sources(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_matrix.c)
-    "%,
-
   includes.keyboard_matrix = m%"
     #pragma once
 
