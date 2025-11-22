@@ -20,6 +20,7 @@ test:
 format:
 	find APP -name '*.c' -or -name '*.h' | xargs clang-format -i
 	find Profile -name '*.c' -or -name '*.h' | xargs clang-format -i
+	find keyboard -name '*.c' -or -name '*.h' | xargs clang-format -i
 
 .PHONY: libsmartkeymap
 libsmartkeymap: libsmartkeymap/smart_keymap.h libsmartkeymap/libsmart_keymap.a;
