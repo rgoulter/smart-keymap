@@ -3,6 +3,10 @@ add_library(keyboard INTERFACE)
 target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_BINARY_DIR})
 target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
+target_sources(keyboard PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c
+)
+
 set(CODEGEN_DIR ${CMAKE_CURRENT_BINARY_DIR})
 set(NCL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/ncl)
 set(NCL_CODEGEN_DIR ${NCL_DIR}/keyboard)
@@ -17,7 +21,6 @@ set(
     CODEGEN_DEPS_LIST
     "${CMAKE_SOURCE_DIR}/${BOARD}"
     "${NCL_CODEGEN_DIR}/gpio.ncl"
-    "${NCL_CODEGEN_DIR}/keyboard.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_matrix.ncl"
 )
 

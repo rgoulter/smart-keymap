@@ -29,14 +29,6 @@ let C = import "keyboard/contracts.ncl" in
   gpio_pins
     | C.GpioPins,
 
-  includes.keyboard_matrix = m%"
-    #pragma once
-
-    void keyboard_matrix_init(void);
-
-    void keyboard_matrix_scan(void);
-    "%,
-
   sources.keyboard_matrix = m%"
   #include <stdbool.h>
 
