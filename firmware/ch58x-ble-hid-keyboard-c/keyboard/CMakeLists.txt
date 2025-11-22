@@ -5,6 +5,7 @@ target_include_directories(keyboard INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_sources(keyboard PUBLIC
   ${CMAKE_CURRENT_SOURCE_DIR}/keyboard.c
+  ${CMAKE_CURRENT_SOURCE_DIR}/keyboard_gpio.c
 )
 
 set(CODEGEN_DIR ${CMAKE_CURRENT_BINARY_DIR})
