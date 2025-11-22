@@ -90,6 +90,10 @@
 // Task ID
 static uint8_t hidEmuTaskId = INVALID_TASK_ID;
 
+bStatus_t HidEmu_Wakeup() {
+  return tmos_set_event(hidEmuTaskId, KEYBOARD_WAKE_EVT);
+}
+
 /*********************************************************************
  * EXTERNAL VARIABLES
  */

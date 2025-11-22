@@ -59,6 +59,8 @@ extern void HidEmu_Init(void);
  */
 extern uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events);
 
+uint8_t HidEmu_Wakeup();
+
 /*********************************************************************
 *********************************************************************/
 
