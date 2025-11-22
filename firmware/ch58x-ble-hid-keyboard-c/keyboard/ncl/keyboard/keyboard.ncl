@@ -1,4 +1,4 @@
-let C = import "codegen/contracts.ncl" in
+let C = import "keyboard/contracts.ncl" in
 
 {
   contracts = {},
