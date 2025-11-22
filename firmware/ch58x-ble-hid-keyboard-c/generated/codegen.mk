@@ -1,8 +1,11 @@
+CODEGEN_DIR := generated
+NCL_DIR := ncl/codegen
+
 CODEGEN_DEPS = \
   $(BOARD) \
-  ncl/codegen/gpio.ncl \
-  ncl/codegen/keyboard_matrix.ncl \
-  ncl/codegen/keyboard.ncl
+  $(NCL_DIR)/gpio.ncl \
+  $(NCL_DIR)/keyboard_matrix.ncl \
+  $(NCL_DIR)/keyboard.ncl
 
 NICKEL_QUERY_CMAKELISTS_CMD := \
   nickel export \
@@ -32,9 +35,9 @@ CMAKELISTS_IDS := $(shell $(NICKEL_QUERY_CMAKELISTS_CMD))
 INCLUDES_IDS := $(shell $(NICKEL_QUERY_INCLUDES_CMD))
 SOURCE_IDS := $(shell $(NICKEL_QUERY_SOURCES_CMD))
 
-CODEGEN_CMAKELISTS_TARGETS := $(patsubst %,generated/%.cmake,$(CMAKELISTS_IDS))
-CODEGEN_INCLUDES_TARGETS := $(patsubst %,generated/%.h,$(INCLUDES_IDS))
-CODEGEN_SOURCE_TARGETS := $(patsubst %,generated/%.c,$(SOURCE_IDS))
+CODEGEN_CMAKELISTS_TARGETS := $(patsubst %,$(CODEGEN_DIR)/%.cmake,$(CMAKELISTS_IDS))
+CODEGEN_INCLUDES_TARGETS := $(patsubst %,$(CODEGEN_DIR)/%.h,$(INCLUDES_IDS))
+CODEGEN_SOURCE_TARGETS := $(patsubst %,$(CODEGEN_DIR)/%.c,$(SOURCE_IDS))
 
 CODEGEN_TARGETS := \
 	$(CODEGEN_CMAKELISTS_TARGETS) \
@@ -43,17 +46,17 @@ CODEGEN_TARGETS := \
 
 .PHONY: .clean-codegen
 .clean-codegen:
-	rm -f generated/*.cmake
-	rm -f generated/keyboard.c
-	rm -f generated/keyboard_matrix.h
-	rm -f generated/keyboard_matrix.c
+	rm -f $(CODEGEN_DIR)/*.cmake
+	rm -f $(CODEGEN_DIR)/keyboard.c
+	rm -f $(CODEGEN_DIR)/keyboard_matrix.h
+	rm -f $(CODEGEN_DIR)/keyboard_matrix.c
 
 .PHONY: FORCE_STAMP
 
-generated/.board.stamp: FORCE_STAMP
+$(CODEGEN_DIR)/.board.stamp: FORCE_STAMP
 	@scripts/board-stamp.sh "$@" "$(BOARD)"
 
-generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
+$(CODEGEN_DIR)/%.cmake: $(NCL_DIR)/%.ncl $(CODEGEN_DEPS) $(CODEGEN_DIR)/.board.stamp
 	@echo "Generating $@"
 	@nickel export \
     --import-path=ncl/ \
@@ -62,7 +65,7 @@ generated/%.cmake: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	  $(CODEGEN_DEPS) \
 	  > $@
 
-generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
+$(CODEGEN_DIR)/%.h: $(NCL_DIR)/%.ncl $(CODEGEN_DEPS) $(CODEGEN_DIR)/.board.stamp
 	@echo "Generating $@"
 	@nickel export \
     --import-path=ncl/ \
@@ -71,7 +74,7 @@ generated/%.h: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
 	  $(CODEGEN_DEPS) \
 	  > $@
 
-generated/%.c: ncl/codegen/%.ncl $(CODEGEN_DEPS) generated/.board.stamp
+$(CODEGEN_DIR)/%.c: $(NCL_DIR)/%.ncl $(CODEGEN_DEPS) $(CODEGEN_DIR)/.board.stamp
 	@echo "Generating $@"
 	@nickel export \
     --import-path=ncl/ \
