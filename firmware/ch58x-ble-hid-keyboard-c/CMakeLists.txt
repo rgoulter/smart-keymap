@@ -9,21 +9,9 @@ if(NOT DEFINED BOARD)
   set(BOARD "ncl/boards/wabble-60.ncl" CACHE STRING "Board to build for")
 endif()
 
-add_executable(HID_Keyboard
-    APP/hidkbd.c
-    APP/hidkbd_main.c
-    Profile/battservice.c
-    Profile/devinfoservice.c
-    Profile/hiddev.c
-    Profile/hidkbdservice.c
-    Profile/scanparamservice.c
-)
-
-target_include_directories(HID_Keyboard
-    PUBLIC
-    APP/include
-    Profile/include
-)
+add_executable(HID_Keyboard)
+add_subdirectory(APP)
+add_subdirectory(Profile)
 
 target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
 
