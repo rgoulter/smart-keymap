@@ -16,7 +16,7 @@ void test_keymap_serialise_event_press(void) {
       .value = 4,
   };
   uint8_t actual_message[4] = {0};
-  keymap_serialize_event(&actual_message, event);
+  keymap_serialize_event(actual_message, event);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_message, actual_message, 4);
 }
