@@ -30,7 +30,18 @@ void keyboard_await_interrupt(void) {
 
 __INTERRUPT
 __HIGH_CODE
+#ifdef INT_SOFT
+__attribute__((naked))
+#endif
 void GPIOA_IRQHandler(void) {
+  __asm volatile("call GPIOA_IRQHandler_impl; mret");
+}
+
+void GPIOA_IRQHandler_impl(void) {
+  // Received a GPIO interrupt, disable further interrupts
+  PFIC_DisableIRQ(GPIO_A_IRQn);
+  PFIC_DisableIRQ(GPIO_B_IRQn);
+
   // signal main loop to start scanning
   HidEmu_Wakeup();
   GPIOA_ClearITFlagBit(0xFFFF);
@@ -38,7 +49,18 @@ void GPIOA_IRQHandler(void) {
 
 __INTERRUPT
 __HIGH_CODE
+#ifdef INT_SOFT
+__attribute__((naked))
+#endif
 void GPIOB_IRQHandler(void) {
+  __asm volatile("call GPIOB_IRQHandler_impl; mret");
+}
+
+void GPIOB_IRQHandler_impl(void) {
+  // Received a GPIO interrupt, disable further interrupts
+  PFIC_DisableIRQ(GPIO_A_IRQn);
+  PFIC_DisableIRQ(GPIO_B_IRQn);
+
   // signal main loop to start scanning
   HidEmu_Wakeup();
   GPIOB_ClearITFlagBit(0xFFFF);
