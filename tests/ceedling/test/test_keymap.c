@@ -20,7 +20,7 @@ void test_copy_hid_boot_keyboard_report(void) {
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
-// KEYMAP: [A, A, A, B]
+// KEYMAP: [C & TH.LCtrl, D & TH.LSft, A, B]
 
 void test_keyboard_keypress(void) {
   uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
