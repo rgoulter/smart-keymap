@@ -4,6 +4,11 @@
 
 #include "smart_keymap.h"
 
+static bool debounced_state[KEYBOARD_MATRIX_KEY_COUNT] = {false};
+static bool previous_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
+static bool current_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
+static uint8_t debounce_counter[KEYBOARD_MATRIX_KEY_COUNT] = {0};
+
 // defined in matrix implementation
 void keyboard_matrix_scan_raw(bool scan_buf[KEYBOARD_MATRIX_KEY_COUNT]);
 
@@ -22,11 +27,6 @@ void key_state_changed(uint32_t index, bool new_state) {
 }
 
 void keyboard_matrix_scan(void) {
-  static bool debounced_state[KEYBOARD_MATRIX_KEY_COUNT] = {false};
-  static bool previous_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
-  static bool current_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
-  static uint8_t debounce_counter[KEYBOARD_MATRIX_KEY_COUNT] = {0};
-
   keyboard_matrix_scan_raw(current_raw_scan);
 
   for (uint32_t i = 0; i < KEYBOARD_MATRIX_KEY_COUNT; i++) {
