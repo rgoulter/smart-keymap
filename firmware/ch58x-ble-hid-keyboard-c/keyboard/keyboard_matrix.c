@@ -9,8 +9,12 @@ static bool previous_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
 static bool current_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
 static uint8_t debounce_counter[KEYBOARD_MATRIX_KEY_COUNT] = {0};
 
+static uint8_t keys_pressed_count = 0;
+
 // defined in matrix implementation
 void keyboard_matrix_scan_raw(bool scan_buf[KEYBOARD_MATRIX_KEY_COUNT]);
+
+uint8_t keyboard_matrix_pressed_keys_count() { return keys_pressed_count; }
 
 void key_state_changed(uint32_t index, bool new_state) {
   KeymapInputEvent ev = {.event_type = 0, .value = index};
@@ -40,6 +44,8 @@ void keyboard_matrix_scan(void) {
       }
 
       if (debounce_counter[i] >= 5) {
+        keys_pressed_count += current_raw_scan[i] ? 1 : -1;
+
         key_state_changed(i, current_raw_scan[i]);
         debounced_state[i] = current_raw_scan[i];
       }
