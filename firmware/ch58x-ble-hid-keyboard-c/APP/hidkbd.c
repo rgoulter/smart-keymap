@@ -292,10 +292,7 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
   static uint8_t report_status = SUCCESS;
   static KeymapHidReport hid_report = {0};
   static KeymapHidReport previous_hid_report = {0};
-  static bool previous_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
-  static bool current_raw_scan[KEYBOARD_MATRIX_KEY_COUNT] = {false};
-  static uint8_t debounce_counter[KEYBOARD_MATRIX_KEY_COUNT] = {0};
-  static uint8_t keys_pressed_count = 0;
+
   static uint32_t prev_keymap_updated_time_tmos = 0;
 
   if (events & SYS_EVENT_MSG) {
@@ -339,39 +336,30 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
     // GPIO interrupt fired, start scanning after a debounce delay.
     // The ISR has already disabled interrupts.
     keyboard_start_scanning();
-    tmos_start_task(hidEmuTaskId, KEYBOARD_SCAN_EVT, 1); // 3ms
+    tmos_start_task(hidEmuTaskId, KEYBOARD_SCAN_EVT, 1); // 0.625ms
     return (events ^ KEYBOARD_WAKE_EVT);
   }
 
   if (events & KEYBOARD_SCAN_EVT) {
     uint32_t next_timeout_ms = 0;
 
-    keyboard_matrix_scan_raw(current_raw_scan);
+    // ... Ohhhhh right; want to *callback*
+    int8_t new_states[KEYBOARD_MATRIX_KEY_COUNT] = {0};
+    keyboard_matrix_scan(new_states);
+    for (uint16_t i = 0; i < KEYBOARD_MATRIX_KEY_COUNT; i++) {
+      if (new_states[i] != 0) {
+        KeymapInputEvent ev = {
+            .event_type = new_states[i] == KEYBOARD_MATRIX_KEY_PRESSED
+                                            ? KeymapEventPress
+                                            : KeymapEventRelease,
+            .value = i,
+        };
 
-    for (uint32_t i = 0; i < KEYBOARD_MATRIX_KEY_COUNT; i++) {
-      if (current_raw_scan[i] != previous_raw_scan[i]) {
-        KeymapInputEvent ev = {.value = i};
-        if (current_raw_scan[i]) {
-          ev.event_type = KeymapEventPress;
-          keys_pressed_count++;
-        } else {
-          ev.event_type = KeymapEventRelease;
-          keys_pressed_count--;
-        }
-
-        uint32_t current_keymap_updated_time_tmos = TMOS_GetSystemClock();
-        uint32_t delta_ms =
-            (current_keymap_updated_time_tmos - prev_keymap_updated_time_tmos) *
-            SYSTEM_TIME_MICROSEN / 1000;
-        uint32_t timeout_ms =
-            keymap_register_input_after_ms(delta_ms, ev, &hid_report);
-        prev_keymap_updated_time_tmos = current_keymap_updated_time_tmos;
-        if (timeout_ms > 0 &&
-            (next_timeout_ms == 0 || timeout_ms < next_timeout_ms)) {
-          next_timeout_ms = timeout_ms;
-        }
-
-        previous_raw_scan[i] = current_raw_scan[i];
+        uint32_t current_time_tmos = TMOS_GetSystemClock();
+        uint32_t delta_time_tmos = current_time_tmos - prev_keymap_updated_time_tmos;
+        uint32_t delta_time_ms = delta_time_tmos * SYSTEM_TIME_MICROSEN / 1000;
+        keymap_register_input_after_ms(delta_time_ms, ev, &hid_report);
+        prev_keymap_updated_time_tmos = current_time_tmos;
       }
     }
 
@@ -380,7 +368,7 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
                       MS1_TO_SYSTEM_TIME(next_timeout_ms));
     }
 
-    if (keys_pressed_count > 0) {
+    if (keyboard_matrix_pressed_keys_count() > 0) {
       // Keys are still pressed, continue scanning.
       tmos_start_task(hidEmuTaskId, KEYBOARD_SCAN_EVT,
                       MS1_TO_SYSTEM_TIME(3)); // 5ms
