@@ -13,3 +13,4 @@ typedef struct {
 void keyboard_matrix_scan(void);
 void keyboard_matrix_configure_for_scanning(void);
 void keyboard_matrix_configure_for_interrupt(void);
+void keyboard_matrix_scan_raw(bool scan_buf[KEYBOARD_MATRIX_KEY_COUNT]);
