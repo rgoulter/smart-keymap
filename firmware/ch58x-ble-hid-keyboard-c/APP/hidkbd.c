@@ -295,6 +295,8 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
 
   static uint32_t prev_keymap_updated_time_tmos = 0;
 
+  static bool event_pending = false;
+
   if (events & SYS_EVENT_MSG) {
     uint8_t *pMsg;
 
@@ -358,20 +360,21 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
         uint32_t current_time_tmos = TMOS_GetSystemClock();
         uint32_t delta_time_tmos = current_time_tmos - prev_keymap_updated_time_tmos;
         uint32_t delta_time_ms = delta_time_tmos * SYSTEM_TIME_MICROSEN / 1000;
-        keymap_register_input_after_ms(delta_time_ms, ev, &hid_report);
+        next_timeout_ms = keymap_register_input_after_ms(delta_time_ms, ev, &hid_report);
         prev_keymap_updated_time_tmos = current_time_tmos;
       }
     }
 
-    if (next_timeout_ms > 0) {
+    if ((!event_pending) && next_timeout_ms > 0) {
       tmos_start_task(hidEmuTaskId, KEYMAP_TIMEOUT_EVT,
                       MS1_TO_SYSTEM_TIME(next_timeout_ms));
+      event_pending = true;
     }
 
     if (keyboard_matrix_pressed_keys_count() > 0) {
       // Keys are still pressed, continue scanning.
       tmos_start_task(hidEmuTaskId, KEYBOARD_SCAN_EVT,
-                      MS1_TO_SYSTEM_TIME(3)); // 5ms
+                      MS1_TO_SYSTEM_TIME(8)); // 5ms
     } else {
       // No keys are pressed, go back to interrupt-based waiting.
       keyboard_await_interrupt();
@@ -403,6 +406,8 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
     if (next_timeout_ms > 0) {
       tmos_start_task(hidEmuTaskId, KEYMAP_TIMEOUT_EVT,
                       MS1_TO_SYSTEM_TIME(next_timeout_ms));
+    } else {
+      event_pending = false;
     }
 
     if (memcmp(&hid_report.keyboard, &previous_hid_report.keyboard,
