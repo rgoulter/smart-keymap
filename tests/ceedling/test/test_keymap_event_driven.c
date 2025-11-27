@@ -4,6 +4,7 @@
 
 #define KC_A 0x04
 #define KC_B 0x05
+#define KC_C 0x06
 
 void setUp(void) {}
 
