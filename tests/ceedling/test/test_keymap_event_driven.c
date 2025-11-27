@@ -26,7 +26,6 @@ void test_event_driven_key_press(void) {
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
-
 void test_event_driven_key_tap(void) {
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
