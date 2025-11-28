@@ -185,6 +185,9 @@ static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
 static void hidEmuEvtCB(uint8_t evt);
 static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent);
 
+#define KEYMAP_POLLING_INTERVAL_MS 8
+#define KEYMAP_POLLING_INTERVAL_TMOS 12
+
 /*********************************************************************
  * PROFILE CALLBACKS
  */
