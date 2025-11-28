@@ -90,6 +90,10 @@
 // Task ID
 static uint8_t hidEmuTaskId = INVALID_TASK_ID;
 
+bStatus_t HidEmu_Wakeup() {
+  return tmos_set_event(hidEmuTaskId, KEYBOARD_WAKE_EVT);
+}
+
 /*********************************************************************
  * EXTERNAL VARIABLES
  */
@@ -181,6 +185,9 @@ static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
 static void hidEmuEvtCB(uint8_t evt);
 static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent);
 
+#define KEYMAP_POLLING_INTERVAL_MS 8
+#define KEYMAP_POLLING_INTERVAL_TMOS 12
+
 /*********************************************************************
  * PROFILE CALLBACKS
  */
@@ -265,7 +272,7 @@ void HidEmu_Init() {
   keymap_init();
   // keymap_tick is called in HidEmu_ProcessEvent's START_KEYMAP_TICK_EVT,
   // which is invoked by TMOS every 13 * 625 microseconds = 8.125ms.
-  keymap_set_ms_per_tick(8);
+  keymap_set_ms_per_tick(KEYMAP_POLLING_INTERVAL_MS);
 }
 
 /*********************************************************************
@@ -282,10 +289,13 @@ void HidEmu_Init() {
  * @return  events not processed
  */
 uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
-  static uint8_t send_char = 0;
   static uint8_t report_status = SUCCESS;
   static KeymapHidReport hid_report = {0};
   static KeymapHidReport previous_hid_report = {0};
+
+  static uint32_t prev_keymap_updated_time_tmos = 0;
+
+  static bool event_pending = false;
 
   if (events & SYS_EVENT_MSG) {
     uint8_t *pMsg;
@@ -324,12 +334,51 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
     return (events ^ START_PHY_UPDATE_EVT);
   }
 
-  if (events & START_KEYMAP_TICK_EVT) {
-    // SmartKeymap
+  if (events & KEYBOARD_WAKE_EVT) {
+    // GPIO interrupt fired, start scanning after a debounce delay.
+    // The ISR has already disabled interrupts.
+    keyboard_start_scanning();
+    tmos_start_task(hidEmuTaskId, KEYBOARD_SCAN_EVT, 1); // 0.625ms
+    return (events ^ KEYBOARD_WAKE_EVT);
+  }
 
-    keyboard_matrix_scan();
+  if (events & KEYBOARD_SCAN_EVT) {
+    uint32_t next_timeout_ms = 0;
 
-    keymap_tick(&hid_report);
+    // ... Ohhhhh right; want to *callback*
+    int8_t new_states[KEYBOARD_MATRIX_KEY_COUNT] = {0};
+    keyboard_matrix_scan(new_states);
+    for (uint16_t i = 0; i < KEYBOARD_MATRIX_KEY_COUNT; i++) {
+      if (new_states[i] != 0) {
+        KeymapInputEvent ev = {
+            .event_type = new_states[i] == KEYBOARD_MATRIX_KEY_PRESSED
+                                            ? KeymapEventPress
+                                            : KeymapEventRelease,
+            .value = i,
+        };
+
+        uint32_t current_time_tmos = TMOS_GetSystemClock();
+        uint32_t delta_time_tmos = current_time_tmos - prev_keymap_updated_time_tmos;
+        uint32_t delta_time_ms = delta_time_tmos * SYSTEM_TIME_MICROSEN / 1000;
+        next_timeout_ms = keymap_register_input_after_ms(delta_time_ms, ev, &hid_report);
+        prev_keymap_updated_time_tmos = current_time_tmos;
+      }
+    }
+
+    if ((!event_pending) && next_timeout_ms > 0) {
+      tmos_start_task(hidEmuTaskId, KEYMAP_TIMEOUT_EVT,
+                      MS1_TO_SYSTEM_TIME(next_timeout_ms));
+      event_pending = true;
+    }
+
+    if (keyboard_matrix_pressed_keys_count() > 0) {
+      // Keys are still pressed, continue scanning.
+      tmos_start_task(hidEmuTaskId, KEYBOARD_SCAN_EVT,
+                      MS1_TO_SYSTEM_TIME(8)); // 5ms
+    } else {
+      // No keys are pressed, go back to interrupt-based waiting.
+      keyboard_await_interrupt();
+    }
 
     if (memcmp(&hid_report.keyboard, &previous_hid_report.keyboard,
                sizeof(hid_report.keyboard)) != 0) {
@@ -348,11 +397,39 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
                sizeof(hid_report.consumer)) != 0) {
       tmos_start_task(hidEmuTaskId, REPORT_CONSUMER_EVT, 1);
     }
-
-    // 13 * 625 microseconds = 8.125ms, approx 125Hz
-    tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 13);
-    return (events ^ START_KEYMAP_TICK_EVT);
+    return (events ^ KEYBOARD_SCAN_EVT);
   }
+
+  if (events & KEYMAP_TIMEOUT_EVT) {
+    uint32_t next_timeout_ms = keymap_next_event_timeout(&hid_report);
+    prev_keymap_updated_time_tmos = TMOS_GetSystemClock();
+    if (next_timeout_ms > 0) {
+      tmos_start_task(hidEmuTaskId, KEYMAP_TIMEOUT_EVT,
+                      MS1_TO_SYSTEM_TIME(next_timeout_ms));
+    } else {
+      event_pending = false;
+    }
+
+    if (memcmp(&hid_report.keyboard, &previous_hid_report.keyboard,
+               sizeof(hid_report.keyboard)) != 0) {
+      tmos_start_task(hidEmuTaskId, REPORT_KEYBOARD_EVT, 1);
+    }
+    if (memcmp(&hid_report.mouse, &previous_hid_report.mouse,
+               sizeof(hid_report.mouse)) != 0 ||
+        memcmp(&hid_report.mouse,
+               &(KeymapHidMouseReport){
+                   0,
+               },
+               sizeof(hid_report.mouse)) != 0) {
+      tmos_start_task(hidEmuTaskId, REPORT_MOUSE_EVT, 1);
+    }
+    if (memcmp(&hid_report.consumer, &previous_hid_report.consumer,
+               sizeof(hid_report.consumer)) != 0) {
+      tmos_start_task(hidEmuTaskId, REPORT_CONSUMER_EVT, 1);
+    }
+    return (events ^ KEYMAP_TIMEOUT_EVT);
+  }
+
   if (events & REPORT_KEYBOARD_EVT) {
     // SmartKeymap
     report_status = HidDev_Report(HID_RPT_ID_KEY_IN, HID_REPORT_TYPE_INPUT,
@@ -558,7 +635,8 @@ static uint8_t hidEmuRptCB(uint8_t id, uint8_t type, uint16_t uuid,
   }
   // notifications enabled
   else if (oper == HID_DEV_OPER_ENABLE) {
-    tmos_start_task(hidEmuTaskId, START_KEYMAP_TICK_EVT, 500);
+    // The keyboard is now interrupt-driven, so we don't need to start a timer.
+    // It will wake on keypress.
   }
   return status;
 }

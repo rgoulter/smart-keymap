@@ -30,10 +30,13 @@ extern "C" {
 #define START_DEVICE_EVT 0x0001
 #define START_PARAM_UPDATE_EVT 0x0002
 #define START_PHY_UPDATE_EVT 0x0004
-#define START_KEYMAP_TICK_EVT 0x0008
+// tick event (deleted)
 #define REPORT_KEYBOARD_EVT 0x0010
 #define REPORT_MOUSE_EVT 0x0020
 #define REPORT_CONSUMER_EVT 0x0040
+#define KEYBOARD_WAKE_EVT 0x0080
+#define KEYBOARD_SCAN_EVT 0x0100
+#define KEYMAP_TIMEOUT_EVT 0x0200
 /*********************************************************************
  * MACROS
  */
@@ -55,6 +58,8 @@ extern void HidEmu_Init(void);
  * Task Event Processor for the BLE Application
  */
 extern uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events);
+
+uint8_t HidEmu_Wakeup();
 
 /*********************************************************************
 *********************************************************************/

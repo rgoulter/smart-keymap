@@ -10,5 +10,13 @@ typedef struct {
   uint8_t row;
   uint8_t column;
 } keyboard_matrix_coordinate_t;
-void keyboard_matrix_init(void);
-void keyboard_matrix_scan(void);
+
+#define KEYBOARD_MATRIX_KEY_PRESSED (1)
+#define KEYBOARD_MATRIX_KEY_RELEASED (-1)
+
+void keyboard_matrix_scan(int8_t new_states[KEYBOARD_MATRIX_KEY_COUNT]);
+void keyboard_matrix_configure_for_scanning(void);
+void keyboard_matrix_configure_for_interrupt(void);
+void keyboard_matrix_scan_raw(bool scan_buf[KEYBOARD_MATRIX_KEY_COUNT]);
+
+uint8_t keyboard_matrix_pressed_keys_count();
