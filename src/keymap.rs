@@ -781,6 +781,11 @@ impl<
         KeymapOutput::new(self.pressed_keys()).as_hid_boot_keyboard_report()
     }
 
+    /// Whether the keymap has pending state that requires polling.
+    pub fn requires_polling(&self) -> bool {
+        !self.event_scheduler.pending_events.is_empty() || !self.input_queue.is_empty()
+    }
+
     #[doc(hidden)]
     pub fn has_scheduled_events(&self) -> bool {
         !self.event_scheduler.pending_events.is_empty()
