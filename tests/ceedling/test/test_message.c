@@ -29,7 +29,7 @@ void test_keymap_deserialise_event_press(void) {
 
   uint8_t input[4] = {0x01, 0x02, 0x04, 0x00};
   uint8_t buf[4] = {0};
-  KeymapInputEvent actual_event;
+  KeymapInputEvent actual_event = {0};
 
   for (uint8_t i = 0; i < 4; i++) {
     keymap_message_buffer_receive_byte(&buf, input[i], &actual_event);
