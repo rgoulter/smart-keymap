@@ -13,7 +13,6 @@
 
   languages = {
     c.enable = true;
-    ruby.enable = true;
     rust = {
       channel = "stable";
       components = [ "rustc" "cargo" "clippy" "llvm-tools-preview" "rustfmt" "rust-analyzer" ];
@@ -29,6 +28,7 @@
     pkgs.cargo-binutils
     pkgs.cargo-deny
     pkgs.cargo-nextest
+    pkgs.ceedling
     pkgs.clang-tools
     pkgs.cmake-language-server
     pkgs.elf2uf2-rs
