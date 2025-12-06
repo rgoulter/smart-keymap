@@ -31,7 +31,7 @@ pub mod init {
     pub use smart_keymap::key::composite::KeyState;
 
     const AUTOMATION: usize = 0;
-    const CALLBACK: usize = 0;
+    const CALLBACK: usize = 1;
     const CHORDED: usize = 0;
     const CHORDED_AUXILIARY: usize = 0;
     const KEYBOARD: usize = 17;
@@ -142,7 +142,9 @@ pub mod init {
     /// The key system.
     pub const SYSTEM: System = smart_keymap::key::composite::System::array_based(
         smart_keymap::key::automation::System::new([]),
-        smart_keymap::key::callback::System::new([]),
+        smart_keymap::key::callback::System::new([smart_keymap::key::callback::Key::new(
+            smart_keymap::keymap::KeymapCallback::ResetToBootloader,
+        )]),
         smart_keymap::key::chorded::System::new([], []),
         smart_keymap::key::keyboard::System::new([
             smart_keymap::key::keyboard::Key {
@@ -247,7 +249,9 @@ pub mod init {
                         Some(smart_keymap::key::composite::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCodeAndModifier(1),
                         )),
-                        None,
+                        Some(smart_keymap::key::composite::Ref::Callback(
+                            smart_keymap::key::callback::Ref(0),
+                        )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
