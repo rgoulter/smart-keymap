@@ -61,7 +61,7 @@ impl<const MAX_CHORD_SIZE: usize> From<heapless::Vec<u16, MAX_CHORD_SIZE>>
 }
 
 /// Chord definitions.
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Deserialize, Clone, Copy, PartialEq)]
 pub struct Config<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> {
     /// The timeout (in number of milliseconds) for a chorded key to resolve.
     ///
@@ -78,6 +78,18 @@ pub struct Config<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> {
     /// This reduces disruption from unexpected chord resolutions
     ///  when typing quickly.
     pub required_idle_time: Option<u16>,
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> core::fmt::Debug
+    for Config<MAX_CHORDS, MAX_CHORD_SIZE>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Config")
+            .field("timeout", &self.timeout)
+            .field("chords", &self.chords.as_slice())
+            .field("required_idle_time", &self.required_idle_time)
+            .finish()
+    }
 }
 
 /// The default timeout.
