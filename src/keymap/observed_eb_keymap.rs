@@ -90,4 +90,22 @@ impl<
             distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
         }
     }
+
+    /// Proxies [keymap::Keymap::requires_polling].
+    pub fn requires_polling(&self) -> bool {
+        let ObservedKeymap { keymap, .. } = self;
+
+        keymap.requires_polling()
+    }
+
+    /// Proxies [keymap::Keymap::tick], updating reports appropriately.
+    pub fn tick(&mut self) {
+        let ObservedKeymap {
+            keymap,
+            distinct_reports,
+        } = self;
+
+        keymap.tick();
+        distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
+    }
 }
