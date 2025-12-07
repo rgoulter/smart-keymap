@@ -118,8 +118,54 @@ pub struct ChordState<const MAX_CHORD_SIZE: usize> {
     pub is_satisfied: bool,
 }
 
+struct PressedIndicesDebugHelper<'a, const MAX_PRESSED_INDICES: usize> {
+    pressed_indices: &'a [Option<u16>; MAX_PRESSED_INDICES],
+}
+
+impl<const MAX_PRESSED_INDICES: usize> core::fmt::Debug
+    for PressedIndicesDebugHelper<'_, MAX_PRESSED_INDICES>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last non-empty pressed index to avoid printing large arrays.
+        let last_non_empty_pi_pos = self
+            .pressed_indices
+            .iter()
+            .rposition(|pi| pi.is_some())
+            .map_or(0, |pos| pos + 1);
+        if last_non_empty_pi_pos < MAX_PRESSED_INDICES {
+            f.debug_list()
+                .entries(&self.pressed_indices[..last_non_empty_pi_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.pressed_indices[..]).finish()
+        }
+    }
+}
+
+struct PressedChordsDebugHelper<'a, const MAX_CHORDS: usize> {
+    pressed_chords: &'a [bool; MAX_CHORDS],
+}
+
+impl<const MAX_CHORDS: usize> core::fmt::Debug for PressedChordsDebugHelper<'_, MAX_CHORDS> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last true pressed chord to avoid printing large arrays.
+        let last_true_pc_pos = self
+            .pressed_chords
+            .iter()
+            .rposition(|&pc| pc)
+            .map_or(0, |pos| pos + 1);
+        if last_true_pc_pos < MAX_CHORDS {
+            f.debug_list()
+                .entries(&self.pressed_chords[..last_true_pc_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.pressed_chords[..]).finish()
+        }
+    }
+}
+
 /// Chord definitions.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Context<
     const MAX_CHORDS: usize,
     const MAX_CHORD_SIZE: usize,
@@ -131,6 +177,31 @@ pub struct Context<
     idle_time_ms: u32,
     ignore_idle_time: bool,
     latest_resolved_chord: Option<ChordId>,
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize> Debug
+    for Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Context")
+            .field("config", &self.config)
+            .field(
+                "pressed_indices",
+                &PressedIndicesDebugHelper {
+                    pressed_indices: &self.pressed_indices,
+                },
+            )
+            .field(
+                "pressed_chords",
+                &PressedChordsDebugHelper {
+                    pressed_chords: &self.pressed_chords,
+                },
+            )
+            .field("idle_time_ms", &self.idle_time_ms)
+            .field("ignore_idle_time", &self.ignore_idle_time)
+            .field("latest_resolved_chord", &self.latest_resolved_chord)
+            .finish()
+    }
 }
 
 impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
