@@ -190,13 +190,50 @@ impl<const L: usize> LayerState for [Activity; L] {
     }
 }
 
+struct ActiveLayersDebugHelper<'a, const LAYER_COUNT: usize> {
+    active_layers: &'a [Activity; LAYER_COUNT],
+}
+
+impl<const LAYER_COUNT: usize> core::fmt::Debug for ActiveLayersDebugHelper<'_, LAYER_COUNT> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last Active layer to avoid printing large arrays.
+        let last_active_pos = self
+            .active_layers
+            .iter()
+            .rposition(|&pc| pc.is_active())
+            .map_or(0, |pos| pos + 1);
+        if last_active_pos < LAYER_COUNT {
+            f.debug_list()
+                .entries(&self.active_layers[..last_active_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.active_layers[..]).finish()
+        }
+    }
+}
+
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Context<const LAYER_COUNT: usize> {
     default_layer: Option<LayerIndex>,
     active_layers: [Activity; LAYER_COUNT],
     // Keymap index which was pressed while a layer was sticky.
     pressed_keymap_index: Option<u16>,
+}
+
+impl<const LAYER_COUNT: usize> Debug for Context<LAYER_COUNT> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Context")
+            .field("default_layer", &self.default_layer)
+            .field(
+                "active_layers",
+                &ActiveLayersDebugHelper {
+                    active_layers: &self.active_layers,
+                },
+            )
+            .field("pressed_keymap_index", &self.pressed_keymap_index)
+            .finish()
+    }
 }
 
 impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
