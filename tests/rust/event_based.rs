@@ -214,3 +214,118 @@ fn tick_to_next_scheduled_event_advances_time() {
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn tap_th_key_with_interrupting_tap() {
+    // Assemble
+    let mut keymap = ObservedEventBasedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.timeout = 200,
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    ));
+
+    // Act
+    // Event based interface 'fires' tick_to_next_scheduled_event
+    //  after the time from each handle_input_ call.
+
+    // Pressing TapHold key: A timeout is scheduled "at time 200"
+    // press   @ time   0 (schedule timeout after time 200)
+    let _ = keymap.handle_input_after_time(0, input::Event::Press { keymap_index: 0 });
+
+    // Interrupting Tap
+    // press   @ time  50
+    let _ = keymap.handle_input_after_time(50, input::Event::Press { keymap_index: 1 });
+    // release @ time 100
+    let _ = keymap.handle_input_after_time(50, input::Event::Release { keymap_index: 1 });
+
+    // The event-based interface requires two ticks(?)
+    keymap.tick();
+    assert!(keymap.requires_polling());
+    keymap.tick();
+    assert!(!keymap.requires_polling());
+
+    // release @ time 150
+    let _ = keymap.handle_input_after_time(50, input::Event::Release { keymap_index: 0 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0x1, 0, 0, 0, 0, 0, 0, 0],
+        [0x1, 0, 0x5, 0, 0, 0, 0, 0],
+        [0x1, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn tap_th_key_with_overlapping_tap() {
+    // Assemble
+    let mut keymap = ObservedEventBasedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.tap_hold.timeout = 200,
+                config.tap_hold.interrupt_response = "HoldOnKeyTap",
+                keys = [
+                    K.A & K.hold K.LeftCtrl,
+                    K.B,
+                ],
+            }
+        "#
+    ));
+
+    // Act
+    // Event based interface 'fires' tick_to_next_scheduled_event
+    //  after the time from each handle_input_ call.
+
+    // Pressing TapHold key: A timeout is scheduled "at time 200"
+    // press   @ time   0 (schedule timeout after time 200)
+    let _ = keymap.handle_input_after_time(0, input::Event::Press { keymap_index: 0 });
+    assert!(!keymap.requires_polling());
+
+    // Interrupting Tap
+    // press   @ time  50
+    let _ = keymap.handle_input_after_time(50, input::Event::Press { keymap_index: 1 });
+    assert!(!keymap.requires_polling());
+
+    // release @ time 100
+    let _ = keymap.handle_input_after_time(50, input::Event::Release { keymap_index: 0 });
+    assert!(keymap.requires_polling());
+
+    // The event-based interface requires two ticks(?)
+    keymap.tick();
+    assert!(keymap.requires_polling());
+    keymap.tick();
+    assert!(!keymap.requires_polling());
+
+    // release @ time 150
+    let _ = keymap.handle_input_after_time(50, input::Event::Release { keymap_index: 1 });
+    assert!(!keymap.requires_polling());
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert
+    #[rustfmt::skip]
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0x4, 0, 0, 0, 0, 0],
+        [0, 0, 0x4, 0x5, 0, 0, 0, 0],
+        [0, 0, 0x5, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
