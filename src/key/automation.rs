@@ -191,11 +191,47 @@ impl<const INSTRUCTION_COUNT: usize> Default for Config<INSTRUCTION_COUNT> {
     }
 }
 
+struct ExecutionsDebugHelper<'a> {
+    execution_queue: &'a [Execution; EXECUTION_QUEUE_SIZE],
+}
+
+impl core::fmt::Debug for ExecutionsDebugHelper<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last non-empty execution to avoid printing large arrays.
+        let last_non_empty_exec_pos = self
+            .execution_queue
+            .iter()
+            .rposition(|exec| !exec.is_empty())
+            .map_or(0, |pos| pos + 1);
+        if last_non_empty_exec_pos < EXECUTION_QUEUE_SIZE {
+            f.debug_list()
+                .entries(&self.execution_queue[..last_non_empty_exec_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.execution_queue[..]).finish()
+        }
+    }
+}
+
 /// Context for automation keys.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq)]
 pub struct Context<const INSTRUCTION_COUNT: usize> {
     config: Config<INSTRUCTION_COUNT>,
     execution_queue: [Execution; EXECUTION_QUEUE_SIZE],
+}
+
+impl<const INSTRUCTION_COUNT: usize> core::fmt::Debug for Context<INSTRUCTION_COUNT> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Context")
+            .field("config", &self.config)
+            .field(
+                "execution_queue",
+                &ExecutionsDebugHelper {
+                    execution_queue: &self.execution_queue,
+                },
+            )
+            .finish()
+    }
 }
 
 impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
