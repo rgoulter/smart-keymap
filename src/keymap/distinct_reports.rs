@@ -2,8 +2,38 @@ use core::fmt::Debug;
 
 /// For tracking distinct HID reports from the keymap.
 #[cfg(feature = "std")]
-#[derive(Debug, Clone, Eq)]
+#[derive(Clone, Eq)]
 pub struct DistinctReports(Vec<[u8; 8]>);
+
+#[cfg(feature = "std")]
+struct ReportDebugHelper<'a>(&'a [u8; 8]);
+
+#[cfg(feature = "std")]
+impl Debug for ReportDebugHelper<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(
+            f,
+            "[{:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X} {:02X}]",
+            self.0[0], self.0[1], self.0[2], self.0[3], self.0[4], self.0[5], self.0[6], self.0[7]
+        )
+    }
+}
+
+#[cfg(feature = "std")]
+impl Debug for DistinctReports {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Debug fmt with each of the [u8; 8] on one line.
+        f.debug_tuple("DistinctReports")
+            .field(
+                &self
+                    .0
+                    .iter()
+                    .map(|r| ReportDebugHelper(r))
+                    .collect::<Vec<_>>(),
+            )
+            .finish()
+    }
+}
 
 #[cfg(feature = "std")]
 impl Default for DistinctReports {
