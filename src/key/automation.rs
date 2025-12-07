@@ -77,7 +77,7 @@ pub enum Instruction {
 }
 
 /// Config for automation keys.
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(Deserialize, Clone, Copy, PartialEq)]
 pub struct Config<const INSTRUCTION_COUNT: usize> {
     /// Concatenation of all the automation key instructions.
     ///
@@ -88,6 +88,44 @@ pub struct Config<const INSTRUCTION_COUNT: usize> {
     /// Duration (in ticks) of each instruction.
     #[serde(default = "default_instruction_duration")]
     pub instruction_duration: u16,
+}
+
+struct InstructionsDebugHelper<'a, const INSTRUCTION_COUNT: usize> {
+    instructions: &'a [Instruction; INSTRUCTION_COUNT],
+}
+
+impl<'a, const INSTRUCTION_COUNT: usize> core::fmt::Debug
+    for InstructionsDebugHelper<'a, INSTRUCTION_COUNT>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last non-NoOp instruction to avoid printing large arrays.
+        let last_non_noop_inst_pos = self
+            .instructions
+            .iter()
+            .rposition(|inst| *inst != Instruction::NoOp)
+            .map_or(0, |pos| pos + 1);
+        if last_non_noop_inst_pos < INSTRUCTION_COUNT {
+            f.debug_list()
+                .entries(&self.instructions[..last_non_noop_inst_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.instructions[..]).finish()
+        }
+    }
+}
+
+impl<const INSTRUCTION_COUNT: usize> core::fmt::Debug for Config<INSTRUCTION_COUNT> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Config")
+            .field(
+                "instructions",
+                &InstructionsDebugHelper {
+                    instructions: &self.instructions,
+                },
+            )
+            .field("instruction_duration", &self.instruction_duration)
+            .finish()
+    }
 }
 
 /// Constructs an array of instructions for the given array.
