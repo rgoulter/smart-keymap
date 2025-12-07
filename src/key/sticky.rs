@@ -79,8 +79,30 @@ impl Default for Config {
 
 const MAX_STICKY_MODIFIERS: u8 = 4;
 
+struct ActiveModifiersDebugHelper<'a> {
+    active_modifiers: &'a [key::KeyboardModifiers; MAX_STICKY_MODIFIERS as usize],
+}
+
+impl core::fmt::Debug for ActiveModifiersDebugHelper<'_> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last non-empty modifier to avoid printing large arrays.
+        let last_active_pos = self
+            .active_modifiers
+            .iter()
+            .rposition(|&pc| pc != key::KeyboardModifiers::NONE)
+            .map_or(0, |pos| pos + 1);
+        if last_active_pos < MAX_STICKY_MODIFIERS as usize {
+            f.debug_list()
+                .entries(&self.active_modifiers[..last_active_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.active_modifiers[..]).finish()
+        }
+    }
+}
+
 /// Sticky Modifiers context.
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct Context {
     /// The sticky modifier key configuration.
     pub config: Config,
@@ -90,6 +112,22 @@ pub struct Context {
     pub active_modifier_count: u8,
     /// Index of the next output resolved once a sticky key has been released.
     pub pressed_keymap_index: Option<u16>,
+}
+
+impl core::fmt::Debug for Context {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Context")
+            .field("config", &self.config)
+            .field(
+                "active_modifiers",
+                &ActiveModifiersDebugHelper {
+                    active_modifiers: &self.active_modifiers,
+                },
+            )
+            .field("active_modifier_count", &self.active_modifier_count)
+            .field("pressed_keymap_index", &self.pressed_keymap_index)
+            .finish()
+    }
 }
 
 impl Context {
