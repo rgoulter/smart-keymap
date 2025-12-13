@@ -40,6 +40,15 @@ let ADJUST_ = RAISE_ + 2 in
       SK_C = K.sticky K.LeftCtrl,
       SK_G = K.sticky K.LeftGUI,
       SK_A = K.sticky K.LeftAlt,
+
+      BTCL = K.bluetooth_profile.clear,
+      BTCA = K.bluetooth_profile.clear_all,
+      BTDC = K.bluetooth_profile.disconnect,
+      BTPN = K.bluetooth_profile.next,
+      BTPP = K.bluetooth_profile.previous,
+      BTP0 = K.bluetooth_profile.select 0,
+      BTP1 = K.bluetooth_profile.select 1,
+      BTP2 = K.bluetooth_profile.select 2,
     },
 
   layers = [
@@ -77,7 +86,7 @@ let ADJUST_ = RAISE_ + 2 in
     "%,
     # Adjust
     m%"
-      DVOR GAME TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
+      DVOR GAME TTTT TTTT TTTT TTTT                BTCL BTP0 BTP1 BTP2 TTTT BTCA
       TTTT BOOT TTTT TTTT TTTT TTTT                TTTT PSCR SCRL PAUS TTTT TTTT
       CAPS SK_A SK_G SK_C SK_S TTTT                TTTT SK_S SK_C SK_G SK_A CWTG
       TTTT TTTT TTTT TTTT TTTT TTTT                TTTT TTTT TTTT TTTT TTTT TTTT
