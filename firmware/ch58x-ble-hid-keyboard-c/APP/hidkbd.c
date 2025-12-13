@@ -272,7 +272,7 @@ void HidEmu_Init() {
   keymap_init();
   // keymap_tick is called in HidEmu_ProcessEvent's START_KEYMAP_TICK_EVT,
   // which is invoked by TMOS every 13 * 625 microseconds = 8.125ms.
-  keymap_set_ms_per_tick(8);
+  keymap_set_ms_per_tick(KEYMAP_POLLING_INTERVAL_MS);
 }
 
 /*********************************************************************
