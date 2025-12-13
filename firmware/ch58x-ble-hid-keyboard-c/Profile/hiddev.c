@@ -21,6 +21,7 @@
 #include "devinfoservice.h"
 #include "hiddev.h"
 #include "scanparamservice.h"
+#include "smart_keymap.h"
 
 /*********************************************************************
  * MACROS
@@ -88,6 +89,11 @@ static uint16_t gapConnHandle;
 // Status of last pairing
 static uint8_t pairingStatus = SUCCESS;
 
+// Stores address type of the currently connected peer device
+static uint8_t hidDevConnectedPeerAddrType = 0xFF; // Invalid type initially
+// Stores address of the currently connected peer device
+static uint8_t hidDevConnectedPeerAddr[B_ADDR_LEN] = {0}; // All zeros initially
+
 static hidRptMap_t *pHidDevRptTbl;
 
 static uint8_t hidDevRptTblLen;
@@ -127,6 +133,11 @@ static void hidDevLowAdvertising(void);
 static void hidDevInitialAdvertising(void);
 static uint8_t hidDevBondCount(void);
 static uint8_t HidDev_sendNoti(uint16_t handle, uint8_t len, uint8_t *pData);
+
+// Bluetooth Profile Command Handlers
+static void hidDev_handleBluetoothDisconnect(void);
+static void hidDev_handleBluetoothClearAll(void);
+static void hidDev_handleBluetoothClearCurrent(void);
 /*********************************************************************
  * PROFILE CALLBACKS
  */
@@ -190,6 +201,14 @@ void HidDev_Init() {
 
   // Setup a delayed profile startup
   tmos_set_event(hidDevTaskId, START_DEVICE_EVT);
+
+  // Register Bluetooth profile commands from smart_keymap
+  keymap_register_bluetooth_callback(BluetoothProfileDisconnect, hidDev_handleBluetoothDisconnect);
+  keymap_register_bluetooth_callback(BluetoothProfileClear, hidDev_handleBluetoothClearCurrent);
+  keymap_register_bluetooth_callback(BluetoothProfileClearAll, hidDev_handleBluetoothClearAll);
+
+  // BluetoothProfilePrevious, BluetoothProfileNext, and BluetoothProfileSelectX
+  // are not directly supported by the current GAPBondMgr APIs for a peripheral role.
 }
 
 /*********************************************************************
@@ -698,6 +717,10 @@ static void hidDevGapStateCB(gapRole_States_t newState,
     // get connection handle
     gapConnHandle = event->connectionHandle;
 
+    // Store connected device's address information
+    hidDevConnectedPeerAddrType = event->devAddrType;
+    tmos_memcpy(hidDevConnectedPeerAddr, event->devAddr, B_ADDR_LEN);
+
     // connection not secure yet
     hidDevConnSecure = FALSE;
 
@@ -709,6 +732,10 @@ static void hidDevGapStateCB(gapRole_States_t newState,
   else if (hidDevGapState == GAPROLE_CONNECTED &&
            newState != GAPROLE_CONNECTED) {
     hidDevDisconnected();
+
+    // Clear stored connected device's address information upon disconnect
+    hidDevConnectedPeerAddrType = 0xFF; // Invalidate
+    tmos_memset(hidDevConnectedPeerAddr, 0, B_ADDR_LEN); // Clear address buffer
 
     if (pairingStatus == SMP_PAIRING_FAILED_CONFIRM_VALUE) {
       // bonding failed due to mismatched confirm values
@@ -1062,5 +1089,65 @@ static uint8_t hidDevBondCount(void) {
   return (bondCnt);
 }
 
+/*********************************************************************
+ * @fn      hidDev_handleBluetoothDisconnect
+ *
+ * @brief   Handles the BluetoothProfileDisconnect command by closing the connection or stopping advertising.
+ *
+ * @param   None.
+ *
+ * @return  None.
+ */
+static void hidDev_handleBluetoothDisconnect(void)
+{
+    HidDev_Close();
+}
+
+/*********************************************************************
+ * @fn      hidDev_handleBluetoothClearAll
+ *
+ * @brief   Handles the BluetoothProfileClearAll command by erasing all bonded devices.
+ *
+ * @param   None.
+ *
+ * @return  None.
+ */
+static void hidDev_handleBluetoothClearAll(void)
+{
+    // Disconnect if currently connected before erasing all bonds
+    if (hidDevGapState == GAPROLE_CONNECTED)
+    {
+        GAPRole_TerminateLink(gapConnHandle);
+    }
+    // Erase all bonding information
+    GAPBondMgr_SetParameter(GAPBOND_ERASE_ALLBONDS, 0, NULL);
+}
+
+/*********************************************************************
+ * @fn      hidDev_handleBluetoothClearCurrent
+ *
+ * @brief   Handles the BluetoothProfileClear command by erasing the bond for the currently connected device.
+ *
+ * @param   None.
+ *
+ * @return  None.
+ */
+static void hidDev_handleBluetoothClearCurrent(void)
+{
+    // Only proceed if currently connected and we have valid peer address info
+    if (hidDevGapState == GAPROLE_CONNECTED && hidDevConnectedPeerAddrType != 0xFF)
+    {
+        uint8_t bondInfo[B_ADDR_LEN + 1]; // Buffer for address type + address
+        bondInfo[0] = hidDevConnectedPeerAddrType;
+        tmos_memcpy(&bondInfo[1], hidDevConnectedPeerAddr, B_ADDR_LEN);
+
+        // Disconnect the current link before attempting to erase its bond
+        GAPRole_TerminateLink(gapConnHandle);
+
+        // Erase the single bond for the currently connected device
+        GAPBondMgr_SetParameter(GAPBOND_ERASE_SINGLEBOND, (1 + B_ADDR_LEN), bondInfo);
+    }
+    // If not connected, there is no "current" profile to clear in this context.
+}
 /*********************************************************************
 *********************************************************************/
