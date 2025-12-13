@@ -30,25 +30,18 @@ void key_state_changed(uint32_t index, bool new_state) {
 #endif
 }
 
-void keyboard_matrix_scan(void) {
+void keyboard_matrix_scan(int8_t new_states[KEYBOARD_MATRIX_KEY_COUNT]) {
   keyboard_matrix_scan_raw(current_raw_scan);
 
   for (uint32_t i = 0; i < KEYBOARD_MATRIX_KEY_COUNT; i++) {
     if (current_raw_scan[i] == debounced_state[i]) {
       debounce_counter[i] = 0;
     } else {
-      if (current_raw_scan[i] != previous_raw_scan[i]) {
-        debounce_counter[i] = 0;
-      } else {
-        debounce_counter[i]++;
-      }
+      keys_pressed_count += current_raw_scan[i] ? 1 : -1;
 
-      if (debounce_counter[i] >= 5) {
-        keys_pressed_count += current_raw_scan[i] ? 1 : -1;
-
-        key_state_changed(i, current_raw_scan[i]);
-        debounced_state[i] = current_raw_scan[i];
-      }
+      new_states[i] = current_raw_scan[i] ? KEYBOARD_MATRIX_KEY_PRESSED
+                                          : KEYBOARD_MATRIX_KEY_RELEASED;
+      debounced_state[i] = current_raw_scan[i];
     }
 
     previous_raw_scan[i] = current_raw_scan[i];
