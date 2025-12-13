@@ -65,13 +65,13 @@
                   { Bluetooth = { Select } } =>
                     m%"
                       smart_keymap::keymap::KeymapCallback::Bluetooth(
-                        BluetoothProfileCommand::Select(%{Select |> std.to_string})
+                        smart_keymap::keymap::BluetoothProfileCommand::Select(%{Select |> std.to_string})
                       )
                     "%,
                   { Bluetooth } =>
                     m%"
                       smart_keymap::keymap::KeymapCallback::Bluetooth(
-                        BluetoothProfileCommand::%{Bluetooth}
+                        smart_keymap::keymap::BluetoothProfileCommand::%{Bluetooth}
                       )
                     "%,
                   { Custom = [i, j] } =>
