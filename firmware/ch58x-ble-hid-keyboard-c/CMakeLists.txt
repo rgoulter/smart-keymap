@@ -13,6 +13,9 @@ add_executable(HID_Keyboard)
 add_subdirectory(APP)
 add_subdirectory(Profile)
 
+# Use LSI=32.768kHz.
+target_compile_definitions(HID_Keyboard PUBLIC CLK_OSC32K=2)
+
 target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
 
 add_subdirectory(keyboard)
