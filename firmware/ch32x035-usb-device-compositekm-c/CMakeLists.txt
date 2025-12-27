@@ -8,6 +8,11 @@ if(NOT DEFINED BOARD)
   set(BOARD "ncl/boards/weact-ch32x-core-board.ncl" CACHE STRING "Board to build for")
 endif()
 
+cmake_path(ABSOLUTE_PATH BOARD
+  BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE BOARD_FULL_PATH
+)
+
 enable_language(C ASM)
 
 add_executable(usb-device-compositekm)
