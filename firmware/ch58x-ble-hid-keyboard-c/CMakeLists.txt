@@ -9,6 +9,11 @@ if(NOT DEFINED BOARD)
   set(BOARD "ncl/boards/wabble-60.ncl" CACHE STRING "Board to build for")
 endif()
 
+cmake_path(ABSOLUTE_PATH BOARD
+  BASE_DIRECTORY "${CMAKE_SOURCE_DIR}"
+  OUTPUT_VARIABLE BOARD_FULL_PATH
+)
+
 add_executable(HID_Keyboard)
 add_subdirectory(APP)
 add_subdirectory(Profile)
