@@ -96,9 +96,14 @@
             field_validators =
               let modifier_bitset_validator =
                 validators.record.validator {
-                  fields_validator = validators.record.has_only_fields ["layers"],
+                  fields_validator =
+                    validators.all_of [
+                      validators.record.has_any_field_of ["layers"],
+                      validators.record.has_only_fields ["layers", "mask"],
+                    ],
                   field_validators = {
                     layers = validators.is_number,
+                    mask = validators.is_number,
                   },
                 }
               in
@@ -154,6 +159,17 @@
                 include key_type,
                 variant = "SetActiveLayers",
                 rust_expr = "%{module}::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
+              },
+            { SetActiveLayers = { layers = active_layers_bitset, mask = layer_mask } } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "SetActiveLayers",
+                rust_expr =
+                  let layers_expr = active_layers_bitset |> std.to_string in
+                  let mask_expr = layer_mask |> std.to_string in
+                  "%{module}::ModifierKey::set_active_layers_from_bitset_with_mask(%{layers_expr}, %{mask_expr})",
               },
           },
 
