@@ -38,6 +38,16 @@
           { layer_modifier = { sticky } } => validators.is_number sticky,
           { layer_modifier = { toggle } } => validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
           { layer_modifier = { set_active_layers_to } } => (validators.array.validator validators.is_number) set_active_layers_to,
+          { layer_modifier = { set_active_layers_to, affected_layers } } =>
+            [
+              (validators.array.validator validators.is_number) set_active_layers_to,
+              (validators.array.validator validators.is_number) affected_layers,
+            ]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
+            },
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
         },
 
@@ -60,7 +70,22 @@
               |> std.array.map (std.number.pow 2)
               |> std.array.reduce_left (+)
             in
-            { SetActiveLayers = active_layers_bitset },
+            let modifier_bitset = { layers = active_layers_bitset } in
+            { SetActiveLayers = modifier_bitset },
+          { layer_modifier = { set_active_layers_to = active_layers, affected_layers = mask_layers } } =>
+            let bitset_from_int_array = fun int_array =>
+              int_array
+              |> std.array.map (std.number.pow 2)
+              |> std.array.reduce_left (+)
+            in
+            let active_layers_bitset = bitset_from_int_array active_layers in
+            let mask_bitset = bitset_from_int_array mask_layers in
+            let modifier_bitset = {
+              layers = active_layers_bitset,
+              mask = mask_bitset,
+            }
+            in
+            { SetActiveLayers = modifier_bitset },
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
         },
 
