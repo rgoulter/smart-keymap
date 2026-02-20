@@ -326,18 +326,18 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                     self.active_layers.activate(layer, ActivationStyle::Regular);
                 }
             }
-            LayerEvent::Set(ModifierBitset {
-                layers: layer_set, ..
-            }) => {
+            LayerEvent::Set(ModifierBitset { layers, mask }) => {
                 let max_layer = 1 + LAYER_COUNT.min(MAX_BITSET_LAYER);
 
                 // layer 0 is always active.
                 for li in 1..max_layer {
-                    if (layer_set & (1 << li)) != 0 {
-                        self.active_layers
-                            .activate(li as LayerIndex, ActivationStyle::Regular);
-                    } else {
-                        self.active_layers.deactivate(li as LayerIndex);
+                    if (mask & (1 << li)) != 0 {
+                        if (layers & (1 << li)) != 0 {
+                            self.active_layers
+                                .activate(li as LayerIndex, ActivationStyle::Regular);
+                        } else {
+                            self.active_layers.deactivate(li as LayerIndex);
+                        }
                     }
                 }
             }
