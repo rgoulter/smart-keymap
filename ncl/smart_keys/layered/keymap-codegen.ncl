@@ -93,12 +93,21 @@
                 validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
                 validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
               ],
-            field_validators = {
-              Hold = validators.is_number,
-              Toggle = validators.is_number,
-              Sticky = validators.is_number,
-              SetActiveLayers = validators.is_number,
-            },
+            field_validators =
+              let modifier_bitset_validator =
+                validators.record.validator {
+                  fields_validator = validators.record.has_only_fields ["layers"],
+                  field_validators = {
+                    layers = validators.is_number,
+                  },
+                }
+              in
+              {
+                Hold = validators.is_number,
+                Toggle = validators.is_number,
+                Sticky = validators.is_number,
+                SetActiveLayers = modifier_bitset_validator,
+              },
           },
 
         is_json = fun json => 'Ok == json_validator json,
@@ -138,7 +147,7 @@
                 variant = "Sticky",
                 rust_expr = "%{module}::ModifierKey::sticky(%{std.to_string layer_index})",
               },
-            { SetActiveLayers = active_layers_bitset } =>
+            { SetActiveLayers = { layers = active_layers_bitset } } =>
               {
                 include json,
                 include module,

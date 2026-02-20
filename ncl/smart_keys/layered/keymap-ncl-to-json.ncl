@@ -60,7 +60,8 @@
               |> std.array.map (std.number.pow 2)
               |> std.array.reduce_left (+)
             in
-            { SetActiveLayers = active_layers_bitset },
+            let modifier_bitset = { layers = active_layers_bitset } in
+            { SetActiveLayers = modifier_bitset },
           _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
         },
 
