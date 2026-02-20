@@ -21,6 +21,13 @@
         {
           layer_modifier = { set_active_layers_to = active_layers }
         },
+      set_active_layers_amongst = fun { set_active_layers_to = set_active_layers_to_, affected_layers = affected_layers_ } =>
+        {
+          layer_modifier = {
+            set_active_layers_to = set_active_layers_to_,
+            affected_layers = affected_layers_,
+          },
+        },
     },
 
     # Layer Transparency
