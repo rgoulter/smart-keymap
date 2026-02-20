@@ -46,8 +46,9 @@
       'Tap { layer_modifier = { toggle }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = toggle_layer al toggle } & layer_state,
-      'Press { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } or
-      'Tap { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } =>
+      'Press { layer_modifier = lmod @ { set_active_layers_to = new_active_layer_indices }, .. } or
+      'Tap { layer_modifier = lmod @ { set_active_layers_to = new_active_layer_indices }, .. } =>
+        # TODO: implement support for lmod.affected_layers
         let { active_layers, ..layer_state } = layer_state in
         let layer_count = std.array.length active_layers in
         let new_active_layers =
