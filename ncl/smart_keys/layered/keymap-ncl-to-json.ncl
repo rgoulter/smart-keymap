@@ -25,7 +25,57 @@
         actual = K.layer_mod.toggle 1 |> keymap_ncl.key.to_json_value,
         expected = { Toggle = 1 },
       },
+      check_json_value_set_active_layers_amongst = {
+        actual =
+          K.layer_mod.set_active_layers_amongst {
+            set_active_layers_to = [3],
+            affected_layers = [3, 4],
+          }
+          |> keymap_ncl.key.to_json_value,
+        expected = {
+          SetActiveLayers = {
+            layers = std.number.pow 2 3,
+            mask = (std.number.pow 2 3) + (std.number.pow 2 4),
+          },
+        },
+      },
+
+      check_layer_indices_to_bitset_empty = {
+        actual = layer_indices_to_bitset [],
+        expected = 0,
+      },
+
+      check_layer_indices_to_bitset_rejects_duplicates = {
+        actual = layer_indices_array [3, 3],
+        expected = 'Error { message = "layer indices must be unique" },
+      },
     },
+
+  unique_number_array = fun arr =>
+    if !std.is_array arr then
+      'Error { message = "Expected array" }
+    else
+      let unique =
+        arr
+        |> std.array.fold_left
+          (fun acc x => if std.array.elem x acc then acc else acc @ [x])
+          []
+      in
+      if (std.array.length unique) == (std.array.length arr) then
+        'Ok
+      else
+        'Error { message = "layer indices must be unique" },
+
+  layer_indices_array =
+    validators.all_of [
+      (validators.array.validator validators.is_number),
+      unique_number_array,
+    ],
+
+  layer_indices_to_bitset = fun layer_indices =>
+    layer_indices
+    |> std.array.map (std.number.pow 2)
+    |> std.array.fold_left (+) 0,
 
   keymap_ncl.layer_modifier
     | doc "for key::layered::ModifierKey."
@@ -48,8 +98,21 @@
           { layer_modifier = { hold } } => validators.is_number hold,
           { layer_modifier = { sticky } } => validators.is_number sticky,
           { layer_modifier = { toggle } } => validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
-          { layer_modifier = { set_active_layers_to } } => (validators.array.validator validators.is_number) set_active_layers_to,
-          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
+          { layer_modifier = { set_active_layers_to } } => layer_indices_array set_active_layers_to,
+          { layer_modifier = { set_active_layers_to, affected_layers } } =>
+            [
+              layer_indices_array set_active_layers_to,
+              layer_indices_array affected_layers,
+            ]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, _] => err,
+              [_, err] => err,
+            },
+          _ =>
+            'Error {
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+            },
         },
 
       is_key = fun k => 'Ok == key_validator k,
@@ -69,14 +132,19 @@
           { layer_modifier = { sticky = sticky_layer } } =>
             { Sticky = sticky_layer },
           { layer_modifier = { set_active_layers_to = active_layers } } =>
-            let active_layers_bitset =
-              active_layers
-              |> std.array.map (std.number.pow 2)
-              |> std.array.reduce_left (+)
-            in
-            let modifier_bitset = { layers = active_layers_bitset } in
+            let modifier_bitset = { layers = layer_indices_to_bitset active_layers } in
             { SetActiveLayers = modifier_bitset },
-          _ => 'Error { message = "expected { layer_modifier = { default_ } } or { layer_modifier = { hold } } or { layer_modifier = { toggle } }" },
+          { layer_modifier = { set_active_layers_to = active_layers, affected_layers = mask_layers } } =>
+            let modifier_bitset = {
+              layers = layer_indices_to_bitset active_layers,
+              mask = layer_indices_to_bitset mask_layers,
+            }
+            in
+            { SetActiveLayers = modifier_bitset },
+          _ =>
+            'Error {
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+            },
         },
 
       map_accum = fun f acc k => f acc k,
