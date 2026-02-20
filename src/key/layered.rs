@@ -110,6 +110,14 @@ impl ModifierKey {
         })
     }
 
+    /// Create a new [ModifierKey] that sets the active layers bitset.
+    pub const fn set_active_layers_from_bitset_with_mask(
+        layers: LayerBitset,
+        mask: LayerBitset,
+    ) -> Self {
+        ModifierKey::SetActiveLayers(ModifierBitset { layers, mask })
+    }
+
     /// Create a new [ModifierKey] that sets the default layer.
     pub const fn default(layer: LayerIndex) -> Self {
         ModifierKey::Default(layer)
