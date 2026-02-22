@@ -327,7 +327,7 @@ uint16_t HidEmu_ProcessEvent(uint8_t task_id, uint16_t events) {
 
   if (events & START_PHY_UPDATE_EVT) {
     // start phy update
-    PRINT("Send Phy Update %x...\r\n",
+    PRINT("HidEmu_ProcessEvent: START_PHY_UPDATE_EVT: Send Phy Update %x...\r\n",
           GAPRole_UpdatePHY(hidEmuConnHandle, 0, GAP_PHY_BIT_LE_2M,
                             GAP_PHY_BIT_LE_2M, GAP_PHY_OPTIONS_NOPRE));
 
@@ -576,12 +576,12 @@ static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent) {
     uint8_t ownAddr[6];
     GAPRole_GetParameter(GAPROLE_BD_ADDR, ownAddr);
     GAP_ConfigDeviceAddr(ADDRTYPE_STATIC, ownAddr);
-    PRINT("Initialized..\r\n");
+    PRINT("hidDevCB_t.pfnStateChange: STARTED: Initialized..\r\n");
   } break;
 
   case GAPROLE_ADVERTISING:
     if (pEvent->gap.opcode == GAP_MAKE_DISCOVERABLE_DONE_EVENT) {
-      PRINT("Advertising..\r\n");
+      PRINT("hidDevCB_t.pfnStateChange: ADVERTISING: Advertising..\r\n");
     }
     break;
 
@@ -593,23 +593,23 @@ static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent) {
       hidEmuConnHandle = event->connectionHandle;
       tmos_start_task(hidEmuTaskId, START_PARAM_UPDATE_EVT,
                       START_PARAM_UPDATE_EVT_DELAY);
-      PRINT("Connected..\r\n");
+      PRINT("hidDevCB_t.pfnStateChange: CONNECTED: Connected..\r\n");
     }
     break;
 
   case GAPROLE_CONNECTED_ADV:
     if (pEvent->gap.opcode == GAP_MAKE_DISCOVERABLE_DONE_EVENT) {
-      PRINT("Connected Advertising..\r\n");
+      PRINT("hidDevCB_t.pfnStateChange: CONNECTED_ADV: Connected Advertising..\r\n");
     }
     break;
 
   case GAPROLE_WAITING:
     if (pEvent->gap.opcode == GAP_END_DISCOVERABLE_DONE_EVENT) {
-      PRINT("Waiting for advertising..\r\n");
+      PRINT("hidDevCB_t.pfnStateChange: WAITING: Waiting for advertising..\r\n");
     } else if (pEvent->gap.opcode == GAP_LINK_TERMINATED_EVENT) {
-      PRINT("Disconnected.. Reason:%x\r\n", pEvent->linkTerminate.reason);
+      PRINT("hidDevCB_t.pfnStateChange: WAITING: Disconnected.. Reason:%x\r\n", pEvent->linkTerminate.reason);
     } else if (pEvent->gap.opcode == GAP_LINK_ESTABLISHED_EVENT) {
-      PRINT("Advertising timeout..\r\n");
+      PRINT("hidDevCB_t.pfnStateChange: WAITING: Advertising timeout..\r\n");
     }
     // Enable advertising
     {
@@ -621,7 +621,7 @@ static void hidEmuStateCB(gapRole_States_t newState, gapRoleEvent_t *pEvent) {
     break;
 
   case GAPROLE_ERROR:
-    PRINT("Error %x ..\r\n", pEvent->gap.opcode);
+    PRINT("hidDevCB_t.pfnStateChange: ERROR: Error %x ..\r\n", pEvent->gap.opcode);
     break;
 
   default:

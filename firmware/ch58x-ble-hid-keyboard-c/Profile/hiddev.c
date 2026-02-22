@@ -606,7 +606,7 @@ static void hidDevProcessGattMsg(gattMsgEvent_t *pMsg) {}
 static void hidDevProcessGAPMsg(gapRoleEvent_t *pEvent) {
   switch (pEvent->gap.opcode) {
   case GAP_SCAN_REQUEST_EVENT: {
-    PRINT("recv scan Req addr ");
+    PRINT("hidDevProcessGAPMsg: SCAN_REQUEST_EVENT: recv scan Req addr ");
     for (int i = 0; i < B_ADDR_LEN; i++)
       PRINT("%02x ", pEvent->scanReqEvt.scannerAddr[i]);
     PRINT("\r\n");
@@ -614,7 +614,7 @@ static void hidDevProcessGAPMsg(gapRoleEvent_t *pEvent) {
   }
 
   case GAP_PHY_UPDATE_EVENT: {
-    PRINT("Phy update Rx:%x Tx:%x ..\r\n", pEvent->linkPhyUpdate.connRxPHYS,
+    PRINT("hidDevProcessGAPMsg: PHY_UPDATE_EVENT: Phy update Rx:%x Tx:%x ..\r\n", pEvent->linkPhyUpdate.connRxPHYS,
           pEvent->linkPhyUpdate.connTxPHYS);
     break;
   }
@@ -745,7 +745,7 @@ static void hidDevGapStateCB(gapRole_States_t newState,
 static void hidDevParamUpdateCB(uint16_t connHandle, uint16_t connInterval,
                                 uint16_t connSlaveLatency,
                                 uint16_t connTimeout) {
-  PRINT("Update %d - Int 0x%x - Latency %d\r\n", connHandle, connInterval,
+  PRINT("gapRolesCBs_t.pfnParamUpdate: Update %d - Int 0x%x - Latency %d\r\n", connHandle, connInterval,
         connSlaveLatency);
 }
 
