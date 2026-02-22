@@ -22,6 +22,7 @@ add_subdirectory(Profile)
 target_compile_definitions(HID_Keyboard PUBLIC CLK_OSC32K=2)
 
 target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
+target_compile_definitions(HID_Keyboard PUBLIC DEBUG=1)
 
 add_subdirectory(keyboard)
 target_link_libraries(HID_Keyboard keyboard)
