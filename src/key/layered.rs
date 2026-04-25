@@ -619,8 +619,8 @@ impl<
         key::KeyEvents<Self::Event>,
     ) {
         match key_ref {
-            Ref::Modifier(i) => {
-                let key = self.modifier_keys[i as usize];
+            Ref::Modifier(mod_key_index) => {
+                let key = self.modifier_keys[mod_key_index as usize];
                 let (m_ks, maybe_lmod_ev) = key.new_pressed_key();
                 let pks = key::PressedKeyResult::Resolved(m_ks);
                 let pke = match maybe_lmod_ev {
