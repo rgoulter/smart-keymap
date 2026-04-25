@@ -1278,6 +1278,7 @@ impl<K: Debug + Keys> key::System<Ref> for System<K> {
             (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
             (Ref::Mouse(r), KeyState::Mouse(ks)) => self.mouse.key_output(r, ks),
             (Ref::Sticky(r), KeyState::Sticky(ks)) => self.sticky.key_output(r, ks),
+            (Ref::Layered(r), KeyState::LayerModifier(ks)) => self.layered.key_output(r, ks),
             (_, _) => None,
         }
     }
