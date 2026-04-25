@@ -6,6 +6,7 @@ use serde::Deserialize;
 
 use crate::input;
 use crate::key;
+use crate::key::KeyboardModifiers;
 
 /// The type used for layer index.
 pub type LayerIndex = u32;
@@ -29,8 +30,8 @@ pub enum Ref {
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum ModifierKey {
-    /// Activates the given layer when the held.
-    Hold(LayerIndex),
+    /// Activates the given layer when held.
+    Hold(LayerIndex, KeyboardModifiers),
     /// Toggles whether the given layer is active when pressed.
     Toggle(LayerIndex),
     /// Sticky layer modifier, similar to sticky modifier key.
@@ -47,7 +48,15 @@ pub enum ModifierKey {
 impl ModifierKey {
     /// Create a new [ModifierKey] that activates the given layer when held.
     pub const fn hold(layer: LayerIndex) -> Self {
-        ModifierKey::Hold(layer)
+        ModifierKey::Hold(layer, key::KeyboardModifiers::NONE)
+    }
+
+    /// Adds keyboard modifiers to a Hold modifier key.
+    pub const fn with_keyboard_modifiers(self, mods: key::KeyboardModifiers) -> Self {
+        match self {
+            ModifierKey::Hold(layer, _) => ModifierKey::Hold(layer, mods),
+            other => other,
+        }
     }
 
     /// Create a new [ModifierKey] that activates the layer when held, or makes it sticky when tapped.
@@ -95,7 +104,7 @@ impl ModifierKey {
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::Activated] event.
     pub fn new_pressed_key(&self) -> (ModifierKeyState, Option<LayerEvent>) {
         match self {
-            ModifierKey::Hold(layer) => {
+            ModifierKey::Hold(layer, _) => {
                 (ModifierKeyState::new(), Some(LayerEvent::Activated(*layer)))
             }
             ModifierKey::Toggle(layer) => {
@@ -524,7 +533,7 @@ impl ModifierKeyState {
         key: &ModifierKey,
     ) -> Option<LayerEvent> {
         match key {
-            ModifierKey::Hold(layer) => match event {
+            ModifierKey::Hold(layer, _) => match event {
                 key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                     if keymap_index == ki {
                         Some(LayerEvent::Deactivated(*layer))
@@ -675,10 +684,20 @@ impl<
 
     fn key_output(
         &self,
-        _key_ref: &Self::Ref,
+        key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        None
+        if let Ref::Modifier(mod_key_index) = key_ref {
+            let key = self.modifier_keys[*mod_key_index as usize];
+            match key {
+                ModifierKey::Hold(_, mods) if mods != key::KeyboardModifiers::NONE => {
+                    Some(key::KeyOutput::from_key_modifiers(mods))
+                }
+                _ => None,
+            }
+        } else {
+            None
+        }
     }
 }
 
@@ -707,7 +726,7 @@ mod tests {
     #[test]
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
         let layer = 1;
-        let key = ModifierKey::Hold(layer);
+        let key = ModifierKey::hold(layer);
 
         let (_pressed_key, layer_event) = key.new_pressed_key();
 
@@ -718,7 +737,7 @@ mod tests {
     fn test_releasing_hold_modifier_key_emits_event_deactivate_layer() {
         // Assemble: press a Hold layer modifier key
         let layer = 1;
-        let key = ModifierKey::Hold(layer);
+        let key = ModifierKey::hold(layer);
         let keymap_index = 9; // arbitrary
         let (mut pressed_key_state, _) = key.new_pressed_key();
 
@@ -746,7 +765,7 @@ mod tests {
     fn test_releasing_different_hold_modifier_key_does_not_emit_event() {
         // Assemble: press a Hold layer modifier key
         let layer = 1;
-        let key = ModifierKey::Hold(layer);
+        let key = ModifierKey::hold(layer);
         let keymap_index = 9; // arbitrary
         let (mut pressed_key_state, _) = key.new_pressed_key();
 
