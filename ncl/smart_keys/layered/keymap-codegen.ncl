@@ -67,7 +67,7 @@
   checks.layer_modifier_is = {
     # Use a json value to check the "is" predicate.
     check_json_is_hold =
-      let json = { Hold = 0 } in
+      let json = { Hold = [0, 0] } in
       smart_keymap.layered.modifier_key.is_json json,
     check_json_is_toggle =
       let json = { Toggle = 1 } in
@@ -85,7 +85,7 @@
         key_type = "%{module}::ModifierKey",
 
         # c.f. doc_de_layered.md.
-        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer), SetActiveLayers([layer, ...]).
+        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer, kb_mods), SetActiveLayers([layer, ...]).
         json_validator =
           validators.record.validator {
             fields_validator =
@@ -94,7 +94,20 @@
                 validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
               ],
             field_validators = {
-              Hold = validators.is_number,
+              Hold = fun hold =>
+                hold
+                |> match {
+                  [layer_index, kb_mods] =>
+                    let valid_layer_index = validators.is_number layer_index in
+                    let valid_kb_mods = validators.is_number kb_mods in
+                    [valid_layer_index, valid_kb_mods]
+                    |> match {
+                      ['Ok, 'Ok] => 'Ok,
+                      [err, 'Ok] => err,
+                      ['Ok, err] => err,
+                    },
+                  _ => 'Error { message = "expected Hold to be [layer_index, kb_mods]" },
+                },
               Toggle = validators.is_number,
               Sticky = validators.is_number,
               SetActiveLayers = validators.is_number,
@@ -114,13 +127,20 @@
                 variant = "Default",
                 rust_expr = "%{module}::ModifierKey::default(%{std.to_string layer_index})",
               },
-            { Hold = layer_index } =>
+            { Hold = [layer_index, kb_mods] } =>
               {
                 include json,
                 include module,
                 include key_type,
                 variant = "Hold",
-                rust_expr = "%{module}::ModifierKey::hold(%{std.to_string layer_index})",
+                rust_expr =
+                  let layer_index_expr = layer_index |> std.to_string in
+                  let key_expr = "%{module}::ModifierKey::hold(%{layer_index_expr})" in
+                  if kb_mods == 0 then
+                    key_expr
+                  else
+                    let kmod_expr = "smart_keymap::key::KeyboardModifiers::from_byte(%{kb_mods |> std.to_string})" in
+                    "(%{key_expr}).with_keyboard_modifiers(%{kmod_expr})",
               },
             { Toggle = layer_index } =>
               {
