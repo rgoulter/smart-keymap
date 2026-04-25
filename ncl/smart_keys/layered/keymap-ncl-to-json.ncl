@@ -10,8 +10,8 @@
       },
 
       check_json_value_hold = {
-        actual = K.layer_mod.hold 0 |> keymap_ncl.key.to_json_value,
-        expected = { Hold = 0 },
+        actual = K.layer_mod.hold 3 |> keymap_ncl.key.to_json_value,
+        expected = { Hold = [3, 0] },
       },
 
       keymap_example_toggle = {
@@ -49,7 +49,7 @@
           { layer_modifier = { default_ = default_layer } } =>
             { Default = default_layer },
           { layer_modifier = { hold = hold_layer } } =>
-            { Hold = hold_layer },
+            { Hold = [hold_layer, 0] },
           { layer_modifier = { toggle = toggle_layer } } =>
             { Toggle = toggle_layer },
           { layer_modifier = { sticky = sticky_layer } } =>
