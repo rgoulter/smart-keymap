@@ -1,6 +1,8 @@
 {
   validators,
 
+  keyboard_modifiers,
+
   checks.layer_modifier =
     let K = import "keys.ncl" in
     {
@@ -34,6 +36,15 @@
         k
         |> match {
           { layer_modifier = { default_ } } => validators.is_number default_,
+          { layer_modifier = { hold }, modifiers } =>
+            let layer_validation = validators.is_number hold in
+            let mods_validation = keyboard_modifiers.validator modifiers in
+            [layer_validation, mods_validation]
+            |> match {
+              ['Ok, 'Ok] => 'Ok,
+              [err, 'Ok] => err,
+              ['Ok, err] => err,
+            },
           { layer_modifier = { hold } } => validators.is_number hold,
           { layer_modifier = { sticky } } => validators.is_number sticky,
           { layer_modifier = { toggle } } => validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
@@ -48,6 +59,9 @@
         |> match {
           { layer_modifier = { default_ = default_layer } } =>
             { Default = default_layer },
+          { layer_modifier = { hold = hold_layer }, modifiers = km } =>
+            let km = keyboard_modifiers.to_json_value km in
+            { Hold = [hold_layer, km] },
           { layer_modifier = { hold = hold_layer } } =>
             { Hold = [hold_layer, 0] },
           { layer_modifier = { toggle = toggle_layer } } =>
