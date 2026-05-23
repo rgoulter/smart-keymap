@@ -25,206 +25,202 @@
         }
       ),
 
-    abbreviations = {
-      keys,
+    keyboard_abbreviations = fun keys =>
+      {
+        XXXX = keys.NO,
 
-      XXXX = keys.NO,
+        RET = keys.Return,
+        ESC = keys.Escape,
+        BSPC = keys.Backspace,
+        TAB = keys.Tab,
+        SPC = keys.Space,
 
-      RET = keys.Return,
-      ESC = keys.Escape,
-      BSPC = keys.Backspace,
-      TAB = keys.Tab,
-      SPC = keys.Space,
+        ENT = keys.Enter,
 
-      ENT = keys.Enter,
+        EXCL = keys.Exclaim,
+        AT = keys.At,
+        HASH = keys.Hash,
+        DLR = keys.Dollar,
+        PCT = keys.Percent,
+        CARE = keys.Caret, # ^
+        AMP = keys.Ampersand,
+        ASTR = keys.Asterisk,
+        LPRN = keys.LeftParen,
+        RPRN = keys.RightParen,
 
-      EXCL = keys.Exclaim,
-      AT = keys.At,
-      HASH = keys.Hash,
-      DLR = keys.Dollar,
-      PCT = keys.Percent,
-      CARE = keys.Caret, # ^
-      AMP = keys.Ampersand,
-      ASTR = keys.Asterisk,
-      LPRN = keys.LeftParen,
-      RPRN = keys.RightParen,
+        PERC = keys.Percent,
+        CIRC = keys.Circumflex, # ^
 
-      PERC = keys.Percent,
-      CIRC = keys.Circumflex, # ^
+        LBRK = keys.LeftBracket, # [
+        LCBR = keys.LeftCurlyBracket, # {
+        LBRC = keys.LeftBrace, # {
+        RBRK = keys.RightBracket,
+        RCBR = keys.RightCurlyBracket,
+        RBRC = keys.RightBrace,
 
-      LBRK = keys.LeftBracket, # [
-      LCBR = keys.LeftCurlyBracket, # {
-      LBRC = keys.LeftBrace, # {
-      RBRK = keys.RightBracket,
-      RCBR = keys.RightCurlyBracket,
-      RBRC = keys.RightBrace,
+        GRV = keys.Grave, # `
+        TILD = keys.Tilde, # ~
 
-      GRV = keys.Grave, # `
-      TILD = keys.Tilde, # ~
+        MINS = keys.Minus,
+        UNDS = keys.Underscore,
+        EQLS = keys.Equals,
+        PLUS = keys.Plus,
 
-      MINS = keys.Minus,
-      UNDS = keys.Underscore,
-      EQLS = keys.Equals,
-      PLUS = keys.Plus,
+        SLSH = keys.Slash,
+        QUES = keys.Question,
+        BSLS = keys.Backslash,
+        PIPE = keys.Pipe,
 
-      SLSH = keys.Slash,
-      QUES = keys.Question,
-      BSLS = keys.Backslash,
-      PIPE = keys.Pipe,
+        SCLN = keys.Semicolon,
+        COLN = keys.Colon,
+        QUOT = keys.Quote,
+        DQUO = keys.DoubleQuote,
 
-      SCLN = keys.Semicolon,
-      COLN = keys.Colon,
-      QUOT = keys.Quote,
-      DQUO = keys.DoubleQuote,
+        COMM = keys.Comma,
+        LABR = keys.LeftAngleBracket,
+        DOT = keys.Dot,
+        RABR = keys.RightAngleBracket,
 
-      COMM = keys.Comma,
-      LABR = keys.LeftAngleBracket,
-      DOT = keys.Dot,
-      RABR = keys.RightAngleBracket,
+        CAPS = keys.CapsLock,
 
-      CAPS = keys.CapsLock,
+        PSCR = keys.PrintScreen,
+        SCRL = keys.ScrollLock,
+        PAUS = keys.Pause,
 
-      PSCR = keys.PrintScreen,
-      SCRL = keys.ScrollLock,
-      PAUS = keys.Pause,
+        SLCK = keys.ScrollLock,
 
-      SLCK = keys.ScrollLock,
+        INS = keys.Insert,
+        HOME = keys.Home,
+        PGUP = keys.PageUp,
+        DEL = keys.Delete,
+        END = keys.End,
+        PGDN = keys.PageDown,
 
-      INS = keys.Insert,
-      HOME = keys.Home,
-      PGUP = keys.PageUp,
-      DEL = keys.Delete,
-      END = keys.End,
-      PGDN = keys.PageDown,
+        RGHT = keys.Right,
+        LEFT = keys.Left,
+        DOWN = keys.Down,
+        UP = keys.Up,
 
-      RGHT = keys.Right,
-      LEFT = keys.Left,
-      DOWN = keys.Down,
-      UP = keys.Up,
+        NPNL = keys.NumLock,
+        NPSL = keys.NPSlash,
+        NPST = keys.NPStar,
+        NPMN = keys.NPMinus,
+        NPPL = keys.NPPlus,
+        NPEN = keys.NPEnter,
+        NPDT = keys.NPDot,
 
-      NPNL = keys.NumLock,
-      NPSL = keys.NPSlash,
-      NPST = keys.NPStar,
-      NPMN = keys.NPMinus,
-      NPPL = keys.NPPlus,
-      NPEN = keys.NPEnter,
-      NPDT = keys.NPDot,
+        LCTL = keys.LeftCtrl,
+        LSFT = keys.LeftShift,
+        LALT = keys.LeftAlt,
+        LGUI = keys.LeftGUI,
+        RCTL = keys.RightCtrl,
+        RSFT = keys.RightShift,
+        RALT = keys.RightAlt,
+        RGUI = keys.RightGUI,
 
-      LCTL = keys.LeftCtrl,
-      LSFT = keys.LeftShift,
-      LALT = keys.LeftAlt,
-      LGUI = keys.LeftGUI,
-      RCTL = keys.RightCtrl,
-      RSFT = keys.RightShift,
-      RALT = keys.RightAlt,
-      RGUI = keys.RightGUI,
+        APPN = keys.Application,
 
-      APPN = keys.Application,
+        NUSH = keys.NonUSHash,
+        NUSB = keys.NonUSBackslash,
 
-      NUSH = keys.NonUSHash,
-      NUSB = keys.NonUSBackslash,
+        RST = keys.reset,
+        BOOT = keys.reset_to_bootloader,
 
-      RST = keys.reset,
-      BOOT = keys.reset_to_bootloader,
+        CWTG = keys.caps_word.toggle,
+      },
 
-      CWTG = keys.caps_word.toggle,
-    },
+    keyboard_aliases = fun keys =>
+      {
+        Enter = keys.Return,
+        Circumflex = keys.Caret, # ^
+        LeftBrace = keys.LeftCurlyBracket, # {
+        RightBrace = keys.RightCurlyBracket,
+      },
 
-    aliases = {
-      keys,
+    literals = fun keys =>
+      {
+        "1" = keys.N1,
+        "2" = keys.N2,
+        "3" = keys.N3,
+        "4" = keys.N4,
+        "5" = keys.N5,
+        "6" = keys.N6,
+        "7" = keys.N7,
+        "8" = keys.N8,
+        "9" = keys.N9,
+        "0" = keys.N0,
 
-      Enter = keys.Return,
-      Circumflex = keys.Caret, # ^
-      LeftBrace = keys.LeftCurlyBracket, # {
-      RightBrace = keys.RightCurlyBracket,
-    },
+        "!" = keys.Exclaim,
+        "@" = keys.At,
+        "#" = keys.Hash,
+        "$" = keys.Dollar,
+        "%" = keys.Percent,
+        "^" = keys.Caret,
+        "&" = keys.Ampersand,
+        "*" = keys.Asterisk,
+        "(" = keys.LeftParen,
+        ")" = keys.RightParen,
 
-    literals = {
-      keys,
+        "[" = keys.LeftBracket,
+        "{" = keys.LeftCurlyBracket,
+        "]" = keys.RightBracket,
+        "}" = keys.RightCurlyBracket,
 
-      "1" = keys.N1,
-      "2" = keys.N2,
-      "3" = keys.N3,
-      "4" = keys.N4,
-      "5" = keys.N5,
-      "6" = keys.N6,
-      "7" = keys.N7,
-      "8" = keys.N8,
-      "9" = keys.N9,
-      "0" = keys.N0,
+        "`" = keys.Grave,
+        "~" = keys.Tilde,
 
-      "!" = keys.Exclaim,
-      "@" = keys.At,
-      "#" = keys.Hash,
-      "$" = keys.Dollar,
-      "%" = keys.Percent,
-      "^" = keys.Caret,
-      "&" = keys.Ampersand,
-      "*" = keys.Asterisk,
-      "(" = keys.LeftParen,
-      ")" = keys.RightParen,
+        "-" = keys.Minus,
+        "_" = keys.Underscore,
+        "=" = keys.Equals,
+        "+" = keys.Plus,
 
-      "[" = keys.LeftBracket,
-      "{" = keys.LeftCurlyBracket,
-      "]" = keys.RightBracket,
-      "}" = keys.RightCurlyBracket,
+        "/" = keys.Slash,
+        "?" = keys.Question,
+        "\\" = keys.Backslash,
+        "|" = keys.Pipe,
 
-      "`" = keys.Grave,
-      "~" = keys.Tilde,
+        ";" = keys.Semicolon,
+        ":" = keys.Colon,
+        "'" = keys.Quote,
+        "\"" = keys.DoubleQuote,
 
-      "-" = keys.Minus,
-      "_" = keys.Underscore,
-      "=" = keys.Equals,
-      "+" = keys.Plus,
+        "," = keys.Comma,
+        "<" = keys.LeftAngleBracket,
+        "." = keys.Dot,
+        ">" = keys.RightAngleBracket,
 
-      "/" = keys.Slash,
-      "?" = keys.Question,
-      "\\" = keys.Backslash,
-      "|" = keys.Pipe,
+        " " = keys.Space,
+      },
 
-      ";" = keys.Semicolon,
-      ":" = keys.Colon,
-      "'" = keys.Quote,
-      "\"" = keys.DoubleQuote,
+    keyboard_shifted = fun keys =>
+      {
+        Exclaim = keys.N1 & keys.LeftShift,
+        At = keys.N2 & keys.LeftShift,
+        Hash = keys.N3 & keys.LeftShift,
+        Dollar = keys.N4 & keys.LeftShift,
+        Percent = keys.N5 & keys.LeftShift,
+        Caret = keys.N6 & keys.LeftShift, # ^
+        Ampersand = keys.N7 & keys.LeftShift,
+        Asterisk = keys.N8 & keys.LeftShift,
+        LeftParen = keys.N9 & keys.LeftShift,
+        RightParen = keys.N0 & keys.LeftShift,
 
-      "," = keys.Comma,
-      "<" = keys.LeftAngleBracket,
-      "." = keys.Dot,
-      ">" = keys.RightAngleBracket,
+        LeftCurlyBracket = keys.LeftBracket & keys.LeftShift,
+        RightCurlyBracket = keys.RightBracket & keys.LeftShift,
 
-      " " = keys.Space,
-    },
+        Tilde = keys.Grave & keys.LeftShift, # ~
 
-    shifted = {
-      keys,
+        Plus = keys.Equals & keys.LeftShift,
+        Underscore = keys.Minus & keys.LeftShift,
 
-      Exclaim = keys.N1 & keys.LeftShift,
-      At = keys.N2 & keys.LeftShift,
-      Hash = keys.N3 & keys.LeftShift,
-      Dollar = keys.N4 & keys.LeftShift,
-      Percent = keys.N5 & keys.LeftShift,
-      Caret = keys.N6 & keys.LeftShift, # ^
-      Ampersand = keys.N7 & keys.LeftShift,
-      Asterisk = keys.N8 & keys.LeftShift,
-      LeftParen = keys.N9 & keys.LeftShift,
-      RightParen = keys.N0 & keys.LeftShift,
+        Question = keys.Slash & keys.LeftShift,
+        Pipe = keys.Backslash & keys.LeftShift,
 
-      LeftCurlyBracket = keys.LeftBracket & keys.LeftShift,
-      RightCurlyBracket = keys.RightBracket & keys.LeftShift,
+        Colon = keys.Semicolon & keys.LeftShift,
+        DoubleQuote = keys.Quote & keys.LeftShift,
 
-      Tilde = keys.Grave & keys.LeftShift, # ~
-
-      Plus = keys.Equals & keys.LeftShift,
-      Underscore = keys.Minus & keys.LeftShift,
-
-      Question = keys.Slash & keys.LeftShift,
-      Pipe = keys.Backslash & keys.LeftShift,
-
-      Colon = keys.Semicolon & keys.LeftShift,
-      DoubleQuote = keys.Quote & keys.LeftShift,
-
-      LeftAngleBracket = keys.Comma & keys.LeftShift,
-      RightAngleBracket = keys.Dot & keys.LeftShift,
-    },
+        LeftAngleBracket = keys.Comma & keys.LeftShift,
+        RightAngleBracket = keys.Dot & keys.LeftShift,
+      },
   },
 }

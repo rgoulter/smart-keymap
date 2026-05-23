@@ -18,22 +18,21 @@
       MouseWheelLeft = { mouse = "WheelLeft" },
       MouseWheelRight = { mouse = "WheelRight" },
     },
-    aliases = {
-      keys,
+    mouse_aliases = fun keys =>
+      {
+        MouseBtn1 = keys.MouseButton1,
+        MouseBtn2 = keys.MouseButton2,
+        MouseBtn3 = keys.MouseButton3,
+        MouseBtn4 = keys.MouseButton4,
+        MouseBtn5 = keys.MouseButton5,
+        MouseBtn6 = keys.MouseButton6,
+        MouseBtn7 = keys.MouseButton7,
+        MouseBtn8 = keys.MouseButton8,
 
-      MouseBtn1 = keys.MouseButton1,
-      MouseBtn2 = keys.MouseButton2,
-      MouseBtn3 = keys.MouseButton3,
-      MouseBtn4 = keys.MouseButton4,
-      MouseBtn5 = keys.MouseButton5,
-      MouseBtn6 = keys.MouseButton6,
-      MouseBtn7 = keys.MouseButton7,
-      MouseBtn8 = keys.MouseButton8,
-
-      MouseScrollUp = keys.MouseWheelUp,
-      MouseScrollDown = keys.MouseWheelDown,
-      MouseScrollLeft = keys.MouseWheelLeft,
-      MouseScrollRight = keys.MouseWheelRight,
-    },
+        MouseScrollUp = keys.MouseWheelUp,
+        MouseScrollDown = keys.MouseWheelDown,
+        MouseScrollLeft = keys.MouseWheelLeft,
+        MouseScrollRight = keys.MouseWheelRight,
+      },
   },
 }
