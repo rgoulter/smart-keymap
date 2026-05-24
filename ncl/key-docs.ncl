@@ -1,10 +1,16 @@
 {
   key_extensions = (import "key-extensions.ncl").key_extensions,
+  keys = import "keys.ncl",
 
   grouped_key_fields =
     std.record.map_values
       (fun key_extension =>
-        key_extension
+        (
+          if std.typeof key_extension == 'Function then
+            key_extension keys
+          else
+            key_extension
+        )
         |> std.record.fields
         |> std.array.filter ((!=) "keys")
       )
