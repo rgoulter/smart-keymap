@@ -1,7 +1,7 @@
 name: Rust Checks (thumbv6m-none-eabi)
 
 env:
-  NICKEL_VERSION: 1.12.2
+  NICKEL_VERSION: 1.16.0
 
 on:
   push:
