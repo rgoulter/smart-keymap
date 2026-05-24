@@ -5,9 +5,6 @@ let rec keys =
     extend_keys
     { include keys }
     [
-      key_extensions.abbreviations,
-      key_extensions.aliases,
-      key_extensions.automation,
       key_extensions.callback,
       key_extensions.caps_word,
       key_extensions.consumer,
@@ -19,5 +16,8 @@ let rec keys =
       key_extensions.shifted,
       key_extensions.sticky,
       key_extensions.tap_hold,
+      key_extensions.abbreviations,
+      key_extensions.aliases,
+      key_extensions.automation,
     ]
 in keys |> std.record.remove "keys"
