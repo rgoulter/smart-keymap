@@ -5,7 +5,7 @@ env:
   FIRMWARE: firmware/ch32x035-usb-device-compositekm-c
   SMART_KEYMAP_CUSTOM_KEYMAP: tests/ncl/keymap-48key-rgoulter/keymap.ncl
   GCC_VERSION: 14.2.0-3
-  NICKEL_VERSION: 1.12.2
+  NICKEL_VERSION: 1.16.0
 
 on:
   push:

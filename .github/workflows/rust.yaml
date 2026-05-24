@@ -1,7 +1,7 @@
 name: Rust Checks
 
 env:
-  NICKEL_VERSION: 1.12.2
+  NICKEL_VERSION: 1.16.0
 
 on:
   push:
@@ -50,6 +50,9 @@ jobs:
       - name: Run Cargo Build
         run: cargo build
 
+      - name: Run Cargo Test
+        run: cargo test
+
       - name: Run Cargo Doc
         run: |
           cargo doc \
@@ -65,52 +68,3 @@ jobs:
           echo "\`\`\`" >>$GITHUB_STEP_SUMMARY
           cat sizes.json >>$GITHUB_STEP_SUMMARY
           echo "\`\`\`" >>$GITHUB_STEP_SUMMARY
-
-  cargo-test-lib:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
-
-      - name: Run Cargo Test (lib)
-        run: cargo test --lib
-
-  cargo-test-rust-integration:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
-
-      - name: Run Cargo Test (rust-integration)
-        run: cargo test --test rust-integration
-
-  cargo-test-cucumber-keymap:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v2
-
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
-
-      - name: Run Cargo Test (cucumber-keymap)
-        timeout-minutes: 15
-        run: cargo test --test cucumber-keymap
