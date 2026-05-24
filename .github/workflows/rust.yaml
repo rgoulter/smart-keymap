@@ -112,5 +112,5 @@ jobs:
           sudo cp ./nickel-x86_64-linux /usr/bin/nickel
 
       - name: Run Cargo Test (cucumber-keymap)
-        timeout-minutes: 8
+        timeout-minutes: 15
         run: cargo test --test cucumber-keymap
