@@ -48,6 +48,7 @@ jobs:
         run: cargo build
 
       - name: Run Cargo Test
+        timeout-minutes: 8
         run: cargo test
 
       - name: Run Cargo Doc
