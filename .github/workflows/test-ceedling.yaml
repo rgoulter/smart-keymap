@@ -1,5 +1,8 @@
 name: C Checks
 
+env:
+  NICKEL_VERSION: 1.16.0
+
 on:
   push:
     branches:
@@ -36,7 +39,7 @@ jobs:
 
       - name: Install nickel
         run: |
-          wget https://github.com/tweag/nickel/releases/download/1.12.2/nickel-x86_64-linux
+          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
           chmod +x ./nickel-x86_64-linux
           sudo cp ./nickel-x86_64-linux /usr/bin/nickel
 
