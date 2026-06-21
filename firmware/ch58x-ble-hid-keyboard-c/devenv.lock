@@ -358,9 +358,6 @@
         "devenv": "devenv",
         "git-hooks": "git-hooks",
         "nixpkgs": "nixpkgs",
-        "pre-commit-hooks": [
-          "git-hooks"
-        ],
         "rgoulter-ch32": "rgoulter-ch32"
       }
     },
