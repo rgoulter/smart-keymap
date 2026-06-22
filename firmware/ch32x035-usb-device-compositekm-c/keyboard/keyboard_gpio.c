@@ -4,11 +4,6 @@
 
 GPIO_TypeDef *const GPIO_PORTS[] = {GPIOA, GPIOB, GPIOC};
 
-typedef struct {
-  GPIO_TypeDef *port;
-  uint32_t pin;
-} ch32x_gpio_t;
-
 ch32x_gpio_t to_ch32x_gpio(keyboard_gpio_t gpio_source) {
   ch32x_gpio_t result = {
       .port = GPIO_PORTS[gpio_source.port],
