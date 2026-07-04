@@ -16,9 +16,10 @@
 
   indices
     | doc "calculate the indices of a given string for non-'_' characters."
-    = fun s => s
-    |> std.string.replace_regex "\\s+" ""
-    |> std.string.characters
-    |> std.array.map_with_index (fun i c => if c == "_" then [] else [i])
-    |> std.array.flatten
+    = fun s =>
+      s
+      |> std.string.replace_regex "\\s+" ""
+      |> std.string.characters
+      |> std.array.map_with_index (fun i c => if c == "_" then [] else [i])
+      |> std.array.flatten
 }
