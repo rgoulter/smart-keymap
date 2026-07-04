@@ -7,3 +7,4 @@
 
 // Modifier bits in KeymapHidReport.keyboard[0]
 #define MOD_LCTL 0x01
+#define MOD_LSHFT 0x02
