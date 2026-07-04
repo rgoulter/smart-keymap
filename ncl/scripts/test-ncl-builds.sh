@@ -2,7 +2,7 @@
 
 # $ test-ncl-builds.sh ncl-test-name
 #
-# Runs cargo build with the keymap.rs generated from the keymap.json
+# Runs cargo check with the keymap.rs generated from the keymap.json
 #  for the given ncl snapshot test.
 
 set -e
@@ -29,7 +29,7 @@ SMART_KEYMAP_CUSTOM_KEYMAP=$(realpath "${KEYMAP_DIR}/keymap.rs")
 
 export SMART_KEYMAP_CUSTOM_KEYMAP
 
-cargo rustc \
+cargo check \
     --target riscv32imac-unknown-none-elf \
     --release \
     --package smart_keymap \

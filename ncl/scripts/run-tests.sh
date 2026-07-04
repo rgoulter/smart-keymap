@@ -2,7 +2,7 @@
 
 # Tests the Nickel keymaps under tests/ncl,
 #  checking the generated output matches expected snapshots,
-#  and that the generated keymap builds.
+#  and that the generated keymap type-checks.
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ SCRIPTS_DIR="$(dirname "$0")"
 
 # For each snapshot fixture, check generated keymap.rs:
 #  - matches the expected snapshot,
-#  - can be compiled.
+#  - type-checks (cargo check).
 while IFS= read -r ncl_test; do
   "${SCRIPTS_DIR}/test-ncl-diff.sh" "${ncl_test}"
   "${SCRIPTS_DIR}/test-ncl-builds.sh" "${ncl_test}"
