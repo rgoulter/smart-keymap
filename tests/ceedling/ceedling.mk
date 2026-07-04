@@ -1,5 +1,5 @@
 CEEDLING = ceedling
-CEEDLING_KEYMAP_SUITES = keyboard tap_hold
+CEEDLING_KEYMAP_SUITES = callback keyboard tap_hold
 CEEDLING_CARGO_TARGET = tests/ceedling/cargo-target
 
 # Rebuild copied libs when smart_keymap crate inputs change (not only keymap.ncl).
@@ -65,7 +65,12 @@ tests/ceedling/libs/libsmart_keymap_default.a: $(CEEDLING_CARGO_TARGET)/default/
 	cp $< $@
 
 .PHONY: test-ceedling
-test-ceedling: include/smart_keymap.h fix-ceedling-vendor format-ceedling $(CEEDLING_LIBS) $(CEEDLING_FIXTURES)
+test-ceedling: include/smart_keymap.h
+test-ceedling: fix-ceedling-vendor
+test-ceedling: format-ceedling
+test-ceedling: $(CEEDLING_LIBS)
+test-ceedling: $(CEEDLING_FIXTURES)
+	cd tests/ceedling && $(CEEDLING) --mixin=mixins/callback.yml test:path[callback]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/keyboard.yml test:path[keyboard]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/tap_hold.yml test:path[tap_hold]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/protocol.yml test:path[protocol]
