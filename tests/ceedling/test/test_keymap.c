@@ -12,7 +12,7 @@ void tearDown(void) {}
 void test_copy_hid_boot_keyboard_report(void) {
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   keymap_init();
   keymap_tick(actual_report);
@@ -25,7 +25,7 @@ void test_copy_hid_boot_keyboard_report(void) {
 void test_keyboard_keypress(void) {
   uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   keymap_init();
 
@@ -41,7 +41,7 @@ void test_keyboard_keypress(void) {
 void test_keyboard_keyrelease(void) {
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -61,7 +61,7 @@ void test_keyboard_keyrelease(void) {
 void test_keyboard_keypress_sequence_da_db(void) {
   uint8_t expected_report[8] = {0, 0, KC_A, KC_B, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -83,7 +83,7 @@ void test_keyboard_keypress_sequence_da_db(void) {
 void test_keyboard_keypress_sequence_db_da(void) {
   uint8_t expected_report[8] = {0, 0, KC_B, KC_A, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -105,7 +105,7 @@ void test_keyboard_keypress_sequence_db_da(void) {
 void test_keyboard_keypress_sequence_da_db_ub(void) {
   uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -130,7 +130,7 @@ void test_keyboard_keypress_sequence_da_db_ub(void) {
 void test_keyboard_keypress_sequence_da_db_ua(void) {
   uint8_t expected_report[8] = {0, 0, KC_B, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -155,7 +155,7 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
 void test_keyboard_double_keypress(void) {
   uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
