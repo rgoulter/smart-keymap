@@ -1,0 +1,35 @@
+# Paths passed to `nickel format`. Directories end with `/`.
+#
+# Omit board definitions and keymaps whose matrix/key layout reflects
+# physical keyboard shape (e.g. firmware/.../ncl/boards/ch32x-*.ncl,
+# tests/ncl/keymap-*/keymap.ncl, rp2040-rtic-smart-keyboard/examples/).
+#
+# Omit files nickel format cannot parse:
+#   ncl/layered-key.ncl
+
+ncl/smart_keys/
+ncl/layouts/remap.ncl
+ncl/layouts/remap-36keys.ncl
+ncl/checks.ncl
+ncl/chording.ncl
+ncl/hid-report.ncl
+ncl/hid-usage-consumer.ncl
+ncl/hid-usage-keyboard.ncl
+ncl/import-keymap-json.ncl
+ncl/inputs-to-json.ncl
+ncl/inputs.ncl
+ncl/key-docs.ncl
+ncl/key-extensions.ncl
+ncl/keymap-ncl-to-json.ncl
+ncl/keymap-codegen.ncl
+ncl/keys.ncl
+ncl/validators.ncl
+tests/ceedling/keymaps/
+tests/ceedling/ncl/
+firmware/ch32x035-usb-device-compositekm-c/ncl/boards/weact-ch32x-core-board.ncl
+firmware/ch32x035-usb-device-compositekm-c/ncl/test-actual-ch32x-48.ncl
+firmware/ch32x035-usb-device-compositekm-c/ncl/test-expected-ch32x-48.ncl
+firmware/ch32x035-usb-device-compositekm-c/keyboard/ncl/
+firmware/ch58x-ble-hid-keyboard-c/ncl/test-actual-wabble-60.ncl
+firmware/ch58x-ble-hid-keyboard-c/ncl/test-expected-wabble-60.ncl
+firmware/ch58x-ble-hid-keyboard-c/keyboard/ncl/

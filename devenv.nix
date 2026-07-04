@@ -1,14 +1,11 @@
 { pkgs, lib, config, inputs, ... }:
 
 {
+  imports = [ ./nix/git-hooks.nix ];
+
   devcontainer = {
     enable = true;
     settings.updateContentCommand = "sudo setfacl -k /tmp";
-  };
-
-  pre-commit.hooks = {
-    clippy.enable = true;
-    rustfmt.enable = true;
   };
 
   languages = {
