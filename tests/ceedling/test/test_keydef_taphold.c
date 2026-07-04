@@ -17,7 +17,7 @@ void tearDown(void) {}
 void test_taphold_dth_uth_is_tap(void) {
   uint8_t expected_report[8] = {0, 0, KC_C, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -38,7 +38,7 @@ void test_taphold_dth_uth_is_tap(void) {
 void test_taphold_dth_uth_eventually_clears(void) {
   uint8_t expected_report[8] = {0, 0, 0, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
@@ -63,7 +63,7 @@ void test_taphold_dth_uth_eventually_clears(void) {
 void test_taphold_dth_eventually_holds(void) {
   uint8_t expected_report[8] = {MOD_LCTL, 0, 0, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
-  KeymapHidReport* actual_report = &report;
+  KeymapHidReport *actual_report = &report;
 
   // assemble: init keymap
   keymap_init();
