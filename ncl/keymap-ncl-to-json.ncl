@@ -247,6 +247,14 @@
     check_unknown_key_is_error =
       keymap_layer_string " A BadKeyName " |> validators.check_is_error,
 
+    check_unknown_key_message =
+      keymap_layer_string " A BadKeyName "
+      |> match {
+        'Error { message } =>
+          std.string.contains "keys not defined: BadKeyName" message,
+        _ => false,
+      },
+
     check_valid_string_is_ok =
       keymap_layer_string " A " == 'Ok,
   },
