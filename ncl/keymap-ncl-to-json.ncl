@@ -25,16 +25,33 @@
 
   KeymapKey = keymap_ncl.nullable_key.Key,
 
-  keymap_layer_string = fun v =>
+  keymap_layer_string_tokens = fun extended_keys v =>
     v
     |> validators.is_string
     |> match {
       'Ok =>
-        v
-        |> words_from_whitespace_delimited_string
+        let words = words_from_whitespace_delimited_string v in
+        words
         |> std.array.filter (fun w => !(std.record.has_field w extended_keys))
         |> match {
-          [] => 'Ok,
+          [] =>
+            let rec validate_tokens = fun tokens =>
+              tokens
+              |> match {
+                [] => 'Ok,
+                [word, ..rest] =>
+                  std.record.get word extended_keys
+                  |> keymap_ncl.nullable_key.key_validator
+                  |> match {
+                    'Ok => validate_tokens rest,
+                    'Error { message = err_msg, .. } =>
+                      'Error {
+                        message = "Invalid keymap layer string: key %{word}: %{err_msg}",
+                      },
+                  },
+              }
+            in
+            validate_tokens words,
           words =>
             'Error {
               message = "Invalid keymap layer string: keys not defined: %{words |> std.string.join ", "}",
@@ -42,6 +59,8 @@
         },
       e => e,
     },
+
+  keymap_layer_string = fun v => keymap_layer_string_tokens extended_keys v,
 
   KeymapLayerString = std.contract.from_validator keymap_layer_string,
 
@@ -258,6 +277,32 @@
     check_valid_string_is_ok =
       keymap_layer_string " A " == 'Ok,
   },
+
+  checks.check_extended_keys_layer_string =
+    let K = import "keys.ncl" in
+    let { extend_keys, .. } = import "key-extensions.ncl" in
+    let extended_with_bad_custom =
+      extend_keys K (fun K => { BadCustom = { not_a_key = true } })
+    in
+    let extended_with_hold_tab =
+      extend_keys K (fun K => { HoldTab = K.Tab & K.hold K.LeftCtrl })
+    in
+    {
+      check_invalid_custom_key_value_is_error =
+        keymap_layer_string_tokens extended_with_bad_custom " BadCustom "
+        |> validators.check_is_error,
+
+      check_invalid_custom_key_value_message =
+        keymap_layer_string_tokens extended_with_bad_custom " BadCustom "
+        |> match {
+          'Error { message } =>
+            std.string.contains "key BadCustom" message,
+          _ => false,
+        },
+
+      check_valid_custom_key_value_is_ok =
+        keymap_layer_string_tokens extended_with_hold_tab " HoldTab " == 'Ok,
+    },
 
   checks.check_layer_as_array_of_keys = {
     check_layer_as_array_of_keys = {
