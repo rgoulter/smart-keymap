@@ -64,17 +64,17 @@
 
   KeymapLayerString = std.contract.from_validator keymap_layer_string,
 
-  keymap_layer = fun v =>
-    if std.is_string v then
-      keymap_layer_string v
-    else if std.is_array v then
-      validators.array.validator keymap_ncl.nullable_key.key_validator v
-    else
-      'Error {
-        message = "Expected keymap layer to be a whitespace-delimited string or an array of keys",
-      },
-
-  KeymapLayer = std.contract.from_validator keymap_layer,
+  KeymapLayer =
+    std.contract.custom (fun label value =>
+      if std.is_string value then
+        std.contract.check KeymapLayerString label value
+      else if std.is_array value then
+        std.contract.check (Array KeymapKey) label value
+      else
+        'Error {
+          message = "Expected keymap layer to be a whitespace-delimited string or an array of keys",
+        }
+    ),
 
   config | Config = {},
 
