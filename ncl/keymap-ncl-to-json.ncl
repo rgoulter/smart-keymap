@@ -25,9 +25,37 @@
 
   KeymapKey = keymap_ncl.nullable_key.Key,
 
-  KeymapLayerString = String,
+  keymap_layer_string = fun v =>
+    v
+    |> validators.is_string
+    |> match {
+      'Ok =>
+        v
+        |> words_from_whitespace_delimited_string
+        |> std.array.filter (fun w => !(std.record.has_field w extended_keys))
+        |> match {
+          [] => 'Ok,
+          words =>
+            'Error {
+              message = "Invalid keymap layer string: keys not defined: %{words |> std.string.join ", "}",
+            },
+        },
+      e => e,
+    },
 
-  KeymapLayer = std.contract.any_of [KeymapLayerString, Array KeymapKey],
+  KeymapLayerString = std.contract.from_validator keymap_layer_string,
+
+  keymap_layer = fun v =>
+    if std.is_string v then
+      keymap_layer_string v
+    else if std.is_array v then
+      validators.array.validator keymap_ncl.nullable_key.key_validator v
+    else
+      'Error {
+        message = "Expected keymap layer to be a whitespace-delimited string or an array of keys",
+      },
+
+  KeymapLayer = std.contract.from_validator keymap_layer,
 
   config | Config = {},
 
@@ -215,6 +243,14 @@
     = fun record fields =>
       fields |> std.array.map (std.function.flip std.record.get record),
 
+  checks.check_keymap_layer_string = {
+    check_unknown_key_is_error =
+      keymap_layer_string " A BadKeyName " |> validators.check_is_error,
+
+    check_valid_string_is_ok =
+      keymap_layer_string " A " == 'Ok,
+  },
+
   checks.check_layer_as_array_of_keys = {
     check_layer_as_array_of_keys = {
       actual = layer_as_array_of_keys " A ",
@@ -227,6 +263,10 @@
     },
   },
 
+  extended_keys =
+    let { extend_keys, .. } = import "key-extensions.ncl" in
+    extend_keys (import "keys.ncl") custom_keys,
+
   # Return array-of-keys representation of layer.
   #
   # A KeymapLayer may be either:
@@ -234,11 +274,9 @@
   #   - String
   layer_as_array_of_keys = fun l =>
     if std.is_string l then
-      let { extend_keys, .. } = import "key-extensions.ncl" in
-      let K = extend_keys (import "keys.ncl") custom_keys in
       l
       |> words_from_whitespace_delimited_string
-      |> map_fields_with_record K
+      |> map_fields_with_record extended_keys
     else
       l,
 
