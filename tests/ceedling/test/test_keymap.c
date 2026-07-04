@@ -43,28 +43,30 @@ void test_keyboard_keyrelease(void) {
   KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
+  // assemble: init keymap
   keymap_init();
 
+  // act: press then release key A
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress, .value = 2});
   keymap_tick(actual_report);
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 2});
-
   keymap_tick(actual_report);
 
+  // assert: empty report
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
 void test_keyboard_keypress_sequence_da_db(void) {
-  // Pressing A, then B, should report "A B"
-
   uint8_t expected_report[8] = {0, 0, KC_A, KC_B, 0, 0, 0, 0};
   KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
+  // assemble: init keymap
   keymap_init();
 
+  // act: press A then B
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
@@ -72,20 +74,21 @@ void test_keyboard_keypress_sequence_da_db(void) {
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 3}); // Fourth key in the keymap is B
-
   keymap_tick(actual_report);
+
+  // assert: report shows A then B
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
 void test_keyboard_keypress_sequence_db_da(void) {
-  // Pressing B, then A, should report "B A"
-
   uint8_t expected_report[8] = {0, 0, KC_B, KC_A, 0, 0, 0, 0};
   KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
+  // assemble: init keymap
   keymap_init();
 
+  // act: press B then A
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 3}); // Fourth key in the keymap is B
@@ -93,20 +96,21 @@ void test_keyboard_keypress_sequence_db_da(void) {
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
-
   keymap_tick(actual_report);
+
+  // assert: report shows B then A
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
 void test_keyboard_keypress_sequence_da_db_ub(void) {
-  // Pressing A, then B; then releasing B, should report "A"
-
   uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
+  // assemble: init keymap
   keymap_init();
 
+  // act: press A, press B, release B
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
@@ -117,20 +121,21 @@ void test_keyboard_keypress_sequence_da_db_ub(void) {
   keymap_tick(actual_report);
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 3});
-
   keymap_tick(actual_report);
+
+  // assert: only A remains in report
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
 void test_keyboard_keypress_sequence_da_db_ua(void) {
-  // Pressing A, then B; then releasing A, should report "B"
-
   uint8_t expected_report[8] = {0, 0, KC_B, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
+  // assemble: init keymap
   keymap_init();
 
+  // act: press A, press B, release A
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
@@ -141,8 +146,9 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
   keymap_tick(actual_report);
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 2});
-
   keymap_tick(actual_report);
+
+  // assert: only B remains in report
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
@@ -151,18 +157,19 @@ void test_keyboard_double_keypress(void) {
   KeymapHidReport report = {};
   KeymapHidReport* actual_report = &report;
 
+  // assemble: init keymap
   keymap_init();
 
+  // act: press A twice
+  keymap_register_input_event(
+      (struct KeymapInputEvent){.event_type = KeymapEventPress,
+                                .value = 2}); // Third key in the keymap is A
+  keymap_tick(actual_report);
   keymap_register_input_event(
       (struct KeymapInputEvent){.event_type = KeymapEventPress,
                                 .value = 2}); // Third key in the keymap is A
   keymap_tick(actual_report);
 
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
-
-  keymap_tick(actual_report);
-
+  // assert: report still shows a single A
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
