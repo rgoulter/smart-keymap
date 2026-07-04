@@ -168,8 +168,15 @@
     Key = std.contract.from_validator key_validator,
 
     key_validator = fun k =>
-      k
-      |> validators.any_of (key_modules |> std.array.map (fun km => km.key_validator)),
+      key_modules
+      |> std.array.filter (fun km => km.is_key k)
+      |> match {
+        [km, ..] => km.key_validator k,
+        [] =>
+          'Error {
+            message = "Value is not a valid keymap key",
+          },
+      },
 
     is_key = fun k => 'Ok == key_validator k,
 
@@ -194,11 +201,10 @@
     Key = std.contract.from_validator key_validator,
 
     key_validator = fun k =>
-      k
-      |> validators.any_of [
-        keymap_ncl.key.key_validator,
-        keymap_ncl.null_.key_validator,
-      ],
+      if k == null then
+        keymap_ncl.null_.key_validator k
+      else
+        keymap_ncl.key.key_validator k,
 
     is_key = fun k => 'Ok == key_validator k,
 
@@ -242,6 +248,17 @@
     | doc "Maps each field in an array to the value of the given record."
     = fun record fields =>
       fields |> std.array.map (std.function.flip std.record.get record),
+
+  checks.check_key_validator = {
+    check_unknown_record_is_error =
+      keymap_ncl.key.key_validator { not_a_key = true } |> validators.check_is_error,
+
+    check_keyboard_is_ok =
+      keymap_ncl.key.key_validator { key_code = 4 } == 'Ok,
+
+    check_nullable_null_is_ok =
+      keymap_ncl.nullable_key.key_validator null == 'Ok,
+  },
 
   checks.check_keymap_layer_string = {
     check_unknown_key_is_error =
