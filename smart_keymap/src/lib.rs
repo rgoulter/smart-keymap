@@ -386,6 +386,19 @@ pub unsafe extern "C" fn keymap_requires_polling() -> bool {
     unsafe { KEYMAP.requires_polling() }
 }
 
+/// Clears all registered callbacks.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub unsafe extern "C" fn keymap_clear_callbacks() {
+    unsafe {
+        KEYMAP.clear_callbacks();
+    }
+}
+
 /// Registers a callback with the keymap.
 ///
 /// callback_id should be one of:

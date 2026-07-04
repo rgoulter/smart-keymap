@@ -314,6 +314,11 @@ impl<
         self.idle_time = 0;
     }
 
+    /// Clears all registered callbacks.
+    pub fn clear_callbacks(&mut self) {
+        self.callbacks.clear();
+    }
+
     /// Registers the given callback to the keymap.
     ///
     /// Only one callback is set for each callback id.
