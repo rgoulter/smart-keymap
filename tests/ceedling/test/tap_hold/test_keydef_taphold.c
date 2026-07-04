@@ -1,3 +1,7 @@
+#include "tap_hold_test_ceedling_fixture.h"
+
+#ifdef SUITE_TAP_HOLD
+
 #include "unity.h"
 
 #include "hid_keycodes.h"
@@ -17,11 +21,10 @@ void test_taphold_dth_uth_is_tap(void) {
 
   // act: press then release tap-hold key before hold timeout
   keymap_register_input_event((struct KeymapInputEvent){
-      .event_type = KeymapEventPress,
-      .value = 0}); // First key in keymap is TapHold(C, _)
+      .event_type = KeymapEventPress, .value = KM_TAP_HOLD_KEY});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 0});
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventRelease, .value = KM_TAP_HOLD_KEY});
   keymap_tick(actual_report);
 
   // assert: tap key (C) appears in report
@@ -38,11 +41,10 @@ void test_taphold_dth_uth_eventually_clears(void) {
 
   // act: press then release tap-hold key, then poll until tap clears
   keymap_register_input_event((struct KeymapInputEvent){
-      .event_type = KeymapEventPress,
-      .value = 0}); // First key in keymap is TapHold(C, _)
+      .event_type = KeymapEventPress, .value = KM_TAP_HOLD_KEY});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 0});
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventRelease, .value = KM_TAP_HOLD_KEY});
   keymap_tick(actual_report);
 
   for (int i = 0; i < 50; i++) {
@@ -63,8 +65,7 @@ void test_taphold_dth_eventually_holds(void) {
 
   // act: press tap-hold key and wait for hold timeout
   keymap_register_input_event((struct KeymapInputEvent){
-      .event_type = KeymapEventPress,
-      .value = 0}); // First key in keymap is TapHold(C, _)
+      .event_type = KeymapEventPress, .value = KM_TAP_HOLD_KEY});
 
   for (int i = 0; i < 500; i++) {
     keymap_tick(actual_report);
@@ -73,3 +74,7 @@ void test_taphold_dth_eventually_holds(void) {
   // assert: hold modifier (Left Ctrl) in report
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
+
+#else
+#error "requires SUITE_TAP_HOLD"
+#endif

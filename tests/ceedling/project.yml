@@ -16,14 +16,9 @@
   :source: []
   :include:
     - ../../include
+    - generated
   :support:
     - test/support
-  :libraries:
-    - ../../target/debug/
-
-:libraries:
-  :system:
-    - smart_keymap
 
 :unity:
   :defines:
