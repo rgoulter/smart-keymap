@@ -1,3 +1,7 @@
+#include "keyboard_test_ceedling_fixture.h"
+
+#ifdef SUITE_KEYBOARD
+
 #include "unity.h"
 
 #include "hid_keycodes.h"
@@ -18,8 +22,6 @@ void test_copy_hid_boot_keyboard_report(void) {
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
 
-// KEYMAP: [C & TH.LCtrl, D & TH.LSft, A, B]
-
 void test_keyboard_keypress(void) {
   uint8_t expected_report[8] = {0, 0, KC_A, 0, 0, 0, 0, 0};
   KeymapHidReport report = {};
@@ -27,10 +29,8 @@ void test_keyboard_keypress(void) {
 
   keymap_init();
 
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
-
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
 
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
@@ -45,11 +45,11 @@ void test_keyboard_keyrelease(void) {
   keymap_init();
 
   // act: press then release key A
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress, .value = 2});
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 2});
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventRelease, .value = KM_KEY_A});
   keymap_tick(actual_report);
 
   // assert: empty report
@@ -65,13 +65,11 @@ void test_keyboard_keypress_sequence_da_db(void) {
   keymap_init();
 
   // act: press A then B
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 3}); // Fourth key in the keymap is B
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_B});
   keymap_tick(actual_report);
 
   // assert: report shows A then B
@@ -87,13 +85,11 @@ void test_keyboard_keypress_sequence_db_da(void) {
   keymap_init();
 
   // act: press B then A
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 3}); // Fourth key in the keymap is B
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_B});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
 
   // assert: report shows B then A
@@ -109,16 +105,14 @@ void test_keyboard_keypress_sequence_da_db_ub(void) {
   keymap_init();
 
   // act: press A, press B, release B
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 3}); // Fourth key in the keymap is B
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_B});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 3});
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventRelease, .value = KM_KEY_B});
   keymap_tick(actual_report);
 
   // assert: only A remains in report
@@ -134,16 +128,14 @@ void test_keyboard_keypress_sequence_da_db_ua(void) {
   keymap_init();
 
   // act: press A, press B, release A
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 3}); // Fourth key in the keymap is B
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_B});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventRelease, .value = 2});
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventRelease, .value = KM_KEY_A});
   keymap_tick(actual_report);
 
   // assert: only B remains in report
@@ -159,15 +151,17 @@ void test_keyboard_double_keypress(void) {
   keymap_init();
 
   // act: press A twice
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
-  keymap_register_input_event(
-      (struct KeymapInputEvent){.event_type = KeymapEventPress,
-                                .value = 2}); // Third key in the keymap is A
+  keymap_register_input_event((struct KeymapInputEvent){
+      .event_type = KeymapEventPress, .value = KM_KEY_A});
   keymap_tick(actual_report);
 
   // assert: report still shows a single A
   TEST_ASSERT_EQUAL_UINT8_ARRAY(expected_report, actual_report->keyboard, 8);
 }
+
+#else
+#error "requires SUITE_KEYBOARD"
+#endif
