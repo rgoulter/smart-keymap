@@ -1,9 +1,7 @@
 #include "unity.h"
 
+#include "hid_keycodes.h"
 #include "smart_keymap.h"
-
-#define KC_A 0x04
-#define KC_B 0x05
 
 void setUp(void) {}
 

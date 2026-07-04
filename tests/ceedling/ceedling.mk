@@ -10,7 +10,7 @@ fix-ceedling-vendor:
 
 .PHONY: format-ceedling
 format-ceedling:
-	find tests/ceedling/test -name '*.c' | xargs clang-format -i
+	find tests/ceedling/test \( -name '*.c' -o -name '*.h' \) | xargs clang-format -i
 
 .PHONY: test-ceedling
 test-ceedling: include/smart_keymap.h fix-ceedling-vendor format-ceedling
