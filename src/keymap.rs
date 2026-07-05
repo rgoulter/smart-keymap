@@ -38,17 +38,9 @@ const MAX_QUEUED_INPUT_EVENTS: usize = 32;
 pub const INPUT_QUEUE_TICK_DELAY: u8 = 1;
 
 /// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Default, PartialEq)]
 pub struct KeymapOutput {
     pressed_key_codes: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }>,
-}
-
-impl Default for KeymapOutput {
-    fn default() -> Self {
-        Self {
-            pressed_key_codes: heapless::Vec::new(),
-        }
-    }
 }
 
 impl KeymapOutput {
@@ -184,7 +176,7 @@ pub enum KeymapCallback {
 }
 
 /// Context provided from the keymap to the smart keys.
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Default)]
 pub struct KeymapContext {
     /// Number of milliseconds since keymap has been initialized.
     pub time_ms: u32,

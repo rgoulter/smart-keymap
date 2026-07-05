@@ -17,6 +17,12 @@ pub struct Context {
     is_active: bool,
 }
 
+impl Default for Context {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Context {
     /// Constructs a new [Context].
     pub const fn new() -> Self {

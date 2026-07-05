@@ -15,6 +15,12 @@ pub struct KeyboardBackend {
     keymap_output: smart_keymap::keymap::KeymapOutput,
 }
 
+impl Default for KeyboardBackend {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl KeyboardBackend {
     /// Constructs a new keyboard backend.
     pub fn new() -> Self {

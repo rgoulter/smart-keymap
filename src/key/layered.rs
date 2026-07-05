@@ -510,6 +510,12 @@ pub struct ModifierKeyState {
     behavior: Behavior,
 }
 
+impl Default for ModifierKeyState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ModifierKeyState {
     /// Constructs a regular ModifierKeyState
     pub fn new() -> Self {

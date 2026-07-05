@@ -32,6 +32,37 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  cargo-fmt-clippy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+        with:
+          shared-key: rust-checks
+
+      - name: Install Rust lint components
+        run: rustup component add clippy rustfmt
+
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+
+      - name: Run Cargo Fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run Cargo Clippy
+        run: |
+          cargo clippy --workspace \
+            --exclude rp2040-rtic-smart-keyboard \
+            --exclude stm32f4-rtic-smart-keyboard \
+            --exclude stm32-embassy-smart-keyboard \
+            -- -D warnings
+
   cargo-build:
     runs-on: ubuntu-latest
 

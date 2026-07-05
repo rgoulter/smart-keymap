@@ -178,6 +178,9 @@ impl<R, PKS, KS> PressedKeyResult<R, PKS, KS> {
     }
 }
 
+/// Outcome of [System::new_pressed_key].
+pub type NewPressedKeyOutput<R, PKS, KS, E> = (PressedKeyResult<R, PKS, KS>, KeyEvents<E>);
+
 /// The interface for key `System` behaviour.
 ///
 /// A `System` has an associated `Ref`, [Context], `Event`, and [KeyState].
@@ -215,10 +218,7 @@ pub trait System<R>: Debug {
         keymap_index: u16,
         context: &Self::Context,
         key_ref: Self::Ref,
-    ) -> (
-        PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
-        KeyEvents<Self::Event>,
-    );
+    ) -> NewPressedKeyOutput<R, Self::PendingKeyState, Self::KeyState, Self::Event>;
 
     /// Update the given pending key state with the given impl.
     fn update_pending_state(

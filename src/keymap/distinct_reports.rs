@@ -24,13 +24,7 @@ impl Debug for DistinctReports {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         // Debug fmt with each of the [u8; 8] on one line.
         f.debug_tuple("DistinctReports")
-            .field(
-                &self
-                    .0
-                    .iter()
-                    .map(|r| ReportDebugHelper(r))
-                    .collect::<Vec<_>>(),
-            )
+            .field(&self.0.iter().map(ReportDebugHelper).collect::<Vec<_>>())
             .finish()
     }
 }

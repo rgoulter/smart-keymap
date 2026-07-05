@@ -285,6 +285,12 @@ pub struct Config {
     pub tap_hold: TapHoldConfig,
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Config {
     /// Constructs a new [Config] with default values.
     pub const fn new() -> Self {
@@ -978,6 +984,7 @@ impl<
     >
 {
     /// Constructs a new [System].
+    #[allow(clippy::too_many_arguments)]
     pub const fn array_based(
         automation: AutomationSystem<[AutomationKey; AUTOMATION]>,
         callback: CallbackSystem<[CallbackKey; CALLBACK]>,
@@ -1009,6 +1016,7 @@ impl<
 #[cfg(feature = "std")]
 impl System<KeyVecs> {
     /// Constructs a new [System].
+    #[allow(clippy::too_many_arguments)]
     pub const fn vec_based(
         automation: AutomationSystem<Vec<AutomationKey>>,
         callback: CallbackSystem<Vec<CallbackKey>>,
