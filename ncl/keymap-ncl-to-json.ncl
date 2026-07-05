@@ -301,6 +301,39 @@
         && !(std.record.has_field "chords" json),
     },
 
+  checks.check_layered_key_element =
+    let K = import "keys.ncl" in
+    {
+      check_plain_key_ok =
+        layered_key_element_validator K.A == 'Ok,
+
+      check_layered_composite_ok =
+        layered_key_element_validator (K.A & { layered = [ null, K.B] }) == 'Ok,
+
+      check_invalid_is_error =
+        layered_key_element_validator { not_a_key = true } |> validators.check_is_error,
+    },
+
+  checks.check_chorded_key_element =
+    let K = import "keys.ncl" in
+    {
+      check_plain_key_ok =
+        chorded_key_element_validator K.A == 'Ok,
+
+      check_passthrough_ok =
+        chorded_key_element_validator { passthrough = K.A } == 'Ok,
+
+      check_full_chord_ok =
+        chorded_key_element_validator {
+          chords = [[0, K.C]],
+          passthrough = K.A,
+        } == 'Ok,
+
+      check_passthrough_invalid_inner_is_error =
+        chorded_key_element_validator { passthrough = { not_a_key = true } }
+        |> validators.check_is_error,
+    },
+
   checks.check_keymap_layer_string = {
     check_unknown_key_is_error =
       keymap_layer_string " A BadKeyName " |> validators.check_is_error,
@@ -374,7 +407,26 @@
 
   layers_of_keys = layers |> std.array.map layer_as_array_of_keys,
 
+  layered_key_element_validator = fun k =>
+    if std.record.has_field "layered" k then
+      keymap_ncl.layered.key_validator k
+    else
+      keymap_ncl.key.key_validator k,
+
+  LayeredKeyElement = std.contract.from_validator layered_key_element_validator,
+
+  chorded_key_element_validator = fun k =>
+    if std.record.has_field "chords" k then
+      keymap_ncl.chorded.key_validator k
+    else if std.record.has_field "passthrough" k then
+      keymap_ncl.chorded_aux.key_validator k
+    else
+      keymap_ncl.key.key_validator k,
+
+  ChordedKeyElement = std.contract.from_validator chorded_key_element_validator,
+
   layered_keys
+    | Array LayeredKeyElement
     | doc "Constructs array of key::layered::LayeredKey values from layers."
     =
       if std.array.length layers == 0 then
@@ -396,24 +448,26 @@
           )
           (std.array.length base_keys),
 
-  chorded_keys =
-    std.array.map_with_index
-      (fun key_index k =>
-        chords
-        |> std.array.map_with_index (fun idx ch => ch & { chord_index = idx })
-        |> std.array.filter (fun { indices = [chord_primary_key_index, ..], .. } => chord_primary_key_index == key_index)
-        |> match {
-          [] =>
-            if std.array.any (fun { indices, .. } => std.array.elem key_index indices) chords then
-              { passthrough = k }
-            else
-              k,
-          chords_ =>
-            let chords_ = chords_ |> std.array.map (fun { chord_index, key, .. } => [chord_index, key]) in
-            { chords = chords_, passthrough = k },
-        }
-      )
-      layered_keys,
+  chorded_keys
+    | Array ChordedKeyElement
+    =
+      std.array.map_with_index
+        (fun key_index k =>
+          chords
+          |> std.array.map_with_index (fun idx ch => ch & { chord_index = idx })
+          |> std.array.filter (fun { indices = [chord_primary_key_index, ..], .. } => chord_primary_key_index == key_index)
+          |> match {
+            [] =>
+              if std.array.any (fun { indices, .. } => std.array.elem key_index indices) chords then
+                { passthrough = k }
+              else
+                k,
+            chords_ =>
+              let chords_ = chords_ |> std.array.map (fun { chord_index, key, .. } => [chord_index, key]) in
+              { chords = chords_, passthrough = k },
+          }
+        )
+        layered_keys,
 
   json_keymap
     | default
