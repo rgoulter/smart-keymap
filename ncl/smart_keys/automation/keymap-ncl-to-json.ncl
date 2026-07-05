@@ -47,6 +47,8 @@
 
       Key = std.contract.from_validator key_validator,
 
+      Instruction = smart_keymap.automation.instruction.Json,
+
       key_instructions = {
         ncl_validator =
           validators.record.validator {
