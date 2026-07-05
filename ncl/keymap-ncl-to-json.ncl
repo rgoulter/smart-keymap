@@ -189,15 +189,58 @@
 
     Key = std.contract.from_validator key_validator,
 
+    # When no module's is_key matches, try validators for modules whose
+    # shape hints at author intent (e.g. K.caps_word record → caps_word).
+    key_validator_hint_modules = fun k =>
+      k
+      |> match {
+        { chords, .. } => [keymap_ncl.chorded],
+        { passthrough, .. } => [keymap_ncl.chorded_aux],
+        { layered, .. } => [keymap_ncl.layered],
+        { automation_instructions, .. } => [keymap_ncl.automation],
+        { tap_dances, .. } => [keymap_ncl.tap_dance],
+        { hold, .. } => [keymap_ncl.tap_hold],
+        { layer_modifier, .. } => [keymap_ncl.layer_modifier],
+        { keymap_callback, .. } => [keymap_ncl.callback],
+        { custom, .. } => [keymap_ncl.custom],
+        { toggle, .. } => [keymap_ncl.caps_word],
+        { consumer_code, .. } => [keymap_ncl.consumer],
+        { mouse, .. } => [keymap_ncl.mouse],
+        { sticky_modifiers, .. } => [keymap_ncl.sticky],
+        { key_code, .. } => [keymap_ncl.keyboard],
+        { modifiers, .. } => [keymap_ncl.keyboard],
+        _ => [],
+      },
+
+    key_validator_undispatched = fun k =>
+      key_validator_hint_modules k
+      |> match {
+        [] =>
+          'Error {
+            message = "Value is not a valid keymap key",
+          },
+        hint_modules =>
+          let hint_result =
+            hint_modules
+            |> std.array.map (fun km => km.key_validator k)
+            |> validators.first_error_result
+          in
+          hint_result
+          |> match {
+            'Error { .. } => hint_result,
+            _ =>
+              'Error {
+                message = "Value is not a valid keymap key",
+              },
+          },
+      },
+
     key_validator = fun k =>
       key_modules
       |> std.array.filter (fun km => km.is_key k)
       |> match {
         [km, ..] => km.key_validator k,
-        [] =>
-          'Error {
-            message = "Value is not a valid keymap key",
-          },
+        [] => key_validator_undispatched k,
       },
 
     is_key = fun k => 'Ok == key_validator k,
@@ -276,12 +319,33 @@
     check_unknown_record_is_error =
       keymap_ncl.key.key_validator { not_a_key = true } |> validators.check_is_error,
 
+    check_unknown_record_message =
+      keymap_ncl.key.key_validator { not_a_key = true }
+      |> match {
+        'Error { message } => message == "Value is not a valid keymap key",
+        _ => false,
+      },
+
     check_keyboard_is_ok =
       keymap_ncl.key.key_validator { key_code = 4 } == 'Ok,
 
     check_nullable_null_is_ok =
       keymap_ncl.nullable_key.key_validator null == 'Ok,
   },
+
+  checks.check_key_validator_hints =
+    let K = import "keys.ncl" in
+    {
+      check_caps_word_record_propagates_module_message =
+        keymap_ncl.key.key_validator K.caps_word
+        |> match {
+          'Error { message } => message == "Expected \"ToggleCapsWord\"",
+          _ => false,
+        },
+
+      check_caps_word_toggle_is_ok =
+        keymap_ncl.key.key_validator K.caps_word.toggle == 'Ok,
+    },
 
   checks.check_key_modules_dispatch =
     let K = import "keys.ncl" in

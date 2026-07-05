@@ -115,6 +115,31 @@
         },
     },
 
+  checks.first_error_result = {
+    check_first_error =
+      first_error_result ['Error { message = "a" }, 'Ok, 'Error { message = "b" }] == 'Error { message = "a" },
+
+    check_all_ok =
+      first_error_result ['Ok, 'Ok] == 'Ok,
+  },
+
+  first_error_result = fun results =>
+    results
+    |> std.array.fold_left
+      (fun acc result =>
+        acc
+        |> match {
+          'Ok =>
+            result
+            |> match {
+              'Error { .. } => result,
+              _ => 'Ok,
+            },
+          err => err,
+        }
+      )
+      'Ok,
+
   checks.check_array_validators = {
     check_validator = 'Ok == array.validator is_number [1, 2, 3],
   },
