@@ -223,10 +223,11 @@
     Key = std.contract.from_validator key_validator,
 
     key_validator = fun k =>
-      if k == null then
-        keymap_ncl.null_.key_validator k
-      else
-        keymap_ncl.key.key_validator k,
+      k
+      |> match {
+        null => keymap_ncl.null_.key_validator k,
+        _ => keymap_ncl.key.key_validator k,
+      },
 
     is_key = fun k => 'Ok == key_validator k,
 
