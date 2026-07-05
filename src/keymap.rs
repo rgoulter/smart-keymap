@@ -3,6 +3,7 @@ mod distinct_reports;
 mod event_scheduler;
 /// The HID keyboard reporter.
 pub mod hid_keyboard_reporter;
+mod input_event_queue;
 #[cfg(feature = "std")]
 mod observed_eb_keymap;
 #[cfg(feature = "std")]
@@ -24,6 +25,7 @@ use key::Event;
 pub use distinct_reports::DistinctReports;
 use event_scheduler::EventScheduler;
 use hid_keyboard_reporter::HIDKeyboardReporter;
+use input_event_queue::InputEventQueue;
 #[cfg(feature = "std")]
 pub use observed_eb_keymap::ObservedKeymap as ObservedEventBasedKeymap;
 #[cfg(feature = "std")]
@@ -215,6 +217,22 @@ pub enum KeymapEvent {
     },
 }
 
+fn event_targets_keymap_index<Ev>(event: &key::Event<Ev>, keymap_index: u16) -> bool {
+    match event {
+        key::Event::Input(input::Event::Press {
+            keymap_index: queued_kmi,
+        })
+        | key::Event::Input(input::Event::Release {
+            keymap_index: queued_kmi,
+        }) => *queued_kmi == keymap_index,
+        key::Event::Key {
+            keymap_index: queued_kmi,
+            ..
+        } => *queued_kmi == keymap_index,
+        _ => false,
+    }
+}
+
 #[derive(Debug)]
 enum CallbackFunction {
     /// C callback
@@ -234,8 +252,7 @@ pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
     idle_time: u32,
     hid_reporter: HIDKeyboardReporter,
     pending_key_state: Option<PendingState<R, Ev, PKS>>,
-    input_queue: heapless::spsc::Queue<input::Event, { MAX_QUEUED_INPUT_EVENTS }>,
-    input_queue_delay_counter: u8,
+    input_queue: InputEventQueue<{ MAX_QUEUED_INPUT_EVENTS }>,
     callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
 }
 
@@ -257,7 +274,6 @@ impl<
             .field("idle_time", &self.idle_time)
             .field("hid_reporter", &self.hid_reporter)
             .field("input_queue", &self.input_queue)
-            .field("input_queue_delay_counter", &self.input_queue_delay_counter)
             .field("pending_key_state", &self.pending_key_state)
             .field("pressed_inputs", &self.pressed_inputs)
             .finish_non_exhaustive()
@@ -286,8 +302,7 @@ impl<
             idle_time: 0,
             hid_reporter: HIDKeyboardReporter::new(),
             pending_key_state: None,
-            input_queue: heapless::spsc::Queue::new(),
-            input_queue_delay_counter: 0,
+            input_queue: InputEventQueue::new(),
             callbacks: heapless::LinearMap::new(),
         }
     }
@@ -298,10 +313,7 @@ impl<
         self.event_scheduler.init();
         self.hid_reporter.init();
         self.pending_key_state = None;
-        while !self.input_queue.is_empty() {
-            self.input_queue.dequeue().unwrap();
-        }
-        self.input_queue_delay_counter = 0;
+        self.input_queue.clear();
         self.ms_per_tick = 1;
         self.idle_time = 0;
     }
@@ -364,9 +376,8 @@ impl<
             // Schedule each of the queued events,
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
-            let mut i = 1;
-            let mut old_input_queue: heapless::spsc::Queue<input::Event, MAX_QUEUED_INPUT_EVENTS> =
-                core::mem::take(&mut self.input_queue);
+            let mut schedule_delay = 1;
+            let mut saved_input_queue = self.input_queue.take_all();
 
             // Partition the events from the pending keymap index
             //  separately from the other queued events.
@@ -374,35 +385,23 @@ impl<
             let (pending_input_ev, queued_events): (
                 heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
                 heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
-            ) = queued_events.iter().partition(|ev| match ev {
-                key::Event::Input(input::Event::Press {
-                    keymap_index: queued_kmi,
-                }) => *queued_kmi == keymap_index,
-                key::Event::Input(input::Event::Release {
-                    keymap_index: queued_kmi,
-                }) => *queued_kmi == keymap_index,
-                key::Event::Key {
-                    keymap_index: queued_kmi,
-                    ..
-                } => *queued_kmi == keymap_index,
-                _ => false,
-            });
+            ) = queued_events
+                .iter()
+                .partition(|ev| event_targets_keymap_index(ev, keymap_index));
 
             for ev in queued_events.iter().chain(pending_input_ev.last()) {
                 match ev {
                     key::Event::Input(ie) => {
-                        self.input_queue.enqueue(*ie).unwrap();
+                        self.input_queue.push_back(*ie).unwrap();
                     }
                     _ => {
-                        self.event_scheduler.schedule_after(i, *ev);
-                        i += 1;
+                        self.event_scheduler.schedule_after(schedule_delay, *ev);
+                        schedule_delay += 1;
                     }
                 }
             }
 
-            while let Some(ie) = old_input_queue.dequeue() {
-                self.input_queue.enqueue(ie).unwrap();
-            }
+            self.input_queue.append_all(&mut saved_input_queue);
 
             self.handle_pending_events();
 
@@ -427,12 +426,11 @@ impl<
             return;
         }
 
-        self.input_queue.enqueue(ev).unwrap();
+        self.input_queue.push_back(ev).unwrap();
 
-        if self.input_queue_delay_counter == 0 {
-            let ie = self.input_queue.dequeue().unwrap();
+        if let Some(ie) = self.input_queue.pop_front_if_ready() {
             self.process_input(ie);
-            self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
+            self.input_queue.set_delay_counter(INPUT_QUEUE_TICK_DELAY);
         }
     }
 
@@ -501,15 +499,7 @@ impl<
 
                         // Since the pending key state resolved into another pending key state,
                         //  we re-queue all the input events that had been received.
-                        let orig_input_queue = core::mem::take(&mut self.input_queue);
-                        while let Some(ev) = queued_events.pop() {
-                            if let key::Event::Input(input_ev) = ev {
-                                self.input_queue.enqueue(input_ev).unwrap();
-                            }
-                        }
-                        orig_input_queue.iter().for_each(|&ev| {
-                            self.input_queue.enqueue(ev).unwrap();
-                        });
+                        self.input_queue.prepend_pending_input_events(queued_events);
                     }
                 }
             }
@@ -697,15 +687,12 @@ impl<
         };
         self.context.set_keymap_context(km_context);
 
-        if !self.input_queue.is_empty() && self.input_queue_delay_counter == 0 {
-            let ie = self.input_queue.dequeue().unwrap();
+        if let Some(ie) = self.input_queue.pop_front_if_ready() {
             self.process_input(ie);
-            self.input_queue_delay_counter = INPUT_QUEUE_TICK_DELAY;
+            self.input_queue.set_delay_counter(INPUT_QUEUE_TICK_DELAY);
         }
 
-        if self.input_queue_delay_counter > 0 {
-            self.input_queue_delay_counter -= 1;
-        }
+        self.input_queue.tick_delay();
 
         self.event_scheduler.tick(self.ms_per_tick);
 
@@ -824,6 +811,140 @@ mod tests {
         // Assert - check the 0xE0 gets considered as a "modifier".
         let expected_report: [u8; 8] = [0x01, 0, 0x04, 0, 0, 0, 0, 0];
         assert_eq!(expected_report, actual_report);
+    }
+
+    #[test]
+    fn test_keymap_output_pressed_consumer_codes() {
+        let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
+        input
+            .push(key::KeyOutput::from_consumer_code(0xE9))
+            .unwrap();
+
+        let keymap_output = KeymapOutput::new(input);
+        assert_eq!(
+            heapless::Vec::<u8, 24>::from_slice(&[0xE9]).unwrap(),
+            keymap_output.pressed_consumer_codes()
+        );
+    }
+
+    #[test]
+    fn test_keymap_output_pressed_mouse_output_combines_buttons() {
+        let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
+        input
+            .push(key::KeyOutput::from_mouse_output(key::MouseOutput {
+                pressed_buttons: 0b001,
+                ..key::MouseOutput::NO_OUTPUT
+            }))
+            .unwrap();
+        input
+            .push(key::KeyOutput::from_mouse_output(key::MouseOutput {
+                pressed_buttons: 0b010,
+                ..key::MouseOutput::NO_OUTPUT
+            }))
+            .unwrap();
+
+        let keymap_output = KeymapOutput::new(input);
+        assert_eq!(
+            key::MouseOutput {
+                pressed_buttons: 0b011,
+                ..key::MouseOutput::NO_OUTPUT
+            },
+            keymap_output.pressed_mouse_output()
+        );
+    }
+
+    #[test]
+    fn test_keymap_context_default_is_zeroed() {
+        let context = KeymapContext::new();
+        assert_eq!(0, context.time_ms);
+        assert_eq!(0, context.idle_time_ms);
+    }
+
+    macro_rules! simple_keyboard_keymap {
+        () => {{
+            use crate as smart_keymap;
+            use smart_keymap::key::composite as key_system;
+
+            use key_system::Context;
+            use key_system::Ref;
+            const KEY_COUNT: usize = 1;
+            const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
+                smart_keymap::key::keyboard::Ref::KeyCode(0x04),
+            )];
+            const CONTEXT: Context = Context::from_config(key_system::Config::new());
+
+            smart_keymap::keymap::Keymap::new(
+                KEY_REFS,
+                CONTEXT,
+                smart_keymap::key::composite::System::array_based(
+                    smart_keymap::key::automation::System::new([]),
+                    smart_keymap::key::callback::System::new([]),
+                    smart_keymap::key::chorded::System::new([], []),
+                    smart_keymap::key::keyboard::System::new([]),
+                    smart_keymap::key::layered::System::new([], []),
+                    smart_keymap::key::sticky::System::new([]),
+                    smart_keymap::key::tap_dance::System::new([]),
+                    smart_keymap::key::tap_hold::System::new([]),
+                ),
+            )
+        }};
+    }
+
+    #[test]
+    fn test_keymap_input_queue_processes_events_one_per_tick_delay() {
+        let mut keymap = simple_keyboard_keymap!();
+
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        assert_eq!(
+            heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[
+                key::KeyOutput::from_key_code(0x04)
+            ])
+            .unwrap(),
+            keymap.pressed_keys()
+        );
+
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        assert_eq!(
+            heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[
+                key::KeyOutput::from_key_code(0x04)
+            ])
+            .unwrap(),
+            keymap.pressed_keys()
+        );
+
+        keymap.tick();
+        keymap.tick();
+        assert!(keymap.pressed_keys().is_empty());
+    }
+
+    #[test]
+    fn test_keymap_init_clears_pressed_keys_and_input_queue() {
+        let mut keymap = simple_keyboard_keymap!();
+
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        keymap.init();
+
+        assert!(keymap.pressed_keys().is_empty());
+        assert!(!keymap.requires_polling());
+    }
+
+    #[test]
+    fn test_keymap_virtual_key_press_and_release() {
+        let mut keymap = simple_keyboard_keymap!();
+        let key_output = key::KeyOutput::from_key_code(0x05);
+
+        keymap.handle_input(input::Event::VirtualKeyPress { key_output });
+        assert_eq!(
+            heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[key_output])
+                .unwrap(),
+            keymap.pressed_keys()
+        );
+
+        keymap.handle_input(input::Event::VirtualKeyRelease { key_output });
+        keymap.tick();
+        keymap.tick();
+        assert!(keymap.pressed_keys().is_empty());
     }
 
     #[test]
