@@ -3,6 +3,7 @@ mod caps_word;
 mod chorded;
 mod consumer;
 mod custom;
+mod hid_keycodes;
 mod layered;
 mod mouse;
 mod sticky;
@@ -13,6 +14,7 @@ mod ms_per_tick;
 
 mod event_based;
 
+use hid_keycodes::*;
 use smart_keymap::keymap::ObservedKeymap;
 
 #[test]
@@ -28,7 +30,7 @@ fn basic_keymap_expression() {
         use smart_keymap::key::composite as key_system;
         const KEY_COUNT: usize = 1;
         const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
-            smart_keymap::key::keyboard::Ref::KeyCode(0x04),
+            smart_keymap::key::keyboard::Ref::KeyCode(KC_A),
         )];
         const CONTEXT: Context = Context::from_config(key_system::Config::new());
 
@@ -58,7 +60,7 @@ fn basic_keymap_expression() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -93,7 +95,7 @@ fn basic_keymap_expression_macro() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();

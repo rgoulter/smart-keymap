@@ -7,6 +7,7 @@ mod toggle;
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -28,7 +29,7 @@ fn press_base_key_when_no_layers_active() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report,);
 }
@@ -53,7 +54,7 @@ fn press_active_layer_when_layer_mod_held() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_B, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }
@@ -79,7 +80,7 @@ fn press_retained_when_layer_mod_released() {
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_B, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }
@@ -105,7 +106,7 @@ fn uses_base_when_pressed_after_layer_mod_released() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }

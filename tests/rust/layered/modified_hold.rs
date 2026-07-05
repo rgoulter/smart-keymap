@@ -1,3 +1,4 @@
+use crate::hid_keycodes::*;
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 use smart_keymap_macros::keymap;
@@ -23,7 +24,8 @@ fn press_modified_hold_reports_as_modifier() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0x02, 0, 0, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] =
+        &[[0, 0, 0, 0, 0, 0, 0, 0], [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -52,8 +54,8 @@ fn press_modified_hold_modifies_layer() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x05, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_B, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
