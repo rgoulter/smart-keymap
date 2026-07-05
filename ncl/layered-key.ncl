@@ -33,6 +33,41 @@
     else
       set_layer true active_layers layer_idx,
 
+  apply_set_active_layers = fun new_active_layer_indices layers =>
+    let layer_count = std.array.length layers in
+    std.array.generate
+      (fun idx =>
+        let layer_index = idx + 1 in
+        std.array.elem layer_index new_active_layer_indices
+      )
+      layer_count,
+
+  apply_set_active_layers_masked = fun new_active_layer_indices mask_layers layers =>
+    std.array.map_with_index
+      (fun idx is_active =>
+        let layer_index = idx + 1 in
+        if std.array.elem layer_index mask_layers then
+          std.array.elem layer_index new_active_layer_indices
+        else
+          is_active
+      )
+      layers,
+
+  checks.check_set_active_layers = {
+    unmasked = {
+      expected = [ false, true, false ],
+      actual = apply_set_active_layers [2] [ false, false, false ],
+    },
+    masked_preserves_outside_mask = {
+      expected = [ true, false, true, false ],
+      actual = apply_set_active_layers_masked [3] [3, 4] [ true, false, false, false ],
+    },
+    masked_switches_within_mask = {
+      expected = [ false, false, false, true ],
+      actual = apply_set_active_layers_masked [4] [3, 4] [ false, false, true, false ],
+    },
+  },
+
   update_layer_state_for_input = fun input layer_state @ { default_layer, active_layers } =>
     input
     |> match {
@@ -46,19 +81,19 @@
       'Tap { layer_modifier = { toggle }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = toggle_layer al toggle } & layer_state,
-      'Press { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } or
-      'Tap { layer_modifier = { set_active_layers_to = new_active_layer_indices }, .. } =>
-        let { active_layers, ..layer_state } = layer_state in
-        let layer_count = std.array.length active_layers in
-        let new_active_layers =
-          std.array.generate
-            (fun idx =>
-              let layer_index = idx + 1 in
-              std.array.elem layer_index new_active_layer_indices
-            )
-            layer_count
-        in
-        { active_layers = new_active_layers } & layer_state,
+      'Press { layer_modifier = lm, .. } or
+      'Tap { layer_modifier = lm, .. } =>
+        if std.record.has_field "set_active_layers_to" lm then
+          let { active_layers = prior_active_layers, ..layer_state } = layer_state in
+          let new_active_layers =
+            if std.record.has_field "affected_layers" lm then
+              apply_set_active_layers_masked lm.set_active_layers_to lm.affected_layers prior_active_layers
+            else
+              apply_set_active_layers lm.set_active_layers_to prior_active_layers
+          in
+          { active_layers = new_active_layers } & layer_state
+        else
+          layer_state,
       'Release { layer_modifier = { default_ }, .. } =>
         let { default_layer, ..layer_state } = layer_state in
         { default_layer = default_ } & layer_state,
