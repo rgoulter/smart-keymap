@@ -233,6 +233,29 @@ fn event_targets_keymap_index<Ev>(event: &key::Event<Ev>, keymap_index: u16) -> 
     }
 }
 
+/// Returns the events that should be replayed when a pending key resolves.
+///
+/// Applies the resolution filter policy:
+/// - All queued events **not** targeting `keymap_index` are included.
+/// - Only the **last** event targeting `keymap_index` is included (if any).
+fn pending_resolution_events<Ev: Copy + Debug, const N: usize>(
+    queued_events: &heapless::Vec<key::Event<Ev>, N>,
+    keymap_index: u16,
+) -> heapless::Vec<key::Event<Ev>, N> {
+    let (self_events, other_events): (
+        heapless::Vec<key::Event<Ev>, N>,
+        heapless::Vec<key::Event<Ev>, N>,
+    ) = queued_events
+        .iter()
+        .partition(|ev| event_targets_keymap_index(ev, keymap_index));
+
+    let mut result = heapless::Vec::new();
+    for ev in other_events.iter().chain(self_events.last()) {
+        let _ = result.push(*ev);
+    }
+    result
+}
+
 #[derive(Debug)]
 enum CallbackFunction {
     /// C callback
@@ -375,22 +398,13 @@ impl<
             //  delaying each consecutive event by a tick
             //  (in order to allow press/release events to affect the HID report)
             let mut schedule_delay = 1;
-            let mut saved_input_queue = self.input_queue.take_all();
+            let mut input_events_to_prepend: heapless::Vec<input::Event, { MAX_PRESSED_KEYS }> =
+                heapless::Vec::new();
 
-            // Partition the events from the pending keymap index
-            //  separately from the other queued events.
-            // (Only queue the *last* event from the pending keymap index).
-            let (pending_input_ev, queued_events): (
-                heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
-                heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
-            ) = queued_events
-                .iter()
-                .partition(|ev| event_targets_keymap_index(ev, keymap_index));
-
-            for ev in queued_events.iter().chain(pending_input_ev.last()) {
+            for ev in pending_resolution_events(&queued_events, keymap_index).iter() {
                 match ev {
                     key::Event::Input(ie) => {
-                        self.input_queue.push_back_or_ignore(*ie);
+                        let _ = input_events_to_prepend.push(*ie);
                     }
                     _ => {
                         self.event_scheduler.schedule_after(schedule_delay, *ev);
@@ -399,7 +413,7 @@ impl<
                 }
             }
 
-            self.input_queue.append_all(&mut saved_input_queue);
+            self.input_queue.prepend(&input_events_to_prepend);
 
             self.handle_pending_events();
 
@@ -771,6 +785,67 @@ impl<
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn pending_resolution_events_empty_returns_empty() {
+        let queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
+        let result = pending_resolution_events(&queued, 0);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn pending_resolution_events_other_key_events_all_included() {
+        let mut queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
+        queued
+            .push(key::Event::Input(input::Event::Press { keymap_index: 1 }))
+            .unwrap();
+        queued
+            .push(key::Event::Input(input::Event::Release { keymap_index: 2 }))
+            .unwrap();
+        let result = pending_resolution_events(&queued, 0);
+        assert_eq!(2, result.len());
+    }
+
+    #[test]
+    fn pending_resolution_events_resolving_key_only_last_included() {
+        let mut queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
+        queued
+            .push(key::Event::Input(input::Event::Press { keymap_index: 0 }))
+            .unwrap();
+        queued
+            .push(key::Event::Input(input::Event::Release { keymap_index: 0 }))
+            .unwrap();
+        let result = pending_resolution_events(&queued, 0);
+        assert_eq!(1, result.len());
+        assert_eq!(
+            key::Event::Input(input::Event::Release { keymap_index: 0 }),
+            result[0]
+        );
+    }
+
+    #[test]
+    fn pending_resolution_events_mix_other_and_resolving_key() {
+        let mut queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
+        queued
+            .push(key::Event::Input(input::Event::Press { keymap_index: 1 }))
+            .unwrap();
+        queued
+            .push(key::Event::Input(input::Event::Press { keymap_index: 0 }))
+            .unwrap();
+        queued
+            .push(key::Event::Input(input::Event::Release { keymap_index: 0 }))
+            .unwrap();
+        let result = pending_resolution_events(&queued, 0);
+        assert_eq!(2, result.len());
+        assert_eq!(
+            key::Event::Input(input::Event::Press { keymap_index: 1 }),
+            result[0]
+        );
+        assert_eq!(
+            key::Event::Input(input::Event::Release { keymap_index: 0 }),
+            result[1]
+        );
+    }
 
     #[test]
     fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {
