@@ -26,6 +26,7 @@ keymap_key_features=(
     "layer_modifier-hold"
     "layer_modifier-modified_hold"
     "layer_modifier-set_active_layers"
+    "layer_modifier-set_active_layers_mask"
     "layer_modifier-sticky"
     "layer_modifier-toggle"
     "mouse"
