@@ -20,14 +20,23 @@ on:
       - 'tests/ncl/**'
 
 jobs:
-  cargo-build:
-    runs-on: ${{ matrix.os }}
+  ncl-checks:
+    runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+
+      - name: Run Nickel checks
+        run: make test-ncl-checks
+
+  ncl-snapshots:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -50,9 +59,8 @@ jobs:
           shared-key: nickel-codegen
           cache-targets: riscv32imac-unknown-none-elf
 
-      - name: Run Nickel tests
-        run: |
-          ./ncl/scripts/run-tests.sh
+      - name: Run Nickel snapshot fixtures
+        run: make test-ncl-snapshots
 
       - name: Generate feature docs
         run: ./features/scripts/generate-doc.sh
