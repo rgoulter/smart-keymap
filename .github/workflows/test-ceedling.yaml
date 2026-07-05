@@ -52,6 +52,11 @@ jobs:
           chmod +x ./cbindgen
           sudo cp ./cbindgen /usr/bin/cbindgen
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: ceedling
+
       - name: Run Ceedling Tests
         run: |
           export PATH=$(gem environment user_gemhome)/bin:$PATH

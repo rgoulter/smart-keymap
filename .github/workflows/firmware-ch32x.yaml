@@ -62,6 +62,12 @@ jobs:
       - name: Rust Add Target
         run: rustup target add "${CH32X_TARGET}"
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: firmware-ch32x
+          cache-targets: ${{ env.CH32X_TARGET }}
+
       - name: Build Keymap
         run: |
           cargo build \

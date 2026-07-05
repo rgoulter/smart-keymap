@@ -41,6 +41,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+
       - name: Setup Nickel
         uses: ./.github/actions/setup-nickel
         with:
@@ -72,6 +77,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+
       - name: Setup Nickel
         uses: ./.github/actions/setup-nickel
         with:
@@ -87,6 +97,11 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
+
       - name: Setup Nickel
         uses: ./.github/actions/setup-nickel
         with:
@@ -101,6 +116,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: rust-checks
 
       - name: Setup Nickel
         uses: ./.github/actions/setup-nickel

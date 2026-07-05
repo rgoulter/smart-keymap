@@ -51,6 +51,12 @@ jobs:
       - name: Rust Add Target
         run: rustup target add thumbv7em-none-eabihf
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: rust-stm32f4
+          cache-targets: thumbv7em-none-eabihf
+
       - name: Run Cargo Build
         run: cargo build --release --target=thumbv7em-none-eabihf --no-default-features
 
