@@ -167,21 +167,24 @@
   },
 
   keymap_ncl.key = {
+    # Dispatch order = outermost wrapper wins when several modules' is_key match
+    # the same record (Nickel record "abuse"). Used by key_validator and
+    # key_module_for_value. Chorded → layered → tap_hold → leaf keys.
     key_modules = [
+      keymap_ncl.chorded,
+      keymap_ncl.chorded_aux,
       keymap_ncl.automation,
       keymap_ncl.callback,
       keymap_ncl.caps_word,
-      keymap_ncl.chorded,
-      keymap_ncl.chorded_aux,
       keymap_ncl.consumer,
       keymap_ncl.custom,
-      keymap_ncl.keyboard,
-      keymap_ncl.layer_modifier,
-      keymap_ncl.layered,
       keymap_ncl.mouse,
       keymap_ncl.sticky,
       keymap_ncl.tap_dance,
+      keymap_ncl.layered,
       keymap_ncl.tap_hold,
+      keymap_ncl.layer_modifier,
+      keymap_ncl.keyboard,
     ],
 
     Key = std.contract.from_validator key_validator,
@@ -278,6 +281,25 @@
     check_nullable_null_is_ok =
       keymap_ncl.nullable_key.key_validator null == 'Ok,
   },
+
+  checks.check_key_modules_dispatch =
+    let K = import "keys.ncl" in
+    {
+      check_layered_composite_uses_layered_module =
+        let k = K.Tab & K.hold (K.layer_mod.hold 1) & { layered = [ null, K.A] } in
+        let json = keymap_ncl.key.to_json_value k in
+        keymap_ncl.layered.is_key k
+        && keymap_ncl.tap_hold.is_key k
+        && std.record.has_field "base" json
+        && std.record.has_field "layered" json,
+
+      check_chorded_aux_passthrough_uses_chorded_aux_module =
+        let k = { passthrough = K.A } in
+        let json = keymap_ncl.key.to_json_value k in
+        keymap_ncl.chorded_aux.is_key k
+        && std.record.has_field "passthrough" json
+        && !(std.record.has_field "chords" json),
+    },
 
   checks.check_keymap_layer_string = {
     check_unknown_key_is_error =
