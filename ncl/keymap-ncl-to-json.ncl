@@ -422,8 +422,7 @@
   layered_key_element_validator = fun k =>
     k
     |> match {
-      k if std.is_record k && std.record.has_field "layered" k =>
-        keymap_ncl.layered.key_validator k,
+      { layered, .. } => keymap_ncl.layered.key_validator k,
       _ => keymap_ncl.nullable_key.key_validator k,
     },
 
@@ -432,10 +431,8 @@
   chorded_key_element_validator = fun k =>
     k
     |> match {
-      k if std.is_record k && std.record.has_field "chords" k =>
-        keymap_ncl.chorded.key_validator k,
-      k if std.is_record k && std.record.has_field "passthrough" k =>
-        keymap_ncl.chorded_aux.key_validator k,
+      { chords, .. } => keymap_ncl.chorded.key_validator k,
+      { passthrough, .. } => keymap_ncl.chorded_aux.key_validator k,
       _ => keymap_ncl.nullable_key.key_validator k,
     },
 
