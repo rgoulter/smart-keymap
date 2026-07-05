@@ -94,6 +94,7 @@ impl<const N: usize> InputEventQueue<N> {
         let mut pending_inputs = heapless::Vec::<input::Event, M>::new();
         while let Some(event) = pending_events.pop() {
             if let key::Event::Input(input_event) = event {
+                // If the temporary buffer is full, drop the current pending input.
                 let _ = pending_inputs.push(input_event);
             }
         }
@@ -233,6 +234,18 @@ mod tests {
 
         assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
         assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
+        assert_eq!(queue.pop_front_if_ready(), None);
+    }
+
+    #[test]
+    fn push_front_or_ignore_drops_when_at_capacity() {
+        let mut queue = InputEventQueue::<2>::new();
+        queue.push_back(press(0)).unwrap();
+        queue.push_front_or_ignore(press(1));
+        queue.push_front_or_ignore(press(2));
+
+        assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
+        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
         assert_eq!(queue.pop_front_if_ready(), None);
     }
 }

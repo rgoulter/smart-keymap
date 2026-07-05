@@ -416,7 +416,7 @@ impl<
 
     /// Handles input events.
     ///
-    /// Discards the input event if the input queue is full.
+    /// Silently discards the input event if the input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
         self.idle_time = 0;
         self.input_queue.push_back_or_ignore(ev);
