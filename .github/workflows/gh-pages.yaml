@@ -6,6 +6,16 @@ env:
 on:
   push:
     branches: ["master"]
+    paths:
+      - '.cargo/**'
+      - '.github/workflows/gh-pages.yaml'
+      - 'Cargo.*'
+      - 'features/**'
+      - 'keyberon-smart-keyboard/**'
+      - 'ncl/**'
+      - 'rp2040-rtic-smart-keyboard/**'
+      - 'smart-keymap-nickel-helper/**'
+      - 'src/**'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
