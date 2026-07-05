@@ -46,9 +46,11 @@ jobs:
           export GEM_HOME=$(gem environment user_gemhome)
           gem install bundler --user-install
           bundle install
-          wget https://github.com/mozilla/cbindgen/releases/download/0.28.0/cbindgen
-          chmod +x ./cbindgen
-          sudo cp ./cbindgen /usr/bin/cbindgen
+      - name: Setup cbindgen
+        uses: ./.github/actions/setup-cbindgen
+
+      - name: Install Ruby dependencies
+        run: |
 
       - name: Rust cache
         uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
