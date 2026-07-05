@@ -52,7 +52,7 @@ jobs:
         run: rustup target add thumbv6m-none-eabi
 
       - name: Rust cache
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
         with:
           shared-key: rust-thumbv6m
           cache-targets: thumbv6m-none-eabi

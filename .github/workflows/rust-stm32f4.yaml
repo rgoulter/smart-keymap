@@ -52,7 +52,7 @@ jobs:
         run: rustup target add thumbv7em-none-eabihf
 
       - name: Rust cache
-        uses: swatinem/rust-cache@v2
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
         with:
           shared-key: rust-stm32f4
           cache-targets: thumbv7em-none-eabihf
