@@ -39,13 +39,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
       - name: Run Cargo Build
         run: cargo build
@@ -71,13 +70,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
       - name: Run Cargo Test (lib)
         run: cargo test --lib
@@ -87,13 +85,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
       - name: Run Cargo Test (rust-integration)
         run: cargo test --test rust-integration
@@ -103,13 +100,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
       - name: Run Cargo Test (cucumber-keymap)
         timeout-minutes: 15
