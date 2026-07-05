@@ -23,6 +23,10 @@ on:
       - 'smart_keymap/**'
       - 'tests/ceedling/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   unity-test:
     runs-on: ${{ matrix.os }}
