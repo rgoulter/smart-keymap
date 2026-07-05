@@ -51,6 +51,12 @@ jobs:
       - name: Rust Add Target
         run: rustup target add thumbv6m-none-eabi
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: rust-thumbv6m
+          cache-targets: thumbv6m-none-eabi
+
       - name: Run Cargo Build
         run: cargo build --target=thumbv6m-none-eabi --no-default-features
 

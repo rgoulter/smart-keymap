@@ -44,6 +44,12 @@ jobs:
           sudo apt-get install -y gawk pandoc
           rustup target add riscv32imac-unknown-none-elf
 
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          shared-key: nickel-codegen
+          cache-targets: riscv32imac-unknown-none-elf
+
       - name: Run Nickel tests
         run: |
           ./ncl/scripts/run-tests.sh
