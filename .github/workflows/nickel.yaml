@@ -39,6 +39,13 @@ jobs:
       - name: Run Nickel checks
         run: make test-ncl-checks
 
+      - name: Run make ncl-format
+        run: make ncl-format
+
+      - name: Check Nickel formatting
+        run: |
+          git diff --exit-code || (echo "There are uncommitted changes. Please run 'make ncl-format' and commit the changes." && exit 1)
+
   ncl-snapshots:
     runs-on: ubuntu-latest
 
