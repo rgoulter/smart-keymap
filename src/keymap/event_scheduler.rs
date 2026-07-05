@@ -50,7 +50,7 @@ impl<E: Debug> EventScheduler<E> {
     }
 
     pub fn enqueue_event(&mut self, event: Event<E>) {
-        self.pending_events.enqueue(Some(event)).unwrap();
+        let _ = self.pending_events.enqueue(Some(event));
     }
 
     pub fn schedule_after(&mut self, delay: u32, event: Event<E>) {
@@ -62,16 +62,14 @@ impl<E: Debug> EventScheduler<E> {
             .scheduled_events
             .binary_search_by(|ScheduledEvent { time: cmp_time, .. }| cmp_time.cmp(&time).reverse())
             .unwrap_or_else(|e| e);
-        self.scheduled_events
-            .insert(
-                pos,
-                ScheduledEvent {
-                    time,
-                    event,
-                    live: true,
-                },
-            )
-            .unwrap();
+        let _ = self.scheduled_events.insert(
+            pos,
+            ScheduledEvent {
+                time,
+                event,
+                live: true,
+            },
+        );
     }
 
     pub fn cancel_events_for_keymap_index(&mut self, keymap_index: u16) {
@@ -101,7 +99,7 @@ impl<E: Debug> EventScheduler<E> {
             if let Some(ScheduledEvent { event, live, .. }) = self.scheduled_events.pop() {
                 let ev = if live { Some(event) } else { None };
 
-                self.pending_events.enqueue(ev).unwrap();
+                let _ = self.pending_events.enqueue(ev);
             }
         }
     }

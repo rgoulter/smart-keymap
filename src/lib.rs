@@ -1,4 +1,6 @@
 #![warn(missing_docs)]
+#![warn(clippy::unwrap_used)]
+#![warn(clippy::expect_used)]
 
 //! Smart Keymap library.
 //!
@@ -50,11 +52,13 @@ pub mod input;
 /// The core interface for the smart keymap library is [key::System],
 ///  and its associated [key::Context], `PendingKeyState`, and [key::KeyState] types.
 /// Together, these are used to define smart key behaviour.
+#[allow(clippy::unwrap_used)]
 pub mod key;
 /// Keymap implementation.
 pub mod keymap;
 
 /// Split keyboard support.
+#[allow(clippy::unwrap_used)]
 pub mod split;
 
 /// A helper value type for Copy-able slices.

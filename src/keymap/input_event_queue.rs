@@ -52,14 +52,22 @@ impl<const N: usize> InputEventQueue<N> {
         self.events.push_back(event)
     }
 
+    pub fn push_back_or_ignore(&mut self, event: input::Event) {
+        let _ = self.push_back(event);
+    }
+
     pub fn push_front(&mut self, event: input::Event) -> Result<(), input::Event> {
         self.events.push_front(event)
+    }
+
+    pub fn push_front_or_ignore(&mut self, event: input::Event) {
+        let _ = self.push_front(event);
     }
 
     /// Prepends events so the first item in `events` is processed next.
     pub fn prepend(&mut self, events: &[input::Event]) {
         for event in events.iter().rev() {
-            self.push_front(*event).unwrap();
+            self.push_front_or_ignore(*event);
         }
     }
 
@@ -71,7 +79,7 @@ impl<const N: usize> InputEventQueue<N> {
     /// Appends every event from `other` to the back of this queue.
     pub fn append_all(&mut self, other: &mut heapless::Deque<input::Event, N>) {
         while let Some(event) = other.pop_front() {
-            self.push_back(event).unwrap();
+            self.push_back_or_ignore(event);
         }
     }
 
@@ -86,7 +94,7 @@ impl<const N: usize> InputEventQueue<N> {
         let mut pending_inputs = heapless::Vec::<input::Event, M>::new();
         while let Some(event) = pending_events.pop() {
             if let key::Event::Input(input_event) = event {
-                pending_inputs.push(input_event).unwrap();
+                let _ = pending_inputs.push(input_event);
             }
         }
         self.prepend(&pending_inputs);
@@ -108,6 +116,7 @@ impl<const N: usize> InputEventQueue<N> {
 use crate::key;
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::super::INPUT_QUEUE_TICK_DELAY;
     use super::*;
@@ -213,5 +222,17 @@ mod tests {
         }
         assert!(queue.is_full());
         assert!(queue.push_back(press(99)).is_err());
+    }
+
+    #[test]
+    fn push_back_or_ignore_drops_when_at_capacity() {
+        let mut queue = InputEventQueue::<2>::new();
+        queue.push_back(press(0)).unwrap();
+        queue.push_back_or_ignore(press(1));
+        queue.push_back_or_ignore(press(2));
+
+        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
+        assert_eq!(queue.pop_front_if_ready(), None);
     }
 }
