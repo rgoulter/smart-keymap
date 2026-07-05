@@ -346,7 +346,7 @@ pub unsafe extern "C" fn keymap_register_input_after_ms(
             debug_assert!(next_ms > 0);
         }
 
-        next_ev.map_or(0, |t| t as u32)
+        next_ev.map_or(0, |t| t)
     }
 }
 
@@ -371,7 +371,7 @@ pub unsafe extern "C" fn keymap_next_event_timeout(report: &mut KeymapHidReport)
             debug_assert!(next_ms > 0);
         }
 
-        next_ev.map_or(0, |t| t as u32)
+        next_ev.map_or(0, |t| t)
     }
 }
 
@@ -404,6 +404,10 @@ pub unsafe extern "C" fn keymap_clear_callbacks() {
 /// callback_id should be one of:
 /// - KEYMAP_CALLBACK_RESET
 /// - KEYMAP_CALLBACK_BOOTLOADER
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn keymap_register_callback(
@@ -424,6 +428,10 @@ pub unsafe extern "C" fn keymap_register_callback(
 }
 
 /// Registers a custom callback with the keymap.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn keymap_register_custom_callback(
@@ -438,6 +446,10 @@ pub unsafe extern "C" fn keymap_register_custom_callback(
 }
 
 /// Registers a bluetooth callback with the keymap.
+///
+/// # Safety
+///
+/// Not to be called concurrently with other `keymap_*` functions.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub unsafe extern "C" fn keymap_register_bluetooth_callback(
@@ -451,6 +463,10 @@ pub unsafe extern "C" fn keymap_register_bluetooth_callback(
 }
 
 /// Serializes the given event into the given buffer.
+///
+/// # Safety
+///
+/// `buf` must point to a buffer large enough for the serialized message.
 #[no_mangle]
 pub unsafe extern "C" fn keymap_serialize_event(buf: *mut u8, event: KeymapInputEvent) {
     unsafe {
@@ -462,6 +478,10 @@ pub unsafe extern "C" fn keymap_serialize_event(buf: *mut u8, event: KeymapInput
 
 /// Deserializes the given bytes into the given pointer;
 /// returns true if successful, false if fails.
+///
+/// # Safety
+///
+/// `event` must be a valid, aligned pointer to a writable [KeymapInputEvent].
 #[no_mangle]
 pub unsafe extern "C" fn keymap_message_buffer_receive_byte(
     buf: &mut [u8; MESSAGE_BUFFER_LEN],

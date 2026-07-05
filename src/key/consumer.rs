@@ -42,6 +42,12 @@ impl<R: Debug> System<R> {
     }
 }
 
+impl<R: Debug> Default for System<R> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<R: Debug> key::System<R> for System<R> {
     type Ref = Ref;
     type Context = Context;
