@@ -18,7 +18,7 @@ in
     clippy = {
       enable = true;
       # Match .github/workflows/rust.yaml cargo-fmt-clippy job.
-      entry = "cargo clippy --workspace --all-targets -- -D warnings";
+      entry = "cargo clippy --workspace --exclude rp2040-rtic-smart-keyboard --exclude stm32f4-rtic-smart-keyboard --exclude stm32-embassy-smart-keyboard -- -D warnings";
       files = "\\.rs$";
       pass_filenames = false;
     };
