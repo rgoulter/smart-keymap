@@ -36,7 +36,12 @@ pub const MAX_PRESSED_KEYS: usize = 16;
 
 const MAX_QUEUED_INPUT_EVENTS: usize = 32;
 
-/// Number of ticks before the next input event is processed in tick().
+/// Ticks to wait before processing the next queued input event.
+///
+/// Applies while keys are pending too: tap-hold/chorded interrupt logic expects
+/// Press and Release of other keys in separate ticks, and HID reports should
+/// update between rapid inputs. Do not bypass the input queue during pending
+/// without equivalent spacing (`tests/rust/tap_hold/hold_on_interrupt_tap.rs`).
 pub const INPUT_QUEUE_TICK_DELAY: u8 = 1;
 
 /// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
