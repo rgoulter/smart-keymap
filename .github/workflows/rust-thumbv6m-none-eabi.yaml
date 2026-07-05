@@ -29,6 +29,10 @@ on:
       - 'smart-keymap-nickel-helper/**'
       - 'keyberon-smart-keyboard/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   cargo-build-target-thumbv6m-none-eabi:
     runs-on: ${{ matrix.os }}
