@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -31,9 +32,9 @@ fn rolled_presses_resolves_tap() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -68,9 +69,9 @@ fn interrupting_tap_resolves_hold() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x01, 0, 0, 0, 0, 0, 0, 0],
-        [0x01, 0, 0x05, 0, 0, 0, 0, 0],
-        [0x01, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, KC_B, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -119,11 +120,11 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0x06, 0, 0, 0],
-        [0, 0, 0x05, 0x06, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, KC_C, 0, 0, 0],
+        [0, 0, KC_B, KC_C, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -173,11 +174,11 @@ fn rolling_nested_tap_th_tap_th_tap_th() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0x06, 0, 0, 0],
-        [0, 0, 0x05, 0x06, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, KC_C, 0, 0, 0],
+        [0, 0, KC_B, KC_C, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -225,11 +226,11 @@ fn tap_th_after_rolling_th_kbd() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -272,9 +273,9 @@ fn tap_th_then_tap_th() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();

@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -37,7 +38,7 @@ fn overlap_tap_key_acts_as_passthrough() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -78,8 +79,8 @@ fn overlap_press_d_bc_results_in_passthrough_followed_by_chord() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x12, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_O, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -116,7 +117,7 @@ fn overlap_partial_press_cd_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x13, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_P, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -152,7 +153,7 @@ fn overlap_partial_press_dc_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x13, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_P, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -188,7 +189,7 @@ fn overlap_press_bc_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x12, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_O, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -224,7 +225,7 @@ fn overlap_press_cb_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x12, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_O, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -260,7 +261,7 @@ fn overlap_press_ab_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x10, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_M, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -296,7 +297,7 @@ fn overlap_press_ba_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x10, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_M, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -332,7 +333,7 @@ fn overlap_press_abc_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x11, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_N, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -368,7 +369,7 @@ fn overlap_press_cba_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x11, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_N, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -404,7 +405,7 @@ fn overlap_press_cab_acts_as_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x11, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_N, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -444,8 +445,8 @@ fn interrupting_satisfied_overlapped_chord_resolves_as_chord() {
     // Should chord BC then press D.
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x12, 0, 0, 0, 0, 0],
-        [0, 0, 0x12, 0x07, 0, 0, 0, 0],
+        [0, 0, KC_O, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, KC_D, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
