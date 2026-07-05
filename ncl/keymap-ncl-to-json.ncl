@@ -420,23 +420,24 @@
   layers_of_keys = layers |> std.array.map layer_as_array_of_keys,
 
   layered_key_element_validator = fun k =>
-    if std.is_record k && std.record.has_field "layered" k then
-      keymap_ncl.layered.key_validator k
-    else
-      keymap_ncl.nullable_key.key_validator k,
+    k
+    |> match {
+      k if std.is_record k && std.record.has_field "layered" k =>
+        keymap_ncl.layered.key_validator k,
+      _ => keymap_ncl.nullable_key.key_validator k,
+    },
 
   LayeredKeyElement = std.contract.from_validator layered_key_element_validator,
 
   chorded_key_element_validator = fun k =>
-    if std.is_record k then
-      if std.record.has_field "chords" k then
-        keymap_ncl.chorded.key_validator k
-      else if std.record.has_field "passthrough" k then
-        keymap_ncl.chorded_aux.key_validator k
-      else
-        keymap_ncl.nullable_key.key_validator k
-    else
-      keymap_ncl.nullable_key.key_validator k,
+    k
+    |> match {
+      k if std.is_record k && std.record.has_field "chords" k =>
+        keymap_ncl.chorded.key_validator k,
+      k if std.is_record k && std.record.has_field "passthrough" k =>
+        keymap_ncl.chorded_aux.key_validator k,
+      _ => keymap_ncl.nullable_key.key_validator k,
+    },
 
   ChordedKeyElement = std.contract.from_validator chorded_key_element_validator,
 
