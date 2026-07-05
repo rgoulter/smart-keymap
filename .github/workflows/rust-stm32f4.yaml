@@ -41,13 +41,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
       - name: Rust Add Target
         run: rustup target add thumbv7em-none-eabihf

@@ -39,11 +39,10 @@ jobs:
             --package=smart-keymap \
             --package=keyberon-smart-keyboard
           cp -r target/doc _site/doc
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
       - name: features.html
         run: |
           sudo apt update
