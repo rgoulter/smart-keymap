@@ -29,13 +29,7 @@ concurrency:
 
 jobs:
   unity-test:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code

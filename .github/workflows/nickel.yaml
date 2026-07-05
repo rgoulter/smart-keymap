@@ -67,4 +67,5 @@ jobs:
         run: make test-ncl-snapshots
 
       - name: Generate feature docs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: ./features/scripts/generate-doc.sh

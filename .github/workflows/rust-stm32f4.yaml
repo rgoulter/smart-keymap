@@ -35,13 +35,7 @@ concurrency:
 
 jobs:
   cargo-build-target-thumbv7em-none-eabihf:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
