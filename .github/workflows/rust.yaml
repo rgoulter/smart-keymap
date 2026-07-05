@@ -33,13 +33,7 @@ concurrency:
 
 jobs:
   cargo-build:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
@@ -85,11 +79,6 @@ jobs:
         uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
         with:
           shared-key: rust-checks
-
-      - name: Setup Nickel
-        uses: ./.github/actions/setup-nickel
-        with:
-          version: ${{ env.NICKEL_VERSION }}
 
       - name: Run Cargo Test (lib)
         run: cargo test --lib

@@ -35,13 +35,7 @@ concurrency:
 
 jobs:
   build-firmware-ch32x:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
