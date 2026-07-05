@@ -307,6 +307,12 @@
       check_plain_key_ok =
         layered_key_element_validator K.A == 'Ok,
 
+      check_null_ok =
+        layered_key_element_validator null == 'Ok,
+
+      check_string_token_ok =
+        layered_key_element_validator K.caps_word.toggle == 'Ok,
+
       check_layered_composite_ok =
         layered_key_element_validator (K.A & { layered = [ null, K.B] }) == 'Ok,
 
@@ -319,6 +325,12 @@
     {
       check_plain_key_ok =
         chorded_key_element_validator K.A == 'Ok,
+
+      check_null_ok =
+        chorded_key_element_validator null == 'Ok,
+
+      check_string_token_ok =
+        chorded_key_element_validator K.caps_word.toggle == 'Ok,
 
       check_passthrough_ok =
         chorded_key_element_validator { passthrough = K.A } == 'Ok,
@@ -408,20 +420,23 @@
   layers_of_keys = layers |> std.array.map layer_as_array_of_keys,
 
   layered_key_element_validator = fun k =>
-    if std.record.has_field "layered" k then
+    if std.is_record k && std.record.has_field "layered" k then
       keymap_ncl.layered.key_validator k
     else
-      keymap_ncl.key.key_validator k,
+      keymap_ncl.nullable_key.key_validator k,
 
   LayeredKeyElement = std.contract.from_validator layered_key_element_validator,
 
   chorded_key_element_validator = fun k =>
-    if std.record.has_field "chords" k then
-      keymap_ncl.chorded.key_validator k
-    else if std.record.has_field "passthrough" k then
-      keymap_ncl.chorded_aux.key_validator k
+    if std.is_record k then
+      if std.record.has_field "chords" k then
+        keymap_ncl.chorded.key_validator k
+      else if std.record.has_field "passthrough" k then
+        keymap_ncl.chorded_aux.key_validator k
+      else
+        keymap_ncl.nullable_key.key_validator k
     else
-      keymap_ncl.key.key_validator k,
+      keymap_ncl.nullable_key.key_validator k,
 
   ChordedKeyElement = std.contract.from_validator chorded_key_element_validator,
 
