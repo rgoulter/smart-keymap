@@ -8,13 +8,5 @@ set -euo pipefail
 
 SCRIPTS_DIR="$(dirname "$0")"
 
-# Run the nickel checks first.
 "${SCRIPTS_DIR}/run-ncl-checks.sh"
-
-# For each snapshot fixture, check generated keymap.rs:
-#  - matches the expected snapshot,
-#  - type-checks (cargo check).
-while IFS= read -r ncl_test; do
-  "${SCRIPTS_DIR}/test-ncl-diff.sh" "${ncl_test}"
-  "${SCRIPTS_DIR}/test-ncl-builds.sh" "${ncl_test}"
-done < <("${SCRIPTS_DIR}/list-ncl-snapshot-fixtures.sh")
+"${SCRIPTS_DIR}/run-snapshots.sh"
