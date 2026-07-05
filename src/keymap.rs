@@ -327,9 +327,9 @@ impl<
     ///
     /// Only one callback is set for each callback id.
     pub fn set_callback(&mut self, callback_id: KeymapCallback, callback_fn: fn() -> ()) {
-        self.callbacks
-            .insert(callback_id, CallbackFunction::Rust(callback_fn))
-            .unwrap();
+        let _ = self
+            .callbacks
+            .insert(callback_id, CallbackFunction::Rust(callback_fn));
     }
 
     /// Registers the given callback to the keymap.
@@ -340,9 +340,9 @@ impl<
         callback_id: KeymapCallback,
         callback_fn: extern "C" fn() -> (),
     ) {
-        self.callbacks
-            .insert(callback_id, CallbackFunction::ExternC(callback_fn))
-            .unwrap();
+        let _ = self
+            .callbacks
+            .insert(callback_id, CallbackFunction::ExternC(callback_fn));
     }
 
     /// Sets the number of ms per tick().
@@ -365,13 +365,11 @@ impl<
                 .cancel_events_for_keymap_index(keymap_index);
 
             // Add the pending state's pressed key to pressed inputs
-            self.pressed_inputs
-                .push(input::PressedInput::pressed_key(
-                    keymap_index,
-                    key_ref,
-                    key_state,
-                ))
-                .unwrap();
+            let _ = self.pressed_inputs.push(input::PressedInput::pressed_key(
+                keymap_index,
+                key_ref,
+                key_state,
+            ));
 
             // Schedule each of the queued events,
             //  delaying each consecutive event by a tick
@@ -392,7 +390,7 @@ impl<
             for ev in queued_events.iter().chain(pending_input_ev.last()) {
                 match ev {
                     key::Event::Input(ie) => {
-                        self.input_queue.push_back(*ie).unwrap();
+                        self.input_queue.push_back_or_ignore(*ie);
                     }
                     _ => {
                         self.event_scheduler.schedule_after(schedule_delay, *ev);
@@ -421,12 +419,7 @@ impl<
     /// Discards the input event if the input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
         self.idle_time = 0;
-
-        if self.input_queue.is_full() {
-            return;
-        }
-
-        self.input_queue.push_back(ev).unwrap();
+        self.input_queue.push_back_or_ignore(ev);
 
         if let Some(ie) = self.input_queue.pop_front_if_ready() {
             self.process_input(ie);
@@ -508,7 +501,7 @@ impl<
 
     fn process_input(&mut self, ev: input::Event) {
         if let Some(pending_state) = &mut self.pending_key_state {
-            pending_state.queued_events.push(ev.into()).unwrap();
+            let _ = pending_state.queued_events.push(ev.into());
             self.update_pending_state(ev.into());
         } else {
             // Update each of the pressed keys with the event.
@@ -547,13 +540,11 @@ impl<
 
                         match pkr {
                             key::PressedKeyResult::Resolved(key_state) => {
-                                self.pressed_inputs
-                                    .push(input::PressedInput::pressed_key(
-                                        keymap_index,
-                                        key_ref,
-                                        key_state,
-                                    ))
-                                    .unwrap();
+                                let _ = self.pressed_inputs.push(input::PressedInput::pressed_key(
+                                    keymap_index,
+                                    key_ref,
+                                    key_state,
+                                ));
 
                                 // The resolved key state has output. Emit this as an event.
                                 if let Some(key_output) =
@@ -574,13 +565,11 @@ impl<
                             key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp) => {
                                 let key_state: KS = key::NoOpKeyState.into();
 
-                                self.pressed_inputs
-                                    .push(input::PressedInput::pressed_key(
-                                        keymap_index,
-                                        key_ref,
-                                        key_state,
-                                    ))
-                                    .unwrap();
+                                let _ = self.pressed_inputs.push(input::PressedInput::pressed_key(
+                                    keymap_index,
+                                    key_ref,
+                                    key_state,
+                                ));
                             }
                             key::PressedKeyResult::Pending(pending_key_state) => {
                                 self.pending_key_state = Some(PendingState {
@@ -608,7 +597,7 @@ impl<
 
                 input::Event::VirtualKeyPress { key_output } => {
                     let pressed_key = input::PressedInput::Virtual(key_output);
-                    self.pressed_inputs.push(pressed_key).unwrap();
+                    let _ = self.pressed_inputs.push(pressed_key);
                 }
                 input::Event::VirtualKeyRelease { key_output } => {
                     // Remove from pressed keys.
@@ -779,6 +768,7 @@ impl<
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
