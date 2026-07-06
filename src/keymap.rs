@@ -782,6 +782,30 @@ impl<
 }
 
 #[cfg(test)]
+impl<
+        I: Debug + Index<usize, Output = R>,
+        R: Copy + Debug,
+        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
+        Ev: Copy + Debug,
+        PKS: Debug,
+        KS: Copy + Debug + From<key::NoOpKeyState>,
+        S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
+    > Keymap<I, R, Ctx, Ev, PKS, KS, S>
+{
+    pub(crate) fn test_pending_queued_events_len(&self) -> Option<usize> {
+        self.pending_key_state
+            .as_ref()
+            .map(|pending| pending.queued_events.len())
+    }
+
+    pub(crate) fn test_handle_scheduled_key_event(&mut self, ev: key::Event<Ev>) {
+        self.event_scheduler
+            .schedule_event(key::ScheduledEvent::immediate(ev));
+        self.handle_pending_events();
+    }
+}
+
+#[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
@@ -925,6 +949,53 @@ mod tests {
         assert_eq!(0, context.idle_time_ms);
     }
 
+    fn tap_hold_interrupt_keymap(
+        interrupt_response: crate::key::tap_hold::InterruptResponse,
+    ) -> crate::keymap::Keymap<
+        [crate::key::composite::Ref; 2],
+        crate::key::composite::Ref,
+        crate::key::composite::Context,
+        crate::key::composite::Event,
+        crate::key::composite::PendingKeyState,
+        crate::key::composite::KeyState,
+        crate::key::composite::System<
+            crate::key::composite::KeyArrays<0, 0, 0, 0, 1, 0, 0, 0, 0, 1>,
+        >,
+    > {
+        use crate::key::composite as key_system;
+
+        let mut config = key_system::Config::new();
+        config.tap_hold.interrupt_response = interrupt_response;
+
+        crate::keymap::Keymap::new(
+            [
+                crate::key::composite::Ref::TapHold(crate::key::tap_hold::Ref(0)),
+                crate::key::composite::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(0x05)),
+            ],
+            key_system::Context::from_config(config),
+            crate::key::composite::System::array_based(
+                crate::key::automation::System::new([]),
+                crate::key::callback::System::new([]),
+                crate::key::chorded::System::new([], []),
+                crate::key::keyboard::System::new([crate::key::keyboard::Key {
+                    key_code: 0x05,
+                    modifiers: crate::key::KeyboardModifiers::new(),
+                }]),
+                crate::key::layered::System::new([], []),
+                crate::key::sticky::System::new([]),
+                crate::key::tap_dance::System::new([]),
+                crate::key::tap_hold::System::new([crate::key::tap_hold::Key {
+                    tap: crate::key::composite::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(
+                        0x04,
+                    )),
+                    hold: crate::key::composite::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(
+                        0xE0,
+                    )),
+                }]),
+            ),
+        )
+    }
+
     macro_rules! simple_keyboard_keymap {
         () => {{
             use crate as smart_keymap;
@@ -953,6 +1024,53 @@ mod tests {
                 ),
             )
         }};
+    }
+
+    /// `queued_events` gets one entry per processed input; tick delay defers the second
+    /// physical `handle_input` until `tick()`.
+    #[test]
+    fn physical_input_during_pending_records_once_in_queued_events() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        let baseline = keymap
+            .test_pending_queued_events_len()
+            .expect("tap-hold pending");
+
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        assert_eq!(Some(baseline), keymap.test_pending_queued_events_len());
+
+        // First tick clears delay; second tick dequeues the deferred press.
+        keymap.tick();
+        keymap.tick();
+        assert_eq!(Some(baseline + 1), keymap.test_pending_queued_events_len());
+    }
+
+    /// Scheduled `Event::Input` during pending: `handle_event` calls `update_pending_state`
+    /// then `process_input`, which applies pending state again. With `HoldOnKeyPress`, the
+    /// interrupt should resolve the tap-hold to hold without also pressing the interrupting key.
+    #[test]
+    fn scheduled_input_during_pending_does_not_reprocess_as_physical_press() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::HoldOnKeyPress);
+
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        assert!(keymap.test_pending_queued_events_len().is_some());
+
+        keymap.test_handle_scheduled_key_event(key::Event::Input(input::Event::Press {
+            keymap_index: 1,
+        }));
+
+        let hold = key::KeyOutput::from_key_code(0xE0);
+        let interrupt_key = key::KeyOutput::from_key_code(0x05);
+        assert_eq!(
+            heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[hold]).unwrap(),
+            keymap.pressed_keys()
+        );
+        assert!(!keymap.pressed_keys().contains(&interrupt_key));
     }
 
     #[test]
