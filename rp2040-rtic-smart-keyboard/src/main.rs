@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(clippy::unwrap_used)]
 
 #[cfg(not(custom_board))]
 mod board {
@@ -115,14 +116,16 @@ mod app {
             app_init::init_timer(ctx.device.TIMER, &mut ctx.device.RESETS, &clocks);
 
         // Set up the USB driver
-        *ctx.local.usb_bus = Some(UsbBusAllocator::new(hal::usb::UsbBus::new(
-            ctx.device.USBCTRL_REGS,
-            ctx.device.USBCTRL_DPRAM,
-            clocks.usb_clock,
-            true,
-            &mut ctx.device.RESETS,
-        )));
-        let usb_bus = ctx.local.usb_bus.as_ref().unwrap();
+        let usb_bus = ctx
+            .local
+            .usb_bus
+            .insert(UsbBusAllocator::new(hal::usb::UsbBus::new(
+                ctx.device.USBCTRL_REGS,
+                ctx.device.USBCTRL_DPRAM,
+                clocks.usb_clock,
+                true,
+                &mut ctx.device.RESETS,
+            )));
 
         let (usb_dev, usb_serial, usb_class) = app_init::init_usb_device(
             usb_bus,
@@ -145,7 +148,9 @@ mod app {
             &mut ctx.device.RESETS,
         );
         board::rows_and_cols!(gpio_pins, cols, rows);
-        let mut matrix = DelayedMatrix::new(cols, rows, timer, 5, 5).unwrap();
+        let Ok(mut matrix) = DelayedMatrix::new(cols, rows, timer, 5, 5) else {
+            panic!("matrix init failed");
+        };
 
         // Check if bootloader pressed
         if matrix.is_boot_key_pressed() {
@@ -210,7 +215,7 @@ mod app {
         } = c.local;
 
         alarm.clear_interrupt();
-        alarm.schedule(1.millis()).unwrap();
+        let _ = alarm.schedule(1.millis());
 
         for event in keyboard.events() {
             if let Some(event) = keymap_index_of(&KEYMAP_INDICES, event) {
@@ -248,7 +253,7 @@ mod app {
                         .take(4)
                         .collect::<heapless::Vec<_, 4>>()
                         .into_array()
-                        .unwrap(),
+                        .unwrap_or([Consumer::Unassigned; 4]),
                 }
             };
             if consumer_report != *previous_consumer {
