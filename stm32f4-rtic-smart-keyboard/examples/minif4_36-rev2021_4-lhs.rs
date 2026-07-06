@@ -30,7 +30,7 @@ mod board {
     macro_rules! keyboard {
         ($gpioa:ident, $gpiob:ident) => {
             crate::board::Keyboard {
-                matrix: crate::board::Matrix::new([
+                matrix: match crate::board::Matrix::new([
                     [
                         Some($gpiob.pb15.into_pull_up_input().erase()),
                         Some($gpioa.pa8.into_pull_up_input().erase()),
@@ -59,7 +59,10 @@ mod board {
                         None,
                         None,
                     ],
-                ]),
+                ]) {
+                    Ok(matrix) => matrix,
+                    Err(e) => match e {},
+                },
                 debouncer: keyberon::debounce::Debouncer::new(
                     crate::board::PressedKeys::default(),
                     crate::board::PressedKeys::default(),
