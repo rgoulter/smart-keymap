@@ -8,6 +8,7 @@
 
 #![no_main]
 #![no_std]
+#![warn(clippy::unwrap_used)]
 
 /// Items related to app initialization.
 pub mod app_init;
