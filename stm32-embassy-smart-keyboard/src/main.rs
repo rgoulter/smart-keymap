@@ -35,6 +35,8 @@ static CONTROL_BUF: StaticCell<[u8; 64]> = StaticCell::new();
 
 static KEYBOARD_BACKEND: StaticCell<KeyboardBackend> = StaticCell::new();
 
+static DEVICE_HANDLER: StaticCell<MyDeviceHandler> = StaticCell::new();
+static HID_STATE: StaticCell<State> = StaticCell::new();
 static HID_STATE_MOUSE: StaticCell<State> = StaticCell::new();
 static HID_STATE_CONSUMER: StaticCell<State> = StaticCell::new();
 
@@ -133,9 +135,9 @@ async fn main(_spawner: Spawner) {
     let ms_os_descriptor = MS_OS_DESCRIPTOR.init([0; 256]);
     let control_buf = CONTROL_BUF.init([0; 64]);
 
-    let mut device_handler = MyDeviceHandler::new();
+    let device_handler = DEVICE_HANDLER.init(MyDeviceHandler::new());
 
-    let mut state_kbd = State::new();
+    let state_kbd = HID_STATE.init(State::new());
     let state_mouse = HID_STATE_MOUSE.init(State::new());
     let state_consumer = HID_STATE_CONSUMER.init(State::new());
 
@@ -148,7 +150,7 @@ async fn main(_spawner: Spawner) {
         control_buf,
     );
 
-    builder.handler(&mut device_handler);
+    builder.handler(device_handler);
 
     let config = embassy_usb::class::hid::Config {
         report_descriptor: KeyboardReport::desc(),
@@ -156,7 +158,7 @@ async fn main(_spawner: Spawner) {
         poll_ms: 1,
         max_packet_size: 8,
     };
-    let hid_kbd = HidReaderWriter::<_, 1, 8>::new(&mut builder, &mut state_kbd, config);
+    let hid_kbd = HidReaderWriter::<_, 1, 8>::new(&mut builder, state_kbd, config);
 
     let config_mouse = embassy_usb::class::hid::Config {
         report_descriptor: MouseReport::desc(),
