@@ -26,8 +26,8 @@ use usbd_hid::descriptor::{
 use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
 use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
 use keyberon_smart_keyboard::input::MatrixScanner;
-use smart_keymap::key;
 use keyberon_smart_keyboard::split::BackendMessage;
+use smart_keymap::key;
 
 use smart_keymap::input::Event;
 use smart_keymap::split::{Message, BUFFER_SIZE};
