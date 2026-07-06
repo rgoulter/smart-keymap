@@ -21,13 +21,14 @@ pub fn init_serial(
     buf: &'static mut [u8; BUFFER_SIZE],
 ) -> (TransportWriter, TransportReader) {
     let pins = (pb6.into_alternate(), pb7.into_alternate());
-    let mut serial = Serial::new(
+    let Ok(mut serial) = Serial::new(
         usart1,
         pins,
         Config::default().baudrate(9_600.bps()),
         clocks,
-    )
-    .unwrap();
+    ) else {
+        panic!("serial init failed");
+    };
     serial.listen(Event::RxNotEmpty);
 
     let (tx, rx) = serial.split();

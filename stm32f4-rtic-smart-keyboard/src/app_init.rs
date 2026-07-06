@@ -37,20 +37,23 @@ pub fn init_usb_device(
         .add_device(usbd_human_interface_device::device::mouse::WheelMouseConfig::default())
         .build(usb_bus);
 
-    let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
+    let Some(usb_dev_builder) = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
         .strings(&[StringDescriptors::new(LangID::EN_US)
             .manufacturer(mfr)
             .product(product)
             .serial_number(env!("CARGO_PKG_VERSION"))])
-        .unwrap()
-        .build();
+        .ok()
+    else {
+        panic!("usb descriptor init failed");
+    };
+    let usb_dev = usb_dev_builder.build();
 
     (usb_dev, usb_class)
 }
 
 pub fn init_timer(clocks: &Clocks, tim3: TIM3) -> CounterUs<TIM3> {
     let mut timer = tim3.counter_us(clocks);
-    timer.start(1.millis()).unwrap();
+    let _ = timer.start(1.millis());
     timer.listen(Event::Update);
     timer
 }
