@@ -9,25 +9,31 @@ on:
       - master
     paths:
       - '.cargo/config.toml'
+      - '.github/workflows/rust-thumbv6m-none-eabi.yaml'
       - 'Cargo.*'
       - 'ld/rp2040/*'
       - 'ncl/**/*.ncl'
+      - 'keyberon-smart-keyboard/**'
       - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
       - 'smart-keymap-nickel-helper/**'
-      - 'keyberon-smart-keyboard/**'
+      - 'stm32-embassy-smart-keyboard/**'
+      - 'stm32f4-rtic-smart-keyboard/**'
   pull_request:
     branches:
       - '*'
     paths:
       - '.cargo/config.toml'
+      - '.github/workflows/rust-thumbv6m-none-eabi.yaml'
       - 'Cargo.*'
       - 'ld/rp2040/*'
       - 'ncl/**/*.ncl'
+      - 'keyberon-smart-keyboard/**'
       - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
       - 'smart-keymap-nickel-helper/**'
-      - 'keyberon-smart-keyboard/**'
+      - 'stm32-embassy-smart-keyboard/**'
+      - 'stm32f4-rtic-smart-keyboard/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}

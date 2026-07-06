@@ -9,25 +9,31 @@ on:
       - master
     paths:
       - '.cargo/config.toml'
+      - '.github/workflows/rust-stm32f4.yaml'
       - 'Cargo.*'
       - 'ld/stm32f4xx-tinyuf2/*'
       - 'ncl/**/*.ncl'
-      - 'stm32f4-rtic-smart-keyboard/**'
+      - 'keyberon-smart-keyboard/**'
+      - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
       - 'smart-keymap-nickel-helper/**'
-      - 'keyberon-smart-keyboard/**'
+      - 'stm32-embassy-smart-keyboard/**'
+      - 'stm32f4-rtic-smart-keyboard/**'
   pull_request:
     branches:
       - '*'
     paths:
       - '.cargo/config.toml'
+      - '.github/workflows/rust-stm32f4.yaml'
       - 'Cargo.*'
       - 'ld/stm32f4xx-tinyuf2/*'
       - 'ncl/**/*.ncl'
-      - 'stm32f4-rtic-smart-keyboard/**'
+      - 'keyberon-smart-keyboard/**'
+      - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
       - 'smart-keymap-nickel-helper/**'
-      - 'keyberon-smart-keyboard/**'
+      - 'stm32-embassy-smart-keyboard/**'
+      - 'stm32f4-rtic-smart-keyboard/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -69,6 +75,15 @@ jobs:
 
       - name: Run Cargo Build (stm32f4-rtic-smart-keyboard, ex=minif4_36-rev2021_4-rhs)
         run: cargo build --release --target=thumbv7em-none-eabihf --package=stm32f4-rtic-smart-keyboard --example=minif4_36-rev2021_4-rhs
+
+      - name: Run Cargo Build (stm32-embassy-smart-keyboard)
+        run: cargo build --release --target=thumbv7em-none-eabihf --package=stm32-embassy-smart-keyboard
+
+      - name: Run Cargo Build (stm32-embassy-smart-keyboard, ex=minif4_36-rev2021_5-lhs)
+        run: cargo build --release --target=thumbv7em-none-eabihf --package=stm32-embassy-smart-keyboard --example=minif4_36-rev2021_5-lhs
+
+      - name: Run Cargo Build (stm32-embassy-smart-keyboard, ex=minif4_36-rev2021_5-rhs)
+        run: cargo build --release --target=thumbv7em-none-eabihf --package=stm32-embassy-smart-keyboard --example=minif4_36-rev2021_5-rhs
 
       - name: Run Cargo Doc
         run: |
