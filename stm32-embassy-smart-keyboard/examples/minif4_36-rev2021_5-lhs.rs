@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(clippy::unwrap_used)]
 
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
@@ -304,7 +305,7 @@ async fn main(spawner: Spawner) {
         BACKEND_CHANNEL.sender();
 
     let config = usart::Config::default();
-    let uart = Uart::new_half_duplex(
+    let Ok(uart) = Uart::new_half_duplex(
         p.USART1,
         p.PB6,
         Irqs,
@@ -313,8 +314,9 @@ async fn main(spawner: Spawner) {
         config,
         HalfDuplexReadback::NoReadback,
         HalfDuplexConfig::OpenDrainExternal,
-    )
-    .unwrap();
+    ) else {
+        panic!("uart init failed");
+    };
 
     let out_fut = async {
         let mut rh_kbd = MyRequestHandler {};
@@ -330,15 +332,9 @@ async fn main(spawner: Spawner) {
         .await;
     };
 
-    spawner
-        .spawn(keyboard_backend(writer_kbd, writer_mouse, writer_consumer))
-        .unwrap();
-    spawner
-        .spawn(keyboard_matrix_scan(matrix_scan_sender, keyboard))
-        .unwrap();
-    spawner
-        .spawn(keyboard_split_rx(matrix_scan_sender, uart))
-        .unwrap();
+    let _ = spawner.spawn(keyboard_backend(writer_kbd, writer_mouse, writer_consumer));
+    let _ = spawner.spawn(keyboard_matrix_scan(matrix_scan_sender, keyboard));
+    let _ = spawner.spawn(keyboard_split_rx(matrix_scan_sender, uart));
 
     join(usb_fut, out_fut).await;
 }

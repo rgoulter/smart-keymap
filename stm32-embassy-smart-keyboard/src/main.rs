@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(clippy::unwrap_used)]
 
 use core::sync::atomic::{AtomicBool, Ordering};
 
