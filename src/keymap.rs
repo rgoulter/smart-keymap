@@ -513,9 +513,15 @@ impl<
         }
     }
 
-    fn process_input(&mut self, ev: input::Event) {
+    fn record_pending_input(&mut self, ev: input::Event) {
         if let Some(pending_state) = &mut self.pending_key_state {
             let _ = pending_state.queued_events.push(ev.into());
+        }
+    }
+
+    fn process_input(&mut self, ev: input::Event) {
+        if self.pending_key_state.is_some() {
+            self.record_pending_input(ev);
             self.update_pending_state(ev.into());
         } else {
             // Update each of the pressed keys with the event.
@@ -646,6 +652,8 @@ impl<
             }
         }
 
+        let was_pending = self.pending_key_state.is_some();
+
         // pending state needs to handle events
         self.update_pending_state(ev);
 
@@ -671,7 +679,14 @@ impl<
             .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
 
         if let Event::Input(input_ev) = ev {
-            self.process_input(input_ev);
+            if was_pending {
+                // `update_pending_state` already ran above. Only record for replay if still
+                // pending; do not re-apply or fall through to the non-pending press path.
+                self.record_pending_input(input_ev);
+                self.handle_pending_events();
+            } else {
+                self.process_input(input_ev);
+            }
         }
     }
 
