@@ -139,11 +139,17 @@ impl KeymapOutput {
     }
 }
 
+/// Session state while a key's output is still undecided (tap-hold, chorded, etc.).
+///
+/// While pending, inputs are paced through [`Keymap::input_queue`] (the delay line:
+/// at most one input per tick) and each processed input is appended to
+/// [`Self::queued_events`] (the session log for replay on resolve).
 #[derive(Debug)]
 struct PendingState<R, Ev, PKS> {
     keymap_index: u16,
     key_ref: R,
     pending_key_state: PKS,
+    /// Inputs already paced and applied during this pending session; replayed on resolve.
     queued_events: heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
 }
 
@@ -375,6 +381,10 @@ impl<
 
     // If the pending key state is resolved,
     //  then clear the pending key state.
+    //
+    // Replay uses only `queued_events` (the session log). Inputs still waiting in
+    // `input_queue` (the delay line) are intentionally omitted — they were not yet
+    // paced/applied during pending and will run post-resolve in normal order.
     fn resolve_pending_key_state(&mut self, key_state: KS) {
         if let Some(PendingState {
             keymap_index,
@@ -429,6 +439,11 @@ impl<
     }
 
     /// Handles input events.
+    ///
+    /// All inputs enter `input_queue` first so at most one is processed per tick
+    /// ([`INPUT_QUEUE_TICK_DELAY`]), including while a key is pending. Tap-hold and
+    /// chorded interrupt logic depend on that spacing; do not bypass the queue during
+    /// pending without equivalent pacing (`tests/rust/tap_hold/hold_on_interrupt_tap.rs`).
     ///
     /// Silently discards the input event if the input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
@@ -521,6 +536,7 @@ impl<
 
     fn process_input(&mut self, ev: input::Event) {
         if self.pending_key_state.is_some() {
+            // Paced input from the delay line: record in the session log, then apply.
             self.record_pending_input(ev);
             self.update_pending_state(ev.into());
         } else {
