@@ -1,8 +1,78 @@
+use std::collections::HashMap;
 use std::env;
 use std::fs;
 use std::io::{self, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::sync::{Mutex, OnceLock};
+
+/// Identifies a cached Nickel JSON export (keymap, inputs, or HID report).
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+enum NickelJsonExport {
+    Keymap {
+        import_path: String,
+        keymap_ncl: String,
+    },
+    Inputs {
+        import_path: String,
+        keymap_ncl: String,
+        inputs_ncl: String,
+    },
+    HidReport {
+        import_path: String,
+        hid_report_ncl: String,
+    },
+}
+
+impl NickelJsonExport {
+    fn keymap(import_path: &str, keymap_ncl: &str) -> Self {
+        Self::Keymap {
+            import_path: import_path.to_owned(),
+            keymap_ncl: keymap_ncl.to_owned(),
+        }
+    }
+
+    fn inputs(import_path: &str, keymap_ncl: &str, inputs_ncl: &str) -> Self {
+        Self::Inputs {
+            import_path: import_path.to_owned(),
+            keymap_ncl: keymap_ncl.to_owned(),
+            inputs_ncl: inputs_ncl.to_owned(),
+        }
+    }
+
+    fn hid_report(import_path: &str, hid_report_ncl: &str) -> Self {
+        Self::HidReport {
+            import_path: import_path.to_owned(),
+            hid_report_ncl: hid_report_ncl.to_owned(),
+        }
+    }
+}
+
+mod eval_cache {
+    use super::{HashMap, Mutex, NickelJsonExport, OnceLock};
+
+    fn cache() -> &'static Mutex<HashMap<NickelJsonExport, String>> {
+        static CACHE: OnceLock<Mutex<HashMap<NickelJsonExport, String>>> = OnceLock::new();
+        CACHE.get_or_init(|| Mutex::new(HashMap::new()))
+    }
+
+    pub fn get(key: &NickelJsonExport) -> Option<String> {
+        cache().lock().unwrap().get(key).cloned()
+    }
+
+    pub fn insert(key: NickelJsonExport, value: String) {
+        cache().lock().unwrap().insert(key, value);
+    }
+
+    pub fn clear() {
+        cache().lock().unwrap().clear();
+    }
+}
+
+/// Clears the in-process Nickel JSON eval cache (for tests).
+pub fn clear_nickel_eval_cache() {
+    eval_cache::clear();
+}
 
 /// Inputs for Nickel evaluation.
 pub struct NickelEvalInputs<'a> {
@@ -207,11 +277,24 @@ pub fn rustfmt(rust_src: String) -> String {
 
 /// Evaluates the Nickel expr for a keymap, returning the json serialization.
 pub fn nickel_json_value_for_keymap(ncl_import_path: String, keymap_ncl: &str) -> NickelResult {
+    let cache_key = NickelJsonExport::keymap(&ncl_import_path, keymap_ncl);
+    if let Some(json) = eval_cache::get(&cache_key) {
+        return Ok(json);
+    }
+
+    let result = nickel_json_value_for_keymap_uncached(&ncl_import_path, keymap_ncl);
+    if let Ok(ref json) = result {
+        eval_cache::insert(cache_key, json.clone());
+    }
+    result
+}
+
+fn nickel_json_value_for_keymap_uncached(ncl_import_path: &str, keymap_ncl: &str) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
             "--format=json",
-            format!("--import-path={}", ncl_import_path).as_ref(),
+            format!("--import-path={ncl_import_path}").as_ref(),
             "--field=json_deserializable_keymap",
         ])
         .stdin(Stdio::piped())
@@ -228,7 +311,8 @@ pub fn nickel_json_value_for_keymap(ncl_import_path: String, keymap_ncl: &str) -
             let child_stdin = nickel_command.stdin.as_mut().unwrap();
             child_stdin
                 .write_all(
-                    format!(r#"(import "keymap-codegen.ncl") & (import "keymap-ncl-to-json.ncl") & ({})"#, keymap_ncl).as_bytes(),
+                    format!(r#"(import "keymap-codegen.ncl") & (import "keymap-ncl-to-json.ncl") & ({keymap_ncl})"#)
+                        .as_bytes(),
                 )
                 .unwrap_or_else(|e| panic!("Failed to write to stdin: {:?}", e));
 
@@ -258,11 +342,28 @@ pub fn nickel_json_value_for_inputs(
     keymap_ncl: &str,
     inputs_ncl: &str,
 ) -> NickelResult {
+    let cache_key = NickelJsonExport::inputs(&ncl_import_path, keymap_ncl, inputs_ncl);
+    if let Some(json) = eval_cache::get(&cache_key) {
+        return Ok(json);
+    }
+
+    let result = nickel_json_value_for_inputs_uncached(&ncl_import_path, keymap_ncl, inputs_ncl);
+    if let Ok(ref json) = result {
+        eval_cache::insert(cache_key, json.clone());
+    }
+    result
+}
+
+fn nickel_json_value_for_inputs_uncached(
+    ncl_import_path: &str,
+    keymap_ncl: &str,
+    inputs_ncl: &str,
+) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
             "--format=json",
-            format!("--import-path={}", ncl_import_path).as_ref(),
+            format!("--import-path={ncl_import_path}").as_ref(),
             "--field=inputs_as_json_value_input_events",
         ])
         .stdin(Stdio::piped())
@@ -284,7 +385,7 @@ pub fn nickel_json_value_for_inputs(
                            (import "keymap-codegen.ncl")
                            & (import "keymap-ncl-to-json.ncl")
                            & (import "inputs-to-json.ncl")
-                           & ({})
+                           & ({keymap_ncl})
                            & ({{
                                  inputs =
                                     let K = import "keys.ncl" in
@@ -298,10 +399,9 @@ pub fn nickel_json_value_for_inputs(
                                       wait,
                                       ..
                                     }} = import "inputs.ncl" in
-                                    {},
+                                    {inputs_ncl},
                               }})
                         "#,
-                        keymap_ncl, inputs_ncl,
                     )
                     .as_bytes(),
                 )
@@ -332,11 +432,25 @@ pub fn nickel_to_json_for_hid_report(
     ncl_import_path: String,
     hid_report_ncl: &str,
 ) -> io::Result<String> {
+    let cache_key = NickelJsonExport::hid_report(&ncl_import_path, hid_report_ncl);
+    if let Some(json) = eval_cache::get(&cache_key) {
+        return Ok(json);
+    }
+
+    let json = nickel_to_json_for_hid_report_uncached(&ncl_import_path, hid_report_ncl)?;
+    eval_cache::insert(cache_key, json.clone());
+    Ok(json)
+}
+
+fn nickel_to_json_for_hid_report_uncached(
+    ncl_import_path: &str,
+    hid_report_ncl: &str,
+) -> io::Result<String> {
     let mut nickel_command = Command::new("nickel")
         .args([
             "export",
             "--format=json",
-            format!("--import-path={}", ncl_import_path).as_ref(),
+            format!("--import-path={ncl_import_path}").as_ref(),
             "--field=as_bytes",
         ])
         .stdin(Stdio::piped())
@@ -350,10 +464,9 @@ pub fn nickel_to_json_for_hid_report(
                 (import "hid-report.ncl")
                 & (
                     let K = import "hid-usage-keyboard.ncl" in
-                    {}
+                    {hid_report_ncl}
                 )
             "#,
-            hid_report_ncl
         )
         .as_bytes(),
     )?;
@@ -409,5 +522,28 @@ pub fn codegen_rust_module(
         } else {
             panic!("Unsupported {}: {}", env_var, custom_module_path);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{clear_nickel_eval_cache, eval_cache, NickelJsonExport};
+
+    #[test]
+    fn nickel_json_export_distinguishes_eval_kinds() {
+        let keymap = || NickelJsonExport::keymap("/ncl", "{ keys = [] }");
+        assert_eq!(keymap(), keymap());
+        assert_ne!(
+            keymap(),
+            NickelJsonExport::inputs("/ncl", "{ keys = [] }", "[]")
+        );
+    }
+
+    #[test]
+    fn clear_nickel_eval_cache_empties_entries() {
+        let key = NickelJsonExport::keymap("/ncl", "{ keys = [] }");
+        eval_cache::insert(key, "value".into());
+        clear_nickel_eval_cache();
+        assert!(eval_cache::get(&NickelJsonExport::keymap("/ncl", "{ keys = [] }")).is_none());
     }
 }
