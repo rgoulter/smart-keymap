@@ -755,6 +755,53 @@ impl<T: Copy> Event<T> {
             Event::Keymap(cb) => Ok(Event::Keymap(cb)),
         }
     }
+
+    /// Whether this event targets the given `keymap_index`.
+    ///
+    /// Input press/release and key-specific events carry a `keymap_index`;
+    /// keymap callbacks and other variants do not.
+    pub(crate) fn targets_keymap_index(&self, keymap_index: u16) -> bool {
+        match self {
+            Event::Input(input::Event::Press {
+                keymap_index: queued_kmi,
+            })
+            | Event::Input(input::Event::Release {
+                keymap_index: queued_kmi,
+            }) => *queued_kmi == keymap_index,
+            Event::Key {
+                keymap_index: queued_kmi,
+                ..
+            } => *queued_kmi == keymap_index,
+            _ => false,
+        }
+    }
+}
+
+/// Returns the events that should be replayed when a pending key resolves.
+///
+/// Resolution filter:
+/// - All queued events **not** targeting `keymap_index` are included.
+/// - Only the **last** event targeting `keymap_index` is included (if any).
+///
+/// **Example:**
+///  session log `[Press(1), Press(0), Release(0)]` for resolving key 0:
+///   yields `[Press(1), Release(0)]`
+///   — other-key inputs are kept,
+///   - but only the final self-event (`Release(0)`) remains from key 0's own press/release pair.
+pub(crate) fn pending_resolution_events<Ev: Copy, const N: usize>(
+    queued_events: &heapless::Vec<Event<Ev>, N>,
+    keymap_index: u16,
+) -> heapless::Vec<Event<Ev>, N> {
+    let (self_events, other_events): (heapless::Vec<Event<Ev>, N>, heapless::Vec<Event<Ev>, N>) =
+        queued_events
+            .iter()
+            .partition(|ev| ev.targets_keymap_index(keymap_index));
+
+    let mut result = heapless::Vec::new();
+    for ev in other_events.iter().chain(self_events.last()) {
+        let _ = result.push(*ev);
+    }
+    result
 }
 
 impl<T> From<input::Event> for Event<T> {
@@ -814,5 +861,72 @@ impl<T: Copy> ScheduledEvent<T> {
         T: Into<U>,
     {
         self.map_scheduled_event(|e| e.into())
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pending_resolution_events_empty_returns_empty() {
+        let queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
+        let result = pending_resolution_events(&queued, 0);
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn pending_resolution_events_other_key_events_all_included() {
+        let mut queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
+        queued
+            .push(Event::Input(input::Event::Press { keymap_index: 1 }))
+            .unwrap();
+        queued
+            .push(Event::Input(input::Event::Release { keymap_index: 2 }))
+            .unwrap();
+        let result = pending_resolution_events(&queued, 0);
+        assert_eq!(2, result.len());
+    }
+
+    #[test]
+    fn pending_resolution_events_resolving_key_only_last_included() {
+        let mut queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
+        queued
+            .push(Event::Input(input::Event::Press { keymap_index: 0 }))
+            .unwrap();
+        queued
+            .push(Event::Input(input::Event::Release { keymap_index: 0 }))
+            .unwrap();
+        let result = pending_resolution_events(&queued, 0);
+        assert_eq!(1, result.len());
+        assert_eq!(
+            Event::Input(input::Event::Release { keymap_index: 0 }),
+            result[0]
+        );
+    }
+
+    #[test]
+    fn pending_resolution_events_mix_other_and_resolving_key() {
+        let mut queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
+        queued
+            .push(Event::Input(input::Event::Press { keymap_index: 1 }))
+            .unwrap();
+        queued
+            .push(Event::Input(input::Event::Press { keymap_index: 0 }))
+            .unwrap();
+        queued
+            .push(Event::Input(input::Event::Release { keymap_index: 0 }))
+            .unwrap();
+        let result = pending_resolution_events(&queued, 0);
+        assert_eq!(2, result.len());
+        assert_eq!(
+            Event::Input(input::Event::Press { keymap_index: 1 }),
+            result[0]
+        );
+        assert_eq!(
+            Event::Input(input::Event::Release { keymap_index: 0 }),
+            result[1]
+        );
     }
 }
