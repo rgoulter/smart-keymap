@@ -34,7 +34,9 @@ impl<const COLS: usize, const ROWS: usize, M: MatrixScanner<COLS, ROWS>> Keyboar
 
     /// Scans the matrix and returns the debounced events.
     pub fn events(&mut self) -> heapless::Vec<Event, 8> {
-        let key_presses = self.matrix.get().unwrap();
-        self.debouncer.events(key_presses).collect()
+        match self.matrix.get() {
+            Ok(key_presses) => self.debouncer.events(key_presses).collect(),
+            Err(_) => heapless::Vec::new(),
+        }
     }
 }
