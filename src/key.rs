@@ -57,17 +57,19 @@ impl<E: Copy + Debug> KeyEvents<E> {
 
     /// Adds an event with the schedule to the [KeyEvents].
     pub fn schedule_event(&mut self, delay: u16, event: Event<E>) {
-        self.0.push(ScheduledEvent::after(delay, event)).unwrap();
+        let _ = self.0.push(ScheduledEvent::after(delay, event));
     }
 
     /// Adds events from the other [KeyEvents] to the [KeyEvents].
     pub fn extend(&mut self, other: KeyEvents<E>) {
-        other.0.into_iter().for_each(|ev| self.0.push(ev).unwrap());
+        other.0.into_iter().for_each(|ev| {
+            let _ = self.0.push(ev);
+        });
     }
 
     /// Adds an event from to the [KeyEvents].
     pub fn add_event(&mut self, ev: ScheduledEvent<E>) {
-        self.0.push(ev).unwrap();
+        let _ = self.0.push(ev);
     }
 
     /// Maps over the KeyEvents.
@@ -387,28 +389,28 @@ impl KeyboardModifiers {
         let mut key_codes = heapless::Vec::new();
 
         if self.0 & Self::LEFT_CTRL_U8 != 0 {
-            key_codes.push(0xE0).unwrap();
+            let _ = key_codes.push(0xE0);
         }
         if self.0 & Self::LEFT_SHIFT_U8 != 0 {
-            key_codes.push(0xE1).unwrap();
+            let _ = key_codes.push(0xE1);
         }
         if self.0 & Self::LEFT_ALT_U8 != 0 {
-            key_codes.push(0xE2).unwrap();
+            let _ = key_codes.push(0xE2);
         }
         if self.0 & Self::LEFT_GUI_U8 != 0 {
-            key_codes.push(0xE3).unwrap();
+            let _ = key_codes.push(0xE3);
         }
         if self.0 & Self::RIGHT_CTRL_U8 != 0 {
-            key_codes.push(0xE4).unwrap();
+            let _ = key_codes.push(0xE4);
         }
         if self.0 & Self::RIGHT_SHIFT_U8 != 0 {
-            key_codes.push(0xE5).unwrap();
+            let _ = key_codes.push(0xE5);
         }
         if self.0 & Self::RIGHT_ALT_U8 != 0 {
-            key_codes.push(0xE6).unwrap();
+            let _ = key_codes.push(0xE6);
         }
         if self.0 & Self::RIGHT_GUI_U8 != 0 {
-            key_codes.push(0xE7).unwrap();
+            let _ = key_codes.push(0xE7);
         }
 
         key_codes

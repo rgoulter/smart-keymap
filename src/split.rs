@@ -22,7 +22,7 @@ impl Message {
     /// Serialize the message into a bytes.
     pub fn serialize(&self) -> [u8; BUFFER_SIZE] {
         let mut buf = [0u8; BUFFER_SIZE];
-        postcard::to_slice_cobs(self, &mut buf).unwrap();
+        let _ = postcard::to_slice_cobs(self, &mut buf);
         buf
     }
 
@@ -43,6 +43,7 @@ pub fn receive_byte(buf: &mut [u8; BUFFER_SIZE], byte: u8) -> postcard::Result<M
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

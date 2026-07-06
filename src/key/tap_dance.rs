@@ -244,23 +244,27 @@ impl<
         let (maybe_resolution, pke) = pending_state.handle_event(context, keymap_index, event);
 
         if let Some(TapDanceResolution(idx)) = maybe_resolution {
-            let new_key_ref = key.definitions[idx as usize].unwrap();
-
-            (
-                Some(key::NewPressedKey::key(new_key_ref)),
-                pke.into_events(),
-            )
+            if let Some(new_key_ref) = key.definitions[idx as usize] {
+                (
+                    Some(key::NewPressedKey::key(new_key_ref)),
+                    pke.into_events(),
+                )
+            } else {
+                (None, pke.into_events())
+            }
         } else {
             // check pending_state press_count against key definitions
             let definition_count = key.definitions.iter().filter(|o| o.is_some()).count();
             if pending_state.press_count as usize >= definition_count - 1 {
                 let idx = definition_count - 1;
-                let new_key_ref = key.definitions[idx].unwrap();
-
-                (
-                    Some(key::NewPressedKey::key(new_key_ref)),
-                    pke.into_events(),
-                )
+                if let Some(new_key_ref) = key.definitions[idx] {
+                    (
+                        Some(key::NewPressedKey::key(new_key_ref)),
+                        pke.into_events(),
+                    )
+                } else {
+                    (None, pke.into_events())
+                }
             } else {
                 (None, pke.into_events())
             }

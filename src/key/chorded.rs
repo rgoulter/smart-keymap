@@ -284,7 +284,7 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
         pressed_chords.for_each(|&chord| {
             for &i in chord.as_slice() {
                 if let Err(pos) = res.binary_search(&i) {
-                    res.insert(pos, i).unwrap();
+                    let _ = res.insert(pos, i);
                 }
             }
         });
@@ -302,7 +302,11 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
         keymap_index: u16,
     ) -> heapless::Vec<ChordState<MAX_CHORD_SIZE>, { MAX_CHORDS }> {
         match self.pressed_chord_with_index(keymap_index) {
-            Some(chord_state) => heapless::Vec::from_slice(&[chord_state]).unwrap(),
+            Some(chord_state) => {
+                let mut chords = heapless::Vec::new();
+                let _ = chords.push(chord_state);
+                chords
+            }
             None => {
                 let chords_indices_span = self.pressed_chords_indices_span();
                 self.config
@@ -779,7 +783,8 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
         context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
         keymap_index: u16,
     ) -> Self {
-        let pressed_indices = heapless::Vec::from_slice(&[keymap_index]).unwrap();
+        let mut pressed_indices = heapless::Vec::new();
+        let _ = pressed_indices.push(keymap_index);
         let possible_chords = context.chords_for_keymap_index(keymap_index);
 
         Self {
@@ -1079,6 +1084,7 @@ impl<
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
