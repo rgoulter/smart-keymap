@@ -15,11 +15,11 @@ impl<P, const CS: usize, const RS: usize, E: Debug> DirectPinMatrix<P, CS, RS>
 where
     P: InputPin<Error = E>,
 {
-    pub fn new(pins: [[Option<P>; CS]; RS]) -> Self
+    pub fn new(pins: [[Option<P>; CS]; RS]) -> Result<Self, E>
     where
         P: InputPin<Error = E>,
     {
-        Self(keyberon::matrix::DirectPinMatrix::new(pins).unwrap())
+        keyberon::matrix::DirectPinMatrix::new(pins).map(Self)
     }
 }
 
@@ -29,7 +29,7 @@ where
     P: InputPin<Error = core::convert::Infallible>,
 {
     fn is_boot_key_pressed(&mut self) -> bool {
-        self.0.get().unwrap()[0][0]
+        self.0.get().ok().is_some_and(|keys| keys[0][0])
     }
 
     fn get(&mut self) -> Result<[[bool; CS]; RS], core::convert::Infallible> {
@@ -112,12 +112,14 @@ where
     D: DelayNs,
 {
     fn is_boot_key_pressed(&mut self) -> bool {
-        self.rows[0].set_low().unwrap();
+        let Ok(()) = self.rows[0].set_low() else {
+            return false;
+        };
         self.delay.delay_us(self.select_delay_us);
 
-        let is_pressed = self.cols[0].is_low().unwrap();
+        let is_pressed = self.cols[0].is_low().unwrap_or(false);
 
-        self.rows[0].set_high().unwrap();
+        let _ = self.rows[0].set_high();
         self.delay.delay_us(self.unselect_delay_us);
 
         is_pressed

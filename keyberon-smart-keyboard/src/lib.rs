@@ -94,6 +94,7 @@
 
 #![no_main]
 #![no_std]
+#![warn(clippy::unwrap_used)]
 
 /// Useful traits and structs related to input.
 pub mod input;
