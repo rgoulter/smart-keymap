@@ -8,6 +8,7 @@ mod input_event_queue;
 mod observed_eb_keymap;
 #[cfg(feature = "std")]
 mod observed_keymap;
+mod pending;
 
 use core::cmp::PartialEq;
 use core::fmt::Debug;
@@ -139,20 +140,6 @@ impl KeymapOutput {
     }
 }
 
-/// Session state while a key's output is still undecided (tap-hold, chorded, etc.).
-///
-/// While pending, inputs are paced through [`Keymap::input_queue`] (the delay line:
-/// at most one input per tick) and each processed input is appended to
-/// [`Self::queued_events`] (the session log for replay on resolve).
-#[derive(Debug)]
-struct PendingState<R, Ev, PKS> {
-    keymap_index: u16,
-    key_ref: R,
-    pending_key_state: PKS,
-    /// Inputs already paced and applied during this pending session; replayed on resolve.
-    queued_events: heapless::Vec<key::Event<Ev>, { MAX_PRESSED_KEYS }>,
-}
-
 /// Commands for managing Bluetooth profiles. (BLE pairing and bonding).
 #[derive(Deserialize, Debug, Clone, Copy, Eq, PartialEq)]
 pub enum BluetoothProfileCommand {
@@ -223,45 +210,6 @@ pub enum KeymapEvent {
     },
 }
 
-fn event_targets_keymap_index<Ev>(event: &key::Event<Ev>, keymap_index: u16) -> bool {
-    match event {
-        key::Event::Input(input::Event::Press {
-            keymap_index: queued_kmi,
-        })
-        | key::Event::Input(input::Event::Release {
-            keymap_index: queued_kmi,
-        }) => *queued_kmi == keymap_index,
-        key::Event::Key {
-            keymap_index: queued_kmi,
-            ..
-        } => *queued_kmi == keymap_index,
-        _ => false,
-    }
-}
-
-/// Returns the events that should be replayed when a pending key resolves.
-///
-/// Applies the resolution filter policy:
-/// - All queued events **not** targeting `keymap_index` are included.
-/// - Only the **last** event targeting `keymap_index` is included (if any).
-fn pending_resolution_events<Ev: Copy + Debug, const N: usize>(
-    queued_events: &heapless::Vec<key::Event<Ev>, N>,
-    keymap_index: u16,
-) -> heapless::Vec<key::Event<Ev>, N> {
-    let (self_events, other_events): (
-        heapless::Vec<key::Event<Ev>, N>,
-        heapless::Vec<key::Event<Ev>, N>,
-    ) = queued_events
-        .iter()
-        .partition(|ev| event_targets_keymap_index(ev, keymap_index));
-
-    let mut result = heapless::Vec::new();
-    for ev in other_events.iter().chain(self_events.last()) {
-        let _ = result.push(*ev);
-    }
-    result
-}
-
 #[derive(Debug)]
 enum CallbackFunction {
     /// C callback
@@ -280,7 +228,7 @@ pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
     ms_per_tick: u8,
     idle_time: u32,
     hid_reporter: HIDKeyboardReporter,
-    pending_key_state: Option<PendingState<R, Ev, PKS>>,
+    pending_state: Option<pending::PendingState<R, Ev, PKS>>,
     input_queue: InputEventQueue<{ MAX_QUEUED_INPUT_EVENTS }>,
     callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
 }
@@ -303,7 +251,7 @@ impl<
             .field("idle_time", &self.idle_time)
             .field("hid_reporter", &self.hid_reporter)
             .field("input_queue", &self.input_queue)
-            .field("pending_key_state", &self.pending_key_state)
+            .field("pending_state", &self.pending_state)
             .field("pressed_inputs", &self.pressed_inputs)
             .finish_non_exhaustive()
     }
@@ -330,7 +278,7 @@ impl<
             ms_per_tick: 1,
             idle_time: 0,
             hid_reporter: HIDKeyboardReporter::new(),
-            pending_key_state: None,
+            pending_state: None,
             input_queue: InputEventQueue::new(),
             callbacks: heapless::LinearMap::new(),
         }
@@ -341,7 +289,7 @@ impl<
         self.pressed_inputs.clear();
         self.event_scheduler.init();
         self.hid_reporter.init();
-        self.pending_key_state = None;
+        self.pending_state = None;
         self.input_queue.clear();
         self.ms_per_tick = 1;
         self.idle_time = 0;
@@ -386,12 +334,12 @@ impl<
     // `input_queue` (the delay line) are intentionally omitted — they were not yet
     // paced/applied during pending and will run post-resolve in normal order.
     fn resolve_pending_key_state(&mut self, key_state: KS) {
-        if let Some(PendingState {
+        if let Some(pending::PendingState {
             keymap_index,
             key_ref,
-            queued_events,
+            mut queued_events,
             ..
-        }) = self.pending_key_state.take()
+        }) = self.pending_state.take()
         {
             // Cancel events which were scheduled for the (pending) key.
             self.event_scheduler
@@ -404,26 +352,12 @@ impl<
                 key_state,
             ));
 
-            // Schedule each of the queued events,
-            //  delaying each consecutive event by a tick
-            //  (in order to allow press/release events to affect the HID report)
-            let mut schedule_delay = 1;
-            let mut input_events_to_prepend: heapless::Vec<input::Event, { MAX_PRESSED_KEYS }> =
-                heapless::Vec::new();
-
-            for ev in pending_resolution_events(&queued_events, keymap_index).iter() {
-                match ev {
-                    key::Event::Input(ie) => {
-                        let _ = input_events_to_prepend.push(*ie);
-                    }
-                    _ => {
-                        self.event_scheduler.schedule_after(schedule_delay, *ev);
-                        schedule_delay += 1;
-                    }
-                }
-            }
-
-            self.input_queue.prepend(&input_events_to_prepend);
+            pending::dispatch_replayed_events(
+                pending::KeyResolution::Resolved { keymap_index },
+                &mut queued_events,
+                &mut self.input_queue,
+                &mut self.event_scheduler,
+            );
 
             self.handle_pending_events();
 
@@ -466,13 +400,13 @@ impl<
     }
 
     fn update_pending_state(&mut self, ev: key::Event<Ev>) {
-        if let Some(PendingState {
+        if let Some(pending::PendingState {
             keymap_index,
             key_ref,
             pending_key_state,
             queued_events,
             ..
-        }) = &mut self.pending_key_state
+        }) = self.pending_state.as_mut()
         {
             let (mut maybe_npk, pke) = self.key_system.update_pending_state(
                 pending_key_state,
@@ -519,25 +453,23 @@ impl<
                     key::PressedKeyResult::Pending(pks) => {
                         *pending_key_state = pks;
 
-                        // Since the pending key state resolved into another pending key state,
-                        //  we re-queue all the input events that had been received.
-                        self.input_queue.prepend_pending_input_events(queued_events);
+                        // Pending key transitioned to another pending state: replay session log.
+                        pending::dispatch_replayed_events(
+                            pending::KeyResolution::Pending,
+                            queued_events,
+                            &mut self.input_queue,
+                            &mut self.event_scheduler,
+                        );
                     }
                 }
             }
         }
     }
 
-    fn record_pending_input(&mut self, ev: input::Event) {
-        if let Some(pending_state) = &mut self.pending_key_state {
-            let _ = pending_state.queued_events.push(ev.into());
-        }
-    }
-
     fn process_input(&mut self, ev: input::Event) {
-        if self.pending_key_state.is_some() {
+        if let Some(pending_state) = self.pending_state.as_mut() {
             // Paced input from the delay line: record in the session log, then apply.
-            self.record_pending_input(ev);
+            pending_state.record_input(ev);
             self.update_pending_state(ev.into());
         } else {
             // Update each of the pressed keys with the event.
@@ -608,7 +540,7 @@ impl<
                                 ));
                             }
                             key::PressedKeyResult::Pending(pending_key_state) => {
-                                self.pending_key_state = Some(PendingState {
+                                self.pending_state = Some(pending::PendingState {
                                     keymap_index,
                                     key_ref,
                                     pending_key_state,
@@ -668,7 +600,7 @@ impl<
             }
         }
 
-        let was_pending = self.pending_key_state.is_some();
+        let was_pending = self.pending_state.is_some();
 
         // pending state needs to handle events
         self.update_pending_state(ev);
@@ -698,7 +630,9 @@ impl<
             if was_pending {
                 // `update_pending_state` already ran above. Only record for replay if still
                 // pending; do not re-apply or fall through to the non-pending press path.
-                self.record_pending_input(input_ev);
+                if let Some(pending_state) = self.pending_state.as_mut() {
+                    pending_state.record_input(input_ev);
+                }
                 self.handle_pending_events();
             } else {
                 self.process_input(input_ev);
@@ -824,9 +758,9 @@ impl<
     > Keymap<I, R, Ctx, Ev, PKS, KS, S>
 {
     pub(crate) fn test_pending_queued_events_len(&self) -> Option<usize> {
-        self.pending_key_state
+        self.pending_state
             .as_ref()
-            .map(|pending| pending.queued_events.len())
+            .map(|pending_state| pending_state.queued_events.len())
     }
 
     pub(crate) fn test_handle_scheduled_key_event(&mut self, ev: key::Event<Ev>) {
@@ -840,67 +774,6 @@ impl<
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn pending_resolution_events_empty_returns_empty() {
-        let queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
-        let result = pending_resolution_events(&queued, 0);
-        assert!(result.is_empty());
-    }
-
-    #[test]
-    fn pending_resolution_events_other_key_events_all_included() {
-        let mut queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
-        queued
-            .push(key::Event::Input(input::Event::Press { keymap_index: 1 }))
-            .unwrap();
-        queued
-            .push(key::Event::Input(input::Event::Release { keymap_index: 2 }))
-            .unwrap();
-        let result = pending_resolution_events(&queued, 0);
-        assert_eq!(2, result.len());
-    }
-
-    #[test]
-    fn pending_resolution_events_resolving_key_only_last_included() {
-        let mut queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
-        queued
-            .push(key::Event::Input(input::Event::Press { keymap_index: 0 }))
-            .unwrap();
-        queued
-            .push(key::Event::Input(input::Event::Release { keymap_index: 0 }))
-            .unwrap();
-        let result = pending_resolution_events(&queued, 0);
-        assert_eq!(1, result.len());
-        assert_eq!(
-            key::Event::Input(input::Event::Release { keymap_index: 0 }),
-            result[0]
-        );
-    }
-
-    #[test]
-    fn pending_resolution_events_mix_other_and_resolving_key() {
-        let mut queued: heapless::Vec<key::Event<()>, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
-        queued
-            .push(key::Event::Input(input::Event::Press { keymap_index: 1 }))
-            .unwrap();
-        queued
-            .push(key::Event::Input(input::Event::Press { keymap_index: 0 }))
-            .unwrap();
-        queued
-            .push(key::Event::Input(input::Event::Release { keymap_index: 0 }))
-            .unwrap();
-        let result = pending_resolution_events(&queued, 0);
-        assert_eq!(2, result.len());
-        assert_eq!(
-            key::Event::Input(input::Event::Press { keymap_index: 1 }),
-            result[0]
-        );
-        assert_eq!(
-            key::Event::Input(input::Event::Release { keymap_index: 0 }),
-            result[1]
-        );
-    }
 
     #[test]
     fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {
