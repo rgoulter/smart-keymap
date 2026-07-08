@@ -24,11 +24,14 @@
   in [
     pkgs.cargo-binutils
     pkgs.cargo-deny
+    pkgs.cargo-edit
     pkgs.cargo-nextest
+    pkgs.cargo-release
     pkgs.ceedling
     pkgs.clang-tools
     pkgs.cmake-language-server
     pkgs.elf2uf2-rs
+    pkgs.gh
     pkgs.just
     pkgs.lldb
     pkgs.nickel
