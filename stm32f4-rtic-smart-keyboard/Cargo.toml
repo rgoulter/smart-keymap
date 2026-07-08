@@ -1,9 +1,10 @@
 [package]
 name = "stm32f4-rtic-smart-keyboard"
-version = "0.15.0-dev"
-license = "MIT OR Apache-2.0"
-authors = ["Richard Goulter <richard.goulter@gmail.com>"]
-edition = "2021"
+version.workspace = true
+license.workspace = true
+authors.workspace = true
+edition.workspace = true
+publish = false
 
 [dependencies]
 embedded-hal = "1.0"
