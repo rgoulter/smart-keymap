@@ -72,7 +72,10 @@
       key_validator =
         validators.record.validator {
           fields_validator =
-            validators.record.has_only_fields ["automation_instructions"],
+            validators.all_of [
+              validators.record.has_any_field_of ["automation_instructions"],
+              validators.record.has_only_fields ["automation_instructions"],
+            ],
           field_validators = {
             automation_instructions = key_instructions.ncl_validator,
           },
