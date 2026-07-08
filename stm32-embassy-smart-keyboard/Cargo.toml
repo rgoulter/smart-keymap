@@ -1,8 +1,10 @@
 [package]
-edition = "2021"
 name = "stm32-embassy-smart-keyboard"
-version = "0.15.0-dev"
-license = "MIT OR Apache-2.0"
+version.workspace = true
+license.workspace = true
+edition.workspace = true
+authors.workspace = true
+publish = false
 
 [dependencies]
 embassy-stm32 = { version = "0.2.0", features = ["stm32f401cc", "unstable-pac", "time-driver-tim4", "exti", "chrono"] }
