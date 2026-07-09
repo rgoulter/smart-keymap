@@ -7,14 +7,16 @@
 //!  for replay when the key resolves.
 //!
 //! Concretely:
-//! - The **delay line** is the backlog of physical inputs still waiting in
-//!   [`InputEventQueue`](super::input_event_queue::InputEventQueue). Those inputs have
-//!   not yet affected the pending key, so they are *not* part of replay.
-//! - The **session log** is [`PendingState::queued_events`]: the inputs and key events
-//!   that were already paced, observed, and applied while the key was pending.
+//! - The **delay line** is the backlog of physical inputs
+//!   still waiting in [`InputEventQueue`](super::input_event_queue::InputEventQueue).
+//!   Those inputs have not yet affected the pending key,
+//!   so they are *not* part of replay.
+//! - The **session log** is [`PendingState::queued_events`]:
+//!   the inputs and key events that were already paced, observed,
+//!   and applied while the key was pending.
 //!
-//! When the pending key resolves or transitions to nested pending, the session log
-//! is replayed according to a [`ReplayCase`].
+//! When the pending key resolves or transitions to nested pending,
+//!  the session log is replayed according to a [`ReplayCase`].
 
 use core::fmt::Debug;
 
