@@ -4,8 +4,9 @@ use crate::input;
 
 /// Fixed-capacity FIFO queue for [input::Event]s with tick-based processing delay.
 ///
-/// Backed by a [`heapless::Deque`] so events can be prepended when a pending key
-/// state needs to replay buffered input without draining and rebuilding the queue.
+/// Backed by a [`heapless::Deque`] so events can be prepended
+///  when a pending key state needs to replay buffered input
+///  without draining and rebuilding the queue.
 #[derive(Debug)]
 pub(crate) struct InputEventQueue<const N: usize> {
     events: heapless::Deque<input::Event, N>,
@@ -86,7 +87,7 @@ impl<const N: usize> InputEventQueue<N> {
     /// Replays input events from a pending key's buffer ahead of any already-queued events.
     ///
     /// Events are popped LIFO from `pending_events` and appended to the front of the queue,
-    /// preserving the historical behaviour of the pending-state re-queue path.
+    ///  preserving the historical behaviour of the pending-state re-queue path.
     pub fn prepend_pending_input_events<Ev: Debug, const M: usize>(
         &mut self,
         pending_events: &mut heapless::Vec<key::Event<Ev>, M>,

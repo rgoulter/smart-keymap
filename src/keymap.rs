@@ -330,9 +330,11 @@ impl<
     // If the pending key state is resolved,
     //  then clear the pending key state.
     //
-    // Replay uses only `queued_events` (the session log). Inputs still waiting in
-    // `input_queue` (the delay line) are intentionally omitted — they were not yet
-    // paced/applied during pending and will run post-resolve in normal order.
+    // Replay uses only `queued_events` (the session log).
+    // Inputs still waiting in `input_queue` (the delay line)
+    //  are intentionally omitted -
+    //  they were not yet paced/applied during pending
+    //  and will run post-resolve in normal order.
     fn resolve_pending_key_state(&mut self, key_state: KS) {
         if let Some(pending::PendingState {
             keymap_index,
@@ -374,10 +376,12 @@ impl<
 
     /// Handles input events.
     ///
-    /// All inputs enter `input_queue` first so at most one is processed per tick
-    /// ([`INPUT_QUEUE_TICK_DELAY`]), including while a key is pending. Tap-hold and
-    /// chorded interrupt logic depend on that spacing; do not bypass the queue during
-    /// pending without equivalent pacing (`tests/rust/tap_hold/hold_on_interrupt_tap.rs`).
+    /// All inputs enter `input_queue` first
+    ///  so at most one is processed per tick ([`INPUT_QUEUE_TICK_DELAY`]),
+    ///  including while a key is pending.
+    /// Tap-hold and chorded interrupt logic depend on that spacing;
+    ///  do not bypass the queue during pending without equivalent pacing
+    ///  (`tests/rust/tap_hold/hold_on_interrupt_tap.rs`).
     ///
     /// Silently discards the input event if the input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
@@ -628,8 +632,9 @@ impl<
 
         if let Event::Input(input_ev) = ev {
             if was_pending {
-                // `update_pending_state` already ran above. Only record for replay if still
-                // pending; do not re-apply or fall through to the non-pending press path.
+                // `update_pending_state` already ran above.
+                // Only record for replay if still pending;
+                //  do not re-apply or fall through to the non-pending press path.
                 if let Some(pending_state) = self.pending_state.as_mut() {
                     pending_state.record_input(input_ev);
                 }
@@ -930,8 +935,8 @@ mod tests {
         }};
     }
 
-    /// `queued_events` gets one entry per processed input; tick delay defers the second
-    /// physical `handle_input` until `tick()`.
+    /// `queued_events` gets one entry per processed input;
+    /// tick delay defers the second physical `handle_input` until `tick()`.
     #[test]
     fn physical_input_during_pending_records_once_in_queued_events() {
         use crate::key::tap_hold::InterruptResponse;
@@ -952,9 +957,12 @@ mod tests {
         assert_eq!(Some(baseline + 1), keymap.test_pending_queued_events_len());
     }
 
-    /// Scheduled `Event::Input` during pending: `handle_event` calls `update_pending_state`
-    /// then `process_input`, which applies pending state again. With `HoldOnKeyPress`, the
-    /// interrupt should resolve the tap-hold to hold without also pressing the interrupting key.
+    /// Scheduled `Event::Input` during pending:
+    ///  `handle_event` calls `update_pending_state` then `process_input`,
+    ///  which applies pending state again.
+    /// With `HoldOnKeyPress`,
+    ///  the interrupt should resolve the tap-hold to hold
+    ///  without also pressing the interrupting key.
     #[test]
     fn scheduled_input_during_pending_does_not_reprocess_as_physical_press() {
         use crate::key::tap_hold::InterruptResponse;
