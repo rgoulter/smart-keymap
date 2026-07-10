@@ -115,8 +115,9 @@ pub fn keymap_index_of<const COLS: usize, const ROWS: usize>(
     ev: keyberon::layout::Event,
 ) -> Option<input::Event> {
     match ev {
-        keyberon::layout::Event::Press(r, c) => indices[r as usize][c as usize]
-            .map(|keymap_index| input::Event::Press { keymap_index }),
+        keyberon::layout::Event::Press(r, c) => {
+            indices[r as usize][c as usize].map(|keymap_index| input::Event::Press { keymap_index })
+        }
         keyberon::layout::Event::Release(r, c) => indices[r as usize][c as usize]
             .map(|keymap_index| input::Event::Release { keymap_index }),
     }
