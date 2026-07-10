@@ -3,6 +3,23 @@
 
   layered_keys,
 
+  # From keymap-ncl-to-json: longest `layered` array across all keys.
+  # Falls back to scanning layered_keys if not merged from that module.
+  max_layered_length | default =
+    layered_keys
+    |> std.array.fold_left
+      (fun acc k =>
+        let len =
+          k
+          |> match {
+            { layered, .. } => std.array.length layered,
+            _ => 0,
+          }
+        in
+        if len > acc then len else acc
+      )
+      0,
+
   # Construct [smart_keymap::input::Event(kmi)]
   # from ['Press k | 'Release k],
   # where 'k is a keymap.ncl key def
@@ -50,13 +67,9 @@
       }
     in
     let initial_layer_state =
+      # Use max layered length across all keys (not only the first key).
       let initial_active_layers =
-        layered_keys
-        |> std.array.first
-        |> match {
-          { layered, .. } => std.array.map (std.function.const false) layered,
-          _ => [],
-        }
+        std.array.generate (std.function.const false) max_layered_length
       in
       { default_layer = 0, active_layers = initial_active_layers }
     in

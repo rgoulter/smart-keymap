@@ -338,26 +338,24 @@
         std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
       in
       let num_layers =
-        let max_layered_lengths =
-          std.array.map
-            (fun cv =>
-              smart_key.traverse
-                (fun acc cv =>
-                  cv
-                  |> match {
-                    { nested = { layered, .. }, .. } =>
-                      let len = std.array.length layered in
-                      if len > acc then len else acc,
-                    _ => acc,
-                  }
-                )
-                0
+        # Longest layered array across every key tree (not only the first layered key).
+        key_codegen_values
+        |> std.array.fold_left
+          (fun acc cv =>
+            smart_key.traverse
+              (fun acc cv =>
                 cv
-            )
-            key_codegen_values
-        in
-        # Compute the max over all
-        std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
+                |> match {
+                  { nested = { layered, .. }, .. } =>
+                    let len = std.array.length layered in
+                    if len > acc then len else acc,
+                  _ => acc,
+                }
+              )
+              acc
+              cv
+          )
+          0
       in
       let chords = ((json_keymap.config & { chorded | default = {} }).chorded & { chords | default = [] }).chords in
       let chord_count = chords |> std.array.length in
