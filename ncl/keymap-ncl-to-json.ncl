@@ -238,7 +238,8 @@
     },
 
     map_accum = fun f acc k =>
-      match {
+      k
+      |> match {
         k if keymap_ncl.key.is_key k => keymap_ncl.key.map_accum f acc k,
         k if keymap_ncl.null_.is_key k => keymap_ncl.null_.map_accum f acc k,
         _ => std.fail_with "unsupported nullable_key item in keymap.ncl",
@@ -482,6 +483,123 @@
           )
           (std.array.length base_keys),
 
+  # Longest `layered` array on any layered key in the tree (not only the first key).
+  # Nested layered keys under composites are found via map_accum.
+  layered_length_of = fun k =>
+    if k != null && std.is_record k && keymap_ncl.layered.is_key k then
+      std.array.length k.layered
+    else
+      0,
+
+  max_layered_length_accum = fun acc k =>
+    let len = layered_length_of k in
+    let acc = if len > acc then len else acc in
+    let { acc, k = _ } =
+      keymap_ncl.nullable_key.map_accum
+        (fun acc k =>
+          let len = layered_length_of k in
+          let acc = if len > acc then len else acc in
+          { include acc, include k }
+        )
+        acc
+        k
+    in
+    acc,
+
+  max_layered_length
+    | doc "Longest layered-keys array length across the keymap (for layer count / padding)."
+    = layered_keys |> std.array.fold_left max_layered_length_accum 0,
+
+  # Pad a layered key's `layered` array with null (transparency) up to `target_len`.
+  pad_layered_key = fun target_len k =>
+    if k != null && std.is_record k && keymap_ncl.layered.is_key k then
+      let { layered, ..base_key } = k in
+      let len = std.array.length layered in
+      let padded_layered =
+        if len >= target_len then
+          layered
+        else
+          layered @ std.array.generate (std.function.const null) (target_len - len)
+      in
+      base_key & { layered = padded_layered }
+    else
+      k,
+
+  # Pad every layered key in a key tree to `target_len` (self, then nested via map_accum).
+  pad_key_layered_arrays = fun target_len k =>
+    let pad_f = fun acc key =>
+      let padded = pad_layered_key target_len key in
+      { include acc, k = padded }
+    in
+    let k = pad_layered_key target_len k in
+    let { acc = _, k } = keymap_ncl.nullable_key.map_accum pad_f null k in
+    k,
+
+  checks.check_max_layered_length =
+    let K = import "keys.ncl" in
+    {
+      check_unequal_lengths_uses_longest = {
+        actual =
+          [
+            K.A & { layered = [K.B] },
+            K.C & { layered = [ null, K.D] },
+          ]
+          |> std.array.fold_left max_layered_length_accum 0,
+        expected = 2,
+      },
+
+      check_first_key_not_layered = {
+        actual =
+          [
+            K.layer_mod.hold 1,
+            K.A & { layered = [ null, K.B] },
+          ]
+          |> std.array.fold_left max_layered_length_accum 0,
+        expected = 2,
+      },
+
+      check_no_layered_keys = {
+        actual = [K.A, K.B] |> std.array.fold_left max_layered_length_accum 0,
+        expected = 0,
+      },
+
+      check_pad_shorter_layered_array = {
+        actual =
+          pad_layered_key 3 (K.A & { layered = [K.B] }),
+        expected = K.A & { layered = [K.B, null, null ] },
+      },
+
+      check_json_pads_unequal_layered_lengths =
+        let keys = [
+          K.A & { layered = [K.B] },
+          K.C & { layered = [ null, K.D] },
+        ]
+        in
+        let layer_count = keys |> std.array.fold_left max_layered_length_accum 0 in
+        {
+          actual =
+            keys
+            |> std.array.map (pad_key_layered_arrays layer_count)
+            |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              base = { key_code = 4 },
+              layered = [
+                { key_code = 5 },
+                null,
+              ],
+            },
+            {
+              base = { key_code = 6 },
+              layered = [
+                null,
+                { key_code = 7 },
+              ],
+            },
+          ],
+        },
+    },
+
   chorded_keys
     | Array ChordedKeyElement
     =
@@ -556,7 +674,16 @@
         else
           {}
       in
-      let keys_json = keys |> std.array.map keymap_ncl.key.to_json_value in
+      # Equalise layered array lengths (pad shorter with null / transparency) so
+      # consumers need not assume the first layered key is the longest.
+      let layer_count =
+        keys |> std.array.fold_left max_layered_length_accum 0
+      in
+      let keys_json =
+        keys
+        |> std.array.map (pad_key_layered_arrays layer_count)
+        |> std.array.map keymap_ncl.key.to_json_value
+      in
       let { chorded = km_config_chorded, ..km_config } = config & { chorded = {} } in
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
       let config_json_value =
