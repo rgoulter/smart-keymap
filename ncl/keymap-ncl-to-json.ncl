@@ -470,10 +470,11 @@
       else
         let base_keys = std.array.first layers_of_keys in
         let layered_keys = std.array.drop_first layers_of_keys in
+        let key_at_idx_or_null = fun idx layer => if idx < std.array.length layer then std.array.at idx layer else null in
         std.array.generate
           (fun idx =>
             let base_key = std.array.at idx base_keys in
-            let layered_ = std.array.map (fun layer => if idx < std.array.length layer then std.array.at idx layer else null) layered_keys in
+            let layered_ = std.array.map (key_at_idx_or_null idx) layered_keys in
             let no_layered = std.array.all (fun x => x == null) layered_ in
             if no_layered then
               base_key
