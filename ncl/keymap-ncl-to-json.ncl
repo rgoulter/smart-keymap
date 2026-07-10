@@ -473,7 +473,7 @@
         std.array.generate
           (fun idx =>
             let base_key = std.array.at idx base_keys in
-            let layered_ = std.array.map (std.array.at idx) layered_keys in
+            let layered_ = std.array.map (fun layer => if idx < std.array.length layer then std.array.at idx layer else null) layered_keys in
             let no_layered = std.array.all (fun x => x == null) layered_ in
             if no_layered then
               base_key
