@@ -42,7 +42,14 @@
         ),
 
       Config = {
-        timeout | optional | Number,
+        timeout
+          | optional
+          | std.contract.from_validator (
+            validators.any_of [
+              validators.is_null,
+              validators.is_number,
+            ]
+          ),
         interrupt_response | optional | TapHoldInterruptResponse,
         required_idle_time | optional | Number,
       },

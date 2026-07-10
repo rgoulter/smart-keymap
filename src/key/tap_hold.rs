@@ -54,8 +54,12 @@ pub enum InterruptResponse {
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
+    ///
+    /// When `None`, the tap/hold decision does not timeout;
+    /// the key resolves only on release (as tap) or interruption
+    /// (depending on [InterruptResponse]).
     #[serde(default = "default_timeout")]
-    pub timeout: u16,
+    pub timeout: Option<u16>,
 
     /// How the tap-hold key should respond to interruptions.
     #[serde(default = "default_interrupt_response")]
@@ -75,8 +79,8 @@ pub const DEFAULT_TIMEOUT: u16 = 200;
 /// The default interrupt response.
 pub const DEFAULT_INTERRUPT_RESPONSE: InterruptResponse = InterruptResponse::Ignore;
 
-fn default_timeout() -> u16 {
-    DEFAULT_TIMEOUT
+fn default_timeout() -> Option<u16> {
+    Some(DEFAULT_TIMEOUT)
 }
 
 fn default_interrupt_response() -> InterruptResponse {
@@ -85,7 +89,7 @@ fn default_interrupt_response() -> InterruptResponse {
 
 /// Default tap hold config.
 pub const DEFAULT_CONFIG: Config = Config {
-    timeout: DEFAULT_TIMEOUT,
+    timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
 };
@@ -278,15 +282,15 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         &self,
         context: &Context,
         keymap_index: u16,
-    ) -> (PendingKeyState, key::ScheduledEvent<Event>) {
-        let timeout_ev = Event::TapHoldTimeout;
-        (
-            PendingKeyState::new(),
+    ) -> (PendingKeyState, Option<key::ScheduledEvent<Event>>) {
+        let pending = PendingKeyState::new();
+        let scheduled = context.config.timeout.map(|timeout| {
             key::ScheduledEvent::after(
-                context.config.timeout,
-                key::Event::key_event(keymap_index, timeout_ev),
-            ),
-        )
+                timeout,
+                key::Event::key_event(keymap_index, Event::TapHoldTimeout),
+            )
+        });
+        (pending, scheduled)
     }
 }
 
@@ -312,9 +316,14 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             Some(required_idle_time) => {
                 if context.idle_time_ms >= required_idle_time as u32 {
                     // Keymap has been idle long enough; use pending tap-hold key state.
-                    let (th_pks, sch_ev) = self.new_pending_key(context, keymap_index);
+                    let (th_pks, maybe_sch_ev) = self.new_pending_key(context, keymap_index);
                     let pk = key::PressedKeyResult::Pending(th_pks);
-                    let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+                    let pke = match maybe_sch_ev {
+                        Some(sch_ev) => {
+                            key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event())
+                        }
+                        None => key::KeyEvents::no_events(),
+                    };
                     (pk, pke)
                 } else {
                     // Keymap has not been idle for long enough;
@@ -330,9 +339,12 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             }
             None => {
                 // Idle time not considered. Use pending tap-hold key state.
-                let (th_pks, sch_ev) = self.new_pending_key(context, keymap_index);
+                let (th_pks, maybe_sch_ev) = self.new_pending_key(context, keymap_index);
                 let pk = key::PressedKeyResult::Pending(th_pks);
-                let pke = key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event());
+                let pke = match maybe_sch_ev {
+                    Some(sch_ev) => key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event()),
+                    None => key::KeyEvents::no_events(),
+                };
                 (pk, pke)
             }
         }
