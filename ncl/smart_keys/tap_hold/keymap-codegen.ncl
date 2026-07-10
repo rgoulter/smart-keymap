@@ -137,7 +137,14 @@
 
       config = {
         Json = {
-          timeout | optional | Number,
+          timeout
+            | optional
+            | std.contract.from_validator (
+              validators.any_of [
+                validators.is_null,
+                validators.is_number,
+              ]
+            ),
           interrupt_response | optional | TapHoldInterruptResponseJson,
           required_idle_time | optional | Number,
         },
@@ -147,7 +154,10 @@
             let tap_hold_config = json_keymap.config.tap_hold in
             let timeout_field_fragment =
               if std.record.has_field "timeout" tap_hold_config then
-                "timeout: %{std.to_string tap_hold_config.timeout},"
+                if tap_hold_config.timeout == null then
+                  "timeout: None,"
+                else
+                  "timeout: Some(%{std.to_string tap_hold_config.timeout}),"
               else
                 ""
             in

@@ -213,8 +213,9 @@ pub trait System<R>: Debug {
 
     /// Produces a pressed key value, and may
     ///  yield some [ScheduledEvent]s.
-    /// (e.g. [tap_hold::Key] schedules a [tap_hold::Event::TapHoldTimeout]
-    ///  so that holding the key resolves as a hold).
+    /// (e.g. [tap_hold::Key] may schedule a [tap_hold::Event::TapHoldTimeout]
+    ///  so that holding the key resolves as a hold,
+    ///  when a timeout is configured).
     fn new_pressed_key(
         &self,
         keymap_index: u16,
