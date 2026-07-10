@@ -324,6 +324,9 @@ bStatus_t DevInfo_SetParameter(uint8_t param, uint8_t len, void *value) {
 
   switch (param) {
   case DEVINFO_SYSTEM_ID:
+    if (len > sizeof(devInfoSystemId)) {
+      return INVALIDPARAMETER;
+    }
     tmos_memcpy(devInfoSystemId, value, len);
     break;
 
