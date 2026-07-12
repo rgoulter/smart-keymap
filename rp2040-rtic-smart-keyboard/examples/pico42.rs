@@ -36,6 +36,7 @@ mod board {
 
     pub type PressedKeys = keyberon_smart_keyboard::input::PressedKeys<COLS, ROWS>;
 
+    #[allow(clippy::too_many_arguments)]
     pub fn cols(
         gp0: UnconfiguredPin<bank0::Gpio0>,
         gp1: UnconfiguredPin<bank0::Gpio1>,
@@ -196,9 +197,7 @@ mod app {
             &mut ctx.device.RESETS,
         );
         board::rows_and_cols!(gpio_pins, cols, rows);
-        let Ok(mut matrix) = DelayedMatrix::new(cols, rows, timer, 5, 5) else {
-            panic!("matrix init failed");
-        };
+        let mut matrix = DelayedMatrix::new(cols, rows, timer, 5, 5).expect("matrix init failed");
 
         // Check if bootloader pressed
         if matrix.is_boot_key_pressed() {
@@ -234,16 +233,12 @@ mod app {
             usb_serial,
             usb_class,
         } = c.shared;
-        (usb_dev, usb_serial, usb_class)
-            .lock(|mut ud, mut us, mut uc| usb_poll(&mut ud, &mut us, &mut uc));
+        (usb_dev, usb_serial, usb_class).lock(usb_poll);
     }
 
-    #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class, usb_serial], local = [keyboard, backend, alarm])]
+    #[task(binds = TIMER_IRQ_0, priority = 1, shared = [usb_class], local = [keyboard, backend, alarm])]
     fn tick(c: tick::Context) {
-        let tick::SharedResources {
-            mut usb_class,
-            mut usb_serial,
-        } = c.shared;
+        let tick::SharedResources { mut usb_class } = c.shared;
         let tick::LocalResources {
             alarm,
             keyboard,
