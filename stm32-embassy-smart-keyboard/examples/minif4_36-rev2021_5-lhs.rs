@@ -12,9 +12,7 @@ use embassy_stm32::{bind_interrupts, peripherals, usart, usb, Config};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, Sender};
 use embassy_time::Timer;
-use embassy_usb::class::hid::{
-    HidReader, HidReaderWriter, HidWriter, ReportId, RequestHandler, State,
-};
+use embassy_usb::class::hid::{HidReaderWriter, HidWriter, ReportId, RequestHandler, State};
 use embassy_usb::control::OutResponse;
 use embassy_usb::Builder;
 use panic_halt as _;
@@ -403,7 +401,7 @@ async fn keyboard_backend(
                 let consumer_code = backend
                     .keymap_output()
                     .pressed_consumer_codes()
-                    .get(0)
+                    .first()
                     .copied()
                     .unwrap_or(0);
                 let consumer_report = MediaKeyboardReport {
@@ -479,7 +477,7 @@ impl<'d> TransportReader<'d> {
 
     pub async fn read(&mut self) -> Option<Event> {
         let mut buf: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
-        if let Ok(_) = self.uart.read(&mut buf).await {
+        if self.uart.read(&mut buf).await.is_ok() {
             Message::deserialize(&buf)
                 .ok()
                 .map(|Message { input_event }: Message| input_event)

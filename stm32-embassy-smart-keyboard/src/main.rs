@@ -248,7 +248,7 @@ async fn main(_spawner: Spawner) {
             let consumer_code = backend
                 .keymap_output()
                 .pressed_consumer_codes()
-                .get(0)
+                .first()
                 .copied()
                 .unwrap_or(0);
             let consumer_report = MediaKeyboardReport {
