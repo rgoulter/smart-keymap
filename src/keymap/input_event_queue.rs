@@ -43,6 +43,10 @@ impl<const N: usize> InputEventQueue<N> {
         self.delay_counter = delay_counter;
     }
 
+    pub fn delay_counter(&self) -> u8 {
+        self.delay_counter
+    }
+
     pub fn tick_delay(&mut self) {
         if self.delay_counter > 0 {
             self.delay_counter -= 1;

@@ -762,10 +762,38 @@ impl<
         S: key::System<R, Ref = R, Context = Ctx, Event = Ev, PendingKeyState = PKS, KeyState = KS>,
     > Keymap<I, R, Ctx, Ev, PKS, KS, S>
 {
+    pub(crate) fn test_is_pending(&self) -> bool {
+        self.pending_state.is_some()
+    }
+
     pub(crate) fn test_pending_queued_events_len(&self) -> Option<usize> {
         self.pending_state
             .as_ref()
             .map(|pending_state| pending_state.queued_events.len())
+    }
+
+    /// Session-log input events (only `Event::Input` variants),
+    ///  in log order.
+    pub(crate) fn test_pending_session_log_inputs(
+        &self,
+    ) -> Option<heapless::Vec<input::Event, 16>> {
+        self.pending_state.as_ref().map(|pending_state| {
+            let mut inputs = heapless::Vec::new();
+            for ev in pending_state.queued_events.iter() {
+                if let key::Event::Input(ie) = ev {
+                    let _ = inputs.push(*ie);
+                }
+            }
+            inputs
+        })
+    }
+
+    pub(crate) fn test_input_queue_len(&self) -> usize {
+        self.input_queue.len()
+    }
+
+    pub(crate) fn test_input_queue_delay(&self) -> u8 {
+        self.input_queue.delay_counter()
     }
 
     pub(crate) fn test_handle_scheduled_key_event(&mut self, ev: key::Event<Ev>) {
@@ -935,25 +963,38 @@ mod tests {
         }};
     }
 
+    fn tap_hold_timeout_event() -> key::Event<crate::key::composite::Event> {
+        key::Event::Key {
+            keymap_index: 0,
+            key_event: crate::key::composite::Event::TapHold(
+                crate::key::tap_hold::Event::TapHoldTimeout,
+            ),
+        }
+    }
+
     /// `queued_events` gets one entry per processed input;
-    /// tick delay defers the second physical `handle_input` until `tick()`.
+    ///  tick delay defers the second physical `handle_input` until `tick()`.
+    ///
+    /// Motivating smart key: **tap-hold** (control for #578).
     #[test]
     fn physical_input_during_pending_records_once_in_queued_events() {
         use crate::key::tap_hold::InterruptResponse;
 
+        // Assemble
         let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
-
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
         let baseline = keymap
             .test_pending_queued_events_len()
             .expect("tap-hold pending");
 
+        // Act -- deferred interrupt press, then pace it in.
         keymap.handle_input(input::Event::Press { keymap_index: 1 });
         assert_eq!(Some(baseline), keymap.test_pending_queued_events_len());
-
         // First tick clears delay; second tick dequeues the deferred press.
         keymap.tick();
         keymap.tick();
+
+        // Assert
         assert_eq!(Some(baseline + 1), keymap.test_pending_queued_events_len());
     }
 
@@ -963,19 +1004,23 @@ mod tests {
     /// With `HoldOnKeyPress`,
     ///  the interrupt should resolve the tap-hold to hold
     ///  without also pressing the interrupting key.
+    ///
+    /// Motivating smart key: **tap-hold** (`HoldOnKeyPress` home-row mods; #578).
     #[test]
     fn scheduled_input_during_pending_does_not_reprocess_as_physical_press() {
         use crate::key::tap_hold::InterruptResponse;
 
+        // Assemble
         let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::HoldOnKeyPress);
-
         keymap.handle_input(input::Event::Press { keymap_index: 0 });
         assert!(keymap.test_pending_queued_events_len().is_some());
 
+        // Act
         keymap.test_handle_scheduled_key_event(key::Event::Input(input::Event::Press {
             keymap_index: 1,
         }));
 
+        // Assert -- hold only; interrupt key not pressed (#578).
         let hold = key::KeyOutput::from_key_code(0xE0);
         let interrupt_key = key::KeyOutput::from_key_code(0x05);
         assert_eq!(
@@ -983,6 +1028,329 @@ mod tests {
             keymap.pressed_keys()
         );
         assert!(!keymap.pressed_keys().contains(&interrupt_key));
+    }
+
+    /// Creating a pending key sets the delay
+    ///  so the *next* physical input is deferred.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (`key_uninterrupted_tap_is_reported` / interrupt pacing).
+    #[test]
+    fn pending_creation_defers_next_physical_input_by_one_delay() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        assert!(keymap.test_is_pending());
+        assert_eq!(INPUT_QUEUE_TICK_DELAY, keymap.test_input_queue_delay());
+
+        // Act -- interrupt without waiting for ticks.
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+
+        // Assert -- still only in the delay line, not the session log.
+        assert_eq!(1, keymap.test_input_queue_len());
+        assert_eq!(Some(0), keymap.test_pending_queued_events_len());
+        assert!(keymap.pressed_keys().is_empty());
+    }
+
+    /// Physical inputs while delay > 0 sit in the delay line
+    ///  and are not yet recorded in the session log.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (interrupts must not enter the session log until paced).
+    #[test]
+    fn physical_inputs_while_delay_active_stay_in_delay_line() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- pending with delay set.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        assert_eq!(INPUT_QUEUE_TICK_DELAY, keymap.test_input_queue_delay());
+
+        // Act
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+        // Assert
+        assert_eq!(2, keymap.test_input_queue_len());
+        assert_eq!(Some(0), keymap.test_pending_queued_events_len());
+    }
+
+    /// While pending, the first tick after a delay only clears the delay;
+    ///  it does not dequeue the next delay-line input.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (one-input-per-tick spacing for interrupt detection).
+    #[test]
+    fn first_tick_while_pending_only_clears_delay() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- pending with two events waiting in the delay line.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+        assert_eq!(2, keymap.test_input_queue_len());
+
+        // Act
+        keymap.tick();
+
+        // Assert
+        assert_eq!(2, keymap.test_input_queue_len());
+        assert_eq!(Some(0), keymap.test_pending_queued_events_len());
+        assert_eq!(0, keymap.test_input_queue_delay());
+    }
+
+    /// When delay is already 0, a tick moves exactly one delay-line input
+    ///  into the session log.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (paced interrupt press then release land in separate ticks).
+    #[test]
+    fn tick_when_delay_zero_moves_one_input_into_session_log() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- delay cleared; Press(1) and Release(1) still queued.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+        keymap.tick(); // clear delay
+        assert_eq!(0, keymap.test_input_queue_delay());
+        assert_eq!(2, keymap.test_input_queue_len());
+
+        // Act
+        keymap.tick();
+
+        // Assert -- Press(1) entered the session log; Release still delayed.
+        assert_eq!(1, keymap.test_input_queue_len());
+        assert_eq!(Some(1), keymap.test_pending_queued_events_len());
+        let log = keymap.test_pending_session_log_inputs().unwrap();
+        assert_eq!(&[input::Event::Press { keymap_index: 1 }], log.as_slice());
+    }
+
+    /// Resolve via timeout does not drain the delay line:
+    ///  never-logged inputs stay queued for post-resolve pacing.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (timeout-to-hold while an interrupt is still only delayed).
+    #[test]
+    fn resolve_by_timeout_leaves_delay_line_inputs_queued() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- interrupt still only in the delay line (not session log).
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        assert_eq!(1, keymap.test_input_queue_len());
+        assert_eq!(Some(0), keymap.test_pending_queued_events_len());
+
+        // Act
+        keymap.test_handle_scheduled_key_event(tap_hold_timeout_event());
+
+        // Assert -- hold; delay-line Press(1) still queued, not applied as a press.
+        assert!(!keymap.test_is_pending());
+        assert_eq!(1, keymap.test_input_queue_len());
+        let hold = key::KeyOutput::from_key_code(0xE0);
+        assert_eq!(
+            heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[hold]).unwrap(),
+            keymap.pressed_keys()
+        );
+        assert!(!keymap
+            .pressed_keys()
+            .contains(&key::KeyOutput::from_key_code(0x05)));
+    }
+
+    /// After resolve, paced ticks drain the former delay-line input
+    ///  as a normal press.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (post-hold interrupt key still registers as a normal press).
+    #[test]
+    fn post_resolve_ticks_drain_delay_line_as_normal_press() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- resolve while Press(1) is still only in the delay line.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.test_handle_scheduled_key_event(tap_hold_timeout_event());
+        assert!(!keymap.test_is_pending());
+        assert_eq!(1, keymap.test_input_queue_len());
+
+        // Act -- post-resolve pacing.
+        keymap.tick();
+        keymap.tick();
+        if keymap.test_input_queue_len() > 0 {
+            keymap.tick();
+            keymap.tick();
+        }
+
+        // Assert
+        assert_eq!(0, keymap.test_input_queue_len());
+        assert!(keymap
+            .pressed_keys()
+            .contains(&key::KeyOutput::from_key_code(0x05)));
+    }
+
+    /// Inputs still only in the delay line at resolve time
+    ///  are excluded from the session log,
+    ///  so they are not absorbed into resolve replay.
+    ///
+    /// After a processing `tick`,
+    ///  delay ends at 0 (set DELAY then `tick_delay` in the same tick),
+    ///  so the next queued event is ready but not yet popped
+    ///  until the next `tick`/`handle_input`.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (partially paced interrupt release must survive resolve).
+    #[test]
+    fn resolve_leaves_never_logged_delay_line_inputs_queued() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- pace Press(1) into the session log; leave Release(1) queued.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+        keymap.tick(); // clear delay
+        keymap.tick(); // process Press(1)
+        assert_eq!(Some(1), keymap.test_pending_queued_events_len());
+        assert_eq!(1, keymap.test_input_queue_len());
+        assert_eq!(0, keymap.test_input_queue_delay());
+
+        // Act -- resolve without processing remaining Release(1).
+        keymap.test_handle_scheduled_key_event(tap_hold_timeout_event());
+
+        // Assert -- never-logged Release(1) remains queued
+        //  (session log may also prepend Press(1) ahead of it).
+        assert!(!keymap.test_is_pending());
+        assert!(
+            keymap.test_input_queue_len() >= 1,
+            "at least the never-logged Release(1) should remain queued after resolve"
+        );
+    }
+
+    /// A scheduled `Event::Input` during pending is applied immediately
+    ///  and recorded when still pending,
+    ///  while a concurrent physical input stays in the delay line.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (scheduled vs physical dual paths during pending; #578 family).
+    #[test]
+    fn scheduled_input_during_pending_records_while_physical_stays_delayed() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- pending; physical interrupt already in the delay line.
+        // Ignore so the scheduled interrupt does not resolve.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        assert_eq!(1, keymap.test_input_queue_len());
+        assert_eq!(Some(0), keymap.test_pending_queued_events_len());
+
+        // Act
+        keymap.test_handle_scheduled_key_event(key::Event::Input(input::Event::Press {
+            keymap_index: 1,
+        }));
+
+        // Assert -- scheduled recorded; physical still waiting (not double-processed).
+        assert!(keymap.test_is_pending());
+        assert_eq!(Some(1), keymap.test_pending_queued_events_len());
+        assert_eq!(1, keymap.test_input_queue_len());
+    }
+
+    /// When pending resolves inside a `tick` that pops from the delay line,
+    ///  `tick` ends with `set_delay(DELAY)` then `tick_delay()`,
+    ///  so delay is 0 after resolve.
+    /// Resolve also prepends filtered session-log inputs onto the queue.
+    ///
+    /// Motivating smart key: **tap-hold**
+    ///  (release-as-tap path; delay-after-resolve timing for observed reports).
+    #[test]
+    fn resolve_via_tick_leaves_delay_zero_and_queues_replay() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- pending release waiting in the delay line.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        assert!(keymap.test_is_pending());
+        keymap.tick(); // clear delay
+
+        // Act -- process release → resolve as tap; prepend last self Release.
+        keymap.tick();
+
+        // Assert
+        assert!(!keymap.test_is_pending());
+        assert_eq!(
+            0,
+            keymap.test_input_queue_delay(),
+            "tick sets DELAY then tick_delay in the same call"
+        );
+        assert!(
+            keymap.test_input_queue_len() >= 1,
+            "resolve prepends filtered session-log inputs onto the delay line"
+        );
+    }
+
+    /// When resolve happens inside `handle_input`
+    ///  (HoldOnKeyPress interrupt popped in that call),
+    ///  DELAY is set without a same-call `tick_delay`,
+    ///  so the next physical input is deferred —
+    ///  a different delay state than resolve-via-tick.
+    ///
+    /// Motivating smart key: **tap-hold** (`HoldOnKeyPress`; #578).
+    #[test]
+    fn resolve_inside_handle_input_sets_delay_for_next_physical() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- pending; delay cleared so next handle_input can resolve.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::HoldOnKeyPress);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        assert!(keymap.test_is_pending());
+        keymap.tick();
+        assert_eq!(0, keymap.test_input_queue_delay());
+
+        // Act -- interrupt resolves hold inside handle_input.
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+
+        // Assert -- DELAY set again; interrupt not applied as a normal press (#578).
+        assert!(!keymap.test_is_pending());
+        assert_eq!(INPUT_QUEUE_TICK_DELAY, keymap.test_input_queue_delay());
+        assert!(!keymap
+            .pressed_keys()
+            .contains(&key::KeyOutput::from_key_code(0x05)));
+    }
+
+    /// After resolve-inside-`handle_input`, the next physical event
+    ///  is deferred onto the delay line because DELAY is still set.
+    ///
+    /// Motivating smart key: **tap-hold** (`HoldOnKeyPress`; #578).
+    #[test]
+    fn post_resolve_inside_handle_input_defers_next_physical() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- resolve via HoldOnKeyPress interrupt inside handle_input.
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::HoldOnKeyPress);
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.tick();
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        assert!(!keymap.test_is_pending());
+        assert_eq!(INPUT_QUEUE_TICK_DELAY, keymap.test_input_queue_delay());
+        // Session log may have prepended Press(1); queue non-empty is ok.
+        let queue_after_resolve = keymap.test_input_queue_len();
+
+        // Act
+        keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+        // Assert
+        assert_eq!(
+            queue_after_resolve + 1,
+            keymap.test_input_queue_len(),
+            "post-resolve delay defers the next physical event onto the delay line"
+        );
     }
 
     #[test]
