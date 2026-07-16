@@ -123,3 +123,153 @@ pub(crate) fn dispatch_replayed_events<Ev: Copy + Debug, const N: usize, const Q
         }
     }
 }
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    /// Resolve keeps other-key inputs and the last self event,
+    ///  then prepends them *before* any existing delay-line tail.
+    ///
+    /// Motivating smart keys: **tap-hold** (esp. rolling `HoldOnKeyTap`)
+    ///  and **chorded** over tap-hold — without prepend-before-tail,
+    ///  `tests/rust/tap_hold/hold_on_interrupt_tap` and
+    ///  `tests/rust/chorded/{tap_hold,tap_hold_over_tap_hold,over_layered_tap_hold}`
+    ///  fail.
+    #[test]
+    fn resolve_replay_prepends_filtered_inputs_before_delay_line_tail() {
+        // Assemble -- session log: Press(0), Press(1), Release(0);
+        //  delay-line tail: Press(9).
+        let mut queued: heapless::Vec<key::Event<()>, 8> = heapless::Vec::new();
+        queued.push(input::Event::press(0).into()).unwrap();
+        queued.push(input::Event::press(1).into()).unwrap();
+        queued.push(input::Event::release(0).into()).unwrap();
+
+        let mut input_queue = InputEventQueue::<8>::new();
+        input_queue.push_back(input::Event::press(9)).unwrap();
+
+        let mut event_scheduler = EventScheduler::new();
+
+        // Act -- resolve key 0 → keep Press(1) + last self event Release(0).
+        dispatch_replayed_events(
+            KeyResolution::Resolved { keymap_index: 0 },
+            &mut queued,
+            &mut input_queue,
+            &mut event_scheduler,
+        );
+
+        // Assert -- replay batch, then original tail.
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::press(1))
+        );
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::release(0))
+        );
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::press(9))
+        );
+        assert!(input_queue.is_empty());
+    }
+
+    /// Non-input session-log events are scheduled with staggered delay,
+    ///  not prepended to the delay line.
+    ///
+    /// Motivating smart keys: any pending key that records non-input
+    ///  `Event::Key` traffic in the session log before resolve
+    ///  (e.g. **tap-hold** / **chorded** composites that schedule key events).
+    ///  Stagger keeps HID reports one tick apart after resolve.
+    #[test]
+    fn resolve_replay_schedules_non_input_events_with_staggered_delay() {
+        // Assemble
+        let mut queued: heapless::Vec<key::Event<()>, 8> = heapless::Vec::new();
+        queued.push(input::Event::press(1).into()).unwrap();
+        queued.push(key::Event::key_event(2, ())).unwrap();
+        queued.push(key::Event::key_event(3, ())).unwrap();
+
+        let mut input_queue = InputEventQueue::<8>::new();
+        let mut event_scheduler = EventScheduler::new();
+
+        // Act
+        dispatch_replayed_events(
+            KeyResolution::Resolved { keymap_index: 0 },
+            &mut queued,
+            &mut input_queue,
+            &mut event_scheduler,
+        );
+
+        // Assert -- other-key input prepended; key events scheduled.
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::press(1))
+        );
+        assert!(input_queue.is_empty());
+        assert!(event_scheduler.next_event_time().is_some());
+        event_scheduler.tick(1);
+        assert_eq!(
+            event_scheduler.dequeue(),
+            Some(key::Event::key_event(2, ()))
+        );
+        event_scheduler.tick(1);
+        assert_eq!(
+            event_scheduler.dequeue(),
+            Some(key::Event::key_event(3, ()))
+        );
+    }
+
+    /// Nested-pending policy: LIFO over input events only
+    ///  (key events dropped),
+    ///  prepended before any existing delay-line tail.
+    ///
+    /// Motivating smart keys: **chorded → passthrough pending**
+    ///  (e.g. chorded over tap-hold) and other pending→pending
+    ///  transitions (layered outer resolving into an inner pending key).
+    ///  LIFO vs FIFO is not yet covered by `rust-integration` HID reports;
+    ///  this unit test pins the historical re-queue policy.
+    #[test]
+    fn nested_pending_replay_prepends_inputs_lifo_before_delay_line_tail() {
+        // Assemble -- log: Press(0), KeyEvent, Release(0), Press(1);
+        //  delay-line tail: Press(9).
+        let mut queued: heapless::Vec<key::Event<()>, 8> = heapless::Vec::new();
+        queued.push(input::Event::press(0).into()).unwrap();
+        queued.push(key::Event::key_event(0, ())).unwrap();
+        queued.push(input::Event::release(0).into()).unwrap();
+        queued.push(input::Event::press(1).into()).unwrap();
+
+        let mut input_queue = InputEventQueue::<8>::new();
+        input_queue.push_back(input::Event::press(9)).unwrap();
+
+        let mut event_scheduler = EventScheduler::new();
+
+        // Act
+        dispatch_replayed_events(
+            KeyResolution::Pending,
+            &mut queued,
+            &mut input_queue,
+            &mut event_scheduler,
+        );
+
+        // Assert -- LIFO inputs, then original tail; no key-event scheduling.
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::press(1))
+        );
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::release(0))
+        );
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::press(0))
+        );
+        assert_eq!(
+            input_queue.pop_front_if_ready(),
+            Some(input::Event::press(9))
+        );
+        assert!(input_queue.is_empty());
+        assert!(event_scheduler.next_event_time().is_none());
+    }
+}
