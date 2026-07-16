@@ -27,6 +27,18 @@ pub enum Event {
     },
 }
 
+impl Event {
+    /// Physical press of the key at `keymap_index`.
+    pub const fn press(keymap_index: u16) -> Self {
+        Self::Press { keymap_index }
+    }
+
+    /// Physical release of the key at `keymap_index`.
+    pub const fn release(keymap_index: u16) -> Self {
+        Self::Release { keymap_index }
+    }
+}
+
 /// A struct for associating a key ref with a [crate::key::KeyState].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PressedKey<R, S> {

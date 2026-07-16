@@ -74,7 +74,7 @@ impl<const N: usize> InputEventQueue<N> {
 
     /// Removes and returns every queued event, leaving the queue empty.
     pub fn take_all(&mut self) -> heapless::Deque<input::Event, N> {
-        core::mem::replace(&mut self.events, heapless::Deque::new())
+        core::mem::take(&mut self.events)
     }
 
     /// Appends every event from `other` to the back of this queue.
@@ -125,94 +125,79 @@ mod tests {
 
     const CAPACITY: usize = 4;
 
-    fn press(index: u16) -> input::Event {
-        input::Event::Press {
-            keymap_index: index,
-        }
-    }
-
-    fn release(index: u16) -> input::Event {
-        input::Event::Release {
-            keymap_index: index,
-        }
-    }
-
     #[test]
     fn push_back_and_pop_front_if_ready_respects_delay() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
 
-        queue.push_back(press(0)).unwrap();
-        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
+        queue.push_back(input::Event::press(0)).unwrap();
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
         queue.set_delay_counter(INPUT_QUEUE_TICK_DELAY);
 
-        queue.push_back(release(0)).unwrap();
+        queue.push_back(input::Event::release(0)).unwrap();
         assert_eq!(queue.pop_front_if_ready(), None);
 
         queue.tick_delay();
-        assert_eq!(queue.pop_front_if_ready(), Some(release(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
     }
 
     #[test]
     fn take_all_drains_queue_preserving_order() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
-        queue.push_back(press(0)).unwrap();
-        queue.push_back(release(0)).unwrap();
+        queue.push_back(input::Event::press(0)).unwrap();
+        queue.push_back(input::Event::release(0)).unwrap();
 
         let mut taken = queue.take_all();
         assert!(queue.is_empty());
-        assert_eq!(taken.pop_front(), Some(press(0)));
-        assert_eq!(taken.pop_front(), Some(release(0)));
+        assert_eq!(taken.pop_front(), Some(input::Event::press(0)));
+        assert_eq!(taken.pop_front(), Some(input::Event::release(0)));
         assert_eq!(taken.pop_front(), None);
     }
 
     #[test]
     fn append_all_extends_back_in_order() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
-        queue.push_back(press(0)).unwrap();
+        queue.push_back(input::Event::press(0)).unwrap();
 
         let mut other = heapless::Deque::new();
-        other.push_back(release(0)).unwrap();
-        other.push_back(press(1)).unwrap();
+        other.push_back(input::Event::release(0)).unwrap();
+        other.push_back(input::Event::press(1)).unwrap();
 
         queue.append_all(&mut other);
         assert_eq!(queue.len(), 3);
-        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
         queue.set_delay_counter(0);
-        assert_eq!(queue.pop_front_if_ready(), Some(release(0)));
-        assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(1)));
     }
 
     #[test]
     fn prepend_inserts_events_at_front_in_order() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
-        queue.push_back(press(1)).unwrap();
-        queue.prepend(&[press(0), release(0)]);
+        queue.push_back(input::Event::press(1)).unwrap();
+        queue.prepend(&[input::Event::press(0), input::Event::release(0)]);
 
-        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
-        assert_eq!(queue.pop_front_if_ready(), Some(release(0)));
-        assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(1)));
     }
 
     #[test]
     fn prepend_pending_input_events_replays_lifo_then_restores_tail() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
-        queue.push_back(press(9)).unwrap();
+        queue.push_back(input::Event::press(9)).unwrap();
 
         let mut pending_events: heapless::Vec<key::Event<()>, 4> = heapless::Vec::new();
-        pending_events.push(key::Event::Input(press(0))).unwrap();
-        pending_events.push(key::Event::Input(release(0))).unwrap();
+        pending_events.push(input::Event::press(0).into()).unwrap();
         pending_events
-            .push(key::Event::Key {
-                keymap_index: 0,
-                key_event: (),
-            })
+            .push(input::Event::release(0).into())
             .unwrap();
+        pending_events.push(key::Event::key_event(0, ())).unwrap();
 
         queue.prepend_pending_input_events(&mut pending_events);
 
-        assert_eq!(queue.pop_front_if_ready(), Some(release(0)));
-        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
-        assert_eq!(queue.pop_front_if_ready(), Some(press(9)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(9)));
         assert!(queue.is_empty());
     }
 
@@ -220,33 +205,33 @@ mod tests {
     fn is_full_when_at_capacity() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
         for index in 0..CAPACITY {
-            queue.push_back(press(index as u16)).unwrap();
+            queue.push_back(input::Event::press(index as u16)).unwrap();
         }
         assert!(queue.is_full());
-        assert!(queue.push_back(press(99)).is_err());
+        assert!(queue.push_back(input::Event::press(99)).is_err());
     }
 
     #[test]
     fn push_back_or_ignore_drops_when_at_capacity() {
         let mut queue = InputEventQueue::<2>::new();
-        queue.push_back(press(0)).unwrap();
-        queue.push_back_or_ignore(press(1));
-        queue.push_back_or_ignore(press(2));
+        queue.push_back(input::Event::press(0)).unwrap();
+        queue.push_back_or_ignore(input::Event::press(1));
+        queue.push_back_or_ignore(input::Event::press(2));
 
-        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
-        assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(1)));
         assert_eq!(queue.pop_front_if_ready(), None);
     }
 
     #[test]
     fn push_front_or_ignore_drops_when_at_capacity() {
         let mut queue = InputEventQueue::<2>::new();
-        queue.push_back(press(0)).unwrap();
-        queue.push_front_or_ignore(press(1));
-        queue.push_front_or_ignore(press(2));
+        queue.push_back(input::Event::press(0)).unwrap();
+        queue.push_front_or_ignore(input::Event::press(1));
+        queue.push_front_or_ignore(input::Event::press(2));
 
-        assert_eq!(queue.pop_front_if_ready(), Some(press(1)));
-        assert_eq!(queue.pop_front_if_ready(), Some(press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(1)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
         assert_eq!(queue.pop_front_if_ready(), None);
     }
 }

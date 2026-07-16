@@ -880,12 +880,8 @@ mod tests {
     #[test]
     fn pending_resolution_events_other_key_events_all_included() {
         let mut queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
-        queued
-            .push(Event::Input(input::Event::Press { keymap_index: 1 }))
-            .unwrap();
-        queued
-            .push(Event::Input(input::Event::Release { keymap_index: 2 }))
-            .unwrap();
+        queued.push(input::Event::press(1).into()).unwrap();
+        queued.push(input::Event::release(2).into()).unwrap();
         let result = pending_resolution_events(&queued, 0);
         assert_eq!(2, result.len());
     }
@@ -893,41 +889,22 @@ mod tests {
     #[test]
     fn pending_resolution_events_resolving_key_only_last_included() {
         let mut queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
-        queued
-            .push(Event::Input(input::Event::Press { keymap_index: 0 }))
-            .unwrap();
-        queued
-            .push(Event::Input(input::Event::Release { keymap_index: 0 }))
-            .unwrap();
+        queued.push(input::Event::press(0).into()).unwrap();
+        queued.push(input::Event::release(0).into()).unwrap();
         let result = pending_resolution_events(&queued, 0);
         assert_eq!(1, result.len());
-        assert_eq!(
-            Event::Input(input::Event::Release { keymap_index: 0 }),
-            result[0]
-        );
+        assert_eq!(Event::from(input::Event::release(0)), result[0]);
     }
 
     #[test]
     fn pending_resolution_events_mix_other_and_resolving_key() {
         let mut queued: heapless::Vec<Event<()>, 16> = heapless::Vec::new();
-        queued
-            .push(Event::Input(input::Event::Press { keymap_index: 1 }))
-            .unwrap();
-        queued
-            .push(Event::Input(input::Event::Press { keymap_index: 0 }))
-            .unwrap();
-        queued
-            .push(Event::Input(input::Event::Release { keymap_index: 0 }))
-            .unwrap();
+        queued.push(input::Event::press(1).into()).unwrap();
+        queued.push(input::Event::press(0).into()).unwrap();
+        queued.push(input::Event::release(0).into()).unwrap();
         let result = pending_resolution_events(&queued, 0);
         assert_eq!(2, result.len());
-        assert_eq!(
-            Event::Input(input::Event::Press { keymap_index: 1 }),
-            result[0]
-        );
-        assert_eq!(
-            Event::Input(input::Event::Release { keymap_index: 0 }),
-            result[1]
-        );
+        assert_eq!(Event::from(input::Event::press(1)), result[0]);
+        assert_eq!(Event::from(input::Event::release(0)), result[1]);
     }
 }
