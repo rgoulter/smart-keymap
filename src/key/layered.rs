@@ -260,18 +260,54 @@ impl<const LAYER_COUNT: usize> core::fmt::Debug for ActiveLayersDebugHelper<'_, 
     }
 }
 
+/// Configuration for layered keys / sticky layers.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Config {
+    /// Timeout (ms) after which an unused sticky layer deactivates.
+    ///
+    /// When [None], sticky layers stay active until another key is used.
+    ///
+    /// The timeout starts when a sticky layer modifier is *released*
+    /// without interruption (sticky committed). If another key is pressed
+    /// while sticky is active, the timeout is cancelled / ignored.
+    #[serde(default)]
+    pub sticky_timeout: Option<u16>,
+}
+
+/// Default layered config (no sticky timeout).
+pub const DEFAULT_CONFIG: Config = Config {
+    sticky_timeout: None,
+};
+
+impl Config {
+    /// Constructs a new default [Config].
+    pub const fn new() -> Self {
+        DEFAULT_CONFIG
+    }
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Clone, Copy)]
 pub struct Context<const LAYER_COUNT: usize> {
+    config: Config,
     default_layer: Option<LayerIndex>,
     active_layers: [Activity; LAYER_COUNT],
     // Keymap index which was pressed while a layer was sticky.
     pressed_keymap_index: Option<u16>,
+    // Invalidates pending sticky-timeout events when advanced.
+    sticky_timeout_id: u8,
 }
 
 impl<const LAYER_COUNT: usize> Debug for Context<LAYER_COUNT> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Context")
+            .field("config", &self.config)
             .field("default_layer", &self.default_layer)
             .field(
                 "active_layers",
@@ -280,6 +316,7 @@ impl<const LAYER_COUNT: usize> Debug for Context<LAYER_COUNT> {
                 },
             )
             .field("pressed_keymap_index", &self.pressed_keymap_index)
+            .field("sticky_timeout_id", &self.sticky_timeout_id)
             .finish()
     }
 }
@@ -287,11 +324,28 @@ impl<const LAYER_COUNT: usize> Debug for Context<LAYER_COUNT> {
 impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     /// Create a new [Context].
     pub const fn new() -> Self {
+        Self::from_config(DEFAULT_CONFIG)
+    }
+
+    /// Constructs a context from the given config.
+    pub const fn from_config(config: Config) -> Self {
         Context {
+            config,
             default_layer: None,
             active_layers: [Activity::Inactive; LAYER_COUNT],
             pressed_keymap_index: None,
+            sticky_timeout_id: 0,
         }
+    }
+
+    fn invalidate_sticky_timeouts(&mut self) {
+        self.sticky_timeout_id = self.sticky_timeout_id.wrapping_add(1);
+    }
+
+    fn deactivate_sticky_layer(&mut self, layer: LayerIndex) {
+        self.active_layers.deactivate(layer);
+        self.pressed_keymap_index = None;
+        self.invalidate_sticky_timeouts();
     }
 }
 
@@ -315,17 +369,54 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     }
 
     /// Updates the context with the [LayerEvent].
-    fn handle_layer_event(&mut self, event: LayerEvent) {
+    ///
+    /// Returns scheduled events (e.g. sticky timeout).
+    fn handle_layer_event(&mut self, event: LayerEvent) -> key::KeyEvents<LayerEvent> {
         match event {
             LayerEvent::Activated(layer) => {
                 self.active_layers.activate(layer, ActivationStyle::Regular);
+                // Sticky cancelled / converted to hold — drop any sticky timeout.
+                self.invalidate_sticky_timeouts();
+                key::KeyEvents::no_events()
             }
             LayerEvent::Deactivated(layer) => {
                 self.active_layers.deactivate(layer);
+                self.invalidate_sticky_timeouts();
+                key::KeyEvents::no_events()
             }
             LayerEvent::StickyActivated(layer) => {
                 self.active_layers.activate(layer, ActivationStyle::Sticky);
                 self.pressed_keymap_index = None;
+                // Previous sticky wait is superseded while this sticky key is held.
+                self.invalidate_sticky_timeouts();
+                key::KeyEvents::no_events()
+            }
+            LayerEvent::StickyReleased => {
+                // Sticky key released without interruption: layer stays sticky.
+                // Arm optional timeout for "no next key pressed".
+                if self.sticky_layer().is_none() {
+                    key::KeyEvents::no_events()
+                } else {
+                    self.invalidate_sticky_timeouts();
+                    let timeout_id = self.sticky_timeout_id;
+                    match self.config.sticky_timeout {
+                        Some(timeout) => {
+                            key::KeyEvents::scheduled_event(key::ScheduledEvent::after(
+                                timeout,
+                                key::Event::key_event(0, LayerEvent::StickyTimeout(timeout_id)),
+                            ))
+                        }
+                        None => key::KeyEvents::no_events(),
+                    }
+                }
+            }
+            LayerEvent::StickyTimeout(timeout_id) => {
+                if timeout_id == self.sticky_timeout_id && self.pressed_keymap_index.is_none() {
+                    if let Some(layer) = self.sticky_layer() {
+                        self.deactivate_sticky_layer(layer);
+                    }
+                }
+                key::KeyEvents::no_events()
             }
             LayerEvent::Toggled(layer) => {
                 if self.active_layers[layer as usize - 1].is_active() {
@@ -333,6 +424,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 } else {
                     self.active_layers.activate(layer, ActivationStyle::Regular);
                 }
+                key::KeyEvents::no_events()
             }
             LayerEvent::Set(ModifierBitset { layers, mask }) => {
                 let max_layer = 1 + LAYER_COUNT.min(MAX_BITSET_LAYER);
@@ -348,39 +440,46 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                         }
                     }
                 }
+                key::KeyEvents::no_events()
             }
-            LayerEvent::SetDefault(0) => self.default_layer = None,
-            LayerEvent::SetDefault(layer) => self.default_layer = Some(layer),
+            LayerEvent::SetDefault(0) => {
+                self.default_layer = None;
+                key::KeyEvents::no_events()
+            }
+            LayerEvent::SetDefault(layer) => {
+                self.default_layer = Some(layer);
+                key::KeyEvents::no_events()
+            }
         }
     }
 
     /// Updates the context with the [key::Event].
-    fn handle_event(&mut self, event: key::Event<LayerEvent>) {
+    fn handle_event(&mut self, event: key::Event<LayerEvent>) -> key::KeyEvents<LayerEvent> {
         match event {
             key::Event::Input(input::Event::Press { keymap_index, .. }) => {
                 if let Some(sticky_layer_index) = self.sticky_layer() {
                     if self.pressed_keymap_index.is_some() {
                         // The sticky layer modifier has already been used;
                         // the sticky layer should be deactivated for subsequent presses.
-                        self.active_layers.deactivate(sticky_layer_index);
-                        self.pressed_keymap_index = None;
+                        self.deactivate_sticky_layer(sticky_layer_index);
                     } else {
+                        // Next key is using the sticky layer; cancel timeout.
+                        self.invalidate_sticky_timeouts();
                         self.pressed_keymap_index = Some(keymap_index);
                     }
                 }
+                key::KeyEvents::no_events()
             }
             key::Event::Input(input::Event::Release { keymap_index, .. }) => {
                 if let Some(sticky_layer_index) = self.sticky_layer() {
                     if self.pressed_keymap_index == Some(keymap_index) {
-                        self.active_layers.deactivate(sticky_layer_index);
-                        self.pressed_keymap_index = None;
+                        self.deactivate_sticky_layer(sticky_layer_index);
                     }
                 }
+                key::KeyEvents::no_events()
             }
-            key::Event::Key { key_event, .. } => {
-                self.handle_layer_event(key_event);
-            }
-            _ => {}
+            key::Event::Key { key_event, .. } => self.handle_layer_event(key_event),
+            _ => key::KeyEvents::no_events(),
         }
     }
 }
@@ -389,8 +488,7 @@ impl<const LAYER_COUNT: usize> key::Context for Context<LAYER_COUNT> {
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
-        self.handle_event(event);
-        key::KeyEvents::no_events()
+        self.handle_event(event)
     }
 }
 
@@ -524,8 +622,14 @@ pub enum LayerEvent {
     Deactivated(LayerIndex),
     /// Toggles the given layer.
     Toggled(LayerIndex),
-    /// Activates the given layer.
+    /// Activates the given layer as sticky (on sticky-mod press).
     StickyActivated(LayerIndex),
+    /// Sticky layer modifier released without interruption (sticky committed).
+    StickyReleased,
+    /// Sticky layer timed out while unused.
+    ///
+    /// The payload is a generation id used to ignore stale timeouts.
+    StickyTimeout(u8),
     /// Sets the active layers to the given set of layers.
     Set(ModifierBitset),
     /// Changes the default layer.
@@ -603,9 +707,14 @@ impl ModifierKeyState {
                     }
                 }
                 key::Event::Input(input::Event::Release { keymap_index: ki })
-                    if keymap_index == ki && self.behavior == Behavior::Regular =>
+                    if keymap_index == ki =>
                 {
-                    Some(LayerEvent::Deactivated(*layer))
+                    match self.behavior {
+                        Behavior::Regular => Some(LayerEvent::Deactivated(*layer)),
+                        // Sticky key tapped (released without interruption):
+                        // layer stays sticky; arm optional timeout via context.
+                        Behavior::Sticky => Some(LayerEvent::StickyReleased),
+                    }
                 }
                 _ => None,
             },

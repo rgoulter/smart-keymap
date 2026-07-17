@@ -188,6 +188,10 @@
   keymap_ncl.layered
     | doc "for key::layered::LayeredKey."
     = {
+      Config = {
+        sticky_timeout | optional | Number,
+      },
+
       Key = std.contract.from_validator key_validator,
 
       key_validator = fun k =>

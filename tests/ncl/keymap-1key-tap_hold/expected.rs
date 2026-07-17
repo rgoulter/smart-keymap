@@ -69,6 +69,7 @@ pub mod init {
     pub const CONFIG: smart_keymap::key::composite::Config = smart_keymap::key::composite::Config {
         automation: smart_keymap::key::automation::Config::new(),
         chorded: smart_keymap::key::chorded::Config::new(),
+        layered: smart_keymap::key::layered::Config::new(),
         sticky: smart_keymap::key::sticky::Config::new(),
         tap_dance: smart_keymap::key::tap_dance::Config::new(),
         tap_hold: smart_keymap::key::tap_hold::Config::new(),
@@ -80,6 +81,7 @@ pub mod init {
         smart_keymap::key::composite::Context::from_config(smart_keymap::key::composite::Config {
             automation: smart_keymap::key::automation::Config::new(),
             chorded: smart_keymap::key::chorded::Config::new(),
+            layered: smart_keymap::key::layered::Config::new(),
             sticky: smart_keymap::key::sticky::Config::new(),
             tap_dance: smart_keymap::key::tap_dance::Config::new(),
             tap_hold: smart_keymap::key::tap_hold::Config::new(),

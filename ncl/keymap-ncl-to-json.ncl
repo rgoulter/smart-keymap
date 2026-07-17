@@ -18,6 +18,7 @@
   Config = {
     automation | optional | keymap_ncl.automation.Config,
     chorded | optional | keymap_ncl.chorded.Config,
+    layered | optional | keymap_ncl.layered.Config,
     sticky | optional | keymap_ncl.sticky.Config,
     tap_dance | optional | keymap_ncl.tap_dance.Config,
     tap_hold | optional | keymap_ncl.tap_hold.Config,
