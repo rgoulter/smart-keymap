@@ -214,6 +214,7 @@
       Json = {
         automation | optional | smart_keymap.automation.config.Json,
         chorded | optional | smart_keymap.chorded.config.Json,
+        layered | optional | smart_keymap.layered.config.Json,
         sticky | optional | smart_keymap.sticky.config.Json,
         tap_dance | optional | smart_keymap.tap_dance.config.Json,
         tap_hold | optional | smart_keymap.tap_hold.config.Json,
@@ -222,6 +223,7 @@
       rust_expr = m%"smart_keymap::key::composite::Config {
             automation: %{smart_keymap.automation.config.rust_expr},
             chorded: %{smart_keymap.chorded.config.rust_expr},
+            layered: %{smart_keymap.layered.config.rust_expr},
             sticky: %{smart_keymap.sticky.config.rust_expr},
             tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
             tap_hold: %{smart_keymap.tap_hold.config.rust_expr},

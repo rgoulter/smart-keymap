@@ -155,6 +155,8 @@ pub type LayeredKey = key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>;
 /// Type aliases for convenience.
 pub type LayeredModifierKey = key::layered::ModifierKey;
 /// Type aliases for convenience.
+pub type LayeredConfig = key::layered::Config;
+/// Type aliases for convenience.
 pub type LayeredContext = key::layered::Context<LAYERED_LAYER_COUNT>;
 /// Type aliases for convenience.
 pub type LayeredEvent = key::layered::LayerEvent;
@@ -274,6 +276,9 @@ pub struct Config {
     /// The chorded configuration.
     #[serde(default)]
     pub chorded: key::chorded::Config<CHORDED_MAX_CHORDS, CHORDED_MAX_CHORD_SIZE>,
+    /// The layered / sticky-layer configuration.
+    #[serde(default)]
+    pub layered: LayeredConfig,
     /// The sticky modifier configuration
     #[serde(default)]
     pub sticky: StickyConfig,
@@ -297,6 +302,7 @@ impl Config {
         Config {
             automation: key::automation::Config::new(),
             chorded: key::chorded::Config::new(),
+            layered: key::layered::Config::new(),
             sticky: key::sticky::Config::new(),
             tap_dance: key::tap_dance::Config::new(),
             tap_hold: key::tap_hold::Config::new(),
@@ -334,7 +340,7 @@ impl Context {
             consumer: key::consumer::Context,
             custom: key::custom::Context,
             keyboard: key::keyboard::Context,
-            layered: key::layered::Context::new(),
+            layered: key::layered::Context::from_config(config.layered),
             mouse: key::mouse::Context,
             sticky: key::sticky::Context::from_config(config.sticky),
             tap_dance: key::tap_dance::Context::from_config(config.tap_dance),

@@ -139,6 +139,7 @@ pub mod init {
             chords: smart_keymap::slice::Slice::from_slice(&[]),
             ..smart_keymap::key::chorded::Config::new()
         },
+        layered: smart_keymap::key::layered::Config::new(),
         sticky: smart_keymap::key::sticky::Config::new(),
         tap_dance: smart_keymap::key::tap_dance::Config::new(),
         tap_hold: smart_keymap::key::tap_hold::Config::new(),
@@ -153,6 +154,7 @@ pub mod init {
                 chords: smart_keymap::slice::Slice::from_slice(&[]),
                 ..smart_keymap::key::chorded::Config::new()
             },
+            layered: smart_keymap::key::layered::Config::new(),
             sticky: smart_keymap::key::sticky::Config::new(),
             tap_dance: smart_keymap::key::tap_dance::Config::new(),
             tap_hold: smart_keymap::key::tap_hold::Config::new(),

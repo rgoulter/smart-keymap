@@ -1,6 +1,7 @@
 mod modified_hold;
 mod set_active_layers;
 mod sticky;
+mod sticky_timeout;
 mod tap_hold;
 mod toggle;
 
