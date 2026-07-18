@@ -697,6 +697,81 @@
         keys |> std.array.map (lower_named_layers_in_key_tree numbered_len named_names),
     },
 
+  # name → 1-based layer index from a key list (same rules as named_layer_indices).
+  named_layer_indices_from_keys = fun keys =>
+    let numbered = numbered_layer_count_from_keys keys in
+    named_layer_names_from_keys keys
+    |> std.array.map_with_index (fun i layer_name => { "%{layer_name}" = numbered + i + 1 })
+    |> std.array.fold_left (&) {},
+
+  # Resolve a single layer index: numbers pass through; strings look up name_to_idx.
+  resolve_layer_index = fun name_to_idx idx_or_name =>
+    idx_or_name
+    |> match {
+      n if std.is_number n => n,
+      name if std.is_string name =>
+        if std.record.has_field name name_to_idx then
+          std.record.get name name_to_idx
+        else
+          std.fail_with "unknown named layer: %{name}",
+      _ => std.fail_with "expected layer index number or name string",
+    },
+
+  resolve_layer_indices = fun name_to_idx arr =>
+    std.array.map (resolve_layer_index name_to_idx) arr,
+
+  # Rewrite layer_modifier fields that use named-layer strings into numeric indices.
+  resolve_layer_modifier_names = fun name_to_idx k =>
+    k
+    |> match {
+      { layer_modifier = { default_ = d } } =>
+        { layer_modifier = { default_ = resolve_layer_index name_to_idx d } },
+      { layer_modifier = { hold = h }, modifiers = m } =>
+        {
+          layer_modifier = { hold = resolve_layer_index name_to_idx h },
+          modifiers = m,
+        },
+      { layer_modifier = { hold = h } } =>
+        { layer_modifier = { hold = resolve_layer_index name_to_idx h } },
+      { layer_modifier = { sticky = s } } =>
+        { layer_modifier = { sticky = resolve_layer_index name_to_idx s } },
+      { layer_modifier = { toggle = t } } =>
+        { layer_modifier = { toggle = resolve_layer_index name_to_idx t } },
+      { layer_modifier = { set_active_layers_to = active, affected_layers = mask } } =>
+        {
+          layer_modifier = {
+            set_active_layers_to = resolve_layer_indices name_to_idx active,
+            affected_layers = resolve_layer_indices name_to_idx mask,
+          },
+        },
+      { layer_modifier = { set_active_layers_to = active } } =>
+        {
+          layer_modifier = {
+            set_active_layers_to = resolve_layer_indices name_to_idx active,
+          },
+        },
+      _ => k,
+    },
+
+  # Resolve named-layer strings in layer_modifier fields (and nested keys).
+  resolve_named_layer_refs_in_key = fun name_to_idx k =>
+    let resolve_f = fun acc key =>
+      { include acc, k = resolve_layer_modifier_names name_to_idx key }
+    in
+    let k = resolve_layer_modifier_names name_to_idx k in
+    let { acc = _, k } = keymap_ncl.nullable_key.map_accum resolve_f null k in
+    k,
+
+  resolve_keys_named_layer_refs = fun name_to_idx keys =>
+    keys |> std.array.map (resolve_named_layer_refs_in_key name_to_idx),
+
+  # Lower named_layers to dense arrays, then resolve layer_mod name strings.
+  # Indices for names are taken from the pre-lowered key list so they stay stable.
+  prepare_keys_named_layers = fun keys =>
+    let name_to_idx = named_layer_indices_from_keys keys in
+    let keys = lower_named_layers_on_keys keys in
+    resolve_keys_named_layer_refs name_to_idx keys,
+
   # Pad a layered key's `layered` array with null (transparency) up to `target_len`.
   # Expects post-lowering form (array `layered` only; no `named_layers`).
   pad_layered_key = fun target_len k =>
@@ -919,6 +994,100 @@
             },
           ],
         },
+
+      # Named-layer refs in layer_mod: exclusive switch by name + named_layers payload.
+      # Names sort alphabetically: fn=1, nav=2, sym=3 when no numbered layers.
+      check_prepare_named_layer_mod_refs =
+        let names = ["fn", "nav", "sym"] in
+        let keys = [
+          K.layer_mod.set_active_layers_amongst {
+            set_active_layers_to = ["sym"],
+            affected_layers = names,
+          },
+          K.layer_mod.set_active_layers_amongst {
+            set_active_layers_to = ["fn"],
+            affected_layers = names,
+          },
+          { named_layers = { sym = K.A, fn = K.B, nav = K.C } },
+        ]
+        in
+        {
+          actual = prepare_keys_named_layers keys |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 3,
+                mask =
+                  (std.number.pow 2 1)
+                  + (std.number.pow 2 2)
+                  + (std.number.pow 2 3),
+              },
+            },
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 1,
+                mask =
+                  (std.number.pow 2 1)
+                  + (std.number.pow 2 2)
+                  + (std.number.pow 2 3),
+              },
+            },
+            {
+              base = { key_code = 0 },
+              # alphabetical: fn, nav, sym
+              layered = [
+                { key_code = 5 },
+                { key_code = 6 },
+                { key_code = 4 },
+              ],
+            },
+          ],
+        },
+
+      check_prepare_named_layer_mod_refs_with_numbered =
+        # Numbered length 1 → named fn=2, nav=3, sym=4
+        let names = ["fn", "nav", "sym"] in
+        let keys = [
+          K.layer_mod.set_active_layers_amongst {
+            set_active_layers_to = ["sym"],
+            affected_layers = names,
+          },
+          K.D & { layered = [K.E] },
+          { named_layers = { sym = K.A, fn = K.B, nav = K.C } },
+        ]
+        in
+        {
+          actual = prepare_keys_named_layers keys |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 4,
+                mask =
+                  (std.number.pow 2 2)
+                  + (std.number.pow 2 3)
+                  + (std.number.pow 2 4),
+              },
+            },
+            {
+              base = { key_code = 7 },
+              layered = [
+                { key_code = 8 },
+                null,
+                null,
+                null,
+              ],
+            },
+            {
+              base = { key_code = 0 },
+              layered = [
+                null,
+                { key_code = 5 },
+                { key_code = 6 },
+                { key_code = 4 },
+              ],
+            },
+          ],
+        },
     },
 
   chorded_keys
@@ -998,7 +1167,8 @@
       # named_layers -> dense array after numbered `layered` slots:
       #   layered = [ numbered slots… ] ++ [ named slots… ]
       # Named order is alphabetical (Nickel record field order). Skipped if unused.
-      let keys = lower_named_layers_on_keys keys in
+      # Layer_mod fields may use those names as strings; resolve to 1-based indices.
+      let keys = prepare_keys_named_layers keys in
       # Equalise layered array lengths (pad shorter with null / transparency).
       let layer_count =
         keys |> std.array.fold_left max_layered_length_accum 0
