@@ -93,21 +93,23 @@ impl<const N: usize> InputEventQueue<N> {
         }
     }
 
-    /// Replays input events from a pending key's buffer ahead of any already-queued events.
+    /// Replays input events from a pending key's session log ahead of any already-queued events.
     ///
-    /// Events are popped LIFO from `pending_events` and appended to the front of the queue,
-    ///  preserving the historical behaviour of the pending-state re-queue path.
+    /// Session-log inputs are re-queued in **chronological (FIFO) order** so a nested
+    ///  pending key re-observes prior inputs as they occurred.
+    /// Non-input events are dropped. `pending_events` is cleared.
     pub fn prepend_pending_input_events<Ev: Debug, const M: usize>(
         &mut self,
         pending_events: &mut heapless::Vec<key::Event<Ev>, M>,
     ) {
         let mut pending_inputs = heapless::Vec::<input::Event, M>::new();
-        while let Some(event) = pending_events.pop() {
+        for event in pending_events.iter() {
             if let key::Event::Input(input_event) = event {
                 // If the temporary buffer is full, drop the current pending input.
-                let _ = pending_inputs.push(input_event);
+                let _ = pending_inputs.push(*input_event);
             }
         }
+        pending_events.clear();
         self.prepend(&pending_inputs);
     }
 
@@ -190,7 +192,7 @@ mod tests {
     }
 
     #[test]
-    fn prepend_pending_input_events_replays_lifo_then_restores_tail() {
+    fn prepend_pending_input_events_replays_fifo_then_restores_tail() {
         let mut queue = InputEventQueue::<CAPACITY>::new();
         queue.push_back(input::Event::press(9)).unwrap();
 
@@ -203,10 +205,12 @@ mod tests {
 
         queue.prepend_pending_input_events(&mut pending_events);
 
-        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
+        // Chronological inputs (key events dropped), then original tail.
         assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
+        assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
         assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(9)));
         assert!(queue.is_empty());
+        assert!(pending_events.is_empty());
     }
 
     #[test]

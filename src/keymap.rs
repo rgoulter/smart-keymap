@@ -454,7 +454,8 @@ impl<
                     key::PressedKeyResult::Pending(pks) => {
                         *pending_key_state = pks;
 
-                        // Pending key transitioned to another pending state: replay session log.
+                        // Nested pending: re-queue session-log inputs chronologically
+                        //  so the new pending state re-observes them as they occurred.
                         pending::dispatch_replayed_events(
                             pending::KeyResolution::Pending,
                             queued_events,
