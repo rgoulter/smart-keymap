@@ -49,6 +49,7 @@ keymap_ncl_features=(
     "chords-config-required_idle_time"
     "layer_string"
     "layers"
+    "named_layers"
 )
 
 KEY_FIELDS_MD="${NCL_DIR}/key-docs.md"
