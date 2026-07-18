@@ -75,7 +75,6 @@ pub mod init {
                     ),
                 ),
             ]),
-
             ..smart_keymap::key::automation::Config::new()
         },
         chorded: smart_keymap::key::chorded::Config {
@@ -100,7 +99,6 @@ pub mod init {
                         ),
                     ),
                 ]),
-
                 ..smart_keymap::key::automation::Config::new()
             },
             chorded: smart_keymap::key::chorded::Config {
