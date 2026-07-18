@@ -1088,6 +1088,47 @@
             },
           ],
         },
+
+      # Same prepare path via authoring sugar (semantic + set_semantic_variant_to).
+      check_prepare_semantic_sugar =
+        let names = ["fn", "nav", "sym"] in
+        let keys = [
+          K.layer_mod.set_semantic_variant_to names "sym",
+          K.layer_mod.set_semantic_variant_to names "fn",
+          K.semantic { sym = K.A, fn = K.B, nav = K.C },
+        ]
+        in
+        {
+          actual = prepare_keys_named_layers keys |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 3,
+                mask =
+                  (std.number.pow 2 1)
+                  + (std.number.pow 2 2)
+                  + (std.number.pow 2 3),
+              },
+            },
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 1,
+                mask =
+                  (std.number.pow 2 1)
+                  + (std.number.pow 2 2)
+                  + (std.number.pow 2 3),
+              },
+            },
+            {
+              base = { key_code = 0 },
+              layered = [
+                { key_code = 5 },
+                { key_code = 6 },
+                { key_code = 4 },
+              ],
+            },
+          ],
+        },
     },
 
   chorded_keys
