@@ -44,10 +44,9 @@ impl<
 
         distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
-        for _ in 0..keymap::INPUT_QUEUE_TICK_DELAY {
-            keymap.tick();
-            distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
-        }
+        // Clear input-queue pacing so a follow-up handle_input can process next.
+        keymap.tick();
+        distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
 
         next_ev
     }

@@ -80,8 +80,8 @@ fn interrupting_tap_resolves_hold() {
 #[test]
 fn rolling_nested_tap_th_tap_th_tap_kbd() {
     // Observed buggy behaviour with,
-    //  (in the case where the releases occur quickly enough,
-    //   quicker than the keymap's INPUT_QUEUE_TICK_DELAY):
+    //  (in the case where the releases occur quickly enough
+    //   that they land while the input-queue pacing gate is still armed):
     // - Press TH(A)
     // - Press TH(B)
     // - Press C
@@ -134,8 +134,8 @@ fn rolling_nested_tap_th_tap_th_tap_kbd() {
 #[test]
 fn rolling_nested_tap_th_tap_th_tap_th() {
     // Observed buggy behaviour with,
-    //  (in the case where the releases occur quickly enough,
-    //   quicker than the keymap's INPUT_QUEUE_TICK_DELAY):
+    //  (in the case where the releases occur quickly enough
+    //   that they land while the input-queue pacing gate is still armed):
     // - Press TH(A)
     // - Press TH(B)
     // - Press TH(C)
