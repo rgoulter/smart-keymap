@@ -7,10 +7,14 @@ use crate::input;
 /// Backed by a [`heapless::Deque`] so events can be prepended
 ///  when a pending key state needs to replay buffered input
 ///  without draining and rebuilding the queue.
+///
+/// After an event is processed, [`set_delay`] marks the queue so the next
+///  event waits until [`tick_delay`] (called from `Keymap::tick`).
 #[derive(Debug)]
 pub(crate) struct InputEventQueue<const N: usize> {
     events: heapless::Deque<input::Event, N>,
-    delay_counter: u8,
+    /// When true, the next event must wait for a tick before processing.
+    delay: bool,
 }
 
 #[allow(dead_code)]
@@ -18,13 +22,13 @@ impl<const N: usize> InputEventQueue<N> {
     pub const fn new() -> Self {
         Self {
             events: heapless::Deque::new(),
-            delay_counter: 0,
+            delay: false,
         }
     }
 
     pub fn clear(&mut self) {
         self.events.clear();
-        self.delay_counter = 0;
+        self.delay = false;
     }
 
     pub fn is_full(&self) -> bool {
@@ -39,18 +43,19 @@ impl<const N: usize> InputEventQueue<N> {
         self.events.len()
     }
 
-    pub fn set_delay_counter(&mut self, delay_counter: u8) {
-        self.delay_counter = delay_counter;
+    /// Arms the one-tick pacing gate so the next event waits for [`tick_delay`].
+    pub fn set_delay(&mut self) {
+        self.delay = true;
     }
 
-    pub fn delay_counter(&self) -> u8 {
-        self.delay_counter
+    /// Returns whether the queue is currently waiting for a tick before processing.
+    pub fn delay(&self) -> bool {
+        self.delay
     }
 
+    /// Clears the pacing gate (one tick of delay has elapsed).
     pub fn tick_delay(&mut self) {
-        if self.delay_counter > 0 {
-            self.delay_counter -= 1;
-        }
+        self.delay = false;
     }
 
     pub fn push_back(&mut self, event: input::Event) -> Result<(), input::Event> {
@@ -107,7 +112,7 @@ impl<const N: usize> InputEventQueue<N> {
     }
 
     pub fn ready_to_process(&self) -> bool {
-        !self.is_empty() && self.delay_counter == 0
+        !self.is_empty() && !self.delay
     }
 
     pub fn pop_front_if_ready(&mut self) -> Option<input::Event> {
@@ -124,7 +129,6 @@ use crate::key;
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use super::super::INPUT_QUEUE_TICK_DELAY;
     use super::*;
 
     const CAPACITY: usize = 4;
@@ -135,7 +139,7 @@ mod tests {
 
         queue.push_back(input::Event::press(0)).unwrap();
         assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
-        queue.set_delay_counter(INPUT_QUEUE_TICK_DELAY);
+        queue.set_delay();
 
         queue.push_back(input::Event::release(0)).unwrap();
         assert_eq!(queue.pop_front_if_ready(), None);
@@ -169,7 +173,7 @@ mod tests {
         queue.append_all(&mut other);
         assert_eq!(queue.len(), 3);
         assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(0)));
-        queue.set_delay_counter(0);
+        // No delay set: remaining events are ready immediately.
         assert_eq!(queue.pop_front_if_ready(), Some(input::Event::release(0)));
         assert_eq!(queue.pop_front_if_ready(), Some(input::Event::press(1)));
     }
