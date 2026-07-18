@@ -118,6 +118,8 @@ pub mod init {
             DATA_LEN,
             DATA_LEN,
             DATA_LEN,
+            DATA_LEN,
+            DATA_LEN,
         >,
     >;
 
@@ -138,8 +140,10 @@ pub mod init {
         smart_keymap::key::automation::System::new([]),
         smart_keymap::key::callback::System::new([]),
         smart_keymap::key::chorded::System::new([], []),
+        smart_keymap::key::consumer::System::new([]),
         smart_keymap::key::keyboard::System::new([]),
         smart_keymap::key::layered::System::new([], []),
+        smart_keymap::key::mouse::System::new([]),
         smart_keymap::key::sticky::System::new([]),
         smart_keymap::key::tap_dance::System::new([]),
         smart_keymap::key::tap_hold::System::new([]),

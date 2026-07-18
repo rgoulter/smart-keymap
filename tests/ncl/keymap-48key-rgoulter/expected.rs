@@ -34,9 +34,11 @@ pub mod init {
     const CALLBACK: usize = 7;
     const CHORDED: usize = 4;
     const CHORDED_AUXILIARY: usize = 4;
+    const CONSUMER: usize = 0;
     const KEYBOARD: usize = 20;
     const LAYERED: usize = 48;
     const LAYER_MODIFIERS: usize = 50;
+    const MOUSE: usize = 0;
     const STICKY: usize = 24;
     const TAP_DANCE: usize = 30;
     const TAP_HOLD: usize = 42;
@@ -48,9 +50,11 @@ pub mod init {
             CALLBACK,
             CHORDED,
             CHORDED_AUXILIARY,
+            CONSUMER,
             KEYBOARD,
             LAYERED,
             LAYER_MODIFIERS,
+            MOUSE,
             STICKY,
             TAP_DANCE,
             TAP_HOLD,
@@ -253,6 +257,7 @@ pub mod init {
                 ),
             ],
         ),
+        smart_keymap::key::consumer::System::new([]),
         smart_keymap::key::keyboard::System::new([
             smart_keymap::key::keyboard::Key {
                 key_code: 47,
@@ -1919,6 +1924,7 @@ pub mod init {
                 ),
             ],
         ),
+        smart_keymap::key::mouse::System::new([]),
         smart_keymap::key::sticky::System::new([
             smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
             smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),

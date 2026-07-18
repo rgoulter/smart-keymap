@@ -1,4 +1,9 @@
-use smart_keymap::{input, key};
+use smart_keymap::input;
+use smart_keymap::key;
+use smart_keymap::keymap::ObservedKeymap;
+use smart_keymap_macros::keymap;
+
+use crate::hid_keycodes::*;
 
 #[test]
 fn mouse_key() {
@@ -102,4 +107,75 @@ fn multiple_mouse_keys() {
         },
         actual_pressed_output
     );
+}
+
+#[test]
+fn modified_mouse_key_reports_modifier_and_button() {
+    let mut observed = ObservedKeymap::new(keymap!(
+        r#"
+        let K = import "keys.ncl" in
+        {
+            keys = [
+                K.MouseBtn1 & K.LeftCtrl,
+            ],
+        }
+        "#
+    ));
+
+    observed.handle_input(input::Event::Press { keymap_index: 0 });
+    observed.tick_until_no_scheduled_events();
+
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0]];
+    assert_eq!(expected_reports, observed.distinct_reports().reports());
+
+    let mut keymap = smart_keymap_macros::keymap!(
+        r#"
+        let K = import "keys.ncl" in
+        {
+            keys = [
+                K.MouseBtn1 & K.LeftCtrl,
+            ],
+        }
+        "#
+    );
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.tick();
+    let report_output = keymap.report_output();
+    assert_eq!(
+        key::MouseOutput {
+            pressed_buttons: 1,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        report_output.pressed_mouse_output()
+    );
+    assert_eq!(
+        [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0],
+        report_output.as_hid_boot_keyboard_report()
+    );
+}
+
+#[test]
+fn modified_mouse_key_clears_on_release() {
+    let mut keymap = smart_keymap_macros::keymap!(
+        r#"
+        let K = import "keys.ncl" in
+        {
+            keys = [
+                K.MouseBtn1 & K.LeftCtrl,
+            ],
+        }
+        "#
+    );
+
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.tick();
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.tick();
+
+    let report_output = keymap.report_output();
+    assert_eq!(
+        key::MouseOutput::NO_OUTPUT,
+        report_output.pressed_mouse_output()
+    );
+    assert_eq!([0u8; 8], report_output.as_hid_boot_keyboard_report());
 }

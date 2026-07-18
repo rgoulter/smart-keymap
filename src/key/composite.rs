@@ -110,6 +110,8 @@ pub type ChordedSystem<D, AuxD> = key::chorded::System<
 /// Type aliases for convenience.
 pub type ConsumerRef = key::consumer::Ref;
 /// Type aliases for convenience.
+pub type ConsumerKey = key::consumer::Key;
+/// Type aliases for convenience.
 pub type ConsumerContext = key::consumer::Context;
 /// Type aliases for convenience.
 pub type ConsumerEvent = key::consumer::Event;
@@ -118,7 +120,7 @@ pub type ConsumerPendingKeyState = key::consumer::PendingKeyState;
 /// Type aliases for convenience.
 pub type ConsumerKeyState = key::consumer::KeyState;
 /// Type aliases for convenience.
-pub type ConsumerSystem = key::consumer::System<Ref>;
+pub type ConsumerSystem<D> = key::consumer::System<Ref, D>;
 
 /// Type aliases for convenience.
 pub type CustomRef = key::custom::Ref;
@@ -170,6 +172,8 @@ pub type LayeredSystem<LM, L> = key::layered::System<Ref, LM, L, LAYERED_LAYER_C
 /// Type aliases for convenience.
 pub type MouseRef = key::mouse::Ref;
 /// Type aliases for convenience.
+pub type MouseKey = key::mouse::Key;
+/// Type aliases for convenience.
 pub type MouseContext = key::mouse::Context;
 /// Type aliases for convenience.
 pub type MouseEvent = key::mouse::Event;
@@ -178,7 +182,7 @@ pub type MousePendingKeyState = key::mouse::PendingKeyState;
 /// Type aliases for convenience.
 pub type MouseKeyState = key::mouse::KeyState;
 /// Type aliases for convenience.
-pub type MouseSystem = key::mouse::System<Ref>;
+pub type MouseSystem<D> = key::mouse::System<Ref, D>;
 
 /// Type aliases for convenience.
 pub type StickyRef = key::sticky::Ref;
@@ -859,12 +863,16 @@ pub trait Keys {
     type Chorded: Debug + Index<usize, Output = ChordedKey>;
     /// Type used by [key::chorded::System].
     type ChordedAuxiliary: Debug + Index<usize, Output = ChordedAuxiliaryKey>;
+    /// Type used by [key::consumer::System].
+    type Consumer: Debug + Index<usize, Output = ConsumerKey>;
     /// Type used by [key::keyboard::System].
     type Keyboard: Debug + Index<usize, Output = KeyboardKey>;
     /// Type used by [key::layered::System].
     type LayerModifiers: Debug + Index<usize, Output = LayeredModifierKey>;
     /// Type used by [key::layered::System].
     type Layered: Debug + Index<usize, Output = LayeredKey>;
+    /// Type used by [key::mouse::System].
+    type Mouse: Debug + Index<usize, Output = MouseKey>;
     /// Type used by [key::sticky::System].
     type Sticky: Debug + Index<usize, Output = StickyKey>;
     /// Type used by [key::tap_dance::System].
@@ -880,9 +888,11 @@ pub struct KeyArrays<
     const CALLBACK: usize,
     const CHORDED: usize,
     const CHORDED_AUXILIARY: usize,
+    const CONSUMER: usize,
     const KEYBOARD: usize,
     const LAYERED: usize,
     const LAYER_MODIFIERS: usize,
+    const MOUSE: usize,
     const STICKY: usize,
     const TAP_DANCE: usize,
     const TAP_HOLD: usize,
@@ -893,9 +903,11 @@ impl<
         const CALLBACK: usize,
         const CHORDED: usize,
         const CHORDED_AUXILIARY: usize,
+        const CONSUMER: usize,
         const KEYBOARD: usize,
         const LAYERED: usize,
         const LAYER_MODIFIERS: usize,
+        const MOUSE: usize,
         const STICKY: usize,
         const TAP_DANCE: usize,
         const TAP_HOLD: usize,
@@ -905,9 +917,11 @@ impl<
         CALLBACK,
         CHORDED,
         CHORDED_AUXILIARY,
+        CONSUMER,
         KEYBOARD,
         LAYERED,
         LAYER_MODIFIERS,
+        MOUSE,
         STICKY,
         TAP_DANCE,
         TAP_HOLD,
@@ -917,9 +931,11 @@ impl<
     type Callback = [CallbackKey; CALLBACK];
     type Chorded = [ChordedKey; CHORDED];
     type ChordedAuxiliary = [ChordedAuxiliaryKey; CHORDED_AUXILIARY];
+    type Consumer = [ConsumerKey; CONSUMER];
     type Keyboard = [KeyboardKey; KEYBOARD];
     type LayerModifiers = [LayeredModifierKey; LAYER_MODIFIERS];
     type Layered = [LayeredKey; LAYERED];
+    type Mouse = [MouseKey; MOUSE];
     type Sticky = [StickyKey; STICKY];
     type TapDance = [TapDanceKey; TAP_DANCE];
     type TapHold = [TapHoldKey; TAP_HOLD];
@@ -936,9 +952,11 @@ impl Keys for KeyVecs {
     type Callback = Vec<CallbackKey>;
     type Chorded = Vec<ChordedKey>;
     type ChordedAuxiliary = Vec<ChordedAuxiliaryKey>;
+    type Consumer = Vec<ConsumerKey>;
     type Keyboard = Vec<KeyboardKey>;
     type LayerModifiers = Vec<LayeredModifierKey>;
     type Layered = Vec<LayeredKey>;
+    type Mouse = Vec<MouseKey>;
     type Sticky = Vec<StickyKey>;
     type TapDance = Vec<TapDanceKey>;
     type TapHold = Vec<TapHoldKey>;
@@ -950,12 +968,12 @@ pub struct System<D: Keys> {
     automation: AutomationSystem<D::Automation>,
     callback: CallbackSystem<D::Callback>,
     caps_word: CapsWordSystem,
-    consumer: ConsumerSystem,
+    consumer: ConsumerSystem<D::Consumer>,
     chorded: ChordedSystem<D::Chorded, D::ChordedAuxiliary>,
     custom: CustomSystem,
     keyboard: KeyboardSystem<D::Keyboard>,
     layered: LayeredSystem<D::LayerModifiers, D::Layered>,
-    mouse: MouseSystem,
+    mouse: MouseSystem<D::Mouse>,
     sticky: StickySystem<D::Sticky>,
     tap_dance: TapDanceSystem<D::TapDance>,
     tap_hold: TapHoldSystem<D::TapHold>,
@@ -967,9 +985,11 @@ impl<
         const CALLBACK: usize,
         const CHORDED: usize,
         const CHORDED_AUXILIARY: usize,
+        const CONSUMER: usize,
         const KEYBOARD: usize,
         const LAYERED: usize,
         const LAYER_MODIFIERS: usize,
+        const MOUSE: usize,
         const STICKY: usize,
         const TAP_DANCE: usize,
         const TAP_HOLD: usize,
@@ -980,9 +1000,11 @@ impl<
             CALLBACK,
             CHORDED,
             CHORDED_AUXILIARY,
+            CONSUMER,
             KEYBOARD,
             LAYERED,
             LAYER_MODIFIERS,
+            MOUSE,
             STICKY,
             TAP_DANCE,
             TAP_HOLD,
@@ -995,8 +1017,10 @@ impl<
         automation: AutomationSystem<[AutomationKey; AUTOMATION]>,
         callback: CallbackSystem<[CallbackKey; CALLBACK]>,
         chorded: ChordedSystem<[ChordedKey; CHORDED], [ChordedAuxiliaryKey; CHORDED_AUXILIARY]>,
+        consumer: ConsumerSystem<[ConsumerKey; CONSUMER]>,
         keyboard: KeyboardSystem<[KeyboardKey; KEYBOARD]>,
         layered: LayeredSystem<[LayeredModifierKey; LAYER_MODIFIERS], [LayeredKey; LAYERED]>,
+        mouse: MouseSystem<[MouseKey; MOUSE]>,
         sticky: StickySystem<[StickyKey; STICKY]>,
         tap_dance: TapDanceSystem<[TapDanceKey; TAP_DANCE]>,
         tap_hold: TapHoldSystem<[TapHoldKey; TAP_HOLD]>,
@@ -1005,12 +1029,12 @@ impl<
             automation,
             callback,
             caps_word: key::caps_word::System::new(),
-            consumer: key::consumer::System::new(),
+            consumer,
             chorded,
             custom: key::custom::System::new(),
             keyboard,
             layered,
-            mouse: key::mouse::System::new(),
+            mouse,
             sticky,
             tap_dance,
             tap_hold,
@@ -1027,8 +1051,10 @@ impl System<KeyVecs> {
         automation: AutomationSystem<Vec<AutomationKey>>,
         callback: CallbackSystem<Vec<CallbackKey>>,
         chorded: ChordedSystem<Vec<ChordedKey>, Vec<ChordedAuxiliaryKey>>,
+        consumer: ConsumerSystem<Vec<ConsumerKey>>,
         keyboard: KeyboardSystem<Vec<KeyboardKey>>,
         layered: LayeredSystem<Vec<LayeredModifierKey>, Vec<LayeredKey>>,
+        mouse: MouseSystem<Vec<MouseKey>>,
         sticky: StickySystem<Vec<StickyKey>>,
         tap_dance: TapDanceSystem<Vec<TapDanceKey>>,
         tap_hold: TapHoldSystem<Vec<TapHoldKey>>,
@@ -1037,12 +1063,12 @@ impl System<KeyVecs> {
             automation,
             callback,
             caps_word: key::caps_word::System::new(),
-            consumer: key::consumer::System::new(),
+            consumer,
             chorded,
             custom: key::custom::System::new(),
             keyboard,
             layered,
-            mouse: key::mouse::System::new(),
+            mouse,
             sticky,
             tap_dance,
             tap_hold,
@@ -1304,6 +1330,7 @@ mod tests {
 
     #[test]
     fn test_sizeof_ref() {
+        // Dominated by mouse::Ref (action variants / Key index).
         assert_eq!(3, core::mem::size_of::<Ref>());
     }
 
