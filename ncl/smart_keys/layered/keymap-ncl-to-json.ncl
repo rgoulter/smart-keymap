@@ -49,9 +49,36 @@
         actual = layer_indices_array [3, 3],
         expected = 'Error { message = "layer indices must be unique" },
       },
+
+      # Authoring form: named-layer strings in layer_mod (resolved at km→json).
+      check_named_layer_mod_strings = {
+        actual =
+          K.layer_mod.set_active_layers_amongst {
+            set_active_layers_to = ["nav"],
+            affected_layers = ["fn", "nav", "sym"],
+          },
+        expected = {
+          layer_modifier = {
+            set_active_layers_to = ["nav"],
+            affected_layers = ["fn", "nav", "sym"],
+          },
+        },
+      },
+
+      check_named_layer_mod_strings_is_key =
+        keymap_ncl.layer_modifier.is_key (
+          K.layer_mod.set_active_layers_amongst {
+            set_active_layers_to = ["nav"],
+            affected_layers = ["fn", "nav"],
+          }
+        ),
     },
 
-  unique_number_array = fun arr =>
+  # Layer index: numeric (1-based) or named-layer string (resolved before to_json_value).
+  layer_index =
+    validators.any_of [validators.is_number, validators.is_string],
+
+  unique_layer_index_array = fun arr =>
     if !std.is_array arr then
       'Error { message = "Expected array" }
     else
@@ -68,9 +95,12 @@
 
   layer_indices_array =
     validators.all_of [
-      (validators.array.validator validators.is_number),
-      unique_number_array,
+      (validators.array.validator layer_index),
+      unique_layer_index_array,
     ],
+
+  # Back-compat alias used by some checks.
+  unique_number_array = unique_layer_index_array,
 
   layer_indices_to_bitset = fun layer_indices =>
     layer_indices
@@ -85,15 +115,20 @@
       key_validator = fun k =>
         k
         |> match {
-          { layer_modifier = { default_ } } => validators.is_number default_,
+          { layer_modifier = { default_ } } => layer_index default_,
           { layer_modifier = { hold }, modifiers } =>
             validators.all_ok [
-              validators.is_number hold,
+              layer_index hold,
               keyboard_modifiers.validator modifiers,
             ],
-          { layer_modifier = { hold } } => validators.is_number hold,
-          { layer_modifier = { sticky } } => validators.is_number sticky,
-          { layer_modifier = { toggle } } => validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
+          { layer_modifier = { hold } } => layer_index hold,
+          { layer_modifier = { sticky } } => layer_index sticky,
+          { layer_modifier = { toggle } } =>
+            # Named layers: string ok; numeric toggle still requires > 0.
+            if std.is_string toggle then
+              'Ok
+            else
+              validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
           { layer_modifier = { set_active_layers_to } } => layer_indices_array set_active_layers_to,
           { layer_modifier = { set_active_layers_to, affected_layers } } =>
             validators.all_ok [
@@ -108,6 +143,8 @@
 
       is_key = fun k => 'Ok == key_validator k,
 
+      # JSON projection expects numeric layer indices. Named-layer strings must be
+      # resolved (see keymap-ncl-to-json resolve_named_layer_refs) before to_json_value.
       to_json_value = fun layer_modifier_key =>
         layer_modifier_key
         |> match {
@@ -185,6 +222,21 @@
       check_layered_and_named_layers_is_key =
         let key = K.A & { layered = [ null, K.B], named_layers = { fn = K.C } } in
         keymap_ncl.layered.is_key key,
+
+      # Pure layered form (unit {} base) serializes with key_code 0 base.
+      check_pure_layered_unit_base = {
+        actual = { layered = [ null, null, K.A, K.B, K.C] } |> keymap_ncl.key.to_json_value,
+        expected = {
+          base = { key_code = 0 },
+          layered = [
+            null,
+            null,
+            { key_code = 4 },
+            { key_code = 5 },
+            { key_code = 6 },
+          ],
+        },
+      },
     },
 
   keymap_ncl.layered
