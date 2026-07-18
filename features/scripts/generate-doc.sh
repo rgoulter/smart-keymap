@@ -29,6 +29,7 @@ keymap_key_features=(
     "layer_modifier-set_active_layers_mask"
     "layer_modifier-sticky"
     "layer_modifier-sticky-config-timeout"
+    "semantic_os_desktop"
     "layer_modifier-toggle"
     "mouse"
     "sticky_modifiers"
