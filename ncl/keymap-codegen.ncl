@@ -10,6 +10,7 @@
 & (import "smart_keys/sticky/keymap-codegen.ncl")
 & (import "smart_keys/tap_dance/keymap-codegen.ncl")
 & (import "smart_keys/tap_hold/keymap-codegen.ncl")
+& (import "composite-key-system.ncl")
 & {
   KeymapJson
     | doc "Contract for the keymap.json value"
@@ -203,6 +204,9 @@
 
   composite = {
     ref = {
+      # Wraps a family ref into the per-keymap aggregate Ref.
+      # JSON shape stays variant-tagged (same as key::composite) for cucumber;
+      # rust_expr targets the generated `key_system::Ref`.
       wrap = fun ref @ { module, json, rust_expr, .. } =>
         let variant =
           module
@@ -224,9 +228,9 @@
         in
         {
           include variant,
-          module = "smart_keymap::key::composite",
+          module = "key_system",
           json = { "%{variant}" = ref.json },
-          rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
+          rust_expr = "key_system::Ref::%{variant}(%{ref.rust_expr})",
         },
     },
 
@@ -240,30 +244,12 @@
         tap_hold | optional | smart_keymap.tap_hold.config.Json,
       },
 
-      rust_expr = m%"smart_keymap::key::composite::Config {
-            automation: %{smart_keymap.automation.config.rust_expr},
-            chorded: %{smart_keymap.chorded.config.rust_expr},
-            layered: %{smart_keymap.layered.config.rust_expr},
-            sticky: %{smart_keymap.sticky.config.rust_expr},
-            tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
-            tap_hold: %{smart_keymap.tap_hold.config.rust_expr},
-            ..smart_keymap::key::composite::Config::new()
-        }"%,
+      # Prefer the trimmed key_system config when emitting keymap.rs.
+      rust_expr = composite.emit.config_rust_expr,
     },
 
     system = {
-      rust_expr = m%"
-        smart_keymap::key::composite::System::array_based(
-          %{smart_keymap.automation.system.rust_expr},
-          %{smart_keymap.callback.system.rust_expr},
-          %{smart_keymap.chorded.system.rust_expr},
-          %{smart_keymap.keyboard.system.rust_expr},
-          %{smart_keymap.layered.system.rust_expr},
-          %{smart_keymap.sticky.system.rust_expr},
-          %{smart_keymap.tap_dance.system.rust_expr},
-          %{smart_keymap.tap_hold.system.rust_expr},
-        )
-      "%,
+      rust_expr = composite.emit.system_rust_expr,
     },
   },
 
@@ -394,14 +380,45 @@
         |> std.array.fold_left std.number.max 0
       in
       let { key_data, key_refs } = key_data_and_refs in
-      let data_len_rust_expr = fun field_name =>
+      let data_len_rust_expr_for_field = fun field_name =>
         let data = (key_data & { "%{field_name}" | default = [] })."%{field_name}" in
         data |> std.array.length |> std.to_string
       in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
+      let config = composite.emit.config_rust_expr in
+      let context = "key_system::Context::from_config(%{config})" in
+      # Full-composite config/system for the `keymap!` macro expression path
+      # (expands in contexts that have no generated key_system module).
+      let full_config = m%"smart_keymap::key::composite::Config {
+            automation: %{smart_keymap.automation.config.rust_expr},
+            chorded: %{smart_keymap.chorded.config.rust_expr},
+            layered: %{smart_keymap.layered.config.rust_expr},
+            sticky: %{smart_keymap.sticky.config.rust_expr},
+            tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
+            tap_hold: %{smart_keymap.tap_hold.config.rust_expr},
+            ..smart_keymap::key::composite::Config::new()
+        }"%,
+      in
+      let full_system = m%"
+        smart_keymap::key::composite::System::array_based(
+          %{smart_keymap.automation.system.rust_expr},
+          %{smart_keymap.callback.system.rust_expr},
+          %{smart_keymap.chorded.system.rust_expr},
+          %{smart_keymap.keyboard.system.rust_expr},
+          %{smart_keymap.layered.system.rust_expr},
+          %{smart_keymap.sticky.system.rust_expr},
+          %{smart_keymap.tap_dance.system.rust_expr},
+          %{smart_keymap.tap_hold.system.rust_expr},
+        )
+      "%,
+      in
+      # key_refs use `key_system::Ref::…`; alias composite as key_system for the macro path.
+      let full_key_refs_expr =
+        key_refs_expr
+      in
       {
-        config = composite.config.rust_expr,
-        context = "smart_keymap::key::composite::Context::from_config(%{config})",
+        include config,
+        include context,
         key_refs = key_refs_expr,
         keymap = m%"
 {
@@ -413,10 +430,10 @@
     use key_system::PendingKeyState;
     use key_system::System;
     const KEY_COUNT: usize = %{keymap_len};
-    const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
-    const CONTEXT: Context = %{context};
+    const KEY_REFS: [Ref; KEY_COUNT] = %{full_key_refs_expr};
+    const CONTEXT: Context = key_system::Context::from_config(%{full_config});
 
-    smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{composite.system.rust_expr})
+    smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{full_system})
 }
 "%,
         keymap_module = m%"
@@ -442,42 +459,16 @@ pub mod init {
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
 
-    pub use smart_keymap::key::composite::Ref;
+%{composite.emit.size_consts data_len_rust_expr_for_field}
 
-    pub use smart_keymap::key::composite::Context;
+%{composite.emit.module_src}
 
-    pub use smart_keymap::key::composite::Event;
-
-    pub use smart_keymap::key::composite::PendingKeyState;
-
-    pub use smart_keymap::key::composite::KeyState;
-
-    const AUTOMATION: usize = %{data_len_rust_expr "automation"};
-    const CALLBACK: usize = %{data_len_rust_expr "callback"};
-    const CHORDED: usize = %{data_len_rust_expr "chorded"};
-    const CHORDED_AUXILIARY: usize = %{data_len_rust_expr "chorded_auxiliary"};
-    const KEYBOARD: usize = %{data_len_rust_expr "keyboard"};
-    const LAYERED: usize = %{data_len_rust_expr "layered"};
-    const LAYER_MODIFIERS: usize = %{data_len_rust_expr "layer_modifiers"};
-    const STICKY: usize = %{data_len_rust_expr "sticky"};
-    const TAP_DANCE: usize = %{data_len_rust_expr "tap_dance"};
-    const TAP_HOLD: usize = %{data_len_rust_expr "tap_hold"};
-
-    /// The System type
-    pub type System = smart_keymap::key::composite::System<
-            smart_keymap::key::composite::KeyArrays<
-                AUTOMATION,
-                CALLBACK,
-                CHORDED,
-                CHORDED_AUXILIARY,
-                KEYBOARD,
-                LAYERED,
-                LAYER_MODIFIERS,
-                STICKY,
-                TAP_DANCE,
-                TAP_HOLD,
-            >,
-        >;
+    pub use key_system::Ref;
+    pub use key_system::Context;
+    pub use key_system::Event;
+    pub use key_system::PendingKeyState;
+    pub use key_system::KeyState;
+    pub use key_system::System;
 
     /// The number of keys in the keymap.
     pub const KEY_COUNT: usize = %{std.to_string keymap_len};
@@ -486,13 +477,13 @@ pub mod init {
     pub const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
 
     /// The keymap config.
-    pub const CONFIG: smart_keymap::key::composite::Config = %{config};
+    pub const CONFIG: key_system::Config = %{config};
 
     /// Initial [Context] value.
     pub const CONTEXT: Context = %{context};
 
     /// The key system.
-    pub const SYSTEM: System = %{composite.system.rust_expr};
+    pub const SYSTEM: System = %{composite.emit.system_rust_expr};
 
     /// Alias for the [keymap::Keymap] type.
     pub type Keymap = smart_keymap::keymap::Keymap<
