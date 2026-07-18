@@ -114,14 +114,10 @@
                   hold
                   |> match {
                     [layer_index, kb_mods] =>
-                      let valid_layer_index = validators.is_number layer_index in
-                      let valid_kb_mods = validators.is_number kb_mods in
-                      [valid_layer_index, valid_kb_mods]
-                      |> match {
-                        ['Ok, 'Ok] => 'Ok,
-                        [err, 'Ok] => err,
-                        ['Ok, err] => err,
-                      },
+                      validators.all_ok [
+                        validators.is_number layer_index,
+                        validators.is_number kb_mods,
+                      ],
                     _ => 'Error { message = "expected Hold to be [layer_index, kb_mods]" },
                   },
                 Toggle = validators.is_number,

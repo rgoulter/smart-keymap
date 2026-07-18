@@ -60,14 +60,10 @@
         k
         |> match {
           { hold = hold_key, ..tap_key } =>
-            let valid_hold_key = keymap_ncl.key.key_validator hold_key in
-            let valid_tap_key = keymap_ncl.key.key_validator tap_key in
-            [valid_hold_key, valid_tap_key]
-            |> match {
-              ['Ok, 'Ok] => 'Ok,
-              [err, _] => err,
-              [_, err] => err,
-            },
+            validators.all_ok [
+              keymap_ncl.key.key_validator hold_key,
+              keymap_ncl.key.key_validator tap_key,
+            ],
           _ => 'Error { message = "expected { hold = Key, ..tap_key }" },
         },
 

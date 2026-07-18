@@ -15,14 +15,13 @@
         k
         |> match {
           { chords = chords_, passthrough = passthrough_key } =>
-            let valid_chords = chords_ |> validators.array.validator (validators.tuple.validator [validators.is_number, keymap_ncl.key.key_validator]) in
-            let valid_passthrough_key = keymap_ncl.key.key_validator passthrough_key in
-            [valid_chords, valid_passthrough_key]
-            |> match {
-              ['Ok, 'Ok] => 'Ok,
-              [err, _] => err,
-              [_, err] => err,
-            },
+            validators.all_ok [
+              chords_
+              |> validators.array.validator (
+                validators.tuple.validator [validators.is_number, keymap_ncl.key.key_validator]
+              ),
+              keymap_ncl.key.key_validator passthrough_key,
+            ],
           _ => 'Error { message = "expected { chords = [[index, Key]], passthrough = Key }" },
         },
 
