@@ -148,33 +148,31 @@
           instruction_duration | optional | Number,
         },
 
-        rust_expr =
+        expr =
           if std.record.has_field "automation" json_keymap.config then
-            let automation_config = json_keymap.config.automation in
-            let instructions_field_fragment =
-              if std.record.has_field "instructions" automation_config then
-                let instructions = automation_config.instructions in
-                m%"instructions: %{module}::instructions([
-                   %{instructions |> std.array.map instruction.rust_expr |> std.string.join ", "}
-                ]),"%
+            let c = json_keymap.config.automation in
+            (
+              if std.record.has_field "instructions" c then
+                {
+                  instructions = m%"%{module}::instructions([
+                   %{c.instructions |> std.array.map instruction.rust_expr |> std.string.join ", "}
+                ])"%,
+                }
               else
-                ""
-            in
-            let instruction_duration_field_fragment =
-              if std.record.has_field "instruction_duration" automation_config then
-                "instruction_duration: %{std.to_string automation_config.instruction_duration},"
+                {}
+            )
+            & (
+              if std.record.has_field "instruction_duration" c then
+                {
+                  instruction_duration = "%{std.to_string c.instruction_duration}",
+                }
               else
-                ""
-            in
-            m%"
-            %{module}::Config {
-                %{instructions_field_fragment}
-                %{instruction_duration_field_fragment}
-                ..%{module}::Config::new()
-            }
-          "%
+                {}
+            )
           else
-            "%{module}::Config::new()",
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

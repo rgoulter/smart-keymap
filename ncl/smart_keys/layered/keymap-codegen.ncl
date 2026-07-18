@@ -344,23 +344,19 @@
           sticky_timeout | optional | Number,
         },
 
-        rust_expr =
+        expr =
           if std.record.has_field "layered" json_keymap.config then
-            let layered_config = json_keymap.config.layered in
-            let sticky_timeout_field_fragment =
-              if std.record.has_field "sticky_timeout" layered_config then
-                "sticky_timeout: Some(%{std.to_string layered_config.sticky_timeout}),"
-              else
-                ""
-            in
-            m%"
-            %{module}::Config {
-                %{sticky_timeout_field_fragment}
-                ..%{module}::Config::new()
-            }
-          "%
+            let c = json_keymap.config.layered in
+            if std.record.has_field "sticky_timeout" c then
+              {
+                sticky_timeout = "Some(%{std.to_string c.sticky_timeout})",
+              }
+            else
+              {}
           else
-            "%{module}::Config::new()",
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

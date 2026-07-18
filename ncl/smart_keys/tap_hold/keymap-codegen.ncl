@@ -149,40 +149,41 @@
           required_idle_time | optional | Number,
         },
 
-        rust_expr =
+        expr =
           if std.record.has_field "tap_hold" json_keymap.config then
-            let tap_hold_config = json_keymap.config.tap_hold in
-            let timeout_field_fragment =
-              if std.record.has_field "timeout" tap_hold_config then
-                if tap_hold_config.timeout == null then
-                  "timeout: None,"
-                else
-                  "timeout: Some(%{std.to_string tap_hold_config.timeout}),"
+            let c = json_keymap.config.tap_hold in
+            (
+              if std.record.has_field "timeout" c then
+                {
+                  timeout =
+                    if c.timeout == null then
+                      "None"
+                    else
+                      "Some(%{std.to_string c.timeout})",
+                }
               else
-                ""
-            in
-            let interrupt_response_field_fragment =
-              if std.record.has_field "interrupt_response" tap_hold_config then
-                "interrupt_response: %{module}::InterruptResponse::%{tap_hold_config.interrupt_response},"
+                {}
+            )
+            & (
+              if std.record.has_field "interrupt_response" c then
+                {
+                  interrupt_response = "%{module}::InterruptResponse::%{c.interrupt_response}",
+                }
               else
-                ""
-            in
-            let required_idle_time_field_fragment =
-              if std.record.has_field "required_idle_time" tap_hold_config then
-                "required_idle_time: Some(%{std.to_string tap_hold_config.required_idle_time}),"
+                {}
+            )
+            & (
+              if std.record.has_field "required_idle_time" c then
+                {
+                  required_idle_time = "Some(%{std.to_string c.required_idle_time})",
+                }
               else
-                ""
-            in
-            m%"
-            %{module}::Config {
-                %{timeout_field_fragment}
-                %{interrupt_response_field_fragment}
-                %{required_idle_time_field_fragment}
-                ..%{module}::Config::new()
-            }
-          "%
+                {}
+            )
           else
-            "%{module}::Config::new()",
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

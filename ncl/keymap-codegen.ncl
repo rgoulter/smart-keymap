@@ -24,6 +24,26 @@
   lib = {
     array_rust_expr = fun data =>
       "[%{data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]",
+
+    # Build `Module::Config { field: expr, ..Module::Config::new() }` from a
+    # Nickel record of field name -> Rust value expression strings.
+    # Empty record emits `Module::Config::new()`.
+    config_rust_expr = fun module field_exprs =>
+      if field_exprs == {} then
+        "%{module}::Config::new()"
+      else
+        let fields =
+          field_exprs
+          |> std.record.to_array
+          |> std.array.map (fun { field, value } => "%{field}: %{value},")
+          |> std.string.join "\n"
+        in
+        m%"
+        %{module}::Config {
+            %{fields}
+            ..%{module}::Config::new()
+        }
+      "%,
   },
 
   smart_keymap,

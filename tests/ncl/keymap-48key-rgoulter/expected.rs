@@ -129,7 +129,6 @@ pub mod init {
         tap_dance: smart_keymap::key::tap_dance::Config::new(),
         tap_hold: smart_keymap::key::tap_hold::Config {
             interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
-
             ..smart_keymap::key::tap_hold::Config::new()
         },
         ..smart_keymap::key::composite::Config::new()
@@ -153,7 +152,6 @@ pub mod init {
             tap_dance: smart_keymap::key::tap_dance::Config::new(),
             tap_hold: smart_keymap::key::tap_hold::Config {
                 interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
-
                 ..smart_keymap::key::tap_hold::Config::new()
             },
             ..smart_keymap::key::composite::Config::new()
