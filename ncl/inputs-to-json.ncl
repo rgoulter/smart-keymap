@@ -61,7 +61,7 @@
         'Release k => { Release = { keymap_index = (lookup_keymap_index layer_state k) } },
         'Tap k => { Tap = { keymap_index = (lookup_keymap_index layer_state k) } },
         'PressKeymapIndex keymap_index => { Press = { include keymap_index } },
-        'ReleaseKeymapIndex keymap_index => { Press = { include keymap_index } },
+        'ReleaseKeymapIndex keymap_index => { Release = { include keymap_index } },
         'TapKeymapIndex keymap_index => { Tap = { include keymap_index } },
         'Wait duration => { Wait = { include duration } },
       }
