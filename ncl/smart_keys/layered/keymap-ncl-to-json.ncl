@@ -72,6 +72,22 @@
             affected_layers = ["fn", "nav"],
           }
         ),
+
+      # set_semantic_variant_to: sugar over set_active_layers_amongst for exclusive groups.
+      check_set_semantic_variant_to = {
+        actual = K.layer_mod.set_semantic_variant_to ["fn", "nav", "sym"] "nav",
+        expected = {
+          layer_modifier = {
+            set_active_layers_to = ["nav"],
+            affected_layers = ["fn", "nav", "sym"],
+          },
+        },
+      },
+
+      check_set_semantic_variant_to_is_key =
+        keymap_ncl.layer_modifier.is_key (
+          K.layer_mod.set_semantic_variant_to ["fn", "nav", "sym"] "nav"
+        ),
     },
 
   # Layer index: numeric (1-based) or named-layer string (resolved before to_json_value).
@@ -222,6 +238,23 @@
       check_layered_and_named_layers_is_key =
         let key = K.A & { layered = [ null, K.B], named_layers = { fn = K.C } } in
         keymap_ncl.layered.is_key key,
+
+      # K.semantic is thin sugar over named_layers (unit {} base).
+      check_semantic_is_named_layered =
+        let key = K.semantic { fn = K.A, nav = K.B, sym = K.C } in
+        keymap_ncl.layered.is_key key
+        && std.record.has_field "named_layers" key,
+
+      check_semantic_authoring_form = {
+        actual = K.semantic { fn = K.A, nav = K.B, sym = K.C },
+        expected = {
+          named_layers = {
+            fn = { key_code = 4 },
+            nav = { key_code = 5 },
+            sym = { key_code = 6 },
+          },
+        },
+      },
 
       # Pure layered form (unit {} base) serializes with key_code 0 base.
       check_pure_layered_unit_base = {
