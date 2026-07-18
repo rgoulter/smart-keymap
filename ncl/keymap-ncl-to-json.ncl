@@ -9,6 +9,7 @@
 #
 # - Authored inputs (keymap.ncl surface)
 #   - `keys` / `layers`   KeymapLayer: string tokens or Array Key
+#   - `named_layers`      Record name → KeymapLayer (full rows by name; optional)
 #   - `chords`            [{ indices, key }, …]
 #   - `config`            optional per-feature config
 #   - `custom_keys`       extends token vocabulary for string layers
@@ -21,7 +22,8 @@
 # - Intermediate key arrays (same length; each pass rewrites slots)
 #   - `layers_of_keys`     layers normalized to Array Key     (passes/fold-layers.ncl)
 #   - `layered_keys`       multi-layer authoring folded       (passes/fold-layers.ncl)
-#                           (per-key `named_layers` still allowed)
+#                           KM `named_layers` rows zipped into per-key `named_layers`
+#                           (per-key `named_layers` still allowed; per-key wins on conflict)
 #   - `chorded_keys`       global `chords` attached           (passes/attach-chords.ncl)
 #   - `automation_transform`                                  (passes/automation.ncl)
 #       { automation_instructions, keys }
@@ -150,6 +152,15 @@
     | Array KeymapLayer
     | doc "The layers of the keymap that gets rendered to JSON"
     = [keys],
+
+  # Full named layer rows at keymap scope (name → layer of same width as base).
+  # Zipped into per-key `named_layers` in fold-layers, then lowered with the
+  # usual named-layer pass. Coexists with numbered `layers` (named after numbered).
+  named_layers
+    | default
+    | { _ | KeymapLayer }
+    | doc "Named layers: whole rows keyed by name (same width as the base layer)."
+    = {},
 
   chords
     | Array Chord
