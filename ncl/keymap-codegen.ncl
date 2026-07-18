@@ -257,8 +257,10 @@
           %{smart_keymap.automation.system.rust_expr},
           %{smart_keymap.callback.system.rust_expr},
           %{smart_keymap.chorded.system.rust_expr},
+          %{smart_keymap.consumer.system.rust_expr},
           %{smart_keymap.keyboard.system.rust_expr},
           %{smart_keymap.layered.system.rust_expr},
+          %{smart_keymap.mouse.system.rust_expr},
           %{smart_keymap.sticky.system.rust_expr},
           %{smart_keymap.tap_dance.system.rust_expr},
           %{smart_keymap.tap_hold.system.rust_expr},
@@ -456,9 +458,11 @@ pub mod init {
     const CALLBACK: usize = %{data_len_rust_expr "callback"};
     const CHORDED: usize = %{data_len_rust_expr "chorded"};
     const CHORDED_AUXILIARY: usize = %{data_len_rust_expr "chorded_auxiliary"};
+    const CONSUMER: usize = %{data_len_rust_expr "consumer"};
     const KEYBOARD: usize = %{data_len_rust_expr "keyboard"};
     const LAYERED: usize = %{data_len_rust_expr "layered"};
     const LAYER_MODIFIERS: usize = %{data_len_rust_expr "layer_modifiers"};
+    const MOUSE: usize = %{data_len_rust_expr "mouse"};
     const STICKY: usize = %{data_len_rust_expr "sticky"};
     const TAP_DANCE: usize = %{data_len_rust_expr "tap_dance"};
     const TAP_HOLD: usize = %{data_len_rust_expr "tap_hold"};
@@ -470,9 +474,11 @@ pub mod init {
                 CALLBACK,
                 CHORDED,
                 CHORDED_AUXILIARY,
+                CONSUMER,
                 KEYBOARD,
                 LAYERED,
                 LAYER_MODIFIERS,
+                MOUSE,
                 STICKY,
                 TAP_DANCE,
                 TAP_HOLD,
