@@ -174,6 +174,17 @@
           ],
         },
       },
+
+      check_named_layers_is_key =
+        let key = K.A & { named_layers = { nav = K.B, fn = K.C } } in
+        keymap_ncl.layered.is_key key,
+
+      check_named_layers_validator_ok =
+        keymap_ncl.layered.key_validator (K.A & { named_layers = { windows = K.B } }) == 'Ok,
+
+      check_layered_and_named_layers_is_key =
+        let key = K.A & { layered = [ null, K.B], named_layers = { fn = K.C } } in
+        keymap_ncl.layered.is_key key,
     },
 
   keymap_ncl.layered
@@ -185,44 +196,113 @@
 
       Key = std.contract.from_validator key_validator,
 
+      # Element of a layered / named_layers slot: Key or transparent null.
+      layer_element_validator =
+        validators.any_of [validators.is_null, keymap_ncl.key.key_validator],
+
+      layered_array_validator =
+        validators.array.validator layer_element_validator,
+
+      # named_layers: Record String -> (Key|null)
+      named_layers_validator =
+        validators.all_of [
+          validators.is_record,
+          fun r => r |> std.record.values |> layered_array_validator,
+        ],
+
+      # A layered key has at least one of:
+      # - `layered` = Array (Key|null): numbered layers (layer index 1 + i)
+      # - `named_layers` = Record { layer_name = Key|null, ... }: named layers
+      #   (indices after all numbered layers; lowered before JSON)
+      # Both may be present on the same key (numbered + named compose via `&`).
       key_validator = fun k =>
         k
         |> match {
-          { layered, ..base_key } =>
+          { layered, named_layers, ..base_key } =>
             validators.all_ok [
-              layered
-              |> validators.array.validator (
-                validators.any_of [validators.is_null, keymap_ncl.key.key_validator]
-              ),
+              layered_array_validator layered,
+              named_layers_validator named_layers,
               keymap_ncl.key.key_validator base_key,
             ],
-          _ => 'Error { message = "expected { layered = Array Key, ..base_key }" },
+          { layered, ..base_key } =>
+            validators.all_ok [
+              layered_array_validator layered,
+              keymap_ncl.key.key_validator base_key,
+            ],
+          { named_layers, ..base_key } =>
+            validators.all_ok [
+              named_layers_validator named_layers,
+              keymap_ncl.key.key_validator base_key,
+            ],
+          _ =>
+            'Error {
+              message = "expected { layered = Array Key and/or named_layers = Record String -> Key, ..base_key }",
+            },
         },
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_value = fun { layered = layered_keys, ..base_key } =>
-        {
-          base = keymap_ncl.key.to_json_value base_key,
-          layered =
-            std.array.map
-              (fun k => if k != null then keymap_ncl.key.to_json_value k else null)
-              layered_keys,
+      # JSON projection expects dense array form only (`layered` array, no `named_layers`).
+      # Named layers must be lowered first (see keymap-ncl-to-json named layer transform).
+      to_json_value = fun k =>
+        k
+        |> match {
+          { named_layers = _, .. } =>
+            std.fail_with "named_layers must be lowered to array form before to_json_value",
+          { layered = layered_keys, ..base_key } =>
+            {
+              base = keymap_ncl.key.to_json_value base_key,
+              layered =
+                std.array.map
+                  (fun k => if k != null then keymap_ncl.key.to_json_value k else null)
+                  layered_keys,
+            },
         },
 
-      map_accum = fun f acc k @ { layered, ..base_key } =>
-        let { acc, layered } =
-          layered
-          |> std.array.fold_left
-            (fun { acc, layered } k =>
-              let { acc, k } = f acc k in
-              let layered = layered @ [k] in
-              { include acc, include layered }
-            )
-            { include acc, layered = [] }
-        in
-        let { acc, k = base_key } = f acc base_key in
-        # n.b.: `.. base_key` results in format error.
-        { include acc, k = { include layered, } & base_key, },
+      # Visit children under `layered` (array) and/or `named_layers` (record), then base.
+      # Assumes a valid layered key shape (is_key); no defensive has_field checks.
+      map_layered_array = fun f acc layered =>
+        layered
+        |> std.array.fold_left
+          (fun { acc, layered } child =>
+            let { acc, k } = f acc child in
+            # let-bind before record: record fields are recursive by default.
+            let layered = layered @ [k] in
+            { include acc, include layered }
+          )
+          { include acc, layered = [] },
+
+      map_named_layers = fun f acc named_layers =>
+        std.record.fields named_layers
+        |> std.array.fold_left
+          (fun { acc, named_layers = parts } layer_name =>
+            let child = std.record.get layer_name named_layers in
+            let { acc, k = new_child } = f acc child in
+            let named_layers = parts & { "%{layer_name}" = new_child } in
+            { include acc, include named_layers }
+          )
+          { include acc, named_layers = {} },
+
+      map_accum = fun f acc k =>
+        k
+        |> match {
+          { layered = numbered, named_layers = named, ..base_key } =>
+            let { acc, layered } = map_layered_array f acc numbered in
+            let { acc, named_layers } = map_named_layers f acc named in
+            let { acc, k = base_key } = f acc base_key in
+            # n.b.: `.. base_key` results in format error.
+            {
+              include acc,
+              k = base_key & { include layered, include named_layers },
+            },
+          { layered = numbered, ..base_key } =>
+            let { acc, layered } = map_layered_array f acc numbered in
+            let { acc, k = base_key } = f acc base_key in
+            { include acc, k = base_key & { include layered } },
+          { named_layers = named, ..base_key } =>
+            let { acc, named_layers } = map_named_layers f acc named in
+            let { acc, k = base_key } = f acc base_key in
+            { include acc, k = base_key & { include named_layers } },
+        },
     },
 }
