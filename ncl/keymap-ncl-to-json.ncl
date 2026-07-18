@@ -10,6 +10,8 @@
 # - Authored inputs (keymap.ncl surface)
 #   - `keys` / `layers`   KeymapLayer: string tokens or Array Key
 #   - `named_layers`      Record name → KeymapLayer (full rows by name; optional)
+#   - `named_layer_order` Array String — optional index order for named layers
+#                         (listed used names first; rest alphabetical; default alpha)
 #   - `chords`            [{ indices, key }, …]
 #   - `config`            optional per-feature config
 #   - `custom_keys`       extends token vocabulary for string layers
@@ -32,6 +34,7 @@
 # - Late key rewrites (inside `json_keymap`, after automation)
 #   - prepare_keys_named_layers                               (passes/named-layers.ncl)
 #       named_layers -> dense `layered` array layout: [numbered slots…] ++ [named slots…]
+#       named slots ordered by `named_layer_order` (else alphabetical)
 #       resolve layer_mod name strings -> 1-based indices
 #   - pad layered arrays   every layered key shares the same array length
 #   - to_json_value        per-key module projection (array-form layered only)
@@ -161,6 +164,17 @@
     | { _ | KeymapLayer }
     | doc "Named layers: whole rows keyed by name (same width as the base layer)."
     = {},
+
+  # Optional override for dense named-layer slot / layer_mod index order.
+  # Without this field (or with []), used names are ordered alphabetically.
+  # Listed names that appear in the keymap come first; remaining used names
+  # append alphabetically. Names listed but never used are ignored.
+  # Changing order renumbers all named layers (breaking for fixed numeric indices).
+  named_layer_order
+    | default
+    | Array String
+    | doc "Override named-layer index order (used names listed first; rest alphabetical)."
+    = [],
 
   chords
     | Array Chord
@@ -450,7 +464,7 @@
       in
       # named_layers -> dense array after numbered `layered` slots:
       #   layered = [ numbered slots… ] ++ [ named slots… ]
-      # Named order is alphabetical (Nickel record field order). Skipped if unused.
+      # Named order: `named_layer_order` if set, else alphabetical. Skipped if unused.
       # Layer_mod fields may use those names as strings; resolve to 1-based indices.
       let keys = prepare_keys_named_layers keys in
       # Equalise layered array lengths (pad shorter with null / transparency).

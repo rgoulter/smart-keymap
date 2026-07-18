@@ -5,8 +5,10 @@ Feature: Named Layers
 
   Use keymap-level `named_layers` for Fn-style full rows, and refer to
    those names from `layer_mod` (e.g. `K.layer_mod.hold "fn"`). Names
-   are lowered to dense numbered slots after any numbered `layers`
-   (alphabetical order among names).
+   are lowered to dense numbered slots after any numbered `layers`.
+   Default order among names is alphabetical; set `named_layer_order`
+   (array of name strings) to override which used names get which indices
+   (listed names first, remaining used names append alphabetically).
 
   Per-key `{ named_layers = { … } }` still works and wins when the same
    name is set both at keymap scope and on a key.

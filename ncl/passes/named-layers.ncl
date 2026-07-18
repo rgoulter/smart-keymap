@@ -1,7 +1,7 @@
 # Pass: named-layer prepare + pad
 #
 # After automation, before to_json_value:
-#   1. Collect global named-layer names (alphabetical)
+#   1. Collect global named-layer names (order: named_layer_order, then alpha rest)
 #   2. Lower `named_layers` → dense `layered` arrays
 #   3. Resolve layer_mod name strings → 1-based indices
 #   4. Pad every layered array to uniform length
@@ -10,9 +10,22 @@
 #   prepare_keys_named_layers, named_layer_indices_from_keys,
 #   resolve_layer_modifier_names, pad_key_layered_arrays,
 #   max_layered_length_accum, named_layer_names, numbered_layer_count, …
+#
+# Optional keymap field:
+#   named_layer_order | Array String
+#     Override dense-slot order for used named layers. Listed names that appear
+#     in the keymap come first (in list order); any other used names append
+#     alphabetically. Names listed but unused are ignored. Omit or [] → alpha.
 {
   layered_keys,
   keymap_ncl,
+
+  # Optional authoring field (also declared on the keymap-ncl-to-json driver).
+  named_layer_order
+    | default
+    | Array String
+    | doc "Override named-layer index order. Used names listed first; rest alphabetical."
+    = [],
 
   # Pre-lowering: only `layered` (array) contributes to N (numbered slots).
   #
@@ -47,7 +60,6 @@
   max_layered_length_accum = max_numbered_layered_length_accum,
 
   # Collect named-layer field names into a record set { layer_name = true, ... }.
-  # std.record.fields of the result is alphabetically sorted (Nickel field order).
   named_layer_names_from_key = fun k =>
     k
     |> match {
@@ -72,10 +84,40 @@
     in
     acc_names,
 
-  named_layer_names_from_keys = fun keys =>
+  # Used names as an alphabetical list (Nickel record field order).
+  used_named_layer_names_from_keys = fun keys =>
     keys
     |> std.array.fold_left named_layer_names_accum {}
     |> std.record.fields,
+
+  names_to_set = fun names =>
+    names
+    |> std.array.fold_left
+      (fun acc n => acc & { "%{n}" = true })
+      {},
+
+  # explicit_order first (only names that are used), then remaining used names (alpha).
+  # Extra names in explicit_order that are not used are ignored.
+  apply_named_layer_order = fun explicit_order used_names =>
+    let used_set = names_to_set used_names in
+    let ordered =
+      explicit_order
+      |> std.array.filter (fun n => std.record.has_field n used_set)
+    in
+    let ordered_set = names_to_set ordered in
+    let rest =
+      used_names
+      |> std.array.filter (fun n => !(std.record.has_field n ordered_set))
+    in
+    ordered @ rest,
+
+  # Ordered name list for keys with an explicit order argument (for tests / callers).
+  named_layer_names_from_keys_order = fun order keys =>
+    apply_named_layer_order order (used_named_layer_names_from_keys keys),
+
+  # Global ordered named-layer names (respects keymap `named_layer_order`).
+  named_layer_names_from_keys = fun keys =>
+    named_layer_names_from_keys_order named_layer_order keys,
 
   numbered_layer_count_from_keys = fun keys =>
     keys |> std.array.fold_left max_numbered_layered_length_accum 0,
@@ -87,7 +129,7 @@
     numbered + std.array.length named,
 
   named_layer_names
-    | doc "Alphabetically sorted named layer names used in the keymap."
+    | doc "Named layer names used in the keymap (named_layer_order, then alphabetical)."
     = named_layer_names_from_keys layered_keys,
 
   numbered_layer_count
@@ -167,8 +209,8 @@
     k,
 
   # Scope: array of key trees (pipeline pass). No-op when no named layers used.
-  lower_named_layers_on_keys = fun keys =>
-    let named_names = named_layer_names_from_keys keys in
+  lower_named_layers_on_keys_order = fun order keys =>
+    let named_names = named_layer_names_from_keys_order order keys in
     named_names
     |> match {
       [] => keys,
@@ -177,12 +219,18 @@
         keys |> std.array.map (lower_named_layers_in_key_tree numbered_len named_names),
     },
 
+  lower_named_layers_on_keys = fun keys =>
+    lower_named_layers_on_keys_order named_layer_order keys,
+
   # name → 1-based layer index from a key list (same rules as named_layer_indices).
-  named_layer_indices_from_keys = fun keys =>
+  named_layer_indices_from_keys_order = fun order keys =>
     let numbered = numbered_layer_count_from_keys keys in
-    named_layer_names_from_keys keys
+    named_layer_names_from_keys_order order keys
     |> std.array.map_with_index (fun i layer_name => { "%{layer_name}" = numbered + i + 1 })
     |> std.array.fold_left (&) {},
+
+  named_layer_indices_from_keys = fun keys =>
+    named_layer_indices_from_keys_order named_layer_order keys,
 
   # Resolve a single layer index: numbers pass through; strings look up name_to_idx.
   resolve_layer_index = fun name_to_idx idx_or_name =>
@@ -247,10 +295,13 @@
 
   # Lower named_layers to dense arrays, then resolve layer_mod name strings.
   # Indices for names are taken from the pre-lowered key list so they stay stable.
-  prepare_keys_named_layers = fun keys =>
-    let name_to_idx = named_layer_indices_from_keys keys in
-    let keys = lower_named_layers_on_keys keys in
+  prepare_keys_named_layers_order = fun order keys =>
+    let name_to_idx = named_layer_indices_from_keys_order order keys in
+    let keys = lower_named_layers_on_keys_order order keys in
     resolve_keys_named_layer_refs name_to_idx keys,
+
+  prepare_keys_named_layers = fun keys =>
+    prepare_keys_named_layers_order named_layer_order keys,
 
   # Pad a layered key's `layered` array with null (transparency) up to `target_len`.
   # Expects post-lowering form (array `layered` only; no `named_layers`).
@@ -351,6 +402,51 @@
         expected = ["linux", "macos", "windows"],
       },
 
+      # named_layer_order: listed used names first; unused extras ignored; rest alpha.
+      check_apply_named_layer_order_full = {
+        actual =
+          apply_named_layer_order
+            ["windows", "linux", "macos"]
+            ["linux", "macos", "windows"],
+        expected = ["windows", "linux", "macos"],
+      },
+
+      check_apply_named_layer_order_partial = {
+        # only windows listed; linux/macos append alphabetically
+        actual =
+          apply_named_layer_order
+            ["windows"]
+            ["linux", "macos", "windows"],
+        expected = ["windows", "linux", "macos"],
+      },
+
+      check_apply_named_layer_order_extra_ignored = {
+        actual =
+          apply_named_layer_order
+            ["windows", "unused"]
+            ["linux", "windows"],
+        expected = ["windows", "linux"],
+      },
+
+      check_apply_named_layer_order_empty_is_alpha = {
+        actual =
+          apply_named_layer_order
+            []
+            ["linux", "macos", "windows"],
+        expected = ["linux", "macos", "windows"],
+      },
+
+      check_named_layer_names_from_keys_order = {
+        actual =
+          named_layer_names_from_keys_order
+            ["windows", "linux", "macos"]
+            [
+              K.A & { named_layers = { windows = K.B, linux = K.C } },
+              K.D & { named_layers = { macos = K.E } },
+            ],
+        expected = ["windows", "linux", "macos"],
+      },
+
       check_named_layer_indices_after_numbered =
         let keys = [
           K.A & { layered = [ null, K.B] },
@@ -366,6 +462,18 @@
             |> std.array.fold_left (&) {},
           # numbered length 2 -> linux=3, windows=4
           expected = { linux = 3, windows = 4 },
+        },
+
+      check_named_layer_indices_with_order =
+        let keys = [
+          K.A & { layered = [ null, K.B] },
+          K.C & { named_layers = { windows = K.D, linux = K.E } },
+        ]
+        in
+        {
+          actual = named_layer_indices_from_keys_order ["windows", "linux"] keys,
+          # numbered length 2 -> windows=3, linux=4 (not alpha linux=3, windows=4)
+          expected = { windows = 3, linux = 4 },
         },
 
       check_total_length_numbered_plus_named = {
@@ -447,6 +555,38 @@
                 null,
                 { key_code = 8 },
                 null,
+              ],
+            },
+          ],
+        },
+
+      # Explicit order: windows, linux, macos (not alphabetical).
+      check_lower_with_named_layer_order =
+        let keys = [
+          K.A & { named_layers = { linux = K.B, windows = K.C } },
+          K.D & { named_layers = { macos = K.E } },
+        ]
+        in
+        {
+          actual =
+            lower_named_layers_on_keys_order ["windows", "linux", "macos"] keys
+            |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              base = { key_code = 4 },
+              # order: windows, linux, macos
+              layered = [
+                { key_code = 6 },
+                { key_code = 5 },
+                null,
+              ],
+            },
+            {
+              base = { key_code = 7 },
+              layered = [
+                null,
+                null,
+                { key_code = 8 },
               ],
             },
           ],
@@ -605,6 +745,50 @@
                 { key_code = 5 },
                 { key_code = 6 },
                 { key_code = 4 },
+              ],
+            },
+          ],
+        },
+
+      # Order override: windows=1, linux=2, macos=3 (not alpha linux, macos, windows).
+      check_prepare_with_named_layer_order =
+        let order = ["windows", "linux", "macos"] in
+        let keys = [
+          K.layer_mod.set_semantic_variant_to order "windows",
+          K.layer_mod.set_semantic_variant_to order "linux",
+          K.semantic { windows = K.A, linux = K.B, macos = K.C },
+        ]
+        in
+        {
+          actual =
+            prepare_keys_named_layers_order order keys
+            |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 1,
+                mask =
+                  (std.number.pow 2 1)
+                  + (std.number.pow 2 2)
+                  + (std.number.pow 2 3),
+              },
+            },
+            {
+              SetActiveLayers = {
+                layers = std.number.pow 2 2,
+                mask =
+                  (std.number.pow 2 1)
+                  + (std.number.pow 2 2)
+                  + (std.number.pow 2 3),
+              },
+            },
+            {
+              base = { key_code = 0 },
+              # order: windows, linux, macos
+              layered = [
+                { key_code = 4 },
+                { key_code = 5 },
+                { key_code = 6 },
               ],
             },
           ],
