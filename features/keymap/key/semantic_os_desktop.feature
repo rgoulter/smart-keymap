@@ -12,14 +12,16 @@ Feature: Semantic OS Desktop Key
   Define a desk key once (e.g. `desk_left = K.semantic { .. }`), place it
   on a single layer row in the layout, and pick the OS variant with the
   switch keys. Named layers are assigned globally after any numbered
-  layers (alphabetical order among names).
+  layers. Default order among names is alphabetical; use
+  `named_layer_order` when you want a different index assignment
+  (e.g. windows, linux, macos).
 
   Background:
 
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
-      let os = ["linux", "macos", "windows"] in
+      let os = ["windows", "linux", "macos"] in
       let os_windows = K.layer_mod.set_semantic_variant_to os "windows" in
       let os_linux = K.layer_mod.set_semantic_variant_to os "linux" in
       let os_macos = K.layer_mod.set_semantic_variant_to os "macos" in
@@ -31,6 +33,7 @@ Feature: Semantic OS Desktop Key
         }
       in
       {
+        named_layer_order = os,
         keys = [
           os_windows,
           os_linux,
@@ -45,7 +48,7 @@ Feature: Semantic OS Desktop Key
     When the keymap registers the following input
       """
       [
-        tap (K.layer_mod.set_semantic_variant_to ["linux", "macos", "windows"] "windows"),
+        tap (K.layer_mod.set_semantic_variant_to ["windows", "linux", "macos"] "windows"),
         press_keymap_index 3,
       ]
       """
@@ -59,7 +62,7 @@ Feature: Semantic OS Desktop Key
     When the keymap registers the following input
       """
       [
-        tap (K.layer_mod.set_semantic_variant_to ["linux", "macos", "windows"] "linux"),
+        tap (K.layer_mod.set_semantic_variant_to ["windows", "linux", "macos"] "linux"),
         press_keymap_index 3,
       ]
       """
@@ -73,7 +76,7 @@ Feature: Semantic OS Desktop Key
     When the keymap registers the following input
       """
       [
-        tap (K.layer_mod.set_semantic_variant_to ["linux", "macos", "windows"] "macos"),
+        tap (K.layer_mod.set_semantic_variant_to ["windows", "linux", "macos"] "macos"),
         press_keymap_index 3,
       ]
       """
