@@ -8,6 +8,48 @@ use serde::Deserialize;
 
 use crate::{key, keymap};
 
+// --- Conversion helpers ----------------------------------------------------
+
+macro_rules! impl_from_variant {
+    ($aggregate:ident, $variant:ident, $inner:ty) => {
+        impl From<$inner> for $aggregate {
+            fn from(v: $inner) -> Self {
+                $aggregate::$variant(v)
+            }
+        }
+    };
+}
+
+macro_rules! impl_try_from_variant {
+    ($aggregate:ident, $variant:ident, $inner:ty) => {
+        impl TryFrom<$aggregate> for $inner {
+            type Error = key::EventError;
+
+            fn try_from(v: $aggregate) -> Result<Self, Self::Error> {
+                match v {
+                    $aggregate::$variant(v) => Ok(v),
+                    _ => Err(key::EventError::UnmappableEvent),
+                }
+            }
+        }
+    };
+}
+
+macro_rules! impl_try_from_pending_mut {
+    ($variant:ident, $inner:ty) => {
+        impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut $inner {
+            type Error = ();
+
+            fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+                match pks {
+                    PendingKeyState::$variant(pks) => Ok(pks),
+                    _ => Err(()),
+                }
+            }
+        }
+    };
+}
+
 use crate::init::AUTOMATION_INSTRUCTION_COUNT;
 use crate::init::CHORDED_MAX_CHORDS;
 use crate::init::CHORDED_MAX_CHORD_SIZE;
@@ -423,187 +465,29 @@ pub enum Event {
     TapHold(TapHoldEvent),
 }
 
-impl From<AutomationEvent> for Event {
-    fn from(ev: AutomationEvent) -> Self {
-        Event::Automation(ev)
-    }
-}
+impl_from_variant!(Event, Automation, AutomationEvent);
+impl_from_variant!(Event, Callback, CallbackEvent);
+impl_from_variant!(Event, CapsWord, CapsWordEvent);
+impl_from_variant!(Event, Chorded, ChordedEvent);
+impl_from_variant!(Event, Consumer, ConsumerEvent);
+impl_from_variant!(Event, Custom, CustomEvent);
+impl_from_variant!(Event, Keyboard, KeyboardEvent);
+impl_from_variant!(Event, Layered, LayeredEvent);
+impl_from_variant!(Event, Mouse, MouseEvent);
+impl_from_variant!(Event, Sticky, StickyEvent);
+impl_from_variant!(Event, TapDance, TapDanceEvent);
+impl_from_variant!(Event, TapHold, TapHoldEvent);
 
-impl From<CallbackEvent> for Event {
-    fn from(ev: CallbackEvent) -> Self {
-        Event::Callback(ev)
-    }
-}
-
-impl From<CapsWordEvent> for Event {
-    fn from(ev: CapsWordEvent) -> Self {
-        Event::CapsWord(ev)
-    }
-}
-
-impl From<ChordedEvent> for Event {
-    fn from(ev: ChordedEvent) -> Self {
-        Event::Chorded(ev)
-    }
-}
-
-impl From<ConsumerEvent> for Event {
-    fn from(ev: ConsumerEvent) -> Self {
-        Event::Consumer(ev)
-    }
-}
-
-impl From<CustomEvent> for Event {
-    fn from(ev: CustomEvent) -> Self {
-        Event::Custom(ev)
-    }
-}
-
-impl From<KeyboardEvent> for Event {
-    fn from(ev: KeyboardEvent) -> Self {
-        Event::Keyboard(ev)
-    }
-}
-
-impl From<LayeredEvent> for Event {
-    fn from(ev: LayeredEvent) -> Self {
-        Event::Layered(ev)
-    }
-}
-
-impl From<MouseEvent> for Event {
-    fn from(ev: MouseEvent) -> Self {
-        Event::Mouse(ev)
-    }
-}
-
-impl From<StickyEvent> for Event {
-    fn from(ev: StickyEvent) -> Self {
-        Event::Sticky(ev)
-    }
-}
-
-impl From<TapDanceEvent> for Event {
-    fn from(ev: TapDanceEvent) -> Self {
-        Event::TapDance(ev)
-    }
-}
-
-impl From<TapHoldEvent> for Event {
-    fn from(ev: TapHoldEvent) -> Self {
-        Event::TapHold(ev)
-    }
-}
-
-impl TryFrom<Event> for AutomationEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Automation(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for CapsWordEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::CapsWord(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for ChordedEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Chorded(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for ConsumerEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Consumer(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for KeyboardEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Keyboard(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for LayeredEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Layered(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for MouseEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Mouse(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for StickyEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::Sticky(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for TapDanceEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::TapDance(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
-
-impl TryFrom<Event> for TapHoldEvent {
-    type Error = key::EventError;
-
-    fn try_from(ev: Event) -> Result<Self, Self::Error> {
-        match ev {
-            Event::TapHold(ev) => Ok(ev),
-            _ => Err(key::EventError::UnmappableEvent),
-        }
-    }
-}
+impl_try_from_variant!(Event, Automation, AutomationEvent);
+impl_try_from_variant!(Event, CapsWord, CapsWordEvent);
+impl_try_from_variant!(Event, Chorded, ChordedEvent);
+impl_try_from_variant!(Event, Consumer, ConsumerEvent);
+impl_try_from_variant!(Event, Keyboard, KeyboardEvent);
+impl_try_from_variant!(Event, Layered, LayeredEvent);
+impl_try_from_variant!(Event, Mouse, MouseEvent);
+impl_try_from_variant!(Event, Sticky, StickyEvent);
+impl_try_from_variant!(Event, TapDance, TapDanceEvent);
+impl_try_from_variant!(Event, TapHold, TapHoldEvent);
 
 /// Aggregate enum for pending key state.
 #[derive(Debug, Clone, PartialEq)]
@@ -635,110 +519,22 @@ pub enum PendingKeyState {
     TapHold(TapHoldPendingKeyState),
 }
 
-impl From<AutomationPendingKeyState> for PendingKeyState {
-    fn from(pks: AutomationPendingKeyState) -> Self {
-        PendingKeyState::Automation(pks)
-    }
-}
+impl_from_variant!(PendingKeyState, Automation, AutomationPendingKeyState);
+impl_from_variant!(PendingKeyState, Callback, CallbackPendingKeyState);
+impl_from_variant!(PendingKeyState, CapsWord, CapsWordPendingKeyState);
+impl_from_variant!(PendingKeyState, Chorded, ChordedPendingKeyState);
+impl_from_variant!(PendingKeyState, Consumer, ConsumerPendingKeyState);
+impl_from_variant!(PendingKeyState, Custom, CustomPendingKeyState);
+impl_from_variant!(PendingKeyState, Keyboard, KeyboardPendingKeyState);
+impl_from_variant!(PendingKeyState, Layered, LayeredPendingKeyState);
+impl_from_variant!(PendingKeyState, Mouse, MousePendingKeyState);
+impl_from_variant!(PendingKeyState, Sticky, StickyPendingKeyState);
+impl_from_variant!(PendingKeyState, TapDance, TapDancePendingKeyState);
+impl_from_variant!(PendingKeyState, TapHold, TapHoldPendingKeyState);
 
-impl From<CallbackPendingKeyState> for PendingKeyState {
-    fn from(pks: CallbackPendingKeyState) -> Self {
-        PendingKeyState::Callback(pks)
-    }
-}
-
-impl From<CapsWordPendingKeyState> for PendingKeyState {
-    fn from(pks: CapsWordPendingKeyState) -> Self {
-        PendingKeyState::CapsWord(pks)
-    }
-}
-
-impl From<ChordedPendingKeyState> for PendingKeyState {
-    fn from(pks: ChordedPendingKeyState) -> Self {
-        PendingKeyState::Chorded(pks)
-    }
-}
-
-impl From<ConsumerPendingKeyState> for PendingKeyState {
-    fn from(pks: ConsumerPendingKeyState) -> Self {
-        PendingKeyState::Consumer(pks)
-    }
-}
-
-impl From<CustomPendingKeyState> for PendingKeyState {
-    fn from(pks: CustomPendingKeyState) -> Self {
-        PendingKeyState::Custom(pks)
-    }
-}
-
-impl From<KeyboardPendingKeyState> for PendingKeyState {
-    fn from(pks: KeyboardPendingKeyState) -> Self {
-        PendingKeyState::Keyboard(pks)
-    }
-}
-
-impl From<LayeredPendingKeyState> for PendingKeyState {
-    fn from(pks: LayeredPendingKeyState) -> Self {
-        PendingKeyState::Layered(pks)
-    }
-}
-
-impl From<MousePendingKeyState> for PendingKeyState {
-    fn from(pks: MousePendingKeyState) -> Self {
-        PendingKeyState::Mouse(pks)
-    }
-}
-
-impl From<StickyPendingKeyState> for PendingKeyState {
-    fn from(pks: StickyPendingKeyState) -> Self {
-        PendingKeyState::Sticky(pks)
-    }
-}
-
-impl From<TapDancePendingKeyState> for PendingKeyState {
-    fn from(pks: TapDancePendingKeyState) -> Self {
-        PendingKeyState::TapDance(pks)
-    }
-}
-
-impl From<TapHoldPendingKeyState> for PendingKeyState {
-    fn from(pks: TapHoldPendingKeyState) -> Self {
-        PendingKeyState::TapHold(pks)
-    }
-}
-
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut ChordedPendingKeyState {
-    type Error = ();
-
-    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-        match pks {
-            PendingKeyState::Chorded(pks) => Ok(pks),
-            _ => Err(()),
-        }
-    }
-}
-
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut TapDancePendingKeyState {
-    type Error = ();
-
-    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-        match pks {
-            PendingKeyState::TapDance(pks) => Ok(pks),
-            _ => Err(()),
-        }
-    }
-}
-
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut TapHoldPendingKeyState {
-    type Error = ();
-
-    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-        match pks {
-            PendingKeyState::TapHold(pks) => Ok(pks),
-            _ => Err(()),
-        }
-    }
-}
+impl_try_from_pending_mut!(Chorded, ChordedPendingKeyState);
+impl_try_from_pending_mut!(TapDance, TapDancePendingKeyState);
+impl_try_from_pending_mut!(TapHold, TapHoldPendingKeyState);
 
 /// Aggregate enum for key state. (i.e. pressed key data).
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -777,77 +573,18 @@ impl From<key::NoOpKeyState> for KeyState {
     }
 }
 
-impl From<AutomationKeyState> for KeyState {
-    fn from(ks: AutomationKeyState) -> Self {
-        KeyState::Automation(ks)
-    }
-}
-
-impl From<CallbackKeyState> for KeyState {
-    fn from(ks: CallbackKeyState) -> Self {
-        KeyState::Callback(ks)
-    }
-}
-
-impl From<CapsWordKeyState> for KeyState {
-    fn from(ks: CapsWordKeyState) -> Self {
-        KeyState::CapsWord(ks)
-    }
-}
-
-impl From<ChordedKeyState> for KeyState {
-    fn from(ks: ChordedKeyState) -> Self {
-        KeyState::Chorded(ks)
-    }
-}
-
-impl From<ConsumerKeyState> for KeyState {
-    fn from(ks: ConsumerKeyState) -> Self {
-        KeyState::Consumer(ks)
-    }
-}
-
-impl From<CustomKeyState> for KeyState {
-    fn from(ks: CustomKeyState) -> Self {
-        KeyState::Custom(ks)
-    }
-}
-
-impl From<KeyboardKeyState> for KeyState {
-    fn from(ks: KeyboardKeyState) -> Self {
-        KeyState::Keyboard(ks)
-    }
-}
-
-impl From<LayeredKeyState> for KeyState {
-    fn from(ks: LayeredKeyState) -> Self {
-        KeyState::LayerModifier(ks)
-    }
-}
-
-impl From<MouseKeyState> for KeyState {
-    fn from(ks: MouseKeyState) -> Self {
-        KeyState::Mouse(ks)
-    }
-}
-
-impl From<TapDanceKeyState> for KeyState {
-    fn from(ks: TapDanceKeyState) -> Self {
-        KeyState::TapDance(ks)
-    }
-}
-
-impl From<TapHoldKeyState> for KeyState {
-    fn from(ks: TapHoldKeyState) -> Self {
-        KeyState::TapHold(ks)
-    }
-}
-
-impl From<StickyKeyState> for KeyState {
-    fn from(ks: StickyKeyState) -> Self {
-        KeyState::Sticky(ks)
-    }
-}
+impl_from_variant!(KeyState, Automation, AutomationKeyState);
+impl_from_variant!(KeyState, Callback, CallbackKeyState);
+impl_from_variant!(KeyState, CapsWord, CapsWordKeyState);
+impl_from_variant!(KeyState, Chorded, ChordedKeyState);
+impl_from_variant!(KeyState, Consumer, ConsumerKeyState);
+impl_from_variant!(KeyState, Custom, CustomKeyState);
+impl_from_variant!(KeyState, Keyboard, KeyboardKeyState);
+impl_from_variant!(KeyState, LayerModifier, LayeredKeyState);
+impl_from_variant!(KeyState, Mouse, MouseKeyState);
+impl_from_variant!(KeyState, Sticky, StickyKeyState);
+impl_from_variant!(KeyState, TapDance, TapDanceKeyState);
+impl_from_variant!(KeyState, TapHold, TapHoldKeyState);
 
 /// Convenience trait for the data storage types.
 pub trait Keys {
