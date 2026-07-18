@@ -962,7 +962,7 @@ mod tests {
         crate::key::composite::PendingKeyState,
         crate::key::composite::KeyState,
         crate::key::composite::System<
-            crate::key::composite::KeyArrays<0, 0, 0, 0, 1, 0, 0, 0, 0, 1>,
+            crate::key::composite::KeyArrays<0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1>,
         >,
     > {
         use crate::key::composite as key_system;
@@ -980,11 +980,13 @@ mod tests {
                 crate::key::automation::System::new([]),
                 crate::key::callback::System::new([]),
                 crate::key::chorded::System::new([], []),
+                crate::key::consumer::System::new([]),
                 crate::key::keyboard::System::new([crate::key::keyboard::Key {
                     key_code: 0x05,
                     modifiers: crate::key::KeyboardModifiers::new(),
                 }]),
                 crate::key::layered::System::new([], []),
+                crate::key::mouse::System::new([]),
                 crate::key::sticky::System::new([]),
                 crate::key::tap_dance::System::new([]),
                 crate::key::tap_hold::System::new([crate::key::tap_hold::Key {
@@ -1019,8 +1021,10 @@ mod tests {
                     smart_keymap::key::automation::System::new([]),
                     smart_keymap::key::callback::System::new([]),
                     smart_keymap::key::chorded::System::new([], []),
+                    smart_keymap::key::consumer::System::new([]),
                     smart_keymap::key::keyboard::System::new([]),
                     smart_keymap::key::layered::System::new([], []),
+                    smart_keymap::key::mouse::System::new([]),
                     smart_keymap::key::sticky::System::new([]),
                     smart_keymap::key::tap_dance::System::new([]),
                     smart_keymap::key::tap_hold::System::new([]),
@@ -1531,8 +1535,10 @@ mod tests {
                     smart_keymap::key::automation::System::new([]),
                     smart_keymap::key::callback::System::new([]),
                     smart_keymap::key::chorded::System::new([], []),
+                    smart_keymap::key::consumer::System::new([]),
                     smart_keymap::key::keyboard::System::new([]),
                     smart_keymap::key::layered::System::new([], []),
+                    smart_keymap::key::mouse::System::new([]),
                     smart_keymap::key::sticky::System::new([]),
                     smart_keymap::key::tap_dance::System::new([]),
                     smart_keymap::key::tap_hold::System::new([]),

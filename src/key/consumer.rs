@@ -1,4 +1,6 @@
 use core::fmt::Debug;
+use core::marker::PhantomData;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -7,8 +9,40 @@ use crate::key;
 /// Reference for a consumer key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
-    /// A usage code. (Value is the HID usage code).
+    /// A usage code without keyboard modifiers. (Value is the HID usage code).
     UsageCode(u8),
+    /// Index into the key data array of [System] for a [Key] (usage + modifiers).
+    Key(u8),
+}
+
+/// A consumer key: HID usage code with optional keyboard modifiers.
+///
+/// A modifiers value of zero is equivalent to no modifiers.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Key {
+    /// HID consumer usage code.
+    pub usage_code: u8,
+    /// Keyboard modifiers.
+    #[serde(default)]
+    pub modifiers: key::KeyboardModifiers,
+}
+
+impl Key {
+    /// Constructs a key with the given usage code and no modifiers.
+    pub const fn new(usage_code: u8) -> Self {
+        Self {
+            usage_code,
+            modifiers: key::KeyboardModifiers::new(),
+        }
+    }
+
+    /// Constructs a key with the given usage code and modifiers.
+    pub const fn new_with_modifiers(usage_code: u8, modifiers: key::KeyboardModifiers) -> Self {
+        Self {
+            usage_code,
+            modifiers,
+        }
+    }
 }
 
 /// Context for consumer keys. (No context).
@@ -29,26 +63,24 @@ pub struct KeyState;
 
 /// The [key::System] implementation for consumer keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<R: Debug> {
-    _marker: core::marker::PhantomData<R>,
+pub struct System<R: Debug, Keys: Index<usize, Output = Key>> {
+    keys: Keys,
+    marker: PhantomData<R>,
 }
 
-impl<R: Debug> System<R> {
-    /// Constructs a new [System].
-    pub const fn new() -> Self {
+impl<R: Debug, Keys: Index<usize, Output = Key>> System<R, Keys> {
+    /// Constructs a new [System] with the given key data.
+    ///
+    /// The key data is for consumer keys that include keyboard modifiers.
+    pub const fn new(keys: Keys) -> Self {
         Self {
-            _marker: core::marker::PhantomData,
+            keys,
+            marker: PhantomData,
         }
     }
 }
 
-impl<R: Debug> Default for System<R> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<R: Debug> key::System<R> for System<R> {
+impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<R, Keys> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -99,6 +131,16 @@ impl<R: Debug> key::System<R> for System<R> {
     ) -> Option<key::KeyOutput> {
         match key_ref {
             Ref::UsageCode(uc) => Some(key::KeyOutput::from_consumer_code(*uc)),
+            Ref::Key(idx) => {
+                let Key {
+                    usage_code,
+                    modifiers,
+                } = self.keys[*idx as usize];
+                Some(key::KeyOutput::from_usage_with_modifiers(
+                    key::KeyUsage::Consumer(usage_code),
+                    modifiers,
+                ))
+            }
         }
     }
 }
@@ -109,7 +151,7 @@ mod tests {
 
     #[test]
     fn test_sizeof_ref() {
-        assert_eq!(1, core::mem::size_of::<Ref>());
+        assert_eq!(2, core::mem::size_of::<Ref>());
     }
 
     #[test]

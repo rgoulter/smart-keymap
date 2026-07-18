@@ -34,9 +34,11 @@ pub mod init {
     const CALLBACK: usize = 1;
     const CHORDED: usize = 0;
     const CHORDED_AUXILIARY: usize = 0;
+    const CONSUMER: usize = 0;
     const KEYBOARD: usize = 17;
     const LAYERED: usize = 40;
     const LAYER_MODIFIERS: usize = 4;
+    const MOUSE: usize = 0;
     const STICKY: usize = 0;
     const TAP_DANCE: usize = 0;
     const TAP_HOLD: usize = 0;
@@ -48,9 +50,11 @@ pub mod init {
             CALLBACK,
             CHORDED,
             CHORDED_AUXILIARY,
+            CONSUMER,
             KEYBOARD,
             LAYERED,
             LAYER_MODIFIERS,
+            MOUSE,
             STICKY,
             TAP_DANCE,
             TAP_HOLD,
@@ -148,6 +152,7 @@ pub mod init {
             smart_keymap::keymap::KeymapCallback::ResetToBootloader,
         )]),
         smart_keymap::key::chorded::System::new([], []),
+        smart_keymap::key::consumer::System::new([]),
         smart_keymap::key::keyboard::System::new([
             smart_keymap::key::keyboard::Key {
                 key_code: 53,
@@ -778,6 +783,7 @@ pub mod init {
                 ),
             ],
         ),
+        smart_keymap::key::mouse::System::new([]),
         smart_keymap::key::sticky::System::new([]),
         smart_keymap::key::tap_dance::System::new([]),
         smart_keymap::key::tap_hold::System::new([]),
