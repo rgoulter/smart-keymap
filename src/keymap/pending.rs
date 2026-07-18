@@ -66,8 +66,8 @@ pub(crate) enum KeyResolution {
     /// **Example:**
     ///  A layered key resolves the outer layer
     ///   but the inner key is still pending.
-    ///  All session-log inputs are prepended LIFO ahead of the delay line
-    ///   so pacing continues correctly for the new pending state.
+    ///  All session-log inputs are re-queued in chronological order ahead of the
+    ///  delay line so the new pending state re-observes them as they occurred.
     Pending,
 }
 
@@ -220,17 +220,15 @@ mod tests {
         );
     }
 
-    /// Nested-pending policy: LIFO over input events only
+    /// Nested-pending policy: chronological (FIFO) over input events only
     ///  (key events dropped),
     ///  prepended before any existing delay-line tail.
     ///
     /// Motivating smart keys: **chorded → passthrough pending**
     ///  (e.g. chorded over tap-hold) and other pending→pending
     ///  transitions (layered outer resolving into an inner pending key).
-    ///  LIFO vs FIFO is not yet covered by `rust-integration` HID reports;
-    ///  this unit test pins the historical re-queue policy.
     #[test]
-    fn nested_pending_replay_prepends_inputs_lifo_before_delay_line_tail() {
+    fn nested_pending_replay_prepends_inputs_fifo_before_delay_line_tail() {
         // Assemble -- log: Press(0), KeyEvent, Release(0), Press(1);
         //  delay-line tail: Press(9).
         let mut queued: heapless::Vec<key::Event<()>, 8> = heapless::Vec::new();
@@ -252,10 +250,10 @@ mod tests {
             &mut event_scheduler,
         );
 
-        // Assert -- LIFO inputs, then original tail; no key-event scheduling.
+        // Assert -- chronological inputs, then original tail; no key-event scheduling.
         assert_eq!(
             input_queue.pop_front_if_ready(),
-            Some(input::Event::press(1))
+            Some(input::Event::press(0))
         );
         assert_eq!(
             input_queue.pop_front_if_ready(),
@@ -263,13 +261,14 @@ mod tests {
         );
         assert_eq!(
             input_queue.pop_front_if_ready(),
-            Some(input::Event::press(0))
+            Some(input::Event::press(1))
         );
         assert_eq!(
             input_queue.pop_front_if_ready(),
             Some(input::Event::press(9))
         );
         assert!(input_queue.is_empty());
+        assert!(queued.is_empty());
         assert!(event_scheduler.next_event_time().is_none());
     }
 }
