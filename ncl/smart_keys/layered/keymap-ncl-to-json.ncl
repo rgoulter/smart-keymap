@@ -87,28 +87,19 @@
         |> match {
           { layer_modifier = { default_ } } => validators.is_number default_,
           { layer_modifier = { hold }, modifiers } =>
-            let layer_validation = validators.is_number hold in
-            let mods_validation = keyboard_modifiers.validator modifiers in
-            [layer_validation, mods_validation]
-            |> match {
-              ['Ok, 'Ok] => 'Ok,
-              [err, 'Ok] => err,
-              ['Ok, err] => err,
-            },
+            validators.all_ok [
+              validators.is_number hold,
+              keyboard_modifiers.validator modifiers,
+            ],
           { layer_modifier = { hold } } => validators.is_number hold,
           { layer_modifier = { sticky } } => validators.is_number sticky,
           { layer_modifier = { toggle } } => validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
           { layer_modifier = { set_active_layers_to } } => layer_indices_array set_active_layers_to,
           { layer_modifier = { set_active_layers_to, affected_layers } } =>
-            [
+            validators.all_ok [
               layer_indices_array set_active_layers_to,
               layer_indices_array affected_layers,
-            ]
-            |> match {
-              ['Ok, 'Ok] => 'Ok,
-              [err, _] => err,
-              [_, err] => err,
-            },
+            ],
           _ =>
             'Error {
               message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
@@ -198,19 +189,13 @@
         k
         |> match {
           { layered, ..base_key } =>
-            let valid_layered =
+            validators.all_ok [
               layered
               |> validators.array.validator (
                 validators.any_of [validators.is_null, keymap_ncl.key.key_validator]
-              )
-            in
-            let valid_base_key = keymap_ncl.key.key_validator base_key in
-            [valid_layered, valid_base_key]
-            |> match {
-              ['Ok, 'Ok] => 'Ok,
-              [err, _] => err,
-              [_, err] => err,
-            },
+              ),
+              keymap_ncl.key.key_validator base_key,
+            ],
           _ => 'Error { message = "expected { layered = Array Key, ..base_key }" },
         },
 
