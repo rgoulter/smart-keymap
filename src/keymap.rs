@@ -35,7 +35,7 @@ pub use observed_keymap::ObservedKeymap;
 /// Maximum number of pressed keys supported.
 pub const MAX_PRESSED_KEYS: usize = 16;
 
-const MAX_QUEUED_INPUT_EVENTS: usize = 32;
+pub(crate) const MAX_QUEUED_INPUT_EVENTS: usize = 32;
 
 /// Constructs an HID report or a sequence of key codes from the given sequence of [key::KeyOutput].
 #[derive(Debug, Default, PartialEq)]
@@ -328,15 +328,17 @@ impl<
     //  then clear the pending key state.
     //
     // Replay uses only `queued_events` (the session log).
-    // Inputs still waiting in `input_queue` (the delay line)
-    //  are intentionally omitted -
-    //  they were not yet paced/applied during pending
-    //  and will run post-resolve in normal order.
+    // Inputs still waiting in the pending `ingest_queue` (the delay line)
+    //  are intentionally omitted from replay -
+    //  they were not yet paced/applied during pending -
+    //  and are transferred to the global `input_queue` tail
+    //  to run post-resolve in normal order.
     fn resolve_pending_key_state(&mut self, key_state: KS) {
         if let Some(pending::PendingState {
             keymap_index,
             key_ref,
             mut queued_events,
+            mut ingest_queue,
             ..
         }) = self.pending_state.take()
         {
@@ -351,12 +353,18 @@ impl<
                 key_state,
             ));
 
+            // Session-log replay is prepended onto the global queue so it
+            //  runs before any never-logged delay-line inputs transferred next.
             pending::dispatch_replayed_events(
                 pending::KeyResolution::Resolved { keymap_index },
                 &mut queued_events,
                 &mut self.input_queue,
                 &mut self.event_scheduler,
             );
+
+            // Transfer remaining pending delay-line traffic to the global tail.
+            let mut remaining = ingest_queue.take_all();
+            self.input_queue.append_all(&mut remaining);
 
             self.handle_pending_events();
 
@@ -373,20 +381,39 @@ impl<
 
     /// Handles input events.
     ///
-    /// All inputs enter `input_queue` first
-    ///  so at most one is processed per tick (one-tick pacing gate),
-    ///  including while a key is pending.
-    /// Tap-hold and chorded interrupt logic depend on that spacing;
-    ///  do not bypass the queue during pending without equivalent pacing
+    /// Physical inputs enter a delay line first so at most one is processed
+    ///  per tick (one-tick pacing gate), including while a key is pending.
+    /// While pending, that delay line is the pending session's `ingest_queue`;
+    ///  otherwise it is the global `input_queue`.
+    /// Tap-hold and chorded interrupt logic depend on that spacing
     ///  (`tests/rust/tap_hold/hold_on_interrupt_tap.rs`).
     ///
-    /// Silently discards the input event if the input queue is full.
+    /// Silently discards the input event if the active input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
         self.idle_time = 0;
-        self.input_queue.push_back_or_ignore(ev);
 
-        if let Some(ie) = self.input_queue.pop_front_if_ready() {
+        let ready = if let Some(pending_state) = self.pending_state.as_mut() {
+            pending_state.ingest_queue.push_back_or_ignore(ev);
+            pending_state.ingest_queue.pop_front_if_ready()
+        } else {
+            self.input_queue.push_back_or_ignore(ev);
+            self.input_queue.pop_front_if_ready()
+        };
+
+        if let Some(ie) = ready {
             self.process_input(ie);
+            self.set_active_input_delay();
+        }
+    }
+
+    /// After processing one input, re-arm the active delay line.
+    ///
+    /// If processing resolved pending state, the global queue is active;
+    ///  if a pending session remains (or was just created), its ingest queue is.
+    fn set_active_input_delay(&mut self) {
+        if let Some(pending_state) = self.pending_state.as_mut() {
+            pending_state.ingest_queue.set_delay();
+        } else {
             self.input_queue.set_delay();
         }
     }
@@ -406,6 +433,7 @@ impl<
             key_ref,
             pending_key_state,
             queued_events,
+            ingest_queue,
             ..
         }) = self.pending_state.as_mut()
         {
@@ -454,12 +482,12 @@ impl<
                     key::PressedKeyResult::Pending(pks) => {
                         *pending_key_state = pks;
 
-                        // Nested pending: re-queue session-log inputs chronologically
-                        //  so the new pending state re-observes them as they occurred.
+                        // Nested pending: re-feed session-log inputs chronologically
+                        //  into the current pending delay line (not the global queue).
                         pending::dispatch_replayed_events(
                             pending::KeyResolution::Pending,
                             queued_events,
-                            &mut self.input_queue,
+                            ingest_queue,
                             &mut self.event_scheduler,
                         );
                     }
@@ -542,12 +570,20 @@ impl<
                                 ));
                             }
                             key::PressedKeyResult::Pending(pending_key_state) => {
-                                self.pending_state = Some(pending::PendingState {
+                                // Fresh pending session owns its own delay line,
+                                //  armed so the next physical input is deferred.
+                                // Move any inputs already sitting in the global
+                                //  queue (e.g. a rapid release pushed before this
+                                //  press was processed) into the new local delay
+                                //  line so they are paced while pending.
+                                let mut pending_state = pending::PendingState::new(
                                     keymap_index,
                                     key_ref,
                                     pending_key_state,
-                                    queued_events: heapless::Vec::new(),
-                                });
+                                );
+                                let mut remaining = self.input_queue.take_all();
+                                pending_state.ingest_queue.append_all(&mut remaining);
+                                self.pending_state = Some(pending_state);
                             }
                         }
                     }
@@ -658,12 +694,23 @@ impl<
         };
         self.context.set_keymap_context(km_context);
 
-        if let Some(ie) = self.input_queue.pop_front_if_ready() {
+        let ready = if let Some(pending_state) = self.pending_state.as_mut() {
+            pending_state.ingest_queue.pop_front_if_ready()
+        } else {
+            self.input_queue.pop_front_if_ready()
+        };
+
+        if let Some(ie) = ready {
             self.process_input(ie);
-            self.input_queue.set_delay();
+            self.set_active_input_delay();
         }
 
+        // Always tick the global delay gate so it does not go stale
+        //  across a pending session (e.g. on resolve transfer).
         self.input_queue.tick_delay();
+        if let Some(pending_state) = self.pending_state.as_mut() {
+            pending_state.ingest_queue.tick_delay();
+        }
 
         self.event_scheduler.tick(self.ms_per_tick);
 
@@ -738,7 +785,12 @@ impl<
 
     /// Whether the keymap has pending state that requires polling.
     pub fn requires_polling(&self) -> bool {
-        !self.event_scheduler.pending_events.is_empty() || !self.input_queue.is_empty()
+        !self.event_scheduler.pending_events.is_empty()
+            || !self.input_queue.is_empty()
+            || self
+                .pending_state
+                .as_ref()
+                .is_some_and(|ps| !ps.ingest_queue.is_empty())
     }
 
     #[doc(hidden)]
@@ -746,6 +798,10 @@ impl<
         !self.event_scheduler.pending_events.is_empty()
             || !self.event_scheduler.scheduled_events.is_empty()
             || !self.input_queue.is_empty()
+            || self
+                .pending_state
+                .as_ref()
+                .is_some_and(|ps| !ps.ingest_queue.is_empty())
     }
 }
 
@@ -786,12 +842,24 @@ impl<
         })
     }
 
+    /// Length of the active delay line
+    ///  (pending `ingest_queue` while pending, else global `input_queue`).
     pub(crate) fn test_input_queue_len(&self) -> usize {
-        self.input_queue.len()
+        if let Some(pending_state) = self.pending_state.as_ref() {
+            pending_state.ingest_queue.len()
+        } else {
+            self.input_queue.len()
+        }
     }
 
+    /// Delay gate of the active delay line
+    ///  (pending `ingest_queue` while pending, else global `input_queue`).
     pub(crate) fn test_input_queue_delay(&self) -> bool {
-        self.input_queue.delay()
+        if let Some(pending_state) = self.pending_state.as_ref() {
+            pending_state.ingest_queue.delay()
+        } else {
+            self.input_queue.delay()
+        }
     }
 
     pub(crate) fn test_handle_scheduled_key_event(&mut self, ev: key::Event<Ev>) {
@@ -1050,6 +1118,40 @@ mod tests {
         assert_eq!(1, keymap.test_input_queue_len());
         assert_eq!(Some(0), keymap.test_pending_queued_events_len());
         assert!(keymap.pressed_keys().is_empty());
+    }
+
+    /// When a press creates pending while later inputs are already
+    ///  sitting in the global queue, those leftovers move into the new
+    ///  pending delay line.
+    ///
+    /// Without that transfer, ticks only drain the local ingest queue and
+    ///  the stranded global events never pace while pending
+    ///  (`tap_th_then_tap_th`, rolling nested HoldOnKeyTap cases).
+    #[test]
+    fn pending_creation_moves_global_queue_tail_into_local_delay_line() {
+        use crate::key::tap_hold::InterruptResponse;
+
+        // Assemble -- not pending; delay armed; backlog Press(TH)+Release(TH).
+        let mut keymap = tap_hold_interrupt_keymap(InterruptResponse::Ignore);
+        keymap.handle_input(input::Event::Press { keymap_index: 1 });
+        keymap.handle_input(input::Event::Press { keymap_index: 0 });
+        keymap.handle_input(input::Event::Release { keymap_index: 0 });
+        assert!(!keymap.test_is_pending());
+        assert_eq!(2, keymap.test_input_queue_len());
+        assert!(keymap.test_input_queue_delay());
+
+        // Act -- clear delay and process Press(0) → pending; Release(0) transfers.
+        keymap.tick(); // clear delay
+        keymap.tick(); // process Press(0), create pending, move Release(0) local
+
+        // Assert
+        assert!(keymap.test_is_pending());
+        assert_eq!(
+            1,
+            keymap.test_input_queue_len(),
+            "Release(0) must sit in the pending delay line after creation"
+        );
+        assert_eq!(Some(0), keymap.test_pending_queued_events_len());
     }
 
     /// Physical inputs while the delay gate is armed sit in the delay line
