@@ -476,6 +476,69 @@ fn nickel_to_json_for_hid_report_uncached(
     String::from_utf8(output.stdout).map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
 }
 
+/// Emits the full-profile composite `key_system` module with Vec storage.
+///
+/// Used by the library `build.rs` under `feature = "std"` (cucumber / runtime serde).
+/// Source of truth: `ncl/composite-key-system.ncl` (`emit_for_profile_with … 'Vec`).
+pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
+    let spawn_nickel_result = Command::new("nickel")
+        .args([
+            "export",
+            "--format=raw",
+            format!("--import-path={ncl_import_path}").as_ref(),
+            "--field=out",
+        ])
+        .stdin(Stdio::piped())
+        .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .map_err(|e| match e.kind() {
+            io::ErrorKind::NotFound => Err(NickelError::NickelNotFound),
+            _ => panic!("Failed to spawn nickel: {:?}", e),
+        });
+
+    match spawn_nickel_result {
+        Ok(mut nickel_command) => {
+            let child_stdin = nickel_command.stdin.as_mut().unwrap();
+            child_stdin
+                .write_all(
+                    br#"
+let r =
+  {
+    json_keymap = { keys = [{ key_code = 4 }], config = {} },
+  }
+  & (import "keymap-codegen.ncl")
+in
+{
+  out =
+    (
+      r.composite.emit_for_profile_with r.composite.full_profile 'Vec
+    ).module_src,
+}
+"#,
+                )
+                .unwrap();
+
+            match nickel_command.wait_with_output() {
+                Ok(output) => {
+                    if output.status.success() {
+                        String::from_utf8(output.stdout)
+                            .map_err(|e| panic!("Failed to decode UTF-8: {:?}", e))
+                    } else {
+                        let nickel_error_message = String::from_utf8(output.stderr)
+                            .unwrap_or_else(|e| panic!("Failed to decode UTF-8: {:?}", e));
+                        Err(NickelError::EvalError(nickel_error_message))
+                    }
+                }
+                Err(io_e) => {
+                    panic!("Unhandled IO error: {:?}", io_e)
+                }
+            }
+        }
+        Err(e) => Err(e?),
+    }
+}
+
 /// Generates the code for the given module.
 pub fn codegen_rust_module(
     CodegenInputs {

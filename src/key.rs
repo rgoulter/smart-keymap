@@ -32,6 +32,16 @@ pub mod tap_hold;
 /// "Composite" keys; an aggregate type used for a common context and event.
 pub mod composite;
 
+/// Generated full composite shell with `Vec` key-data storage (cucumber / runtime serde).
+///
+/// Produced by `build.rs` when `feature = "std"` (not checked in).
+/// Source of truth: `ncl/composite-key-system.ncl` (`emit_for_profile_with … 'Vec`).
+/// Types live at [`composite_full_vec::key_system`].
+#[cfg(feature = "std")]
+pub mod composite_full_vec {
+    include!(concat!(env!("OUT_DIR"), "/composite_full_vec.rs"));
+}
+
 /// The maximum number of key events that are emitted by [crate::key::System] implementations.
 pub const MAX_KEY_EVENTS: usize = 4;
 
