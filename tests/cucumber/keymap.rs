@@ -14,7 +14,10 @@ use smart_keymap_nickel_helper::{
     NickelError,
 };
 
-use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
+// Full composite shell from Nickel emit (Vec storage), not hand-written key::composite.
+use smart_keymap::key::composite_full_vec::key_system::{
+    Config, Context, Event, KeyState, PendingKeyState, Ref, System,
+};
 
 use smart_keymap::init::CHORDED_MAX_CHORDS;
 use smart_keymap::init::CHORDED_MAX_CHORD_SIZE;
@@ -22,7 +25,6 @@ use smart_keymap::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE;
 use smart_keymap::init::LAYERED_LAYER_COUNT;
 use smart_keymap::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
-type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 type ObservedKeymap =
     keymap::ObservedKeymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
@@ -150,14 +152,14 @@ struct KeyVecs {
 
 #[derive(Deserialize)]
 struct DocstringKeymap {
-    config: key::composite::Config,
+    config: Config,
     key_refs: Vec<Ref>,
     #[serde(default)]
     key_data: KeyVecs,
 }
 
 fn system_from_key_data(keys: KeyVecs) -> System {
-    System::vec_based(
+    System::new(
         smart_keymap::key::automation::System::new(keys.automation),
         smart_keymap::key::callback::System::new(keys.callback),
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
