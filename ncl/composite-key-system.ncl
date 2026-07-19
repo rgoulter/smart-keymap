@@ -1,8 +1,16 @@
-# Composite profile + per-keymap key_system module generation.
+# Composite profile + key_system module generation.
 #
-# Computes which key families a keymap uses, then emits a trimmed
-# `key_system` Rust module for that subset.
-# The library `key::composite` remains the full aggregation for cucumber/std.
+# Family registry + profile selection + Rust emit for a composite shell.
+#
+# Profile composition (merge overrides `composite.profile`):
+# - Default: `composite.profile` = keymap-stripped (`keymap_profile` from keys).
+# - Full:    merge `composite.with_full_profile` (or set
+#            `composite.profile = composite.full_profile`) so emit covers every
+#            family in `composite.families`.
+#
+# Trimmed emit → custom keymap `init::key_system` (firmware).
+# Full emit → same concrete System shape for now; Keys/KeyVecs backend and
+# library `key::composite` cutover are follow-ups.
 #
 # Naming:
 # - `*_ty` — Rust type in type position
@@ -387,10 +395,26 @@
     |> composite.used_modules_from
     |> composite.profile_from_modules,
 
-  composite.profile =
+  # All families in registry order (cucumber / universal shell target).
+  composite.full_profile =
+    composite.families
+    |> std.array.map (fun f => f.module)
+    |> composite.profile_from_modules,
+
+  # Families used by the current keymap (firmware-trimmed shell).
+  composite.keymap_profile =
     key_codegen_values
     |> composite.used_modules_from
     |> composite.profile_from_modules,
+
+  # Active profile for `composite.emit`. Default = keymap-stripped.
+  # Override via merge: `… & composite.with_full_profile`.
+  composite.profile = composite.keymap_profile,
+
+  # Merge this record to select the full registry profile for emit.
+  composite.with_full_profile = {
+    composite.profile = composite.full_profile,
+  },
 
   composite.config_rust_expr_for = fun name =>
     name
@@ -419,10 +443,16 @@
     },
 
   # --- Rust emission ---------------------------------------------------------
+  # Emit for a profile. Public selection is by composition on `composite.profile`:
+  #   default: keymap_profile (stripped)
+  #   full:    … & composite.with_full_profile
+  # `emit_for_profile` is the shared implementation (also used by checks).
 
-  composite.emit =
-    let profile = composite.profile in
+  composite.emit_for_profile = fun profile =>
     let systems = profile.systems in
+    let is_full =
+      std.array.length systems == std.array.length composite.families
+    in
     let join = fun xs => std.string.join "\n" xs in
     let config_systems = systems |> std.array.filter (fun f => f.has_config) in
     let data_array_systems = systems |> std.array.filter (fun f => f.has_key_data) in
@@ -718,8 +748,15 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
 
     let event_param = if context_handle_event == "" then "_event" else "event" in
 
+    let module_doc =
+      if is_full then
+        "Full composite key system (generated; all registry families)."
+      else
+        "Per-keymap composite key system (generated; only families used by this keymap)."
+    in
+
     let module_src = m%"
-/// Per-keymap composite key system (generated; only families used by this keymap).
+/// %{module_doc}
 pub mod key_system {
     use crate as smart_keymap;
     use smart_keymap::key;
@@ -913,6 +950,9 @@ pub mod key_system {
       include size_consts,
     },
 
+  # Emit for the active `composite.profile` (override via with_full_profile).
+  composite.emit = composite.emit_for_profile composite.profile,
+
   checks.composite_profile = {
     # Inline fixture keys (avoid importing tests/ncl/*.json here — forced when
     # keymap dirs are on the Nickel import path during keymap-ncl-to-json).
@@ -979,5 +1019,86 @@ pub mod key_system {
           expected = ["TapHold"],
         },
       },
+
+    # Full registry profile (independent of keymap keys).
+    check_full_profile =
+      let profile = composite.full_profile in
+      {
+        check_family_count = {
+          actual = std.array.length profile.systems,
+          expected = std.array.length composite.families,
+        },
+        check_ref_variants = {
+          actual = profile.ref_variants,
+          expected = [
+            "Automation",
+            "Callback",
+            "CapsWord",
+            "Chorded",
+            "Consumer",
+            "Custom",
+            "Keyboard",
+            "Layered",
+            "Mouse",
+            "Sticky",
+            "TapDance",
+            "TapHold",
+          ],
+        },
+        check_pending = {
+          actual = profile.pending_variants,
+          expected = ["Chorded", "TapDance", "TapHold"],
+        },
+        check_config = {
+          actual = profile.config_fields,
+          expected = [
+            "automation",
+            "chorded",
+            "layered",
+            "sticky",
+            "tap_dance",
+            "tap_hold",
+          ],
+        },
+      },
   },
+
+  # Full-profile emit (same concrete System shape as trimmed; Keys/KeyVecs later).
+  # Selection form for tools: merge `composite.with_full_profile` then use
+  # `composite.emit`; checks call `emit_for_profile full_profile` directly.
+  checks.composite_full_emit =
+    let module_src = (composite.emit_for_profile composite.full_profile).module_src in
+    {
+      check_module_doc_full = {
+        actual = std.string.is_match "Full composite key system" module_src,
+        expected = true,
+      },
+      check_has_all_ref_variants = {
+        actual =
+          [
+            "Automation",
+            "Callback",
+            "CapsWord",
+            "Chorded",
+            "Consumer",
+            "Custom",
+            "Keyboard",
+            "Layered",
+            "Mouse",
+            "Sticky",
+            "TapDance",
+            "TapHold",
+          ]
+          |> std.array.all (fun needle => std.string.is_match needle module_src),
+        expected = true,
+      },
+      check_concrete_system_new = {
+        actual = std.string.is_match "pub const fn new" module_src,
+        expected = true,
+      },
+      check_not_keys_trait_yet = {
+        actual = std.string.is_match "trait Keys" module_src,
+        expected = false,
+      },
+    },
 }
