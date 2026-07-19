@@ -387,56 +387,9 @@
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       let config = composite.emit.config_rust_expr in
       let context = "key_system::Context::from_config(%{config})" in
-      # Full-composite config/system for the `keymap!` macro expression path
-      # (expands in contexts that have no generated key_system module).
-      let full_config = m%"smart_keymap::key::composite::Config {
-            automation: %{smart_keymap.automation.config.rust_expr},
-            chorded: %{smart_keymap.chorded.config.rust_expr},
-            layered: %{smart_keymap.layered.config.rust_expr},
-            sticky: %{smart_keymap.sticky.config.rust_expr},
-            tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
-            tap_hold: %{smart_keymap.tap_hold.config.rust_expr},
-            ..smart_keymap::key::composite::Config::new()
-        }"%,
-      in
-      let full_system = m%"
-        smart_keymap::key::composite::System::array_based(
-          %{smart_keymap.automation.system.rust_expr},
-          %{smart_keymap.callback.system.rust_expr},
-          %{smart_keymap.chorded.system.rust_expr},
-          %{smart_keymap.keyboard.system.rust_expr},
-          %{smart_keymap.layered.system.rust_expr},
-          %{smart_keymap.sticky.system.rust_expr},
-          %{smart_keymap.tap_dance.system.rust_expr},
-          %{smart_keymap.tap_hold.system.rust_expr},
-        )
-      "%,
-      in
-      # key_refs use `key_system::Ref::…`; alias composite as key_system for the macro path.
-      let full_key_refs_expr =
-        key_refs_expr
-      in
-      {
-        include config,
-        include context,
-        key_refs = key_refs_expr,
-        keymap = m%"
-{
-    use smart_keymap::key::composite as key_system;
-    use key_system::Ref;
-    use key_system::Context;
-    use key_system::Event;
-    use key_system::KeyState;
-    use key_system::PendingKeyState;
-    use key_system::System;
-    const KEY_COUNT: usize = %{keymap_len};
-    const KEY_REFS: [Ref; KEY_COUNT] = %{full_key_refs_expr};
-    const CONTEXT: Context = key_system::Context::from_config(%{full_config});
-
-    smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{full_system})
-}
-"%,
-        keymap_module = m%"
+      # Firmware / custom-keymap module: included as `crate::init` with
+      # `use crate as smart_keymap` and `crate::init::…` size paths.
+      let keymap_module_src = m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
     use crate as smart_keymap;
@@ -474,7 +427,7 @@ pub mod init {
     pub const KEY_COUNT: usize = %{std.to_string keymap_len};
 
     /// The key references.
-    pub const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
+    pub const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs_expr};
 
     /// The keymap config.
     pub const CONFIG: key_system::Config = %{config};
@@ -497,6 +450,39 @@ pub mod init {
     >;
 }
 "%,
+      in
+      # `keymap!` expands at the call site (integration tests, etc.): nested
+      # trimmed key_system module + Keymap value — not library full composite.
+      # Path rewrites:
+      # - `crate as smart_keymap` → external `smart_keymap` crate
+      # - `crate::init::` → `super::` (size consts live on the nested module)
+      # - drop serde derives (call site may not depend on serde)
+      let keymap_expr_src =
+        let adapted_module =
+          keymap_module_src
+          |> std.string.replace "pub mod init" "mod __smart_keymap_keymap"
+          |> std.string.replace "use crate as smart_keymap;\n" ""
+          |> std.string.replace "use crate as smart_keymap;" ""
+          |> std.string.replace "crate::init::" "super::"
+          |> std.string.replace "serde::Deserialize, " ""
+        in
+        m%"
+{
+%{adapted_module}
+    __smart_keymap_keymap::Keymap::new(
+        __smart_keymap_keymap::KEY_REFS,
+        __smart_keymap_keymap::CONTEXT,
+        __smart_keymap_keymap::SYSTEM,
+    )
+}
+"%,
+      in
+      {
+        include config,
+        include context,
+        key_refs = key_refs_expr,
+        keymap = keymap_expr_src,
+        keymap_module = keymap_module_src,
       },
 
   keymap_rs
