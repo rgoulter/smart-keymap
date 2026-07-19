@@ -111,6 +111,12 @@ jobs:
         with:
           shared-key: rust-checks
 
+      # std builds emit full+vec composite in build.rs (needs nickel on PATH).
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+
       - name: Run Cargo Test (lib)
         run: cargo test --lib
 
