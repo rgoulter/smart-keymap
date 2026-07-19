@@ -8,9 +8,16 @@
 #            `composite.profile = composite.full_profile`) so emit covers every
 #            family in `composite.families`.
 #
-# Trimmed emit → custom keymap `init::key_system` (firmware).
-# Full emit → same concrete System shape for now; Keys/KeyVecs backend and
-# library `key::composite` cutover are follow-ups.
+# Storage flavour (`composite.Storage`):
+# - `'Array` — concrete `System` with `[Key; N]` (firmware trimmed default).
+# - `'Vec`   — concrete `System` with `Vec<Key>` (cucumber / runtime serde).
+#
+# Emit:
+# - `emit_for_profile profile` → Array storage (backward compatible).
+# - `emit_for_profile_with profile storage` → pick Array | Vec.
+#
+# No Keys trait: each codegen target picks one storage shape; keymaps are not
+# shared across array and vec System types at runtime.
 #
 # Naming:
 # - `*_ty` — Rust type in type position
@@ -31,10 +38,19 @@
 
   smart_keymap,
 
+  # Key-data storage backend for emit.
+  # - 'Array: concrete System, [Key; N]
+  # - 'Vec:   concrete System, Vec<Key>  (std)
+  composite.Storage = std.contract.from_predicate (fun x =>
+    x == 'Array || x == 'Vec
+  ),
+
   # Shared defaults for a key family. Merge: `{ name = "…", … } & composite.default_family`.
   # Lazy fields see `name` / `variant` / `module` from the merged record (like Nickel `| default`).
   # Required from the left-hand record: name, variant, system_ty, context_ty, context_expr.
   # Const-generic / array lengths use `{ crate::init::… }` in type position (rustc needs braces on paths).
+  #
+  # Data-carrying families also set `system_ty_vec` (Vec storage); singletons share system_ty.
   composite.default_family = {
     name,
     variant,
@@ -54,6 +70,8 @@
     key_state_variant | default = variant,
     has_key_data | default = false,
     data_lengths | default = [],
+    # Default: same as array system_ty (singletons / non-data).
+    system_ty_vec | default = system_ty,
 
     ref_ty | default = "%{module}::Ref",
     event_ty | default = "%{module}::Event",
@@ -81,6 +99,11 @@
         [%{module}::Key; { crate::init::AUTOMATION }],
         { crate::init::AUTOMATION_INSTRUCTION_COUNT }
       >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::Key>,
+        { crate::init::AUTOMATION_INSTRUCTION_COUNT }
+      >"%,
       context_ty = m%"%{module}::Context<
         { crate::init::AUTOMATION_INSTRUCTION_COUNT }
       >"%,
@@ -99,6 +122,10 @@
       system_ty = m%"%{module}::System<
         Ref,
         [%{module}::Key; { crate::init::CALLBACK }]
+      >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::Key>
       >"%,
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context",
@@ -148,6 +175,30 @@
           >;
           { crate::init::CHORDED_AUXILIARY }
         ],
+        { crate::init::CHORDED_MAX_CHORDS },
+        { crate::init::CHORDED_MAX_CHORD_SIZE },
+        { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+        CHORDED_MAX_PRESSED_INDICES
+      >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<
+          %{module}::Key<
+            Ref,
+            { crate::init::CHORDED_MAX_CHORDS },
+            { crate::init::CHORDED_MAX_CHORD_SIZE },
+            { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+            CHORDED_MAX_PRESSED_INDICES
+          >
+        >,
+        Vec<
+          %{module}::AuxiliaryKey<
+            Ref,
+            { crate::init::CHORDED_MAX_CHORDS },
+            { crate::init::CHORDED_MAX_CHORD_SIZE },
+            CHORDED_MAX_PRESSED_INDICES
+          >
+        >,
         { crate::init::CHORDED_MAX_CHORDS },
         { crate::init::CHORDED_MAX_CHORD_SIZE },
         { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
@@ -203,6 +254,10 @@
         Ref,
         [%{module}::Key; { crate::init::KEYBOARD }]
       >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::Key>
+      >"%,
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context",
     } & composite.default_family,
@@ -228,6 +283,12 @@
           %{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
           { crate::init::LAYERED }
         ],
+        { crate::init::LAYERED_LAYER_COUNT }
+      >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::ModifierKey>,
+        Vec<%{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>>,
         { crate::init::LAYERED_LAYER_COUNT }
       >"%,
       context_ty = "%{module}::Context<{ crate::init::LAYERED_LAYER_COUNT }>",
@@ -260,6 +321,10 @@
         Ref,
         [%{module}::Key; { crate::init::STICKY }]
       >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::Key>
+      >"%,
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context::from_config(config.sticky)",
     } & composite.default_family,
@@ -280,6 +345,11 @@
         ],
         { crate::init::TAP_DANCE_MAX_DEFINITIONS }
       >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>>,
+        { crate::init::TAP_DANCE_MAX_DEFINITIONS }
+      >"%,
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context::from_config(config.tap_dance)",
     } & composite.default_family,
@@ -296,6 +366,10 @@
       system_ty = m%"%{module}::System<
         Ref,
         [%{module}::Key<Ref>; { crate::init::TAP_HOLD }]
+      >"%,
+      system_ty_vec = m%"%{module}::System<
+        Ref,
+        Vec<%{module}::Key<Ref>>
       >"%,
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context::from_config(config.tap_hold)",
@@ -322,6 +396,7 @@
     key_state_ty | String,
     config_ty | String,
     system_ty | String,
+    system_ty_vec | String,
     context_ty | String,
     context_expr | String,
     system_expr | String,
@@ -443,21 +518,34 @@
     },
 
   # --- Rust emission ---------------------------------------------------------
-  # Emit for a profile. Public selection is by composition on `composite.profile`:
+  # Emit for a profile + storage flavour.
+  # Public selection is by composition on `composite.profile`:
   #   default: keymap_profile (stripped)
   #   full:    … & composite.with_full_profile
-  # `emit_for_profile` is the shared implementation (also used by checks).
+  # Storage:
+  #   'Array — [Key; N] (firmware / const init)
+  #   'Vec   — Vec<Key> (cucumber / runtime deserialize)
+  # `emit_for_profile` keeps Array for backward compatibility.
 
-  composite.emit_for_profile = fun profile =>
+  composite.system_ty_for = fun storage f =>
+    storage
+    |> match {
+      'Array => f.system_ty,
+      'Vec => f.system_ty_vec,
+    },
+
+  composite.emit_for_profile_with = fun profile storage =>
     let systems = profile.systems in
     let is_full =
       std.array.length systems == std.array.length composite.families
     in
+    let is_vec = storage == 'Vec in
     let join = fun xs => std.string.join "\n" xs in
     let config_systems = systems |> std.array.filter (fun f => f.has_config) in
     let data_array_systems = systems |> std.array.filter (fun f => f.has_key_data) in
     let singleton_systems = systems |> std.array.filter (fun f => f.has_key_data == false) in
     let has_chorded = std.array.any (fun f => f.name == "chorded") systems in
+    let sty = composite.system_ty_for storage in
 
     let enum_variants = fun ty_of =>
       systems
@@ -493,6 +581,9 @@ impl TryFrom<%{aggregate}> for %{ty_of f} {
       |> join
     in
 
+    # Vec-backed shells deserialize sparse key_data/config (cucumber); field defaults help.
+    let config_field_attrs = if is_vec then "\n    #[serde(default)]" else "" in
+
     let config_struct =
       if config_systems == [] then
         m%"
@@ -509,7 +600,9 @@ impl Config {
       else
         let fields =
           config_systems
-          |> std.array.map (fun f => "/// Config for [%{f.module}].\npub %{f.config_path}: %{f.config_ty},")
+          |> std.array.map (fun f =>
+            "/// Config for [%{f.module}].%{config_field_attrs}\n    pub %{f.config_path}: %{f.config_ty},"
+          )
           |> join
         in
         let new_fields =
@@ -573,13 +666,13 @@ if let Ok(e) = event.try_into_key_event() {
 
     let system_fields =
       systems
-      |> std.array.map (fun f => "%{f.field}: %{f.system_ty},")
+      |> std.array.map (fun f => "%{f.field}: %{sty f},")
       |> join
     in
 
     let system_new_params =
       data_array_systems
-      |> std.array.map (fun f => "%{f.field}: %{f.system_ty},")
+      |> std.array.map (fun f => "%{f.field}: %{sty f},")
       |> join
     in
 
@@ -748,11 +841,32 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
 
     let event_param = if context_handle_event == "" then "_event" else "event" in
 
+    # Array keeps the historical doc strings (snapshot-stable).
+    # Vec documents the storage flavour so the two emits are easy to tell apart.
     let module_doc =
-      if is_full then
-        "Full composite key system (generated; all registry families)."
+      storage
+      |> match {
+        'Array =>
+          if is_full then
+            "Full composite key system (generated; all registry families)."
+          else
+            "Per-keymap composite key system (generated; only families used by this keymap)."
+        ,
+        'Vec =>
+          if is_full then
+            "Full composite key system (generated; all registry families; vec-backed key data)."
+          else
+            "Per-keymap composite key system (generated; only families used by this keymap; vec-backed key data)."
+        ,
+      }
+    in
+
+    # Vec storage is not Copy.
+    let system_derives =
+      if is_vec then
+        "#[derive(Debug, Clone, PartialEq)]"
       else
-        "Per-keymap composite key system (generated; only families used by this keymap)."
+        "#[derive(Debug, Clone, Copy, PartialEq)]"
     in
 
     let module_src = m%"
@@ -849,7 +963,7 @@ pub mod key_system {
 %{key_state_from_family}
 
     /// Aggregate [key::System] for this keymap.
-    #[derive(Debug, Clone, Copy, PartialEq)]
+    %{system_derives}
     pub struct System {
 %{system_fields}
     }
@@ -948,7 +1062,12 @@ pub mod key_system {
       include system_rust_expr,
       include module_src,
       include size_consts,
+      include storage,
     },
+
+  # Array storage (firmware / existing snapshots).
+  composite.emit_for_profile = fun profile =>
+    composite.emit_for_profile_with profile 'Array,
 
   # Emit for the active `composite.profile` (override via with_full_profile).
   composite.emit = composite.emit_for_profile composite.profile,
@@ -1063,7 +1182,7 @@ pub mod key_system {
       },
   },
 
-  # Full-profile emit (same concrete System shape as trimmed; Keys/KeyVecs later).
+  # Full-profile emit (array storage = same concrete System shape as trimmed).
   # Selection form for tools: merge `composite.with_full_profile` then use
   # `composite.emit`; checks call `emit_for_profile full_profile` directly.
   checks.composite_full_emit =
@@ -1096,7 +1215,55 @@ pub mod key_system {
         actual = std.string.is_match "pub const fn new" module_src,
         expected = true,
       },
-      check_not_keys_trait_yet = {
+      check_array_keyboard_system = {
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" module_src,
+        expected = true,
+      },
+      check_no_keys_trait = {
+        actual = std.string.is_match "trait Keys" module_src,
+        expected = false,
+      },
+    },
+
+  # Full-profile emit with Vec storage (cucumber-oriented).
+  checks.composite_full_emit_vec =
+    let module_src =
+      (composite.emit_for_profile_with composite.full_profile 'Vec).module_src
+    in
+    {
+      check_module_doc_full = {
+        actual = std.string.is_match "Full composite key system" module_src,
+        expected = true,
+      },
+      check_vec_storage_doc = {
+        actual = std.string.is_match "vec-backed key data" module_src,
+        expected = true,
+      },
+      check_vec_keyboard_system = {
+        actual =
+          std.string.is_match
+            "Vec<smart_keymap::key::keyboard::Key>"
+            module_src,
+        expected = true,
+      },
+      check_not_array_keyboard = {
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" module_src,
+        expected = false,
+      },
+      check_system_not_copy = {
+        # Vec System derives Clone + PartialEq only (no Copy).
+        actual = std.string.is_match "#\\[derive\\(Debug, Clone, PartialEq\\)\\]" module_src,
+        expected = true,
+      },
+      check_serde_default_on_config = {
+        actual = std.string.is_match "#\\[serde\\(default\\)\\]" module_src,
+        expected = true,
+      },
+      check_concrete_system_new = {
+        actual = std.string.is_match "pub const fn new" module_src,
+        expected = true,
+      },
+      check_no_keys_trait = {
         actual = std.string.is_match "trait Keys" module_src,
         expected = false,
       },
