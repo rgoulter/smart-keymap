@@ -2,12 +2,14 @@
 //!  implementations (array-backed).
 //!
 //! **Who uses what:**
-//! - **This module** — non-custom default [`crate::init`] (array `System`).
+//! - **This module** — residual unit tests / `sizes` bin (array `System`).
 //! - **Cucumber / runtime serde** — generated vec-backed shell at
 //!    `crate::key::composite_full_vec` (`feature = "std"`; `build.rs`).
 //! - **`keymap!` and firmware custom keymaps** — Nickel-generated **trimmed**
 //!    per-keymap `key_system` (`ncl/composite-key-system.ncl`), only the
 //!    families that map uses (e.g. keyboard + tap-hold + layered).
+//! - **Default (non-custom) [`crate::init`]** — keyboard-only mini shell in
+//!    `src/lib.rs`, not this module.
 //!
 //! Generated shells are intentionally human-readable and mirror the structure
 //!  here: `Ref` / `Event` / `PendingKeyState` / `KeyState`, `Config` /
@@ -16,7 +18,7 @@
 //! When adding a new key family:
 //! 1. implement `key::foo` and Nickel `smart_keys/foo/`,
 //! 2. register it in `ncl/composite-key-system.ncl` (codegen source of truth),
-//! 3. update this hand-written shell if default `init` still depends on it.
+//! 3. update this hand-written shell if residual tests still depend on it.
 
 use core::fmt::Debug;
 use core::marker::PhantomData;
