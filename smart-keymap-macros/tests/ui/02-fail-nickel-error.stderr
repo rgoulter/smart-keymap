@@ -1,0 +1,25 @@
+error: proc macro panicked
+  --> tests/ui/02-fail-nickel-error.rs:4:13
+   |
+ 4 |       let _ = keymap!(
+   |  _____________^
+ 5 | |         r#"
+ 6 | |         {
+ 7 | |             keys = [
+...  |
+11 | |         "#
+12 | |     );
+   | |_____^
+   |
+   = help: message: Nickel evaluation failed:
+           error: contract broken by the value of `layers`
+                  Value is not a valid keymap key
+               ┌─ $WORKSPACE/ncl/keymap-ncl-to-json.ncl:155:13
+               │
+           155 │     | Array KeymapLayer
+               │             ----------- expected array element type
+               │
+               ┌─ <stdin>:4:17
+               │
+             4 │                 { invalid_field = 4 },
+               │                 ^^^^^^^^^^^^^^^^^^^^^ applied to this expression
