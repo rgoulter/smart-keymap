@@ -16,4 +16,5 @@ nickel \
   checks.ncl \
   chording.ncl \
   keymap-ncl-to-json.ncl \
-  keymap-codegen.ncl
+  keymap-codegen.ncl \
+  layouts/remap.ncl
