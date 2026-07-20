@@ -29,9 +29,6 @@ pub mod tap_dance;
 /// Tap-Hold keys.
 pub mod tap_hold;
 
-/// "Composite" keys; an aggregate type used for a common context and event.
-pub mod composite;
-
 /// Generated full composite shell with `Vec` key-data storage (cucumber / runtime serde).
 ///
 /// Produced by `build.rs` when `feature = "std"` (not checked in).
@@ -688,7 +685,7 @@ pub struct NoOpKeyState;
 pub enum EventError {
     /// Error when mapping isn't possible.
     ///
-    /// e.g. trying to map variants of [composite::Event] to [tap_hold::Event].
+    /// e.g. trying to map variants of key system `Event` to [tap_hold::Event].
     UnmappableEvent,
 }
 
@@ -698,7 +695,7 @@ type EventResult<T> = Result<T, EventError>;
 /// Events which are either input, or for a particular [System::Event].
 ///
 /// It's useful for key implementations to use [Event] with [System::Event],
-///  and map [System::Event] to and partially from [composite::Event].
+///  and map [System::Event] to and partially from a key system `Event`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Event<T> {
     /// Keymap input events, such as physical key presses.

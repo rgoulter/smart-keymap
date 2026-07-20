@@ -10,7 +10,7 @@ fn press_active_layer_when_hold_layer_mod_held() {
 
     // Assemble
     // - In order to have { tap: Keyboard, hold: LayerMod },
-    //    we need to use the aggregate composite::Key
+    //    we need to use the aggregate key system Key
     //    as the nested key type.
     let mut keymap = ObservedKeymap::new(keymap!(
         r#"
