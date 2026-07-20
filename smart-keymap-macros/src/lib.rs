@@ -9,8 +9,8 @@ use smart_keymap_nickel_helper::{nickel_keymap_expr_for_keymap_ncl, NickelError}
 ///
 /// Expands to a block with a nested module carrying a **trimmed** per-keymap
 /// `key_system` (only families used by the map) and a `Keymap::new(...)` value.
-/// Callers need the `smart_keymap` crate in scope; the expansion does not use
-/// the library full `key::composite` shell.
+///
+/// Callers need the `smart_keymap` crate in scope.
 pub fn keymap(input: TokenStream) -> TokenStream {
     let keymap_ncl_lit = parse_macro_input!(input as LitStr);
     let keymap_ncl_str = keymap_ncl_lit.value();
