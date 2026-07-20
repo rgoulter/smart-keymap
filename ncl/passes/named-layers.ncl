@@ -39,12 +39,10 @@
       _ => 0,
     },
 
-  # Longest numbered layered array in a key tree (via map_accum for nesting).
+  # Longest numbered layered array in a key tree (via map_tree for nesting).
   max_numbered_layered_length_accum = fun acc k =>
-    let len = numbered_layered_length_of k in
-    let acc = if len > acc then len else acc in
     let { acc, k = _ } =
-      keymap_ncl.nullable_key.map_accum
+      keymap_ncl.nullable_key.map_tree
         (fun acc k =>
           let len = numbered_layered_length_of k in
           let acc = if len > acc then len else acc in
@@ -73,9 +71,8 @@
     },
 
   named_layer_names_accum = fun acc_names k =>
-    let acc_names = acc_names & named_layer_names_from_key k in
     let { acc = acc_names, k = _ } =
-      keymap_ncl.nullable_key.map_accum
+      keymap_ncl.nullable_key.map_tree
         (fun acc_names k =>
           { acc = acc_names & named_layer_names_from_key k, include k }
         )
@@ -198,14 +195,13 @@
         },
     },
 
-  # Scope: one key tree (self, then nested via map_accum).
+  # Scope: one key tree (every key via map_tree).
   lower_named_layers_in_key_tree = fun numbered_len named_names k =>
     let lower_f = fun acc key =>
       let lowered = lower_named_layers_on_key numbered_len named_names key in
       { include acc, k = lowered }
     in
-    let k = lower_named_layers_on_key numbered_len named_names k in
-    let { acc = _, k } = keymap_ncl.nullable_key.map_accum lower_f null k in
+    let { acc = _, k } = keymap_ncl.nullable_key.map_tree lower_f null k in
     k,
 
   # Scope: array of key trees (pipeline pass). No-op when no named layers used.
@@ -282,12 +278,13 @@
     },
 
   # Resolve named-layer strings in layer_modifier fields (and nested keys).
+  # map_tree reaches layer_mod under composites (e.g. chorded → layered →
+  # tap_hold → layer_mod.hold "fn").
   resolve_named_layer_refs_in_key = fun name_to_idx k =>
     let resolve_f = fun acc key =>
       { include acc, k = resolve_layer_modifier_names name_to_idx key }
     in
-    let k = resolve_layer_modifier_names name_to_idx k in
-    let { acc = _, k } = keymap_ncl.nullable_key.map_accum resolve_f null k in
+    let { acc = _, k } = keymap_ncl.nullable_key.map_tree resolve_f null k in
     k,
 
   resolve_keys_named_layer_refs = fun name_to_idx keys =>
@@ -315,14 +312,13 @@
       k => k,
     },
 
-  # Pad every layered key in a key tree to `target_len` (self, then nested via map_accum).
+  # Pad every layered key in a key tree to `target_len` (via map_tree).
   pad_key_layered_arrays = fun target_len k =>
     let pad_f = fun acc key =>
       let padded = pad_layered_key target_len key in
       { include acc, k = padded }
     in
-    let k = pad_layered_key target_len k in
-    let { acc = _, k } = keymap_ncl.nullable_key.map_accum pad_f null k in
+    let { acc = _, k } = keymap_ncl.nullable_key.map_tree pad_f null k in
     k,
 
   checks.check_max_layered_length =
@@ -611,6 +607,44 @@
                 { key_code = 5 },
                 { key_code = 6 },
               ],
+            },
+          ],
+        },
+
+      # Nested composites: chorded → layered → tap_hold → layer_mod.hold "fn".
+      # map_tree must resolve the name all the way down.
+      check_prepare_nested_named_layer_mod_under_taphold =
+        let keys = [
+          {
+            chords = [[0, K.C]],
+            passthrough =
+              (K.Escape & K.hold (K.layer_mod.hold "fn"))
+              & { named_layers = { fn = null } },
+          },
+          K.A & { named_layers = { fn = K.B } },
+        ]
+        in
+        {
+          actual = prepare_keys_named_layers keys |> std.array.map keymap_ncl.key.to_json_value,
+          expected = [
+            {
+              chords = [
+                [
+                  0,
+                  { key_code = 6 },
+                ],
+              ],
+              passthrough = {
+                base = {
+                  hold = { Hold = [1, 0] },
+                  tap = { key_code = 41 },
+                },
+                layered = [ null ],
+              },
+            },
+            {
+              base = { key_code = 4 },
+              layered = [{ key_code = 5 }],
             },
           ],
         },
