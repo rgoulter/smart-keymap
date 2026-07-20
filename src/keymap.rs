@@ -955,45 +955,39 @@ mod tests {
     fn tap_hold_interrupt_keymap(
         interrupt_response: crate::key::tap_hold::InterruptResponse,
     ) -> crate::keymap::Keymap<
-        [crate::key::composite::Ref; 2],
-        crate::key::composite::Ref,
-        crate::key::composite::Context,
-        crate::key::composite::Event,
-        crate::key::composite::PendingKeyState,
-        crate::key::composite::KeyState,
-        crate::key::composite::System<
-            crate::key::composite::KeyArrays<0, 0, 0, 0, 1, 0, 0, 0, 0, 1>,
-        >,
+        [crate::key::composite_full_vec::key_system::Ref; 2],
+        crate::key::composite_full_vec::key_system::Ref,
+        crate::key::composite_full_vec::key_system::Context,
+        crate::key::composite_full_vec::key_system::Event,
+        crate::key::composite_full_vec::key_system::PendingKeyState,
+        crate::key::composite_full_vec::key_system::KeyState,
+        crate::key::composite_full_vec::key_system::System,
     > {
-        use crate::key::composite as key_system;
+        use crate::key::composite_full_vec::key_system;
 
         let mut config = key_system::Config::new();
         config.tap_hold.interrupt_response = interrupt_response;
 
         crate::keymap::Keymap::new(
             [
-                crate::key::composite::Ref::TapHold(crate::key::tap_hold::Ref(0)),
-                crate::key::composite::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(0x05)),
+                key_system::Ref::TapHold(crate::key::tap_hold::Ref(0)),
+                key_system::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(0x05)),
             ],
             key_system::Context::from_config(config),
-            crate::key::composite::System::array_based(
-                crate::key::automation::System::new([]),
-                crate::key::callback::System::new([]),
-                crate::key::chorded::System::new([], []),
-                crate::key::keyboard::System::new([crate::key::keyboard::Key {
+            key_system::System::new(
+                crate::key::automation::System::new(Vec::new()),
+                crate::key::callback::System::new(Vec::new()),
+                crate::key::chorded::System::new(Vec::new(), Vec::new()),
+                crate::key::keyboard::System::new(vec![crate::key::keyboard::Key {
                     key_code: 0x05,
                     modifiers: crate::key::KeyboardModifiers::new(),
                 }]),
-                crate::key::layered::System::new([], []),
-                crate::key::sticky::System::new([]),
-                crate::key::tap_dance::System::new([]),
-                crate::key::tap_hold::System::new([crate::key::tap_hold::Key {
-                    tap: crate::key::composite::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(
-                        0x04,
-                    )),
-                    hold: crate::key::composite::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(
-                        0xE0,
-                    )),
+                crate::key::layered::System::new(Vec::new(), Vec::new()),
+                crate::key::sticky::System::new(Vec::new()),
+                crate::key::tap_dance::System::new(Vec::new()),
+                crate::key::tap_hold::System::new(vec![crate::key::tap_hold::Key {
+                    tap: key_system::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(0x04)),
+                    hold: key_system::Ref::Keyboard(crate::key::keyboard::Ref::KeyCode(0xE0)),
                 }]),
             ),
         )
@@ -1002,12 +996,12 @@ mod tests {
     macro_rules! simple_keyboard_keymap {
         () => {{
             use crate as smart_keymap;
-            use smart_keymap::key::composite as key_system;
+            use smart_keymap::key::composite_full_vec::key_system;
 
             use key_system::Context;
             use key_system::Ref;
             const KEY_COUNT: usize = 1;
-            const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
+            const KEY_REFS: [Ref; KEY_COUNT] = [key_system::Ref::Keyboard(
                 smart_keymap::key::keyboard::Ref::KeyCode(0x04),
             )];
             const CONTEXT: Context = Context::from_config(key_system::Config::new());
@@ -1015,24 +1009,24 @@ mod tests {
             smart_keymap::keymap::Keymap::new(
                 KEY_REFS,
                 CONTEXT,
-                smart_keymap::key::composite::System::array_based(
-                    smart_keymap::key::automation::System::new([]),
-                    smart_keymap::key::callback::System::new([]),
-                    smart_keymap::key::chorded::System::new([], []),
-                    smart_keymap::key::keyboard::System::new([]),
-                    smart_keymap::key::layered::System::new([], []),
-                    smart_keymap::key::sticky::System::new([]),
-                    smart_keymap::key::tap_dance::System::new([]),
-                    smart_keymap::key::tap_hold::System::new([]),
+                key_system::System::new(
+                    smart_keymap::key::automation::System::new(Vec::new()),
+                    smart_keymap::key::callback::System::new(Vec::new()),
+                    smart_keymap::key::chorded::System::new(Vec::new(), Vec::new()),
+                    smart_keymap::key::keyboard::System::new(Vec::new()),
+                    smart_keymap::key::layered::System::new(Vec::new(), Vec::new()),
+                    smart_keymap::key::sticky::System::new(Vec::new()),
+                    smart_keymap::key::tap_dance::System::new(Vec::new()),
+                    smart_keymap::key::tap_hold::System::new(Vec::new()),
                 ),
             )
         }};
     }
 
-    fn tap_hold_timeout_event() -> key::Event<crate::key::composite::Event> {
+    fn tap_hold_timeout_event() -> key::Event<crate::key::composite_full_vec::key_system::Event> {
         key::Event::Key {
             keymap_index: 0,
-            key_event: crate::key::composite::Event::TapHold(
+            key_event: crate::key::composite_full_vec::key_system::Event::TapHold(
                 crate::key::tap_hold::Event::TapHoldTimeout,
             ),
         }
@@ -1514,12 +1508,12 @@ mod tests {
         // Assemble
         let mut keymap = {
             use crate as smart_keymap;
-            use smart_keymap::key::composite as key_system;
+            use smart_keymap::key::composite_full_vec::key_system;
 
             use key_system::Context;
             use key_system::Ref;
             const KEY_COUNT: usize = 1;
-            const KEY_REFS: [Ref; KEY_COUNT] = [smart_keymap::key::composite::Ref::Keyboard(
+            const KEY_REFS: [Ref; KEY_COUNT] = [key_system::Ref::Keyboard(
                 smart_keymap::key::keyboard::Ref::KeyCode(0x04),
             )];
             const CONTEXT: Context = Context::from_config(key_system::Config::new());
@@ -1527,15 +1521,15 @@ mod tests {
             smart_keymap::keymap::Keymap::new(
                 KEY_REFS,
                 CONTEXT,
-                smart_keymap::key::composite::System::array_based(
-                    smart_keymap::key::automation::System::new([]),
-                    smart_keymap::key::callback::System::new([]),
-                    smart_keymap::key::chorded::System::new([], []),
-                    smart_keymap::key::keyboard::System::new([]),
-                    smart_keymap::key::layered::System::new([], []),
-                    smart_keymap::key::sticky::System::new([]),
-                    smart_keymap::key::tap_dance::System::new([]),
-                    smart_keymap::key::tap_hold::System::new([]),
+                key_system::System::new(
+                    smart_keymap::key::automation::System::new(Vec::new()),
+                    smart_keymap::key::callback::System::new(Vec::new()),
+                    smart_keymap::key::chorded::System::new(Vec::new(), Vec::new()),
+                    smart_keymap::key::keyboard::System::new(Vec::new()),
+                    smart_keymap::key::layered::System::new(Vec::new(), Vec::new()),
+                    smart_keymap::key::sticky::System::new(Vec::new()),
+                    smart_keymap::key::tap_dance::System::new(Vec::new()),
+                    smart_keymap::key::tap_hold::System::new(Vec::new()),
                 ),
             )
         };
