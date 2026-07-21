@@ -47,14 +47,14 @@
 
   # Shared defaults for a key family. Merge: `{ name = "…", … } & composite.default_family`.
   # Lazy fields see `name` / `variant` / `module` from the merged record (like Nickel `| default`).
-  # Required from the left-hand record: name, variant, system_ty, context_ty, context_expr.
+  # Required from the left-hand record: name, variant, system_ty.array, context_ty, context_expr.
   # Const-generic / array lengths use `{ crate::init::… }` in type position (rustc needs braces on paths).
   #
-  # Data-carrying families also set `system_ty_vec` (Vec storage); singletons share system_ty.
+  # Data-carrying families also set `system_ty.vec` (Vec storage); singletons share `system_ty.array`.
   composite.default_family = {
     name,
     variant,
-    system_ty,
+    system_ty.array,
     context_ty,
     context_expr,
 
@@ -70,8 +70,8 @@
     key_state_variant | default = variant,
     has_key_data | default = false,
     data_lengths | default = [],
-    # Default: same as array system_ty (singletons / non-data).
-    system_ty_vec | default = system_ty,
+    # Default: same as array system type (singletons / non-data).
+    system_ty.vec | default = system_ty.array,
 
     ref_ty | default = "%{module}::Ref",
     event_ty | default = "%{module}::Event",
@@ -83,7 +83,7 @@
 
   # Stable match-arm / field order for generated code.
   # Each entry: `{ name = "…", module = "smart_keymap::key::%{name}", … } & default_family`.
-  # `module` is on the left so `system_ty` / constructors can use `%{module}` recursively.
+  # `module` is on the left so `system_ty.*` / constructors can use `%{module}` recursively.
   composite.families = [
     {
       name = "automation",
@@ -94,12 +94,12 @@
       handles_context_events = true,
       has_key_data = true,
       data_lengths = [{ const_name = "AUTOMATION", data_field = "automation" }],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [%{module}::Key; { crate::init::AUTOMATION }],
         { crate::init::AUTOMATION_INSTRUCTION_COUNT }
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::Key>,
         { crate::init::AUTOMATION_INSTRUCTION_COUNT }
@@ -119,11 +119,11 @@
       variant = "Callback",
       has_key_data = true,
       data_lengths = [{ const_name = "CALLBACK", data_field = "callback" }],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [%{module}::Key; { crate::init::CALLBACK }]
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::Key>
       >"%,
@@ -136,7 +136,7 @@
       module = "smart_keymap::key::%{name}",
       variant = "CapsWord",
       handles_context_events = true,
-      system_ty = "%{module}::System<Ref>",
+      system_ty.array = "%{module}::System<Ref>",
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context::new()",
     } & composite.default_family,
@@ -154,7 +154,7 @@
         { const_name = "CHORDED", data_field = "chorded" },
         { const_name = "CHORDED_AUXILIARY", data_field = "chorded_auxiliary" },
       ],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [
           %{module}::Key<
@@ -180,7 +180,7 @@
         { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
         CHORDED_MAX_PRESSED_INDICES
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<
           %{module}::Key<
@@ -227,7 +227,7 @@
       variant = "Consumer",
       has_state_update = true,
       has_key_output = true,
-      system_ty = "%{module}::System<Ref>",
+      system_ty.array = "%{module}::System<Ref>",
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context",
     } & composite.default_family,
@@ -237,7 +237,7 @@
       module = "smart_keymap::key::%{name}",
       variant = "Custom",
       has_key_output = true,
-      system_ty = "%{module}::System<Ref>",
+      system_ty.array = "%{module}::System<Ref>",
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context",
     } & composite.default_family,
@@ -250,11 +250,11 @@
       has_key_output = true,
       has_key_data = true,
       data_lengths = [{ const_name = "KEYBOARD", data_field = "keyboard" }],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [%{module}::Key; { crate::init::KEYBOARD }]
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::Key>
       >"%,
@@ -276,7 +276,7 @@
         { const_name = "LAYERED", data_field = "layered" },
         { const_name = "LAYER_MODIFIERS", data_field = "layer_modifiers" },
       ],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [%{module}::ModifierKey; { crate::init::LAYER_MODIFIERS }],
         [
@@ -285,7 +285,7 @@
         ],
         { crate::init::LAYERED_LAYER_COUNT }
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::ModifierKey>,
         Vec<%{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>>,
@@ -302,7 +302,7 @@
       module = "smart_keymap::key::%{name}",
       variant = "Mouse",
       has_key_output = true,
-      system_ty = "%{module}::System<Ref>",
+      system_ty.array = "%{module}::System<Ref>",
       context_ty = "%{module}::Context",
       context_expr = "%{module}::Context",
     } & composite.default_family,
@@ -317,11 +317,11 @@
       handles_context_events = true,
       has_key_data = true,
       data_lengths = [{ const_name = "STICKY", data_field = "sticky" }],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [%{module}::Key; { crate::init::STICKY }]
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::Key>
       >"%,
@@ -337,7 +337,7 @@
       has_pending_dispatch = true,
       has_key_data = true,
       data_lengths = [{ const_name = "TAP_DANCE", data_field = "tap_dance" }],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [
           %{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
@@ -345,7 +345,7 @@
         ],
         { crate::init::TAP_DANCE_MAX_DEFINITIONS }
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>>,
         { crate::init::TAP_DANCE_MAX_DEFINITIONS }
@@ -363,11 +363,11 @@
       updates_keymap_context = true,
       has_key_data = true,
       data_lengths = [{ const_name = "TAP_HOLD", data_field = "tap_hold" }],
-      system_ty = m%"%{module}::System<
+      system_ty.array = m%"%{module}::System<
         Ref,
         [%{module}::Key<Ref>; { crate::init::TAP_HOLD }]
       >"%,
-      system_ty_vec = m%"%{module}::System<
+      system_ty.vec = m%"%{module}::System<
         Ref,
         Vec<%{module}::Key<Ref>>
       >"%,
@@ -395,8 +395,10 @@
     pending_ty | String,
     key_state_ty | String,
     config_ty | String,
-    system_ty | String,
-    system_ty_vec | String,
+    system_ty = {
+      array | String,
+      vec | String,
+    },
     context_ty | String,
     context_expr | String,
     system_expr | String,
@@ -530,8 +532,8 @@
   composite.system_ty_for = fun storage f =>
     storage
     |> match {
-      'Array => f.system_ty,
-      'Vec => f.system_ty_vec,
+      'Array => f.system_ty.array,
+      'Vec => f.system_ty.vec,
     },
 
   composite.emit_for_profile_with = fun profile storage =>
