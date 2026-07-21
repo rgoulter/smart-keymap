@@ -1041,7 +1041,9 @@ pub mod key_system {
 "%
     in
 
-    let size_consts = fun data_len_rust_expr_for_field =>
+    # Key-data length consts for init (e.g. `const KEYBOARD: usize = N;`).
+    # Takes key_data directly; missing fields default to empty arrays (len 0).
+    let size_consts = fun key_data =>
       systems
       |> std.array.fold_left
         (fun acc f =>
@@ -1049,7 +1051,9 @@ pub mod key_system {
           @ (
             f.data_lengths
             |> std.array.map (fun { const_name, data_field } =>
-              "    const %{const_name}: usize = %{data_len_rust_expr_for_field data_field};"
+              let data = (key_data & { "%{data_field}" | default = [] })."%{data_field}" in
+              let len = data |> std.array.length |> std.to_string in
+              "    const %{const_name}: usize = %{len};"
             )
           )
         )

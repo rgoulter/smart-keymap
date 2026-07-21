@@ -380,10 +380,6 @@
         |> std.array.fold_left std.number.max 0
       in
       let { key_data, key_refs } = key_data_and_refs in
-      let data_len_rust_expr_for_field = fun field_name =>
-        let data = (key_data & { "%{field_name}" | default = [] })."%{field_name}" in
-        data |> std.array.length |> std.to_string
-      in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       let config = composite.emit.config_rust_expr in
       let context = "key_system::Context::from_config(%{config})" in
@@ -412,7 +408,7 @@ pub mod init {
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
 
-%{composite.emit.size_consts data_len_rust_expr_for_field}
+%{composite.emit.size_consts key_data}
 
 %{composite.emit.module_src}
 
