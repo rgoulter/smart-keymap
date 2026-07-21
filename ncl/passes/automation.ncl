@@ -36,7 +36,7 @@
       |> std.array.fold_left
         (fun { automation_instructions = prior_instructions, keys = prior_keys } k =>
           let { acc, k } =
-            keymap_ncl.key.map_accum
+            keymap_ncl.key.map_tree
               keymap_ncl.automation.transform_keys_to_instructions
               { automation_instructions = prior_instructions }
               k
