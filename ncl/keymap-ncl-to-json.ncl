@@ -50,8 +50,9 @@
 # Exported layer-index helpers (for layer_mod / docs; 1-based like layered[i]):
 #    numbered_layer_count, named_layer_names, named_layer_indices, max_layered_length
 #
-# Nesting: several passes walk composite keys via keymap_ncl.*.map_accum so
-# layered / named_layers / automation under tap_hold etc. are rewritten too.
+# Nesting:
+#   map_accum  — map over immediate child keys only (leaves: no-op)
+#   map_tree   — deep walk: apply f to every key in the tree (self, then children)
 #
 # Pass implementations live under ncl/passes/; this file is the driver:
 # contracts, key dispatch, authored fields, and json_keymap.
@@ -252,7 +253,8 @@
 
     to_json_value = fun k => null,
 
-    map_accum = fun f acc k => f acc k,
+    # Leaves have no nested keys; map_accum maps children only.
+    map_accum = fun f acc k => { include acc, include k },
   },
 
   keymap_ncl.key = {
@@ -303,9 +305,26 @@
       let km = key_module_for_value k in
       km.to_json_value k,
 
+    # Map f over immediate child keys only. Leaves are a no-op.
+    # For a full tree walk (every key, including self), use map_tree.
     map_accum = fun f acc k =>
       let km = key_module_for_value k in
       km.map_accum f acc k,
+
+    # Deep walk: apply f to this key, then map_accum into children recursively.
+    # Child slots may be null (e.g. layered transparency); those get f only.
+    # Order is top-down (pre-order): parent before descendants.
+    map_tree = fun f acc k =>
+      let rec go = fun acc k =>
+        k
+        |> match {
+          null => f acc null,
+          _ =>
+            let { acc, k } = f acc k in
+            map_accum (fun acc c => go acc c) acc k,
+        }
+      in
+      go acc k,
   },
 
   keymap_ncl.nullable_key = {
@@ -326,12 +345,21 @@
       _ => std.fail_with "unsupported nullable_key item in keymap.ncl",
     },
 
+    # Map f over immediate child keys only. Leaves / null are a no-op.
     map_accum = fun f acc k =>
       k
       |> match {
         k if keymap_ncl.key.is_key k => keymap_ncl.key.map_accum f acc k,
         k if keymap_ncl.null_.is_key k => keymap_ncl.null_.map_accum f acc k,
         _ => std.fail_with "unsupported nullable_key item in keymap.ncl",
+      },
+
+    # Deep walk over a nullable key tree (null or Key). See key.map_tree.
+    map_tree = fun f acc k =>
+      k
+      |> match {
+        null => f acc null,
+        _ => keymap_ncl.key.map_tree f acc k,
       },
   },
 
@@ -390,6 +418,62 @@
         keymap_ncl.chorded_aux.is_key k
         && std.record.has_field "passthrough" json
         && !(std.record.has_field "chords" json),
+    },
+
+  # map_accum = immediate children; map_tree = full key tree (self + descendants).
+  checks.check_map_tree =
+    let K = import "keys.ncl" in
+    let count_keys = fun acc k =>
+      let acc = acc + 1 in
+      { include acc, include k }
+    in
+    {
+      # Leaf: map_accum is no-op; map_tree still visits self.
+      check_leaf_map_accum_is_noop = {
+        actual = (keymap_ncl.key.map_accum count_keys 0 K.A).acc,
+        expected = 0,
+      },
+
+      check_leaf_map_tree_visits_self = {
+        actual = (keymap_ncl.key.map_tree count_keys 0 K.A).acc,
+        expected = 1,
+      },
+
+      # tap_hold children only for map_accum (tap + hold); map_tree also visits root.
+      check_taphold_map_accum_children_only = {
+        actual = (keymap_ncl.key.map_accum count_keys 0 (K.A & K.hold K.LeftCtrl)).acc,
+        expected = 2,
+      },
+
+      check_taphold_map_tree_visits_all = {
+        actual = (keymap_ncl.key.map_tree count_keys 0 (K.A & K.hold K.LeftCtrl)).acc,
+        expected = 3,
+      },
+
+      # Nested composites: map_accum stops at depth 1; map_tree reaches layer_mod.
+      check_nested_map_accum_misses_deep_hold =
+        let k = {
+          chords = [[0, K.C]],
+          passthrough = K.Escape & K.hold (K.layer_mod.hold 1),
+        }
+        in
+        # Visits chord key C + passthrough tap_hold only (2), not Escape/hold inside.
+        {
+          actual = (keymap_ncl.key.map_accum count_keys 0 k).acc,
+          expected = 2,
+        },
+
+      check_nested_map_tree_reaches_layer_mod =
+        let k = {
+          chords = [[0, K.C]],
+          passthrough = K.Escape & K.hold (K.layer_mod.hold 1),
+        }
+        in
+        # chorded + C + tap_hold + Escape + layer_mod = 5
+        {
+          actual = (keymap_ncl.key.map_tree count_keys 0 k).acc,
+          expected = 5,
+        },
     },
 
   checks.check_keymap_layer_string = {

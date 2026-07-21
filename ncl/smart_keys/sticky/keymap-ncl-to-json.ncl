@@ -45,6 +45,7 @@
 
       to_json_value = fun { sticky_modifiers = sm } => { sticky_modifiers = keyboard_modifiers.to_json_value sm },
 
-      map_accum = fun f acc k => f acc k,
+      # Leaves have no nested keys; map_accum maps children only.
+      map_accum = fun f acc k => { include acc, include k },
     },
 }
