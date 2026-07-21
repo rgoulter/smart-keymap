@@ -32,7 +32,7 @@ pub mod tap_hold;
 /// Generated full composite shell with `Vec` key-data storage (cucumber / runtime serde).
 ///
 /// Produced by `build.rs` when `feature = "std"` (not checked in).
-/// Source of truth: `ncl/composite-key-system.ncl` (`emit_for_profile_with … 'Vec`).
+/// Source of truth: `ncl/composite-key-system.ncl` (full profile + vec data → `emit`).
 /// Types live at [`composite_full_vec::key_system`].
 #[cfg(feature = "std")]
 pub mod composite_full_vec {

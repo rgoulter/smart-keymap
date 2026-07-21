@@ -479,7 +479,8 @@ fn nickel_to_json_for_hid_report_uncached(
 /// Emits the full-profile composite `key_system` module with Vec storage.
 ///
 /// Used by the library `build.rs` under `feature = "std"` (cucumber / runtime serde).
-/// Source of truth: `ncl/composite-key-system.ncl` (`emit_for_profile_with … 'Vec`).
+/// Source of truth: `ncl/composite-key-system.ncl` (merge full profile + vec data,
+/// then `composite.emit`).
 pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
@@ -509,11 +510,13 @@ let r =
   }
   & (import "keymap-codegen.ncl")
 in
+let r =
+  r
+  & r.composite.with_full_profile
+  & r.composite.with_vec_data
+in
 {
-  out =
-    (
-      r.composite.emit_for_profile_with r.composite.full_profile 'Vec
-    ).module_src,
+  out = r.composite.emit.module_src,
 }
 "#,
                 )
