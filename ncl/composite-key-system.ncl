@@ -1,11 +1,15 @@
 # Composite profile + key_system module generation.
 #
-# Family registry + profile/data selection + Rust emit for a composite shell.
+# Family registry + profile/data selection + Rust artefacts for a composite shell.
 #
-# Selection is by merge composition (not by applying emit_for_* at call sites):
+# Selection is by merge composition (not by applying builders at call sites):
 # - `composite.profile` — which families (default: keymap-stripped).
 # - `composite.data` — key-data storage (`'Array` | `'Vec`; default `'Array`).
-# - `composite.emit` — module artefacts for the selected profile + data.
+# - `composite.key_system` — artefacts for the selected profile + data:
+#     - `config.rust_expr`
+#     - `system.rust_expr`
+#     - `system.init_consts_rust_stmts` (fn of key_data)
+#     - `system.rust_mod` (generated `pub mod key_system { … }`)
 #
 # Profile:
 # - Default: keymap-stripped (`keymap_profile` from keys).
@@ -19,9 +23,9 @@
 #
 # Example (full registry, vec-backed):
 #   r & r.composite.with_full_profile & r.composite.with_vec_data
-#   then `r.composite.emit.module_src`
+#   then `r.composite.key_system.system.rust_mod`
 #
-# Low-level builder (checks / implementation): `emit_for_profile_with`.
+# Low-level builder (checks / implementation): `key_system_for`.
 #
 # No Keys trait: each codegen target picks one storage shape; keymaps are not
 # shared across array and vec System types at runtime.
@@ -491,21 +495,21 @@
     |> composite.used_modules_from
     |> composite.profile_from_modules,
 
-  # Active profile for `composite.emit`. Default = keymap-stripped.
+  # Active profile for `composite.key_system`. Default = keymap-stripped.
   # `| default` so merge replaces the whole profile (arrays are not deep-merged).
   # Override via merge: `… & composite.with_full_profile`.
   composite.profile | default = composite.keymap_profile,
 
-  # Key-data storage for `composite.emit`. Default = Array (firmware).
+  # Key-data storage for `composite.key_system`. Default = Array (firmware).
   # `| default` so merge can override with `with_vec_data` / `data = 'Vec`.
   composite.data | composite.Storage | default = 'Array,
 
-  # Merge this record to select the full registry profile for emit.
+  # Merge this record to select the full registry profile for key_system.
   composite.with_full_profile = {
     composite.profile = composite.full_profile,
   },
 
-  # Merge this record to select Vec key-data storage for emit.
+  # Merge this record to select Vec key-data storage for key_system.
   composite.with_vec_data = {
     composite.data | composite.Storage = 'Vec,
   },
@@ -536,11 +540,11 @@
       _ => std.fail_with "no system.rust_expr for family %{name}",
     },
 
-  # --- Rust emission ---------------------------------------------------------
-  # Low-level: build emit artefacts for an explicit profile + data storage.
+  # --- key_system artefacts --------------------------------------------------
+  # Low-level: build key_system artefacts for an explicit profile + data storage.
   # Public call sites should select via merge on `composite.profile` /
   # `composite.data` (or `with_full_profile` / `with_vec_data`) and read
-  # `composite.emit` — not call this directly.
+  # `composite.key_system` — not call this directly.
 
   composite.system_ty_for = fun storage f =>
     storage
@@ -549,7 +553,7 @@
       'Vec => f.system_ty.vec,
     },
 
-  composite.emit_for_profile_with = fun profile storage =>
+  composite.key_system_for = fun profile storage =>
     let systems = profile.systems in
     let is_full =
       std.array.length systems == std.array.length composite.families
@@ -1058,7 +1062,7 @@ pub mod key_system {
 
     # Key-data length consts for init (e.g. `const KEYBOARD: usize = N;`).
     # Takes key_data directly; missing fields default to empty arrays (len 0).
-    let size_consts = fun key_data =>
+    let init_consts_rust_stmts = fun key_data =>
       systems
       |> std.array.fold_left
         (fun acc f =>
@@ -1077,16 +1081,20 @@ pub mod key_system {
     in
 
     {
-      include config_rust_expr,
-      include system_rust_expr,
-      include module_src,
-      include size_consts,
-      include storage,
+      config = {
+        rust_expr = config_rust_expr,
+      },
+      system = {
+        rust_expr = system_rust_expr,
+        rust_mod = module_src,
+        include init_consts_rust_stmts,
+      },
+      data = storage,
     },
 
-  # Emit for the active `composite.profile` + `composite.data`
+  # key_system artefacts for the active `composite.profile` + `composite.data`
   # (override via with_full_profile / with_vec_data, or direct field merge).
-  composite.emit = composite.emit_for_profile_with composite.profile composite.data,
+  composite.key_system = composite.key_system_for composite.profile composite.data,
 
   checks.composite_profile = {
     # Inline fixture keys (avoid importing tests/ncl/*.json here — forced when
@@ -1198,7 +1206,7 @@ pub mod key_system {
       },
   },
 
-  # Full-profile emit (array storage = same concrete System shape as trimmed).
+  # Full-profile key_system (array storage = same concrete System shape as trimmed).
   # Selection shape matches public merge fields (`profile` / `data`). Checks use
   # the low-level builder so we do not force default `keymap_profile` (needs keys).
   checks.composite_full_emit =
@@ -1207,12 +1215,12 @@ pub mod key_system {
       data = 'Array,
     }
     in
-    let module_src =
-      (composite.emit_for_profile_with selection.profile selection.data).module_src
+    let rust_mod =
+      (composite.key_system_for selection.profile selection.data).system.rust_mod
     in
     {
       check_module_doc_full = {
-        actual = std.string.is_match "Full composite key system" module_src,
+        actual = std.string.is_match "Full composite key system" rust_mod,
         expected = true,
       },
       check_has_all_ref_variants = {
@@ -1231,68 +1239,68 @@ pub mod key_system {
             "TapDance",
             "TapHold",
           ]
-          |> std.array.all (fun needle => std.string.is_match needle module_src),
+          |> std.array.all (fun needle => std.string.is_match needle rust_mod),
         expected = true,
       },
       check_concrete_system_new = {
-        actual = std.string.is_match "pub const fn new" module_src,
+        actual = std.string.is_match "pub const fn new" rust_mod,
         expected = true,
       },
       check_array_keyboard_system = {
-        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" module_src,
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" rust_mod,
         expected = true,
       },
       check_no_keys_trait = {
-        actual = std.string.is_match "trait Keys" module_src,
+        actual = std.string.is_match "trait Keys" rust_mod,
         expected = false,
       },
     },
 
-  # Full-profile emit with Vec storage (cucumber-oriented).
+  # Full-profile key_system with Vec storage (cucumber-oriented).
   checks.composite_full_emit_vec =
     let selection = {
       profile = composite.full_profile,
       data = 'Vec,
     }
     in
-    let module_src =
-      (composite.emit_for_profile_with selection.profile selection.data).module_src
+    let rust_mod =
+      (composite.key_system_for selection.profile selection.data).system.rust_mod
     in
     {
       check_module_doc_full = {
-        actual = std.string.is_match "Full composite key system" module_src,
+        actual = std.string.is_match "Full composite key system" rust_mod,
         expected = true,
       },
       check_vec_storage_doc = {
-        actual = std.string.is_match "vec-backed key data" module_src,
+        actual = std.string.is_match "vec-backed key data" rust_mod,
         expected = true,
       },
       check_vec_keyboard_system = {
         actual =
           std.string.is_match
             "Vec<smart_keymap::key::keyboard::Key>"
-            module_src,
+            rust_mod,
         expected = true,
       },
       check_not_array_keyboard = {
-        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" module_src,
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" rust_mod,
         expected = false,
       },
       check_system_not_copy = {
         # Vec System derives Clone + PartialEq only (no Copy).
-        actual = std.string.is_match "#\\[derive\\(Debug, Clone, PartialEq\\)\\]" module_src,
+        actual = std.string.is_match "#\\[derive\\(Debug, Clone, PartialEq\\)\\]" rust_mod,
         expected = true,
       },
       check_serde_default_on_config = {
-        actual = std.string.is_match "#\\[serde\\(default\\)\\]" module_src,
+        actual = std.string.is_match "#\\[serde\\(default\\)\\]" rust_mod,
         expected = true,
       },
       check_concrete_system_new = {
-        actual = std.string.is_match "pub const fn new" module_src,
+        actual = std.string.is_match "pub const fn new" rust_mod,
         expected = true,
       },
       check_no_keys_trait = {
-        actual = std.string.is_match "trait Keys" module_src,
+        actual = std.string.is_match "trait Keys" rust_mod,
         expected = false,
       },
     },
