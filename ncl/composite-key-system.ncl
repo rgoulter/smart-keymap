@@ -1,20 +1,27 @@
 # Composite profile + key_system module generation.
 #
-# Family registry + profile selection + Rust emit for a composite shell.
+# Family registry + profile/data selection + Rust emit for a composite shell.
 #
-# Profile composition (merge overrides `composite.profile`):
-# - Default: `composite.profile` = keymap-stripped (`keymap_profile` from keys).
+# Selection is by merge composition (not by applying emit_for_* at call sites):
+# - `composite.profile` — which families (default: keymap-stripped).
+# - `composite.data` — key-data storage (`'Array` | `'Vec`; default `'Array`).
+# - `composite.emit` — module artefacts for the selected profile + data.
+#
+# Profile:
+# - Default: keymap-stripped (`keymap_profile` from keys).
 # - Full:    merge `composite.with_full_profile` (or set
-#            `composite.profile = composite.full_profile`) so emit covers every
-#            family in `composite.families`.
+#            `composite.profile = composite.full_profile`).
 #
-# Storage flavour (`composite.Storage`):
+# Data storage (`composite.Storage` / `composite.data`):
 # - `'Array` — concrete `System` with `[Key; N]` (firmware trimmed default).
 # - `'Vec`   — concrete `System` with `Vec<Key>` (cucumber / runtime serde).
+# - Merge `composite.with_vec_data` (or set `composite.data = 'Vec`).
 #
-# Emit:
-# - `emit_for_profile profile` → Array storage (backward compatible).
-# - `emit_for_profile_with profile storage` → pick Array | Vec.
+# Example (full registry, vec-backed):
+#   r & r.composite.with_full_profile & r.composite.with_vec_data
+#   then `r.composite.emit.module_src`
+#
+# Low-level builder (checks / implementation): `emit_for_profile_with`.
 #
 # No Keys trait: each codegen target picks one storage shape; keymaps are not
 # shared across array and vec System types at runtime.
@@ -485,12 +492,22 @@
     |> composite.profile_from_modules,
 
   # Active profile for `composite.emit`. Default = keymap-stripped.
+  # `| default` so merge replaces the whole profile (arrays are not deep-merged).
   # Override via merge: `… & composite.with_full_profile`.
-  composite.profile = composite.keymap_profile,
+  composite.profile | default = composite.keymap_profile,
+
+  # Key-data storage for `composite.emit`. Default = Array (firmware).
+  # `| default` so merge can override with `with_vec_data` / `data = 'Vec`.
+  composite.data | composite.Storage | default = 'Array,
 
   # Merge this record to select the full registry profile for emit.
   composite.with_full_profile = {
     composite.profile = composite.full_profile,
+  },
+
+  # Merge this record to select Vec key-data storage for emit.
+  composite.with_vec_data = {
+    composite.data | composite.Storage = 'Vec,
   },
 
   composite.config_rust_expr_for = fun name =>
@@ -520,14 +537,10 @@
     },
 
   # --- Rust emission ---------------------------------------------------------
-  # Emit for a profile + storage flavour.
-  # Public selection is by composition on `composite.profile`:
-  #   default: keymap_profile (stripped)
-  #   full:    … & composite.with_full_profile
-  # Storage:
-  #   'Array — [Key; N] (firmware / const init)
-  #   'Vec   — Vec<Key> (cucumber / runtime deserialize)
-  # `emit_for_profile` keeps Array for backward compatibility.
+  # Low-level: build emit artefacts for an explicit profile + data storage.
+  # Public call sites should select via merge on `composite.profile` /
+  # `composite.data` (or `with_full_profile` / `with_vec_data`) and read
+  # `composite.emit` — not call this directly.
 
   composite.system_ty_for = fun storage f =>
     storage
@@ -1071,12 +1084,9 @@ pub mod key_system {
       include storage,
     },
 
-  # Array storage (firmware / existing snapshots).
-  composite.emit_for_profile = fun profile =>
-    composite.emit_for_profile_with profile 'Array,
-
-  # Emit for the active `composite.profile` (override via with_full_profile).
-  composite.emit = composite.emit_for_profile composite.profile,
+  # Emit for the active `composite.profile` + `composite.data`
+  # (override via with_full_profile / with_vec_data, or direct field merge).
+  composite.emit = composite.emit_for_profile_with composite.profile composite.data,
 
   checks.composite_profile = {
     # Inline fixture keys (avoid importing tests/ncl/*.json here — forced when
@@ -1189,10 +1199,17 @@ pub mod key_system {
   },
 
   # Full-profile emit (array storage = same concrete System shape as trimmed).
-  # Selection form for tools: merge `composite.with_full_profile` then use
-  # `composite.emit`; checks call `emit_for_profile full_profile` directly.
+  # Selection shape matches public merge fields (`profile` / `data`). Checks use
+  # the low-level builder so we do not force default `keymap_profile` (needs keys).
   checks.composite_full_emit =
-    let module_src = (composite.emit_for_profile composite.full_profile).module_src in
+    let selection = {
+      profile = composite.full_profile,
+      data = 'Array,
+    }
+    in
+    let module_src =
+      (composite.emit_for_profile_with selection.profile selection.data).module_src
+    in
     {
       check_module_doc_full = {
         actual = std.string.is_match "Full composite key system" module_src,
@@ -1233,8 +1250,13 @@ pub mod key_system {
 
   # Full-profile emit with Vec storage (cucumber-oriented).
   checks.composite_full_emit_vec =
+    let selection = {
+      profile = composite.full_profile,
+      data = 'Vec,
+    }
+    in
     let module_src =
-      (composite.emit_for_profile_with composite.full_profile 'Vec).module_src
+      (composite.emit_for_profile_with selection.profile selection.data).module_src
     in
     {
       check_module_doc_full = {
