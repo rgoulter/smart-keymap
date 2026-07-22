@@ -42,7 +42,7 @@
 //!
 //! Per-keymap aggregation is produced by Nickel codegen
 //!  as `init::key_system` (custom keymap / `keymap!`),
-//!  or as `key::composite_full_vec` for std/cucumber.
+//!  or as `key::key_system` for std/cucumber.
 //! Without a custom keymap,
 //!  [init] provides a trivial keyboard-only shell
 //!  so [`new_keymap`] still type-checks.
