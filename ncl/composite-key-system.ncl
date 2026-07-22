@@ -25,7 +25,11 @@
 #   r & r.composite.with_full_profile & r.composite.with_vec_data
 #   then `r.composite.system.rust_mod`
 #
-# Low-level builder (checks / implementation): `key_system_for`.
+# Emit is module-shaped fragments over the active selection:
+# - `composite.fragments` — named string/type fragments for profile + data
+# - assembled into `composite.config` / `composite.system`
+# - `composite.fragments_for` / thin `key_system_for` for checks that must not
+#   force default `keymap_profile` (needs keys).
 #
 # No Keys trait: each codegen target picks one storage shape; keymaps are not
 # shared across array and vec System types at runtime.
@@ -542,11 +546,11 @@
       _ => std.fail_with "no system.rust_expr for family %{name}",
     },
 
-  # --- composite artefacts (config / system) ---------------------------------
-  # Low-level: build artefacts for an explicit profile + data storage.
-  # Public call sites should select via merge on `composite.profile` /
-  # `composite.data` (or `with_full_profile` / `with_vec_data`) and read
-  # `composite.config` / `composite.system` — not call this directly.
+  # --- composite fragments (config / system emit) ----------------------------
+  # Named fragments over a profile + data selection, then assembled into
+  # composite.config / composite.system. Prefer reading those fields; use
+  # fragments_for / key_system_for only when an explicit profile must not force
+  # default keymap_profile (e.g. checks without keys).
 
   composite.system_ty_for = fun storage f =>
     storage
@@ -555,40 +559,45 @@
       'Vec => f.system_ty.vec,
     },
 
-  composite.key_system_for = fun profile storage =>
-    let systems = profile.systems in
-    let is_full =
-      std.array.length systems == std.array.length composite.families
-    in
-    let is_vec = storage == 'Vec in
-    let join = fun xs => std.string.join "\n" xs in
-    let config_systems = systems |> std.array.filter (fun f => f.has_config) in
-    let data_array_systems = systems |> std.array.filter (fun f => f.has_key_data) in
-    let singleton_systems = systems |> std.array.filter (fun f => f.has_key_data == false) in
-    let has_chorded = std.array.any (fun f => f.name == "chorded") systems in
-    let sty = composite.system_ty_for storage in
+  # Build a recursive record of named emit fragments for profile + storage.
+  # Body is module-shaped fields (not a tower of nested lets).
+  composite.fragments_for = fun profile storage =>
+    {
+      systems = profile.systems,
+      include storage,
+      is_full =
+        std.array.length systems == std.array.length composite.families,
+      is_vec = storage == 'Vec,
 
-    let enum_variants = fun ty_of =>
-      systems
-      |> std.array.map (fun f => "/// [%{f.module}] variant.\n%{f.variant}(%{ty_of f}),")
-      |> join
-    in
+      join = fun xs => std.string.join "\n" xs,
 
-    let from_impls = fun aggregate ty_of =>
-      systems
-      |> std.array.map (fun f =>
-        m%"
+      config_systems = systems |> std.array.filter (fun f => f.has_config),
+      data_array_systems = systems |> std.array.filter (fun f => f.has_key_data),
+      singleton_systems =
+        systems |> std.array.filter (fun f => f.has_key_data == false),
+      has_chorded = std.array.any (fun f => f.name == "chorded") systems,
+
+      sty = fun f => composite.system_ty_for storage f,
+
+      enum_variants = fun ty_of =>
+        systems
+        |> std.array.map (fun f => "/// [%{f.module}] variant.\n%{f.variant}(%{ty_of f}),")
+        |> join,
+
+      from_impls = fun aggregate ty_of =>
+        systems
+        |> std.array.map (fun f =>
+          m%"
 impl From<%{ty_of f}> for %{aggregate} {
     fn from(v: %{ty_of f}) -> Self { %{aggregate}::%{f.variant}(v) }
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    let try_from_impls = fun aggregate ty_of =>
-      systems
-      |> std.array.map (fun f =>
-        m%"
+      try_from_impls = fun aggregate ty_of =>
+        systems
+        |> std.array.map (fun f =>
+          m%"
 impl TryFrom<%{aggregate}> for %{ty_of f} {
     type Error = smart_keymap::key::EventError;
     fn try_from(v: %{aggregate}) -> Result<Self, Self::Error> {
@@ -598,16 +607,15 @@ impl TryFrom<%{aggregate}> for %{ty_of f} {
         }
     }
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    # Vec-backed shells deserialize sparse key_data/config (cucumber); field defaults help.
-    let config_field_attrs = if is_vec then "\n    #[serde(default)]" else "" in
+      # Vec-backed shells deserialize sparse key_data/config (cucumber).
+      config_field_attrs = if is_vec then "\n    #[serde(default)]" else "",
 
-    let config_struct =
-      if config_systems == [] then
-        m%"
+      config_struct =
+        if config_systems == [] then
+          m%"
 /// Aggregate config (no configurable families in this keymap).
 #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {}
@@ -618,20 +626,20 @@ impl Config {
     /// Constructs a new [Config] with defaults.
     pub const fn new() -> Self { Self {} }
 }"%
-      else
-        let fields =
-          config_systems
-          |> std.array.map (fun f =>
-            "/// Config for [%{f.module}].%{config_field_attrs}\n    pub %{f.config_path}: %{f.config_ty},"
-          )
-          |> join
-        in
-        let new_fields =
-          config_systems
-          |> std.array.map (fun f => "%{f.config_path}: %{f.module}::Config::new(),")
-          |> join
-        in
-        m%"
+        else
+          let fields =
+            config_systems
+            |> std.array.map (fun f =>
+              "/// Config for [%{f.module}].%{config_field_attrs}\n    pub %{f.config_path}: %{f.config_ty},"
+            )
+            |> join
+          in
+          let new_fields =
+            config_systems
+            |> std.array.map (fun f => "%{f.config_path}: %{f.module}::Config::new(),")
+            |> join
+          in
+          m%"
 /// Aggregate config for families used by this keymap.
 #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
@@ -647,85 +655,78 @@ impl Config {
 %{new_fields}
         }
     }
-}"%
-    in
+}"%,
 
-    let context_fields =
-      (
-        ["keymap_context: smart_keymap::keymap::KeymapContext,"]
-        @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context_ty},"))
-      )
-      |> join
-    in
+      context_fields =
+        (
+          ["keymap_context: smart_keymap::keymap::KeymapContext,"]
+          @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context_ty},"))
+        )
+        |> join,
 
-    let context_from_config_fields =
-      (
-        ["keymap_context: smart_keymap::keymap::KeymapContext::new(),"]
-        @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context_expr},"))
-      )
-      |> join
-    in
+      context_from_config_fields =
+        (
+          ["keymap_context: smart_keymap::keymap::KeymapContext::new(),"]
+          @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context_expr},"))
+        )
+        |> join,
 
-    let context_handle_event =
-      systems
-      |> std.array.filter (fun f => f.handles_context_events)
-      |> std.array.map (fun f =>
-        m%"
+      context_handle_event =
+        systems
+        |> std.array.filter (fun f => f.handles_context_events)
+        |> std.array.map (fun f =>
+          m%"
 if let Ok(e) = event.try_into_key_event() {
     pke.extend(self.%{f.field}.handle_event(e).into_events());
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    let set_keymap_context_updates =
-      systems
-      |> std.array.filter (fun f => f.updates_keymap_context)
-      |> std.array.map (fun f => "self.%{f.field}.update_keymap_context(&context);")
-      |> join
-    in
+      set_keymap_context_updates =
+        systems
+        |> std.array.filter (fun f => f.updates_keymap_context)
+        |> std.array.map (fun f => "self.%{f.field}.update_keymap_context(&context);")
+        |> join,
 
-    let system_fields =
-      systems
-      |> std.array.map (fun f => "%{f.field}: %{sty f},")
-      |> join
-    in
+      system_fields =
+        systems
+        |> std.array.map (fun f => "%{f.field}: %{sty f},")
+        |> join,
 
-    let system_new_params =
-      data_array_systems
-      |> std.array.map (fun f => "%{f.field}: %{sty f},")
-      |> join
-    in
+      system_new_params =
+        data_array_systems
+        |> std.array.map (fun f => "%{f.field}: %{sty f},")
+        |> join,
 
-    let system_new_body =
-      (
-        (data_array_systems |> std.array.map (fun f => "%{f.field},"))
-        @ (singleton_systems |> std.array.map (fun f => "%{f.field}: %{f.system_expr},"))
-      )
-      |> join
-    in
+      system_new_body =
+        (
+          (data_array_systems |> std.array.map (fun f => "%{f.field},"))
+          @ (singleton_systems |> std.array.map (fun f => "%{f.field}: %{f.system_expr},"))
+        )
+        |> join,
 
-    let new_pressed_key_arms =
-      systems
-      |> std.array.map (fun f =>
-        m%"
+      new_pressed_key_arms =
+        systems
+        |> std.array.map (fun f =>
+          m%"
 Ref::%{f.variant}(key_ref) => {
     let (pkr, pke) = self.%{f.field}.new_pressed_key(keymap_index, &context.%{f.field}, key_ref);
     (pkr.into_result(), pke.into_events())
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    let update_pending_arms =
-      let pending_systems = systems |> std.array.filter (fun f => f.has_pending_dispatch) in
-      if pending_systems == [] then
-        "_ => panic!(\"no pending key systems in this key_system\"),"
-      else
-        (
-          pending_systems
-          |> std.array.map (fun f =>
-            m%"
+      update_pending_arms =
+        let pending_systems =
+          systems |> std.array.filter (fun f => f.has_pending_dispatch)
+        in
+        if pending_systems == [] then
+          "_ => panic!(\"no pending key systems in this key_system\"),"
+        else
+          (
+            pending_systems
+            |> std.array.map (fun f =>
+              m%"
 (Ref::%{f.variant}(key_ref), PendingKeyState::%{f.variant}(pending_state)) => {
     if let Ok(event) = event.try_into_key_event() {
         let (maybe_npk, pke) = self.%{f.field}.update_pending_state(
@@ -736,18 +737,19 @@ Ref::%{f.variant}(key_ref) => {
         (None, smart_keymap::key::KeyEvents::no_events())
     }
 }"%
+            )
+            |> join
           )
-          |> join
-        )
-        ++ "\n(_, _) => panic!(\"mismatched key_ref and pending_state variants\"),"
-    in
+          ++ "\n(_, _) => panic!(\"mismatched key_ref and pending_state variants\"),",
 
-    let update_state_arms =
-      let state_systems = systems |> std.array.filter (fun f => f.has_state_update) in
-      (
-        state_systems
-        |> std.array.map (fun f =>
-          m%"
+      update_state_arms =
+        let state_systems =
+          systems |> std.array.filter (fun f => f.has_state_update)
+        in
+        (
+          state_systems
+          |> std.array.map (fun f =>
+            m%"
 (Ref::%{f.variant}(key_ref), KeyState::%{f.key_state_variant}(key_state)) => {
     if let Ok(event) = event.try_into_key_event() {
         self.%{f.field}
@@ -757,51 +759,49 @@ Ref::%{f.variant}(key_ref) => {
         smart_keymap::key::KeyEvents::no_events()
     }
 }"%
+          )
+          |> join
         )
-        |> join
-      )
-      ++ "\n(_, _) => smart_keymap::key::KeyEvents::no_events(),"
-    in
+        ++ "\n(_, _) => smart_keymap::key::KeyEvents::no_events(),",
 
-    let key_output_arms =
-      let out_systems = systems |> std.array.filter (fun f => f.has_key_output) in
-      (
-        out_systems
+      key_output_arms =
+        let out_systems =
+          systems |> std.array.filter (fun f => f.has_key_output)
+        in
+        (
+          out_systems
+          |> std.array.map (fun f =>
+            "(Ref::%{f.variant}(r), KeyState::%{f.key_state_variant}(ks)) => self.%{f.field}.key_output(r, ks),"
+          )
+          |> join
+        )
+        ++ "\n(_, _) => None,",
+
+      key_state_from_family =
+        systems
         |> std.array.map (fun f =>
-          "(Ref::%{f.variant}(r), KeyState::%{f.key_state_variant}(ks)) => self.%{f.field}.key_output(r, ks),"
-        )
-        |> join
-      )
-      ++ "\n(_, _) => None,"
-    in
-
-    let key_state_from_family =
-      systems
-      |> std.array.map (fun f =>
-        m%"
+          m%"
 impl From<%{f.key_state_ty}> for KeyState {
     fn from(ks: %{f.key_state_ty}) -> Self { KeyState::%{f.key_state_variant}(ks) }
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    let pending_from_family =
-      systems
-      |> std.array.map (fun f =>
-        m%"
+      pending_from_family =
+        systems
+        |> std.array.map (fun f =>
+          m%"
 impl From<%{f.pending_ty}> for PendingKeyState {
     fn from(pks: %{f.pending_ty}) -> Self { PendingKeyState::%{f.variant}(pks) }
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    let pending_mut_try_from =
-      systems
-      |> std.array.filter (fun f => f.has_pending_dispatch)
-      |> std.array.map (fun f =>
-        m%"
+      pending_mut_try_from =
+        systems
+        |> std.array.filter (fun f => f.has_pending_dispatch)
+        |> std.array.map (fun f =>
+          m%"
 impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
     type Error = ();
     fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
@@ -811,86 +811,79 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
         }
     }
 }"%
-      )
-      |> join
-    in
+        )
+        |> join,
 
-    let config_rust_expr =
-      if config_systems == [] then
-        "key_system::Config::new()"
-      else
-        let fields =
-          config_systems
-          |> std.array.map (fun f =>
-            "%{f.config_path}: %{composite.config_rust_expr_for f.name},"
-          )
-          |> join
-        in
-        m%"key_system::Config {
+      config_rust_expr =
+        if config_systems == [] then
+          "key_system::Config::new()"
+        else
+          let fields =
+            config_systems
+            |> std.array.map (fun f =>
+              "%{f.config_path}: %{composite.config_rust_expr_for f.name},"
+            )
+            |> join
+          in
+          m%"key_system::Config {
 %{fields}
 }"%,
-    in
 
-    let system_rust_expr =
-      if data_array_systems == [] then
-        "key_system::System::new()"
-      else
-        let args =
-          data_array_systems
-          |> std.array.map (fun f => "%{composite.system_rust_expr_for f.name},")
-          |> join
-        in
-        m%"key_system::System::new(
+      system_rust_expr =
+        if data_array_systems == [] then
+          "key_system::System::new()"
+        else
+          let args =
+            data_array_systems
+            |> std.array.map (fun f => "%{composite.system_rust_expr_for f.name},")
+            |> join
+          in
+          m%"key_system::System::new(
 %{args}
 )"%,
-    in
 
-    let chorded_pressed_indices_const =
-      if has_chorded then
-        "const CHORDED_MAX_PRESSED_INDICES: usize = crate::init::CHORDED_MAX_CHORD_SIZE * 2;\n"
-      else
-        ""
-    in
+      chorded_pressed_indices_const =
+        if has_chorded then
+          "const CHORDED_MAX_PRESSED_INDICES: usize = crate::init::CHORDED_MAX_CHORD_SIZE * 2;\n"
+        else
+          "",
 
-    let key_state_variants =
-      systems
-      |> std.array.map (fun f =>
-        "/// [%{f.module}] key state.\n%{f.key_state_variant}(%{f.key_state_ty}),"
-      )
-      |> join
-    in
+      key_state_variants =
+        systems
+        |> std.array.map (fun f =>
+          "/// [%{f.module}] key state.\n%{f.key_state_variant}(%{f.key_state_ty}),"
+        )
+        |> join,
 
-    let event_param = if context_handle_event == "" then "_event" else "event" in
+      event_param = if context_handle_event == "" then "_event" else "event",
 
-    # Array keeps the historical doc strings (snapshot-stable).
-    # Vec documents the storage flavour so the two emits are easy to tell apart.
-    let module_doc =
-      storage
-      |> match {
-        'Array =>
-          if is_full then
-            "Full composite key system (generated; all registry families)."
-          else
-            "Per-keymap composite key system (generated; only families used by this keymap)."
-        ,
-        'Vec =>
-          if is_full then
-            "Full composite key system (generated; all registry families; vec-backed key data)."
-          else
-            "Per-keymap composite key system (generated; only families used by this keymap; vec-backed key data)."
-        ,
-      }
-    in
+      # Array keeps historical doc strings (snapshot-stable).
+      # Vec documents the storage flavour.
+      module_doc =
+        storage
+        |> match {
+          'Array =>
+            if is_full then
+              "Full composite key system (generated; all registry families)."
+            else
+              "Per-keymap composite key system (generated; only families used by this keymap)."
+          ,
+          'Vec =>
+            if is_full then
+              "Full composite key system (generated; all registry families; vec-backed key data)."
+            else
+              "Per-keymap composite key system (generated; only families used by this keymap; vec-backed key data)."
+          ,
+        },
 
-    # Vec storage is not Copy.
-    let system_derives =
-      if is_vec then
-        "#[derive(Debug, Clone, PartialEq)]"
-      else
-        "#[derive(Debug, Clone, Copy, PartialEq)]"
-    in
+      # Vec storage is not Copy.
+      system_derives =
+        if is_vec then
+          "#[derive(Debug, Clone, PartialEq)]"
+        else
+          "#[derive(Debug, Clone, Copy, PartialEq)]",
 
-    let module_src = m%"
+      rust_mod = m%"
 /// %{module_doc}
 pub mod key_system {
     use crate as smart_keymap;
@@ -1059,48 +1052,53 @@ pub mod key_system {
         }
     }
 }
-"%
-    in
+"%,
 
-    # Key-data length consts for init (e.g. `const KEYBOARD: usize = N;`).
-    # Takes key_data directly; missing fields default to empty arrays (len 0).
-    let init_consts_rust_stmts = fun key_data =>
-      systems
-      |> std.array.fold_left
-        (fun acc f =>
-          acc
-          @ (
-            f.data_lengths
-            |> std.array.map (fun { const_name, data_field } =>
-              let data = (key_data & { "%{data_field}" | default = [] })."%{data_field}" in
-              let len = data |> std.array.length |> std.to_string in
-              "    const %{const_name}: usize = %{len};"
+      # Key-data length consts for init (e.g. `const KEYBOARD: usize = N;`).
+      init_consts_rust_stmts = fun key_data =>
+        systems
+        |> std.array.fold_left
+          (fun acc f =>
+            acc
+            @ (
+              f.data_lengths
+              |> std.array.map (fun { const_name, data_field } =>
+                let data = (key_data & { "%{data_field}" | default = [] })."%{data_field}" in
+                let len = data |> std.array.length |> std.to_string in
+                "    const %{const_name}: usize = %{len};"
+              )
             )
           )
-        )
-        []
-      |> std.string.join "\n"
-    in
-
-    {
-      config = {
-        rust_expr = config_rust_expr,
-      },
-      system = {
-        rust_expr = system_rust_expr,
-        rust_mod = module_src,
-        include init_consts_rust_stmts,
-      },
+          []
+        |> std.string.join "\n",
     },
 
-  # Artefacts for the active `composite.profile` + `composite.data`, flattened
-  # onto `composite` (not nested under `key_system` — that doubled aggregate
-  # vocabulary: composite.key_system.config…). Override selection via
-  # with_full_profile / with_vec_data, or direct field merge on profile/data.
-  composite.config.rust_expr =
-    (composite.key_system_for composite.profile composite.data).config.rust_expr,
-  composite.system =
-    (composite.key_system_for composite.profile composite.data).system,
+  # Fragments for the active `composite.profile` + `composite.data`.
+  composite.fragments =
+    composite.fragments_for composite.profile composite.data,
+
+  # Public artefacts assembled from active fragments.
+  composite.config.rust_expr = composite.fragments.config_rust_expr,
+  composite.system = {
+    rust_expr = composite.fragments.system_rust_expr,
+    rust_mod = composite.fragments.rust_mod,
+    init_consts_rust_stmts = composite.fragments.init_consts_rust_stmts,
+  },
+
+  # Thin wrapper: same return shape as the old fat key_system_for.
+  # Checks use this so they can pass full_profile without forcing keymap_profile.
+  composite.key_system_for = fun profile storage =>
+    let fr = composite.fragments_for profile storage in
+    {
+      config = {
+        rust_expr = fr.config_rust_expr,
+      },
+      system = {
+        rust_expr = fr.system_rust_expr,
+        rust_mod = fr.rust_mod,
+        init_consts_rust_stmts = fr.init_consts_rust_stmts,
+      },
+    },
 
   checks.composite_profile = {
     # Inline fixture keys (avoid importing tests/ncl/*.json here — forced when
@@ -1213,16 +1211,10 @@ pub mod key_system {
   },
 
   # Full-profile composite (array storage = same concrete System shape as trimmed).
-  # Selection shape matches public merge fields (`profile` / `data`). Checks use
-  # the low-level builder so we do not force default `keymap_profile` (needs keys).
+  # Use fragments_for so we do not force default `keymap_profile` (needs keys).
   checks.composite_full_emit =
-    let selection = {
-      profile = composite.full_profile,
-      data = 'Array,
-    }
-    in
     let rust_mod =
-      (composite.key_system_for selection.profile selection.data).system.rust_mod
+      (composite.fragments_for composite.full_profile 'Array).rust_mod
     in
     {
       check_module_doc_full = {
@@ -1264,13 +1256,8 @@ pub mod key_system {
 
   # Full-profile composite with Vec storage (cucumber-oriented).
   checks.composite_full_emit_vec =
-    let selection = {
-      profile = composite.full_profile,
-      data = 'Vec,
-    }
-    in
     let rust_mod =
-      (composite.key_system_for selection.profile selection.data).system.rust_mod
+      (composite.fragments_for composite.full_profile 'Vec).rust_mod
     in
     {
       check_module_doc_full = {
