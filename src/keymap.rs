@@ -955,15 +955,15 @@ mod tests {
     fn tap_hold_interrupt_keymap(
         interrupt_response: crate::key::tap_hold::InterruptResponse,
     ) -> crate::keymap::Keymap<
-        [crate::key::composite_full_vec::key_system::Ref; 2],
-        crate::key::composite_full_vec::key_system::Ref,
-        crate::key::composite_full_vec::key_system::Context,
-        crate::key::composite_full_vec::key_system::Event,
-        crate::key::composite_full_vec::key_system::PendingKeyState,
-        crate::key::composite_full_vec::key_system::KeyState,
-        crate::key::composite_full_vec::key_system::System,
+        [crate::key::key_system::Ref; 2],
+        crate::key::key_system::Ref,
+        crate::key::key_system::Context,
+        crate::key::key_system::Event,
+        crate::key::key_system::PendingKeyState,
+        crate::key::key_system::KeyState,
+        crate::key::key_system::System,
     > {
-        use crate::key::composite_full_vec::key_system;
+        use crate::key::key_system;
 
         let mut config = key_system::Config::new();
         config.tap_hold.interrupt_response = interrupt_response;
@@ -996,7 +996,7 @@ mod tests {
     macro_rules! simple_keyboard_keymap {
         () => {{
             use crate as smart_keymap;
-            use smart_keymap::key::composite_full_vec::key_system;
+            use smart_keymap::key::key_system;
 
             use key_system::Context;
             use key_system::Ref;
@@ -1023,10 +1023,10 @@ mod tests {
         }};
     }
 
-    fn tap_hold_timeout_event() -> key::Event<crate::key::composite_full_vec::key_system::Event> {
+    fn tap_hold_timeout_event() -> key::Event<crate::key::key_system::Event> {
         key::Event::Key {
             keymap_index: 0,
-            key_event: crate::key::composite_full_vec::key_system::Event::TapHold(
+            key_event: crate::key::key_system::Event::TapHold(
                 crate::key::tap_hold::Event::TapHoldTimeout,
             ),
         }
@@ -1508,7 +1508,7 @@ mod tests {
         // Assemble
         let mut keymap = {
             use crate as smart_keymap;
-            use smart_keymap::key::composite_full_vec::key_system;
+            use smart_keymap::key::key_system;
 
             use key_system::Context;
             use key_system::Ref;

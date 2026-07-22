@@ -29,15 +29,8 @@ pub mod tap_dance;
 /// Tap-Hold keys.
 pub mod tap_hold;
 
-/// Generated full composite shell with `Vec` key-data storage (cucumber / runtime serde).
-///
-/// Produced by `build.rs` when `feature = "std"` (not checked in).
-/// Source of truth: `ncl/composite-key-system.ncl` (full profile + vec data → `key_system`).
-/// Types live at [`composite_full_vec::key_system`].
 #[cfg(feature = "std")]
-pub mod composite_full_vec {
-    include!(concat!(env!("OUT_DIR"), "/composite_full_vec.rs"));
-}
+include!(concat!(env!("OUT_DIR"), "/composite_full_vec.rs"));
 
 /// The maximum number of key events that are emitted by [crate::key::System] implementations.
 pub const MAX_KEY_EVENTS: usize = 4;

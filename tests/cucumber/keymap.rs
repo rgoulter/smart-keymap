@@ -14,8 +14,8 @@ use smart_keymap_nickel_helper::{
     NickelError,
 };
 
-// Full composite shell from Nickel emit (Vec storage), not hand-written key::composite.
-use smart_keymap::key::composite_full_vec::key_system::{
+// Full composite key system from Nickel codegen (Vec storage).
+use smart_keymap::key::key_system::{
     Config, Context, Event, KeyState, PendingKeyState, Ref, System,
 };
 

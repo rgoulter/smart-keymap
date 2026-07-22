@@ -19,12 +19,10 @@ fn main() {
     let sizes_data = StructSizes {
         input_event: mem::size_of::<input::Event>(),
         key_keyboardmodifiers: mem::size_of::<key::KeyboardModifiers>(),
-        key_composite_context: mem::size_of::<key::composite_full_vec::key_system::Context>(),
-        key_composite_event: mem::size_of::<key::composite_full_vec::key_system::Event>(),
-        key_composite_pendingkeystate: mem::size_of::<
-            key::composite_full_vec::key_system::PendingKeyState,
-        >(),
-        key_composite_keystate: mem::size_of::<key::composite_full_vec::key_system::KeyState>(),
+        key_composite_context: mem::size_of::<key::key_system::Context>(),
+        key_composite_event: mem::size_of::<key::key_system::Event>(),
+        key_composite_pendingkeystate: mem::size_of::<key::key_system::PendingKeyState>(),
+        key_composite_keystate: mem::size_of::<key::key_system::KeyState>(),
         keymap_keymap: mem::size_of::<smart_keymap::init::Keymap>(),
     };
 
