@@ -480,14 +480,14 @@ fn nickel_to_json_for_hid_report_uncached(
 ///
 /// Used by the library `build.rs` under `feature = "std"` (cucumber / runtime serde).
 /// Source of truth: `ncl/composite-key-system.ncl` (merge full profile + vec data,
-/// then `composite.key_system.system.rust_mod`).
+/// then `composite.system.rust_mod`).
 pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
             "export",
             "--format=raw",
             format!("--import-path={ncl_import_path}").as_ref(),
-            "--field=composite.key_system.system.rust_mod",
+            "--field=composite.system.rust_mod",
         ])
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
