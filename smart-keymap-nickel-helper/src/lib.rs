@@ -487,7 +487,7 @@ pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
             "export",
             "--format=raw",
             format!("--import-path={ncl_import_path}").as_ref(),
-            "--field=out",
+            "--field=composite.key_system.system.rust_mod",
         ])
         .stdin(Stdio::piped())
         .stderr(Stdio::piped())
@@ -504,20 +504,9 @@ pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
             child_stdin
                 .write_all(
                     br#"
-let r =
-  {
-    json_keymap = { keys = [{ key_code = 4 }], config = {} },
-  }
-  & (import "keymap-codegen.ncl")
-in
-let r =
-  r
-  & r.composite.with_full_profile
-  & r.composite.with_vec_data
-in
-{
-  out = r.composite.key_system.system.rust_mod,
-}
+  (import "keymap-codegen.ncl")
+  & { composite, composite.profile = composite.full_profile }
+  & { composite.data = 'Vec }
 "#,
                 )
                 .unwrap();
