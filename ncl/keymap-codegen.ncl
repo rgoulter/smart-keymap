@@ -234,6 +234,8 @@
         },
     },
 
+    # Json contract for keymap config; rust_expr / system.* come from
+    # composite-key-system.ncl (composite.config.rust_expr, composite.system).
     config = {
       Json = {
         automation | optional | smart_keymap.automation.config.Json,
@@ -243,13 +245,6 @@
         tap_dance | optional | smart_keymap.tap_dance.config.Json,
         tap_hold | optional | smart_keymap.tap_hold.config.Json,
       },
-
-      # Prefer the trimmed key_system config when emitting keymap.rs.
-      rust_expr = composite.key_system.config.rust_expr,
-    },
-
-    system = {
-      rust_expr = composite.key_system.system.rust_expr,
     },
   },
 
@@ -381,7 +376,7 @@
       in
       let { key_data, key_refs } = key_data_and_refs in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
-      let config = composite.key_system.config.rust_expr in
+      let config = composite.config.rust_expr in
       let context = "key_system::Context::from_config(%{config})" in
       # Firmware / custom-keymap module: included as `crate::init` with
       # `use crate as smart_keymap` and `crate::init::…` size paths.
@@ -408,9 +403,9 @@ pub mod init {
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
 
-%{composite.key_system.system.init_consts_rust_stmts key_data}
+%{composite.system.init_consts_rust_stmts key_data}
 
-%{composite.key_system.system.rust_mod}
+%{composite.system.rust_mod}
 
     pub use key_system::Ref;
     pub use key_system::Context;
@@ -432,7 +427,7 @@ pub mod init {
     pub const CONTEXT: Context = %{context};
 
     /// The key system.
-    pub const SYSTEM: System = %{composite.key_system.system.rust_expr};
+    pub const SYSTEM: System = %{composite.system.rust_expr};
 
     /// Alias for the [keymap::Keymap] type.
     pub type Keymap = smart_keymap::keymap::Keymap<

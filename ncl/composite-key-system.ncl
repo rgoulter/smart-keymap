@@ -5,11 +5,11 @@
 # Selection is by merge composition (not by applying builders at call sites):
 # - `composite.profile` — which families (default: keymap-stripped).
 # - `composite.data` — key-data storage (`'Array` | `'Vec`; default `'Array`).
-# - `composite.key_system` — artefacts for the selected profile + data:
-#     - `config.rust_expr`
-#     - `system.rust_expr`
-#     - `system.init_consts_rust_stmts` (fn of key_data)
-#     - `system.rust_mod` (generated `pub mod key_system { … }`)
+# - Artefacts for the selected profile + data live on `composite` itself:
+#     - `composite.config.rust_expr`
+#     - `composite.system.rust_expr`
+#     - `composite.system.init_consts_rust_stmts` (fn of key_data)
+#     - `composite.system.rust_mod` (generated `pub mod key_system { … }`)
 #
 # Profile:
 # - Default: keymap-stripped (`keymap_profile` from keys).
@@ -23,7 +23,7 @@
 #
 # Example (full registry, vec-backed):
 #   r & r.composite.with_full_profile & r.composite.with_vec_data
-#   then `r.composite.key_system.system.rust_mod`
+#   then `r.composite.system.rust_mod`
 #
 # Low-level builder (checks / implementation): `key_system_for`.
 #
@@ -31,6 +31,8 @@
 # shared across array and vec System types at runtime.
 #
 # Naming:
+# - Nickel surface uses `composite` (aggregating shell).
+# - Generated Rust module is still `key_system` (aggregate types).
 # - `*_ty` — Rust type in type position
 # - `context_expr` / `system_expr` — Rust *expressions* (constructors)
 
@@ -495,21 +497,21 @@
     |> composite.used_modules_from
     |> composite.profile_from_modules,
 
-  # Active profile for `composite.key_system`. Default = keymap-stripped.
+  # Active profile for composite artefacts. Default = keymap-stripped.
   # `| default` so merge replaces the whole profile (arrays are not deep-merged).
   # Override via merge: `… & composite.with_full_profile`.
   composite.profile | default = composite.keymap_profile,
 
-  # Key-data storage for `composite.key_system`. Default = Array (firmware).
+  # Key-data storage for composite artefacts. Default = Array (firmware).
   # `| default` so merge can override with `with_vec_data` / `data = 'Vec`.
   composite.data | composite.Storage | default = 'Array,
 
-  # Merge this record to select the full registry profile for key_system.
+  # Merge this record to select the full registry profile.
   composite.with_full_profile = {
     composite.profile = composite.full_profile,
   },
 
-  # Merge this record to select Vec key-data storage for key_system.
+  # Merge this record to select Vec key-data storage.
   composite.with_vec_data = {
     composite.data | composite.Storage = 'Vec,
   },
@@ -540,11 +542,11 @@
       _ => std.fail_with "no system.rust_expr for family %{name}",
     },
 
-  # --- key_system artefacts --------------------------------------------------
-  # Low-level: build key_system artefacts for an explicit profile + data storage.
+  # --- composite artefacts (config / system) ---------------------------------
+  # Low-level: build artefacts for an explicit profile + data storage.
   # Public call sites should select via merge on `composite.profile` /
   # `composite.data` (or `with_full_profile` / `with_vec_data`) and read
-  # `composite.key_system` — not call this directly.
+  # `composite.config` / `composite.system` — not call this directly.
 
   composite.system_ty_for = fun storage f =>
     storage
@@ -1089,12 +1091,16 @@ pub mod key_system {
         rust_mod = module_src,
         include init_consts_rust_stmts,
       },
-      data = storage,
     },
 
-  # key_system artefacts for the active `composite.profile` + `composite.data`
-  # (override via with_full_profile / with_vec_data, or direct field merge).
-  composite.key_system = composite.key_system_for composite.profile composite.data,
+  # Artefacts for the active `composite.profile` + `composite.data`, flattened
+  # onto `composite` (not nested under `key_system` — that doubled aggregate
+  # vocabulary: composite.key_system.config…). Override selection via
+  # with_full_profile / with_vec_data, or direct field merge on profile/data.
+  composite.config.rust_expr =
+    (composite.key_system_for composite.profile composite.data).config.rust_expr,
+  composite.system =
+    (composite.key_system_for composite.profile composite.data).system,
 
   checks.composite_profile = {
     # Inline fixture keys (avoid importing tests/ncl/*.json here — forced when
@@ -1206,7 +1212,7 @@ pub mod key_system {
       },
   },
 
-  # Full-profile key_system (array storage = same concrete System shape as trimmed).
+  # Full-profile composite (array storage = same concrete System shape as trimmed).
   # Selection shape matches public merge fields (`profile` / `data`). Checks use
   # the low-level builder so we do not force default `keymap_profile` (needs keys).
   checks.composite_full_emit =
@@ -1256,7 +1262,7 @@ pub mod key_system {
       },
     },
 
-  # Full-profile key_system with Vec storage (cucumber-oriented).
+  # Full-profile composite with Vec storage (cucumber-oriented).
   checks.composite_full_emit_vec =
     let selection = {
       profile = composite.full_profile,
