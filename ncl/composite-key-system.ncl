@@ -96,7 +96,10 @@
       pending_ty | default = "%{module}::PendingKeyState",
       key_state_ty | default = "%{module}::KeyState",
       config_ty | default = "%{module}::Config",
+      # Singleton System::new() in struct init body (not key_data system.rust_expr).
       system_expr | default = "%{module}::System::new()",
+      # Optional: set on families with has_config / has_key_data (join to smart_keymap.*).
+      # Lazy until forced — do not confuse with system_expr above.
     },
 
     # Stable match-arm / field order for generated code.
@@ -129,6 +132,8 @@
         config_ty = m%"%{module}::Config<
           { crate::init::AUTOMATION_INSTRUCTION_COUNT }
         >"%,
+        config_rust_expr = smart_keymap.automation.config.rust_expr,
+        system_rust_expr = smart_keymap.automation.system.rust_expr,
       }
       & default_family,
       {
@@ -147,6 +152,7 @@
         >"%,
         context_ty = "%{module}::Context",
         context_expr = "%{module}::Context",
+        system_rust_expr = smart_keymap.callback.system.rust_expr,
       }
       & default_family,
       {
@@ -237,6 +243,8 @@
           { crate::init::CHORDED_MAX_CHORDS },
           { crate::init::CHORDED_MAX_CHORD_SIZE }
         >"%,
+        config_rust_expr = smart_keymap.chorded.config.rust_expr,
+        system_rust_expr = smart_keymap.chorded.system.rust_expr,
       }
       & default_family,
       {
@@ -278,6 +286,7 @@
         >"%,
         context_ty = "%{module}::Context",
         context_expr = "%{module}::Context",
+        system_rust_expr = smart_keymap.keyboard.system.rust_expr,
       }
       & default_family,
       {
@@ -313,6 +322,8 @@
         context_expr = "%{module}::Context::from_config(config.layered)",
         event_ty = "%{module}::LayerEvent",
         key_state_ty = "%{module}::ModifierKeyState",
+        config_rust_expr = smart_keymap.layered.config.rust_expr,
+        system_rust_expr = smart_keymap.layered.system.rust_expr,
       }
       & default_family,
       {
@@ -345,6 +356,8 @@
         >"%,
         context_ty = "%{module}::Context",
         context_expr = "%{module}::Context::from_config(config.sticky)",
+        config_rust_expr = smart_keymap.sticky.config.rust_expr,
+        system_rust_expr = smart_keymap.sticky.system.rust_expr,
       }
       & default_family,
       {
@@ -370,6 +383,8 @@
         >"%,
         context_ty = "%{module}::Context",
         context_expr = "%{module}::Context::from_config(config.tap_dance)",
+        config_rust_expr = smart_keymap.tap_dance.config.rust_expr,
+        system_rust_expr = smart_keymap.tap_dance.system.rust_expr,
       }
       & default_family,
       {
@@ -391,6 +406,8 @@
         >"%,
         context_ty = "%{module}::Context",
         context_expr = "%{module}::Context::from_config(config.tap_hold)",
+        config_rust_expr = smart_keymap.tap_hold.config.rust_expr,
+        system_rust_expr = smart_keymap.tap_hold.system.rust_expr,
       }
       & default_family,
     ],
@@ -420,7 +437,12 @@
       },
       context_ty | String,
       context_expr | String,
+      # Singleton System::new() in struct init body.
       system_expr | String,
+      # From smart_keymap.*.config / .system (lazy until forced).
+      config_rust_expr | String | optional,
+      # Required in practice when has_key_data (fail-on-use if missing).
+      system_rust_expr | String | optional,
       data_lengths | Array { const_name | String, data_field | String },
     },
 
@@ -521,32 +543,6 @@
     with_vec_data = {
       data | Storage = 'Vec,
     },
-
-    config_rust_expr_for = fun name =>
-      name
-      |> match {
-        "automation" => smart_keymap.automation.config.rust_expr,
-        "chorded" => smart_keymap.chorded.config.rust_expr,
-        "layered" => smart_keymap.layered.config.rust_expr,
-        "sticky" => smart_keymap.sticky.config.rust_expr,
-        "tap_dance" => smart_keymap.tap_dance.config.rust_expr,
-        "tap_hold" => smart_keymap.tap_hold.config.rust_expr,
-        _ => std.fail_with "no config.rust_expr for family %{name}",
-      },
-
-    system_rust_expr_for = fun name =>
-      name
-      |> match {
-        "automation" => smart_keymap.automation.system.rust_expr,
-        "callback" => smart_keymap.callback.system.rust_expr,
-        "chorded" => smart_keymap.chorded.system.rust_expr,
-        "keyboard" => smart_keymap.keyboard.system.rust_expr,
-        "layered" => smart_keymap.layered.system.rust_expr,
-        "sticky" => smart_keymap.sticky.system.rust_expr,
-        "tap_dance" => smart_keymap.tap_dance.system.rust_expr,
-        "tap_hold" => smart_keymap.tap_hold.system.rust_expr,
-        _ => std.fail_with "no system.rust_expr for family %{name}",
-      },
 
     # --- composite fragments (config / system emit) ----------------------------
     # Named fragments over profile + data, assembled into config / system.
@@ -822,7 +818,7 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
             let fields =
               config_systems
               |> std.array.map (fun f =>
-                "%{f.config_path}: %{config_rust_expr_for f.name},"
+                "%{f.config_path}: %{f.config_rust_expr},"
               )
               |> join
             in
@@ -836,7 +832,7 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
           else
             let args =
               data_array_systems
-              |> std.array.map (fun f => "%{system_rust_expr_for f.name},")
+              |> std.array.map (fun f => "%{f.system_rust_expr},")
               |> join
             in
             m%"key_system::System::new(
