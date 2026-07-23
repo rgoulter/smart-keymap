@@ -10,7 +10,7 @@
 & (import "smart_keys/sticky/keymap-codegen.ncl")
 & (import "smart_keys/tap_dance/keymap-codegen.ncl")
 & (import "smart_keys/tap_hold/keymap-codegen.ncl")
-& (import "composite-key-system.ncl")
+& (import "key_system/keymap-codegen.ncl")
 & {
   KeymapJson
     | doc "Contract for the keymap.json value"
@@ -235,7 +235,7 @@
     },
 
     # Json contract for keymap config; rust_expr / system.* come from
-    # composite-key-system.ncl (composite.config.rust_expr, composite.system).
+    # key_system/keymap-codegen.ncl (composite.config.rust_expr, composite.system).
     config = {
       Json = {
         automation | optional | smart_keymap.automation.config.Json,

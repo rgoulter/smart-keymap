@@ -28,7 +28,7 @@ fn main() {
 
 fn codegen_composite_full_vec(ncl_import_path: &str) {
     let manifest_dir = env!("CARGO_MANIFEST_DIR");
-    println!("cargo:rerun-if-changed={manifest_dir}/ncl/composite-key-system.ncl");
+    println!("cargo:rerun-if-changed={manifest_dir}/ncl/key_system");
     println!("cargo:rerun-if-changed={manifest_dir}/ncl/keymap-codegen.ncl");
     // Family modules can affect the registry merge / types referenced by emit.
     println!("cargo:rerun-if-changed={manifest_dir}/ncl/smart_keys");
