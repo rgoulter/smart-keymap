@@ -1,6 +1,6 @@
 # Composite profile selection + key_system module generation.
 #
-# Family registry: families.ncl (merged below).
+# Family table: families.ncl (static-ish rows + smart_keymap expr joins).
 #
 # Selection is by merge composition (not by applying builders at call sites):
 # - `composite.profile` — which families (default: keymap-stripped).
@@ -46,24 +46,140 @@
 
   smart_keymap,
 
-  # Registry (families.ncl) merged with selection + fragments + emit.
-  # Family fields are referenced via `family_fields.*` where the RHS recursive
-  # record cannot see LHS merge fields (Nickel merge scopes).
+  # One recursive composite: registry fields from families.ncl table, then
+  # profile builders + selection + fragments (short sibling names).
   composite =
-    # Bind deps under fresh names so the arg record is not self-recursive
-    # (`{ smart_key = smart_key }` would loop).
-    let kcv = key_codegen_values in
-    let sk = smart_key in
     let skm = smart_keymap in
-    let family_fields =
-      (import "key_system/families.ncl") {
-        key_codegen_values = kcv,
-        smart_key = sk,
-        smart_keymap = skm,
-      }
-    in
-    family_fields
-    & {
+    let registry = (import "key_system/families.ncl") skm in
+    {
+      # Static-ish table (+ defaults) from families.ncl.
+      camel_case_from_snake_case = registry.camel_case_from_snake_case,
+      default_family = registry.default_family,
+      families = registry.families,
+
+      # Resolve a registry partial into a full family record (defaults applied here).
+      family = fun family_name =>
+        { name = family_name } & families."%{family_name}" & default_family,
+
+      # Resolved families in registry order (alphabetical field order).
+      family_list =
+        families
+        |> std.record.fields
+        |> std.array.map family,
+
+      Family = {
+        name | String,
+        module | String,
+        variant | String,
+        field | String,
+        has_key_data | Bool,
+        has_config | Bool,
+        config_path | String,
+        has_pending_dispatch | Bool,
+        has_state_update | Bool,
+        has_key_output | Bool,
+        handles_context_events | Bool,
+        updates_keymap_context | Bool,
+        key_state_variant | String,
+        ref_ty | String,
+        event_ty | String,
+        pending_ty | String,
+        key_state_ty | String,
+        config_ty | String,
+        system_ty = {
+          array | String,
+          vec | String,
+        },
+        context_ty | String,
+        context_expr | String,
+        # Singleton System::new() in struct init body.
+        system_expr | String,
+        # From smart_keymap.*.config / .system (lazy until forced).
+        config_rust_expr | String | optional,
+        # Required in practice when has_key_data (fail-on-use if missing).
+        system_rust_expr | String | optional,
+        data_lengths | Array { const_name | String, data_field | String },
+      },
+
+      Profile = {
+        systems | Array Dyn,
+        ref_variants | Array String,
+        pending_variants | Array String,
+        state_update_variants | Array String,
+        key_output_variants | Array String,
+        context_event_variants | Array String,
+        config_fields | Array String,
+        used_modules | Array String,
+      },
+
+      used_modules_from = fun codegen_values =>
+        codegen_values
+        |> std.array.fold_left
+          (fun acc cv =>
+            smart_key.traverse
+              (fun acc cv =>
+                if std.record.has_field "module" cv then
+                  if std.array.elem cv.module acc then
+                    acc
+                  else
+                    acc @ [cv.module]
+                else
+                  acc
+              )
+              acc
+              cv
+          )
+          [],
+
+      profile_from_modules = fun used_modules =>
+        let systems =
+          family_list
+          |> std.array.filter (fun f => std.array.elem f.module used_modules)
+        in
+        {
+          include systems,
+          ref_variants = systems |> std.array.map (fun f => f.variant),
+          pending_variants =
+            systems
+            |> std.array.filter (fun f => f.has_pending_dispatch)
+            |> std.array.map (fun f => f.variant),
+          state_update_variants =
+            systems
+            |> std.array.filter (fun f => f.has_state_update)
+            |> std.array.map (fun f => f.variant),
+          key_output_variants =
+            systems
+            |> std.array.filter (fun f => f.has_key_output)
+            |> std.array.map (fun f => f.variant),
+          context_event_variants =
+            systems
+            |> std.array.filter (fun f => f.handles_context_events)
+            |> std.array.map (fun f => f.variant),
+          config_fields =
+            systems
+            |> std.array.filter (fun f => f.has_config)
+            |> std.array.map (fun f => f.config_path),
+          include used_modules,
+        } | Profile,
+
+      profile_from_keys = fun keys =>
+        keys
+        |> std.array.map smart_key.codegen_values
+        |> used_modules_from
+        |> profile_from_modules,
+
+      # All families in registry order (cucumber / universal shell target).
+      full_profile =
+        family_list
+        |> std.array.map (fun f => f.module)
+        |> profile_from_modules,
+
+      # Families used by the current keymap (firmware-trimmed shell).
+      keymap_profile =
+        key_codegen_values
+        |> used_modules_from
+        |> profile_from_modules,
+
       Storage =
         std.contract.from_predicate (fun x =>
           x == 'Array || x == 'Vec
@@ -72,7 +188,7 @@
       # Active profile for composite artefacts. Default = keymap-stripped.
       # `| default` so merge replaces the whole profile (arrays are not deep-merged).
       # Override via merge: `… & with_full_profile`.
-      profile | default = family_fields.keymap_profile,
+      profile | default = keymap_profile,
 
       # Key-data storage for composite artefacts. Default = Array (firmware).
       # `| default` so merge can override with `with_vec_data` / `data = 'Vec`.
@@ -80,7 +196,7 @@
 
       # Merge this record to select the full registry profile.
       with_full_profile = {
-        profile = family_fields.full_profile,
+        profile = full_profile,
       },
 
       # Merge this record to select Vec key-data storage.
@@ -105,7 +221,7 @@
       fragments = {
         systems = profile.systems,
         is_full =
-          std.array.length systems == std.record.length family_fields.families,
+          std.array.length systems == std.record.length families,
         is_vec = data == 'Vec,
 
         join = fun xs => std.string.join "\n" xs,

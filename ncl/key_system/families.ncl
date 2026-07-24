@@ -1,16 +1,11 @@
-# Family registry for the composite key_system shell.
+# Static-ish family registry for the composite key_system shell.
 #
-# Function of codegen deps → record of registry/profile fields.
-# Included into `composite` by keymap-codegen.ncl so selection/emit share one
-# recursive scope (Nickel merge cannot bind sibling fields across files).
+# Big table of per-family flags/types plus config/system rust_expr joins to
+# smart_keymap.* (todo 1). Profile builders and emit live in keymap-codegen.ncl
+# so composite stays one recursive record.
 #
-# Provides default_family, families, Family/Profile contracts, and profile
-# builders (profile_from_*, full_profile, keymap_profile).
-fun {
-  key_codegen_values,
-  smart_key,
-  smart_keymap,
-} =>
+# Only dependency: smart_keymap (for row exprs).
+fun smart_keymap =>
   {
     # Shared defaults for a key family.
     # Applied at use sites: `{ name = family_name } & families.<name> & default_family`.
@@ -350,127 +345,4 @@ fun {
           system_rust_expr = smart_keymap.tap_hold.system.rust_expr,
         },
     },
-
-    # Resolve a registry partial into a full family record (defaults applied here).
-    family = fun family_name =>
-      { name = family_name } & families."%{family_name}" & default_family,
-
-    # Resolved families in registry order (alphabetical field order).
-    family_list =
-      families
-      |> std.record.fields
-      |> std.array.map family,
-
-    Family = {
-      name | String,
-      module | String,
-      variant | String,
-      field | String,
-      has_key_data | Bool,
-      has_config | Bool,
-      config_path | String,
-      has_pending_dispatch | Bool,
-      has_state_update | Bool,
-      has_key_output | Bool,
-      handles_context_events | Bool,
-      updates_keymap_context | Bool,
-      key_state_variant | String,
-      ref_ty | String,
-      event_ty | String,
-      pending_ty | String,
-      key_state_ty | String,
-      config_ty | String,
-      system_ty = {
-        array | String,
-        vec | String,
-      },
-      context_ty | String,
-      context_expr | String,
-      # Singleton System::new() in struct init body.
-      system_expr | String,
-      # From smart_keymap.*.config / .system (lazy until forced).
-      config_rust_expr | String | optional,
-      # Required in practice when has_key_data (fail-on-use if missing).
-      system_rust_expr | String | optional,
-      data_lengths | Array { const_name | String, data_field | String },
-    },
-
-    Profile = {
-      systems | Array Dyn,
-      ref_variants | Array String,
-      pending_variants | Array String,
-      state_update_variants | Array String,
-      key_output_variants | Array String,
-      context_event_variants | Array String,
-      config_fields | Array String,
-      used_modules | Array String,
-    },
-
-    used_modules_from = fun codegen_values =>
-      codegen_values
-      |> std.array.fold_left
-        (fun acc cv =>
-          smart_key.traverse
-            (fun acc cv =>
-              if std.record.has_field "module" cv then
-                if std.array.elem cv.module acc then
-                  acc
-                else
-                  acc @ [cv.module]
-              else
-                acc
-            )
-            acc
-            cv
-        )
-        [],
-
-    profile_from_modules = fun used_modules =>
-      let systems =
-        family_list
-        |> std.array.filter (fun f => std.array.elem f.module used_modules)
-      in
-      {
-        include systems,
-        ref_variants = systems |> std.array.map (fun f => f.variant),
-        pending_variants =
-          systems
-          |> std.array.filter (fun f => f.has_pending_dispatch)
-          |> std.array.map (fun f => f.variant),
-        state_update_variants =
-          systems
-          |> std.array.filter (fun f => f.has_state_update)
-          |> std.array.map (fun f => f.variant),
-        key_output_variants =
-          systems
-          |> std.array.filter (fun f => f.has_key_output)
-          |> std.array.map (fun f => f.variant),
-        context_event_variants =
-          systems
-          |> std.array.filter (fun f => f.handles_context_events)
-          |> std.array.map (fun f => f.variant),
-        config_fields =
-          systems
-          |> std.array.filter (fun f => f.has_config)
-          |> std.array.map (fun f => f.config_path),
-        include used_modules,
-      } | Profile,
-
-    profile_from_keys = fun keys =>
-      keys
-      |> std.array.map smart_key.codegen_values
-      |> used_modules_from
-      |> profile_from_modules,
-
-    # All families in registry order (cucumber / universal shell target).
-    full_profile =
-      family_list
-      |> std.array.map (fun f => f.module)
-      |> profile_from_modules,
-
-    # Families used by the current keymap (firmware-trimmed shell).
-    keymap_profile =
-      key_codegen_values
-      |> used_modules_from
-      |> profile_from_modules,
   }
