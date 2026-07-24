@@ -8,6 +8,7 @@
 #   ncl/layered-key.ncl
 
 ncl/smart_keys/
+ncl/key_system/
 ncl/passes/
 ncl/layouts/remap.ncl
 ncl/layouts/remap-36keys.ncl
