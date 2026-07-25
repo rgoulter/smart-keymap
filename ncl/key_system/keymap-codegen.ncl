@@ -35,9 +35,11 @@
   composite = {
     # Resolve a registry partial into a full family record (defaults applied here).
     family = fun family_name =>
-      { name = family_name }
-      & composite.families."%{family_name}"
-      & composite.default_family,
+      (
+        { name = family_name }
+        & composite.families."%{family_name}"
+        & composite.default_family
+      ) | Family,
 
     # Resolved families in registry order (alphabetical field order).
     family_list =
@@ -81,6 +83,9 @@
         'NoPendingKeyState => false,
         'PendingKeyState _ => true,
       },
+    # Aggregate PendingKeyState includes every profile family so into_result
+    # can use Into uniformly. Non-pending families use module::PendingKeyState
+    # (often a unit type) as a dummy arm payload.
     family_pending_ty = fun f =>
       f.pending
       |> match {
@@ -113,28 +118,63 @@
         'System { expr, .. } => expr,
       },
 
+    # Capability / shape contracts (enum tags from families.ncl header).
+    ConfigCap = [|
+      'NoConfig,
+      'Config { ty | String, rust_expr | String }
+    |],
+    PendingCap = [|
+      'NoPendingKeyState,
+      'PendingKeyState { ty | String }
+    |],
+    StateUpdateCap = [| 'NoStateUpdate, 'StateUpdate |],
+    KeyOutputCap = [| 'NoKeyOutput, 'KeyOutput |],
+    ContextEventsCap = [| 'NoContextEvents, 'ContextEvents |],
+    KeymapContextCap = [| 'NoKeymapContextUpdate, 'UpdatesKeymapContext |],
+    KeyStateCap = [|
+      'KeyState { name | String, ty | String }
+    |],
+    SystemCap = [|
+      'System { ty | String, expr | String },
+      'SystemWithData {
+        data_lengths | Array { const_name | String, data_field | String },
+        rust_expr | String,
+        ty | { array | String, vec | String },
+      }
+    |],
+    ModuleConst = {
+      const_name | String,
+      rust_expr | String,
+    },
+    InitParam = {
+      const_name | String,
+      doc | String,
+      value | Dyn,
+    },
+
     Family = {
       name | String,
       module | String,
       variant | String,
       field | String,
-      # Shape / capability enums (see families.ncl header).
-      config | Dyn,
-      pending | Dyn,
-      state_update | Dyn,
-      key_output | Dyn,
-      context_events | Dyn,
-      keymap_context | Dyn,
-      key_state | Dyn,
-      system | Dyn,
+      config | ConfigCap,
+      pending | PendingCap,
+      state_update | StateUpdateCap,
+      key_output | KeyOutputCap,
+      context_events | ContextEventsCap,
+      keymap_context | KeymapContextCap,
+      key_state | KeyStateCap,
+      system | SystemCap,
       context | { ty | String, expr | String },
       ref_ty | String,
       event_ty | String,
+      init_params | Array InitParam,
+      module_consts | Array ModuleConst,
     },
 
     # Resolved set of families + derived variant lists (content of 'Profile).
     Profile = {
-      systems | Array Dyn,
+      systems | Array Family,
       ref_variants | Array String,
       pending_variants | Array String,
       state_update_variants | Array String,
@@ -277,7 +317,7 @@
       singleton_systems =
         systems
         |> std.array.filter (fun f => family_has_key_data f == false),
-      has_chorded = std.array.any (fun f => f.name == "chorded") systems,
+      pending_systems = systems |> std.array.filter family_has_pending,
 
       sty = fun f => system_ty_for data f,
 
@@ -426,9 +466,6 @@ Ref::%{f.variant}(key_ref) => {
         |> join,
 
       update_pending_arms =
-        let pending_systems =
-          systems |> std.array.filter family_has_pending
-        in
         if pending_systems == [] then
           "_ => panic!(\"no pending key systems in this key_system\"),"
         else
@@ -511,8 +548,7 @@ impl From<%{pty}> for PendingKeyState {
         |> join,
 
       pending_mut_try_from =
-        systems
-        |> std.array.filter family_has_pending
+        pending_systems
         |> std.array.map (fun f =>
           let pty = family_pending_ty f in
           m%"
@@ -561,11 +597,12 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{pty} {
 %{args}
 )"%,
 
-      chorded_pressed_indices_const =
-        if has_chorded then
-          "const CHORDED_MAX_PRESSED_INDICES: usize = crate::init::CHORDED_MAX_CHORD_SIZE * 2;\n"
-        else
-          "",
+      # Family-local private consts inside key_system (e.g. chorded pressed indices).
+      module_local_consts =
+        systems
+        |> std.array.flat_map (fun f => f.module_consts)
+        |> std.array.map (fun c => "const %{c.const_name}: usize = %{c.rust_expr};\n")
+        |> join,
 
       key_state_variants =
         systems
@@ -603,7 +640,7 @@ pub mod key_system {
     use smart_keymap::key;
     use smart_keymap::keymap;
 
-%{chorded_pressed_indices_const}
+%{module_local_consts}
     /// Aggregate key reference.
     #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
     pub enum Ref {

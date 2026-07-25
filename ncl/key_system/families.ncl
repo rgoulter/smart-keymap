@@ -18,6 +18,9 @@
 #  - key_output:     'NoKeyOutput | 'KeyOutput
 #  - context_events: 'NoContextEvents | 'ContextEvents
 #  - keymap_context: 'NoKeymapContextUpdate | 'UpdatesKeymapContext
+#  - init_params:    size / const-generic params emitted in `pub mod init`
+#  - module_consts:  private consts inside generated `pub mod key_system`
+#                    (e.g. chorded pressed-indices derived from init:: size consts)
 {
   smart_keymap,
 
@@ -74,6 +77,10 @@
         # Each: `{ const_name, doc, value = fun ctx => usize }` where
         # `ctx = { json_keymap, key_codegen_values, smart_key }`.
         init_params | default = [],
+
+        # Private consts inside the generated `key_system` module (profile-trimmed).
+        # Each: `{ const_name, rust_expr }` — e.g. derived from `crate::init::…`.
+        module_consts | default = [],
       },
 
       # Family registry as a record keyed by snake_case name
@@ -281,6 +288,13 @@
                   |> std.array.fold_left std.number.max 0,
               },
             ],
+          # Derived inside key_system (not init); used by chorded type params.
+          module_consts = [
+            {
+              const_name = "CHORDED_MAX_PRESSED_INDICES",
+              rust_expr = "crate::init::CHORDED_MAX_CHORD_SIZE * 2",
+            },
+          ],
         },
         consumer = {
           module = "smart_keymap::key::consumer",
