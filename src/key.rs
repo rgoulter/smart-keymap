@@ -29,9 +29,6 @@ pub mod tap_dance;
 /// Tap-Hold keys.
 pub mod tap_hold;
 
-#[cfg(feature = "std")]
-include!(concat!(env!("OUT_DIR"), "/composite_full_vec.rs"));
-
 /// The maximum number of key events that are emitted by [crate::key::System] implementations.
 pub const MAX_KEY_EVENTS: usize = 4;
 

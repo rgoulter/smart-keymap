@@ -41,11 +41,15 @@
 //! and its [key::System] trait.
 //!
 //! Per-keymap aggregation is produced by Nickel codegen
-//!  as `init::key_system` (custom keymap / `keymap!`),
-//!  or as `key::key_system` for std/cucumber.
+//!  as `init::key_system` (custom keymap / `keymap!`).
 //! Without a custom keymap,
 //!  [init] provides a trivial keyboard-only shell
 //!  so [`new_keymap`] still type-checks.
+//!
+//! The full-profile, Vec-backed composite shell used by Cucumber and other
+//! std harnesses lives in the separate `smart-keymap-full-system-std` package
+//! so default `smart-keymap` builds (including `cargo doc`) do not require
+//! Nickel.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
@@ -69,8 +73,9 @@ pub mod slice;
 /// Types and initial data used for constructing a [keymap::Keymap].
 ///
 /// Without `SMART_KEYMAP_CUSTOM_KEYMAP`, this is a **keyboard-only** dummy map
-/// (letter `A`) plus generous size constants used by composite shells /
-/// cucumber. With a custom keymap, build codegen replaces this module.
+/// (letter `A`) plus generous size constants used by composite shells (also
+/// re-exported by `smart-keymap-full-system-std`). With a custom keymap, build
+/// codegen replaces this module.
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
