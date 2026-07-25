@@ -265,78 +265,16 @@
     | doc "Record of rust expressions generated from keymap.json"
     =
       let keymap_len = std.array.length json_keymap.keys in
-      let num_automation_instructions =
-        if std.record.has_field "automation" json_keymap.config then
-          let automation_cfg = json_keymap.config.automation in
-          if std.record.has_field "instructions" automation_cfg then
-            std.array.length automation_cfg.instructions
-          else
-            0
-        else
-          0
-      in
-      let max_tap_dance_definitions =
-        # For each of the keys,
-        #  compute max length of any tap dance definitions.
-        let max_td_defs =
-          std.array.map
-            (fun cv =>
-              smart_key.traverse
-                (fun acc cv =>
-                  cv
-                  |> match {
-                    { nested = { definitions }, .. } =>
-                      let len = std.array.length definitions in
-                      if len > acc then len else acc,
-                    _ => acc,
-                  }
-                )
-                0
-                cv
-            )
-            key_codegen_values
-        in
-        # Compute the max over all
-        std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
-      in
-      let num_layers =
-        # Longest layered array across every key tree (not only the first layered key).
-        key_codegen_values
-        |> std.array.fold_left
-          (fun acc cv =>
-            smart_key.traverse
-              (fun acc cv =>
-                cv
-                |> match {
-                  { nested = { layered, .. }, .. } =>
-                    let len = std.array.length layered in
-                    if len > acc then len else acc,
-                  _ => acc,
-                }
-              )
-              acc
-              cv
-          )
-          0
-      in
-      let chords = ((json_keymap.config & { chorded | default = {} }).chorded & { chords | default = [] }).chords in
-      let chord_count = chords |> std.array.length in
-      let max_chord_size = chords |> std.array.map std.array.length |> std.array.fold_left std.number.max 0 in
-      let max_overlapping_chord_size =
-        chords
-        |> std.array.map (fun [i, ..] => std.to_string i)
-        |> std.array.fold_left
-          (fun r i =>
-            std.record.update i (1 + (std.record.get_or i 0 r)) r
-          )
-          {}
-        |> std.record.values
-        |> std.array.fold_left std.number.max 0
-      in
       let { key_data, key_refs } = key_data_and_refs in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
       let config = composite.config.rust_expr in
       let context = "key_system::Context::from_config(%{config})" in
+      let init_size_ctx = {
+        include json_keymap,
+        include key_codegen_values,
+        include smart_key,
+      }
+      in
       # Firmware / custom-keymap module: included as `crate::init` with
       # `use crate as smart_keymap` and `crate::init::…` size paths.
       let keymap_module_src = m%"
@@ -344,23 +282,7 @@
 pub mod init {
     use crate as smart_keymap;
 
-    /// Number of instructions used by the [crate::key::automation] implementation.
-    pub const AUTOMATION_INSTRUCTION_COUNT: usize = %{std.to_string num_automation_instructions};
-
-    /// Number of layers supported by the [smart_keymap::key::layered] implementation.
-    pub const LAYERED_LAYER_COUNT: usize = %{std.to_string num_layers};
-
-    /// The maximum number of keys in a chord.
-    pub const CHORDED_MAX_CHORD_SIZE: usize = %{max_chord_size |> std.to_string};
-
-    /// The maximum number of chords.
-    pub const CHORDED_MAX_CHORDS: usize = %{chord_count |> std.to_string};
-
-    /// The maximum number of overlapping chords for a chorded key.
-    pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = %{max_overlapping_chord_size |> std.to_string};
-
-    /// The tap-dance definitions.
-    pub const TAP_DANCE_MAX_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
+%{composite.system.init_size_consts_rust_stmts init_size_ctx}
 
 %{composite.system.init_consts_rust_stmts key_data}
 

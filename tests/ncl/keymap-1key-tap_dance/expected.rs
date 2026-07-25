@@ -5,9 +5,6 @@ pub mod init {
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
 
-    /// Number of layers supported by the [smart_keymap::key::layered] implementation.
-    pub const LAYERED_LAYER_COUNT: usize = 0;
-
     /// The maximum number of keys in a chord.
     pub const CHORDED_MAX_CHORD_SIZE: usize = 0;
 
@@ -16,6 +13,9 @@ pub mod init {
 
     /// The maximum number of overlapping chords for a chorded key.
     pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = 0;
+
+    /// Number of layers supported by the [smart_keymap::key::layered] implementation.
+    pub const LAYERED_LAYER_COUNT: usize = 0;
 
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 3;

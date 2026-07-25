@@ -12,6 +12,7 @@
 #   - `composite.config.Json` / `composite.config.rust_expr`
 #   - `composite.system.rust_expr`
 #   - `composite.system.init_consts_rust_stmts` (fn of key_data)
+#   - `composite.system.init_size_consts_rust_stmts` (fn of ctx; always-emit)
 #   - `composite.system.rust_mod` (generated `pub mod key_system { … }`)
 #
 # Profile:
@@ -769,6 +770,7 @@ pub mod key_system {
 "%,
 
       # Key-data length consts for init (e.g. `const KEYBOARD: usize = N;`).
+      # Profile-trimmed to active `systems`.
       init_consts_rust_stmts = fun key_data =>
         systems
         |> std.array.fold_left
@@ -790,6 +792,17 @@ pub mod key_system {
           )
           []
         |> std.string.join "\n",
+
+      # Size / const-generic params for init (e.g. `LAYERED_LAYER_COUNT`).
+      # Always emitted from the full family registry (v1 policy; not profile-trimmed).
+      # `ctx = { json_keymap, key_codegen_values, smart_key }`.
+      init_size_consts_rust_stmts = fun ctx =>
+        family_list
+        |> std.array.flat_map (fun f => f.init_params)
+        |> std.array.map (fun p =>
+          "    /// %{p.doc}\n    pub const %{p.const_name}: usize = %{std.to_string (p.value ctx)};"
+        )
+        |> std.string.join "\n\n",
     },
 
     # Public artefacts assembled from active fragments.
@@ -809,6 +822,7 @@ pub mod key_system {
       rust_expr = fragments.system_rust_expr,
       rust_mod = fragments.rust_mod,
       init_consts_rust_stmts = fragments.init_consts_rust_stmts,
+      init_size_consts_rust_stmts = fragments.init_size_consts_rust_stmts,
     },
   },
 
