@@ -267,8 +267,8 @@
       let keymap_len = std.array.length json_keymap.keys in
       let { key_data, key_refs } = key_data_and_refs in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
-      let config = composite.config.rust_expr in
-      let context = "key_system::Context::from_config(%{config})" in
+      let config_expr = composite.config.rust_expr in
+      let context_expr = "key_system::Context::from_config(%{config_expr})" in
       let init_size_ctx = {
         include json_keymap,
         include key_codegen_values,
@@ -302,10 +302,10 @@ pub mod init {
     pub const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs_expr};
 
     /// The keymap config.
-    pub const CONFIG: key_system::Config = %{config};
+    pub const CONFIG: key_system::Config = %{config_expr};
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = %{context};
+    pub const CONTEXT: Context = %{context_expr};
 
     /// The key system.
     pub const SYSTEM: System = %{composite.system.rust_expr};
@@ -329,7 +329,7 @@ pub mod init {
       # - `crate as smart_keymap` → external `smart_keymap` crate
       # - `crate::init::` → `super::` (size consts live on the nested module)
       # - drop serde derives (call site may not depend on serde)
-      let keymap_expr_src =
+      let keymap_expr =
         let adapted_module =
           keymap_module_src
           |> std.string.replace "pub mod init" "mod __smart_keymap_keymap"
@@ -350,10 +350,10 @@ pub mod init {
 "%,
       in
       {
-        include config,
-        include context,
+        config = config_expr,
+        context = config_expr,
         key_refs = key_refs_expr,
-        keymap = keymap_expr_src,
+        keymap = keymap_expr,
         keymap_module = keymap_module_src,
       },
 
