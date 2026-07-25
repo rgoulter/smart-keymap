@@ -505,7 +505,7 @@ pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
                 .write_all(
                     br#"
   (import "keymap-codegen.ncl")
-  & { composite, composite.profile = composite.full_profile }
+  & { composite, composite.profile = 'FullProfile }
   & { composite.data = 'Vec }
 "#,
                 )

@@ -4,7 +4,8 @@
 # expr joins under composite.default_family / composite.families).
 #
 # Selection is by merge composition:
-# - `composite.profile` — which families (default: keymap-stripped).
+# - `composite.profile` — which families:
+#     `'FullProfile` | `'Profile profile`  (default: `'Profile keymap_profile`)
 # - `composite.data` — key-data storage (`'Array` | `'Vec`; default `'Array`).
 # - Artefacts for the selected profile + data live on `composite` itself:
 #   - `composite.config.rust_expr`
@@ -13,9 +14,8 @@
 #   - `composite.system.rust_mod` (generated `pub mod key_system { … }`)
 #
 # Profile:
-# - Default: keymap-stripped (`keymap_profile` from keys).
-# - Full:    merge `composite.with_full_profile`
-#            (or set `composite.profile = composite.full_profile`).
+# - Default: keymap-stripped (`'Profile keymap_profile` from keys).
+# - Full:    merge `composite.with_full_profile` (sets `profile = 'FullProfile`).
 #
 # Data storage (`composite.data`):
 # - `'Array` — concrete `System` with `[Key; N]` (firmware trimmed default).
@@ -43,40 +43,76 @@
       |> std.record.fields
       |> std.array.map family,
 
+    # Family capability predicates / extractors (enum tags from families.ncl).
+    family_has_config = fun f =>
+      f.config
+      |> match {
+        'NoConfig => false,
+        'Config _ => true,
+      },
+    family_config = fun f =>
+      f.config
+      |> match {
+        'Config c => c,
+      },
+    family_has_pending = fun f =>
+      f.pending
+      |> match {
+        'NoPendingKeyState => false,
+        'PendingKeyState _ => true,
+      },
+    family_pending_ty = fun f =>
+      f.pending
+      |> match {
+        'NoPendingKeyState => "%{f.module}::PendingKeyState",
+        'PendingKeyState { ty } => ty,
+      },
+    family_has_state_update = fun f => f.state_update == 'StateUpdate,
+    family_has_key_output = fun f => f.key_output == 'KeyOutput,
+    family_has_context_events = fun f => f.context_events == 'ContextEvents,
+    family_updates_keymap_context = fun f => f.keymap_context == 'UpdatesKeymapContext,
+    family_has_key_data = fun f =>
+      f.system
+      |> match {
+        'System _ => false,
+        'SystemWithData _ => true,
+      },
+    family_key_state = fun f =>
+      f.key_state
+      |> match {
+        'KeyState ks => ks,
+      },
+    family_system_data = fun f =>
+      f.system
+      |> match {
+        'SystemWithData d => d,
+      },
+    family_system_expr = fun f =>
+      f.system
+      |> match {
+        'System { expr, .. } => expr,
+      },
+
     Family = {
       name | String,
       module | String,
       variant | String,
       field | String,
-      has_key_data | Bool,
-      has_config | Bool,
-      config_path | String,
-      has_pending_dispatch | Bool,
-      has_state_update | Bool,
-      has_key_output | Bool,
-      handles_context_events | Bool,
-      updates_keymap_context | Bool,
-      key_state_variant | String,
+      # Shape / capability enums (see families.ncl header).
+      config | Dyn,
+      pending | Dyn,
+      state_update | Dyn,
+      key_output | Dyn,
+      context_events | Dyn,
+      keymap_context | Dyn,
+      key_state | Dyn,
+      system | Dyn,
+      context | { ty | String, expr | String },
       ref_ty | String,
       event_ty | String,
-      pending_ty | String,
-      key_state_ty | String,
-      config_ty | String,
-      system_ty = {
-        array | String,
-        vec | String,
-      },
-      context_ty | String,
-      context_expr | String,
-      # Singleton System::new() in struct init body.
-      system_expr | String,
-      # From smart_keymap.*.config / .system
-      config_rust_expr | String | optional,
-      # Required when has_key_data
-      system_rust_expr | String | optional,
-      data_lengths | Array { const_name | String, data_field | String },
     },
 
+    # Resolved set of families + derived variant lists (content of 'Profile).
     Profile = {
       systems | Array Dyn,
       ref_variants | Array String,
@@ -117,24 +153,24 @@
         ref_variants = systems |> std.array.map (fun f => f.variant),
         pending_variants =
           systems
-          |> std.array.filter (fun f => f.has_pending_dispatch)
+          |> std.array.filter family_has_pending
           |> std.array.map (fun f => f.variant),
         state_update_variants =
           systems
-          |> std.array.filter (fun f => f.has_state_update)
+          |> std.array.filter family_has_state_update
           |> std.array.map (fun f => f.variant),
         key_output_variants =
           systems
-          |> std.array.filter (fun f => f.has_key_output)
+          |> std.array.filter family_has_key_output
           |> std.array.map (fun f => f.variant),
         context_event_variants =
           systems
-          |> std.array.filter (fun f => f.handles_context_events)
+          |> std.array.filter family_has_context_events
           |> std.array.map (fun f => f.variant),
         config_fields =
           systems
-          |> std.array.filter (fun f => f.has_config)
-          |> std.array.map (fun f => f.config_path),
+          |> std.array.filter family_has_config
+          |> std.array.map (fun f => f.field),
         include used_modules,
       } | Profile,
 
@@ -163,15 +199,16 @@
         x == 'Array || x == 'Vec
       ),
 
-    # Active profile for composite artefacts. Default = keymap-stripped.
-    profile | default = keymap_profile,
+    # Active profile selection: 'FullProfile | 'Profile profile.
+    # Default = keymap-stripped.
+    profile | default = 'Profile keymap_profile,
 
     # Key-data storage for composite artefacts. Default = Array (firmware).
     data | Storage | default = 'Array,
 
     # Merge this record to select the full registry profile.
     with_full_profile = {
-      profile = full_profile,
+      profile = 'FullProfile,
     },
 
     # Merge this record to select Vec key-data storage.
@@ -179,29 +216,47 @@
       data | Storage = 'Vec,
     },
 
+    # Resolve selection enum to a Profile record.
+    resolved_profile =
+      profile
+      |> match {
+        'FullProfile => full_profile,
+        'Profile p => p,
+      },
+
     # --- composite fragments (config / system codegen) -------------------------
     # Named fragments over active profile + data.
 
     system_ty_for = fun storage f =>
-      storage
+      f.system
       |> match {
-        'Array => f.system_ty.array,
-        'Vec => f.system_ty.vec,
+        'System { ty, .. } => ty,
+        'SystemWithData { ty, .. } =>
+          storage
+          |> match {
+            'Array => ty.array,
+            'Vec => ty.vec,
+          },
       },
 
     # Module-shaped codegen fragments for the active profile + data.
     fragments = {
-      systems = profile.systems,
+      systems = resolved_profile.systems,
       is_full =
-        std.array.length systems == std.record.length composite.families,
+        profile
+        |> match {
+          'FullProfile => true,
+          'Profile _ => false,
+        },
       is_vec = data == 'Vec,
 
       join = fun xs => std.string.join "\n" xs,
 
-      config_systems = systems |> std.array.filter (fun f => f.has_config),
-      data_array_systems = systems |> std.array.filter (fun f => f.has_key_data),
+      config_systems = systems |> std.array.filter family_has_config,
+      data_array_systems = systems |> std.array.filter family_has_key_data,
       singleton_systems =
-        systems |> std.array.filter (fun f => f.has_key_data == false),
+        systems
+        |> std.array.filter (fun f => family_has_key_data f == false),
       has_chorded = std.array.any (fun f => f.name == "chorded") systems,
 
       sty = fun f => system_ty_for data f,
@@ -216,7 +271,7 @@
         |> std.array.map (fun f =>
           m%"
 impl From<%{ty_of f}> for %{aggregate} {
-      fn from(v: %{ty_of f}) -> Self { %{aggregate}::%{f.variant}(v) }
+    fn from(v: %{ty_of f}) -> Self { %{aggregate}::%{f.variant}(v) }
 }"%
         )
         |> join,
@@ -227,13 +282,13 @@ impl From<%{ty_of f}> for %{aggregate} {
           m%"
 #[allow(unreachable_patterns)]
 impl TryFrom<%{aggregate}> for %{ty_of f} {
-      type Error = smart_keymap::key::EventError;
-      fn try_from(v: %{aggregate}) -> Result<Self, Self::Error> {
-          match v {
-              %{aggregate}::%{f.variant}(v) => Ok(v),
-              _ => Err(smart_keymap::key::EventError::UnmappableEvent),
-          }
-      }
+    type Error = smart_keymap::key::EventError;
+    fn try_from(v: %{aggregate}) -> Result<Self, Self::Error> {
+        match v {
+            %{aggregate}::%{f.variant}(v) => Ok(v),
+            _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+        }
+    }
 }"%
         )
         |> join,
@@ -248,23 +303,24 @@ impl TryFrom<%{aggregate}> for %{ty_of f} {
 #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {}
 impl Default for Config {
-      fn default() -> Self { Self::new() }
+    fn default() -> Self { Self::new() }
 }
 impl Config {
-      /// Constructs a new [Config] with defaults.
-      pub const fn new() -> Self { Self {} }
+    /// Constructs a new [Config] with defaults.
+    pub const fn new() -> Self { Self {} }
 }"%
         else
           let fields =
             config_systems
             |> std.array.map (fun f =>
-              "/// Config for [%{f.module}].%{config_field_attrs}\n    pub %{f.config_path}: %{f.config_ty},"
+              let c = family_config f in
+              "/// Config for [%{f.module}].%{config_field_attrs}\n    pub %{f.field}: %{c.ty},"
             )
             |> join
           in
           let new_fields =
             config_systems
-            |> std.array.map (fun f => "%{f.config_path}: %{f.module}::Config::new(),")
+            |> std.array.map (fun f => "%{f.field}: %{f.module}::Config::new(),")
             |> join
           in
           m%"
@@ -274,45 +330,45 @@ pub struct Config {
 %{fields}
 }
 impl Default for Config {
-      fn default() -> Self { Self::new() }
+    fn default() -> Self { Self::new() }
 }
 impl Config {
-      /// Constructs a new [Config] with defaults.
-      pub const fn new() -> Self {
-          Self {
+    /// Constructs a new [Config] with defaults.
+    pub const fn new() -> Self {
+        Self {
 %{new_fields}
-          }
-      }
+        }
+    }
 }"%,
 
       context_fields =
         (
           ["keymap_context: smart_keymap::keymap::KeymapContext,"]
-          @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context_ty},"))
+          @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context.ty},"))
         )
         |> join,
 
       context_from_config_fields =
         (
           ["keymap_context: smart_keymap::keymap::KeymapContext::new(),"]
-          @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context_expr},"))
+          @ (systems |> std.array.map (fun f => "%{f.field}: %{f.context.expr},"))
         )
         |> join,
 
       context_handle_event =
         systems
-        |> std.array.filter (fun f => f.handles_context_events)
+        |> std.array.filter family_has_context_events
         |> std.array.map (fun f =>
           m%"
 if let Ok(e) = event.try_into_key_event() {
-      pke.extend(self.%{f.field}.handle_event(e).into_events());
+    pke.extend(self.%{f.field}.handle_event(e).into_events());
 }"%
         )
         |> join,
 
       set_keymap_context_updates =
         systems
-        |> std.array.filter (fun f => f.updates_keymap_context)
+        |> std.array.filter family_updates_keymap_context
         |> std.array.map (fun f => "self.%{f.field}.update_keymap_context(&context);")
         |> join,
 
@@ -329,7 +385,12 @@ if let Ok(e) = event.try_into_key_event() {
       system_new_body =
         (
           (data_array_systems |> std.array.map (fun f => "%{f.field},"))
-          @ (singleton_systems |> std.array.map (fun f => "%{f.field}: %{f.system_expr},"))
+          @ (
+            singleton_systems
+            |> std.array.map (fun f =>
+              "%{f.field}: %{family_system_expr f},"
+            )
+          )
         )
         |> join,
 
@@ -338,15 +399,15 @@ if let Ok(e) = event.try_into_key_event() {
         |> std.array.map (fun f =>
           m%"
 Ref::%{f.variant}(key_ref) => {
-      let (pkr, pke) = self.%{f.field}.new_pressed_key(keymap_index, &context.%{f.field}, key_ref);
-      (pkr.into_result(), pke.into_events())
+    let (pkr, pke) = self.%{f.field}.new_pressed_key(keymap_index, &context.%{f.field}, key_ref);
+    (pkr.into_result(), pke.into_events())
 }"%
         )
         |> join,
 
       update_pending_arms =
         let pending_systems =
-          systems |> std.array.filter (fun f => f.has_pending_dispatch)
+          systems |> std.array.filter family_has_pending
         in
         if pending_systems == [] then
           "_ => panic!(\"no pending key systems in this key_system\"),"
@@ -356,14 +417,14 @@ Ref::%{f.variant}(key_ref) => {
             |> std.array.map (fun f =>
               m%"
 (Ref::%{f.variant}(key_ref), PendingKeyState::%{f.variant}(pending_state)) => {
-      if let Ok(event) = event.try_into_key_event() {
-          let (maybe_npk, pke) = self.%{f.field}.update_pending_state(
-              pending_state, keymap_index, &context.%{f.field}, key_ref, event,
-          );
-          (maybe_npk, pke.into_events())
-      } else {
-          (None, smart_keymap::key::KeyEvents::no_events())
-      }
+    if let Ok(event) = event.try_into_key_event() {
+        let (maybe_npk, pke) = self.%{f.field}.update_pending_state(
+            pending_state, keymap_index, &context.%{f.field}, key_ref, event,
+        );
+        (maybe_npk, pke.into_events())
+    } else {
+        (None, smart_keymap::key::KeyEvents::no_events())
+    }
 }"%
             )
             |> join
@@ -372,20 +433,21 @@ Ref::%{f.variant}(key_ref) => {
 
       update_state_arms =
         let state_systems =
-          systems |> std.array.filter (fun f => f.has_state_update)
+          systems |> std.array.filter family_has_state_update
         in
         (
           state_systems
           |> std.array.map (fun f =>
+            let ksv = (family_key_state f).name in
             m%"
-(Ref::%{f.variant}(key_ref), KeyState::%{f.key_state_variant}(key_state)) => {
-      if let Ok(event) = event.try_into_key_event() {
-          self.%{f.field}
-              .update_state(key_state, key_ref, &context.%{f.field}, keymap_index, event)
-              .into_events()
-      } else {
-          smart_keymap::key::KeyEvents::no_events()
-      }
+(Ref::%{f.variant}(key_ref), KeyState::%{ksv}(key_state)) => {
+    if let Ok(event) = event.try_into_key_event() {
+        self.%{f.field}
+            .update_state(key_state, key_ref, &context.%{f.field}, keymap_index, event)
+            .into_events()
+    } else {
+        smart_keymap::key::KeyEvents::no_events()
+    }
 }"%
           )
           |> join
@@ -394,12 +456,13 @@ Ref::%{f.variant}(key_ref) => {
 
       key_output_arms =
         let out_systems =
-          systems |> std.array.filter (fun f => f.has_key_output)
+          systems |> std.array.filter family_has_key_output
         in
         (
           out_systems
           |> std.array.map (fun f =>
-            "(Ref::%{f.variant}(r), KeyState::%{f.key_state_variant}(ks)) => self.%{f.field}.key_output(r, ks),"
+            let ksv = (family_key_state f).name in
+            "(Ref::%{f.variant}(r), KeyState::%{ksv}(ks)) => self.%{f.field}.key_output(r, ks),"
           )
           |> join
         )
@@ -408,9 +471,10 @@ Ref::%{f.variant}(key_ref) => {
       key_state_from_family =
         systems
         |> std.array.map (fun f =>
+          let ks = family_key_state f in
           m%"
-impl From<%{f.key_state_ty}> for KeyState {
-      fn from(ks: %{f.key_state_ty}) -> Self { KeyState::%{f.key_state_variant}(ks) }
+impl From<%{ks.ty}> for KeyState {
+    fn from(ks: %{ks.ty}) -> Self { KeyState::%{ks.name}(ks) }
 }"%
         )
         |> join,
@@ -418,27 +482,29 @@ impl From<%{f.key_state_ty}> for KeyState {
       pending_from_family =
         systems
         |> std.array.map (fun f =>
+          let pty = family_pending_ty f in
           m%"
-impl From<%{f.pending_ty}> for PendingKeyState {
-      fn from(pks: %{f.pending_ty}) -> Self { PendingKeyState::%{f.variant}(pks) }
+impl From<%{pty}> for PendingKeyState {
+    fn from(pks: %{pty}) -> Self { PendingKeyState::%{f.variant}(pks) }
 }"%
         )
         |> join,
 
       pending_mut_try_from =
         systems
-        |> std.array.filter (fun f => f.has_pending_dispatch)
+        |> std.array.filter family_has_pending
         |> std.array.map (fun f =>
+          let pty = family_pending_ty f in
           m%"
 #[allow(unreachable_patterns)]
-impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
-      type Error = ();
-      fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
-          match pks {
-              PendingKeyState::%{f.variant}(pks) => Ok(pks),
-              _ => Err(()),
-          }
-      }
+impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{pty} {
+    type Error = ();
+    fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
+        match pks {
+            PendingKeyState::%{f.variant}(pks) => Ok(pks),
+            _ => Err(()),
+        }
+    }
 }"%
         )
         |> join,
@@ -450,7 +516,8 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
           let fields =
             config_systems
             |> std.array.map (fun f =>
-              "%{f.config_path}: %{f.config_rust_expr},"
+              let c = family_config f in
+              "%{f.field}: %{c.rust_expr},"
             )
             |> join
           in
@@ -464,7 +531,10 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
         else
           let args =
             data_array_systems
-            |> std.array.map (fun f => "%{f.system_rust_expr},")
+            |> std.array.map (fun f =>
+              let d = family_system_data f in
+              "%{d.rust_expr},"
+            )
             |> join
           in
           m%"key_system::System::new(
@@ -480,7 +550,8 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
       key_state_variants =
         systems
         |> std.array.map (fun f =>
-          "/// [%{f.module}] key state.\n%{f.key_state_variant}(%{f.key_state_ty}),"
+          let ks = family_key_state f in
+          "/// [%{f.module}] key state.\n%{ks.name}(%{ks.ty}),"
         )
         |> join,
 
@@ -508,173 +579,173 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
       rust_mod = m%"
 /// %{module_doc}
 pub mod key_system {
-      use crate as smart_keymap;
-      use smart_keymap::key;
-      use smart_keymap::keymap;
+    use crate as smart_keymap;
+    use smart_keymap::key;
+    use smart_keymap::keymap;
 
 %{chorded_pressed_indices_const}
-      /// Aggregate key reference.
-      #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
-      pub enum Ref {
+    /// Aggregate key reference.
+    #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
+    pub enum Ref {
 %{enum_variants (fun f => f.ref_ty)}
-      }
+    }
 
 %{config_struct}
 
-      /// Aggregate context.
-      #[derive(Debug, Clone, Copy)]
-      pub struct Context {
+    /// Aggregate context.
+    #[derive(Debug, Clone, Copy)]
+    pub struct Context {
 %{context_fields}
-      }
+    }
 
-      impl Context {
-          /// Constructs a [Context] from the given [Config].
-          pub const fn from_config(config: Config) -> Self {
-              let _ = &config;
-              Self {
+    impl Context {
+        /// Constructs a [Context] from the given [Config].
+        pub const fn from_config(config: Config) -> Self {
+            let _ = &config;
+            Self {
 %{context_from_config_fields}
-              }
-          }
-      }
+            }
+        }
+    }
 
-      impl Default for Context {
-          fn default() -> Self {
-              Self::from_config(Config::new())
-          }
-      }
+    impl Default for Context {
+        fn default() -> Self {
+            Self::from_config(Config::new())
+        }
+    }
 
-      impl key::Context for Context {
-          type Event = Event;
+    impl key::Context for Context {
+        type Event = Event;
 
-          #[allow(unused_mut, unused_variables)]
-          fn handle_event(
-              &mut self,
-              event: key::Event<Self::Event>,
-          ) -> key::KeyEvents<Self::Event> {
-              let mut pke = key::KeyEvents::no_events();
+        #[allow(unused_mut, unused_variables)]
+        fn handle_event(
+            &mut self,
+            event: key::Event<Self::Event>,
+        ) -> key::KeyEvents<Self::Event> {
+            let mut pke = key::KeyEvents::no_events();
 %{context_handle_event}
-              pke
-          }
-      }
+            pke
+        }
+    }
 
-      impl keymap::SetKeymapContext for Context {
-          fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
-              self.keymap_context = context;
+    impl keymap::SetKeymapContext for Context {
+        fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
+            self.keymap_context = context;
 %{set_keymap_context_updates}
-          }
-      }
+        }
+    }
 
-      /// Aggregate event.
-      #[derive(Debug, Clone, Copy, PartialEq)]
-      pub enum Event {
+    /// Aggregate event.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub enum Event {
 %{enum_variants (fun f => f.event_ty)}
-      }
+    }
 
 %{from_impls "Event" (fun f => f.event_ty)}
 %{try_from_impls "Event" (fun f => f.event_ty)}
 
-      /// Aggregate pending key state.
-      #[derive(Debug, Clone, PartialEq)]
-      #[allow(clippy::large_enum_variant)]
-      pub enum PendingKeyState {
-%{enum_variants (fun f => f.pending_ty)}
-      }
+    /// Aggregate pending key state.
+    #[derive(Debug, Clone, PartialEq)]
+    #[allow(clippy::large_enum_variant)]
+    pub enum PendingKeyState {
+%{enum_variants family_pending_ty}
+    }
 
 %{pending_from_family}
 %{pending_mut_try_from}
 
-      /// Aggregate key state.
-      #[derive(Debug, Clone, Copy, PartialEq)]
-      pub enum KeyState {
-          /// No-op key state (e.g. auxiliary chorded keys).
-          NoOp,
+    /// Aggregate key state.
+    #[derive(Debug, Clone, Copy, PartialEq)]
+    pub enum KeyState {
+        /// No-op key state (e.g. auxiliary chorded keys).
+        NoOp,
 %{key_state_variants}
-      }
+    }
 
-      impl From<key::NoOpKeyState> for KeyState {
-          fn from(_: key::NoOpKeyState) -> Self {
-              KeyState::NoOp
-          }
-      }
+    impl From<key::NoOpKeyState> for KeyState {
+        fn from(_: key::NoOpKeyState) -> Self {
+            KeyState::NoOp
+        }
+    }
 
 %{key_state_from_family}
 
-      /// Aggregate [key::System] for this keymap.
-      %{system_derives}
-      pub struct System {
+    /// Aggregate [key::System] for this keymap.
+    %{system_derives}
+    pub struct System {
 %{system_fields}
-      }
+    }
 
-      impl System {
-          /// Constructs the system from data-carrying subsystems.
-          #[allow(clippy::too_many_arguments)]
-          pub const fn new(
+    impl System {
+        /// Constructs the system from data-carrying subsystems.
+        #[allow(clippy::too_many_arguments)]
+        pub const fn new(
 %{system_new_params}
-          ) -> Self {
-              Self {
+        ) -> Self {
+            Self {
 %{system_new_body}
-              }
-          }
-      }
+            }
+        }
+    }
 
-      impl key::System<Ref> for System {
-          type Ref = Ref;
-          type Context = Context;
-          type Event = Event;
-          type PendingKeyState = PendingKeyState;
-          type KeyState = KeyState;
+    impl key::System<Ref> for System {
+        type Ref = Ref;
+        type Context = Context;
+        type Event = Event;
+        type PendingKeyState = PendingKeyState;
+        type KeyState = KeyState;
 
-          fn new_pressed_key(
-              &self,
-              keymap_index: u16,
-              context: &Self::Context,
-              key_ref: Ref,
-          ) -> (
-              key::PressedKeyResult<Ref, Self::PendingKeyState, Self::KeyState>,
-              key::KeyEvents<Self::Event>,
-          ) {
-              match key_ref {
+        fn new_pressed_key(
+            &self,
+            keymap_index: u16,
+            context: &Self::Context,
+            key_ref: Ref,
+        ) -> (
+            key::PressedKeyResult<Ref, Self::PendingKeyState, Self::KeyState>,
+            key::KeyEvents<Self::Event>,
+        ) {
+            match key_ref {
 %{new_pressed_key_arms}
-              }
-          }
+            }
+        }
 
-          #[allow(unused_variables)]
-          fn update_pending_state(
-              &self,
-              pending_state: &mut Self::PendingKeyState,
-              keymap_index: u16,
-              context: &Self::Context,
-              key_ref: Ref,
-              event: key::Event<Self::Event>,
-          ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
-              match (key_ref, pending_state) {
+        #[allow(unused_variables)]
+        fn update_pending_state(
+            &self,
+            pending_state: &mut Self::PendingKeyState,
+            keymap_index: u16,
+            context: &Self::Context,
+            key_ref: Ref,
+            event: key::Event<Self::Event>,
+        ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
+            match (key_ref, pending_state) {
 %{update_pending_arms}
-              }
-          }
+            }
+        }
 
-          fn update_state(
-              &self,
-              key_state: &mut Self::KeyState,
-              key_ref: &Self::Ref,
-              context: &Self::Context,
-              keymap_index: u16,
-              event: key::Event<Self::Event>,
-          ) -> key::KeyEvents<Self::Event> {
-              match (key_ref, key_state) {
+        fn update_state(
+            &self,
+            key_state: &mut Self::KeyState,
+            key_ref: &Self::Ref,
+            context: &Self::Context,
+            keymap_index: u16,
+            event: key::Event<Self::Event>,
+        ) -> key::KeyEvents<Self::Event> {
+            match (key_ref, key_state) {
 %{update_state_arms}
-              }
-          }
+            }
+        }
 
-          fn key_output(
-              &self,
-              key_ref: &Self::Ref,
-              key_state: &Self::KeyState,
-          ) -> Option<key::KeyOutput> {
-              match (key_ref, key_state) {
+        fn key_output(
+            &self,
+            key_ref: &Self::Ref,
+            key_state: &Self::KeyState,
+        ) -> Option<key::KeyOutput> {
+            match (key_ref, key_state) {
 %{key_output_arms}
-              }
-          }
-      }
+            }
+        }
+    }
 }
 "%,
 
@@ -685,12 +756,17 @@ pub mod key_system {
           (fun acc f =>
             acc
             @ (
-              f.data_lengths
-              |> std.array.map (fun { const_name, data_field } =>
-                let data = (key_data & { "%{data_field}" | default = [] })."%{data_field}" in
-                let len = data |> std.array.length |> std.to_string in
-                "    const %{const_name}: usize = %{len};"
-              )
+              f.system
+              |> match {
+                'System _ => [],
+                'SystemWithData { data_lengths, .. } =>
+                  data_lengths
+                  |> std.array.map (fun { const_name, data_field } =>
+                    let data = (key_data & { "%{data_field}" | default = [] })."%{data_field}" in
+                    let len = data |> std.array.length |> std.to_string in
+                    "    const %{const_name}: usize = %{len};"
+                  ),
+              }
             )
           )
           []
@@ -816,7 +892,7 @@ pub mod key_system {
 
   checks.composite_full_emit =
     let rust_mod =
-      (composite & { profile = composite.full_profile, data = 'Array }).system.rust_mod
+      (composite & composite.with_full_profile & { data = 'Array }).system.rust_mod
     in
     {
       check_module_doc_full = {
@@ -858,7 +934,7 @@ pub mod key_system {
 
   checks.composite_full_emit_vec =
     let rust_mod =
-      (composite & { profile = composite.full_profile, data = 'Vec }).system.rust_mod
+      (composite & composite.with_full_profile & { data = 'Vec }).system.rust_mod
     in
     {
       check_module_doc_full = {
