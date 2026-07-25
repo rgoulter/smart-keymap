@@ -3,6 +3,21 @@
 # Mergeable fragment:
 #  needs `smart_keymap` (for row exprs);
 #  contributes `composite.default_family` and `composite.families`.
+#
+# Capability / shape fields are Nickel enum tags (or small records),
+# with related types and exprs nested under the payload:
+#
+#  - config:         'NoConfig | 'Config { ty, rust_expr }
+#                    (struct field path is family `name` / `field`)
+#  - context:        { ty, expr }   (always present)
+#  - system:         'System { ty, expr }
+#                    | 'SystemWithData { data_lengths, rust_expr, ty.array, ty.vec }
+#  - pending:        'NoPendingKeyState | 'PendingKeyState { ty }
+#  - key_state:      'KeyState { name, ty }  (`name` = KeyState enum arm; default family `variant`)
+#  - state_update:   'NoStateUpdate | 'StateUpdate
+#  - key_output:     'NoKeyOutput | 'KeyOutput
+#  - context_events: 'NoContextEvents | 'ContextEvents
+#  - keymap_context: 'NoKeymapContextUpdate | 'UpdatesKeymapContext
 {
   smart_keymap,
 
@@ -23,42 +38,37 @@
       # Applied at use sites: `{ name = family_name } & families.<name> & default_family`.
       # Lazy fields see `name` / `variant` / `module` from the merged record (like Nickel `| default`).
       # Required from the left-hand / partial:
-      #  system_ty.array, context_ty, context_expr (and `name` from the resolver).
-      #
-      # Data-carrying families also set `system_ty.vec` (Vec storage);
-      #  singletons share `system_ty.array`.
+      #  system, context (and `name` from the resolver).
       default_family = {
         name,
         # e.g. "tap_hold" → "TapHold"
         variant | default = camel_case_from_snake_case name,
-        system_ty.array,
-        context_ty,
-        context_expr,
+        system,
+        context,
 
         module | default = "smart_keymap::key::%{name}",
         field | default = name,
-        has_config | default = false,
-        config_path | default = name,
-        has_pending_dispatch | default = false,
-        has_state_update | default = false,
-        has_key_output | default = false,
-        handles_context_events | default = false,
-        updates_keymap_context | default = false,
-        key_state_variant | default = variant,
-        has_key_data | default = false,
-        data_lengths | default = [],
-        # Default: same as array system type (singletons / non-data).
-        system_ty.vec | default = system_ty.array,
+
+        # Capabilities (enum tags; partials set the affirmative arm only).
+        config | default = 'NoConfig,
+        pending | default = 'NoPendingKeyState,
+        state_update | default = 'NoStateUpdate,
+        key_output | default = 'NoKeyOutput,
+        context_events | default = 'NoContextEvents,
+        keymap_context | default = 'NoKeymapContextUpdate,
+
+        # KeyState enum arm name + Rust type. (`name` not `variant`: nested
+        # record would shadow the outer family `variant` field.)
+        key_state
+          | default
+          =
+            'KeyState {
+              name = variant,
+              ty = "%{module}::KeyState",
+            },
 
         ref_ty | default = "%{module}::Ref",
         event_ty | default = "%{module}::Event",
-        pending_ty | default = "%{module}::PendingKeyState",
-        key_state_ty | default = "%{module}::KeyState",
-        config_ty | default = "%{module}::Config",
-        # Singleton System::new() in struct init body (not key_data system.rust_expr).
-        system_expr | default = "%{module}::System::new()",
-        # Optional: set on families with has_config / has_key_data (join to smart_keymap.*).
-        # Lazy until forced — do not confuse with system_expr above.
       },
 
       # Family registry as a record keyed by snake_case name
@@ -68,66 +78,98 @@
       families = {
         automation = {
           module = "smart_keymap::key::automation",
-          has_config = true,
-          has_state_update = true,
-          handles_context_events = true,
-          has_key_data = true,
-          data_lengths = [{ const_name = "AUTOMATION", data_field = "automation" }],
-          system_ty.array = m%"%{module}::System<
+          config =
+            'Config {
+              ty = m%"%{module}::Config<
+            { crate::init::AUTOMATION_INSTRUCTION_COUNT }
+          >"%,
+              rust_expr = smart_keymap.automation.config.rust_expr,
+            },
+          state_update = 'StateUpdate,
+          context_events = 'ContextEvents,
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "AUTOMATION", data_field = "automation" }],
+              rust_expr = smart_keymap.automation.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [%{module}::Key; crate::init::AUTOMATION],
             { crate::init::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key>,
             { crate::init::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
-          context_ty = m%"%{module}::Context<
+            },
+          context = {
+            ty = m%"%{module}::Context<
             { crate::init::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
-          context_expr = "%{module}::Context::from_config(config.automation)",
-          config_ty = m%"%{module}::Config<
-            { crate::init::AUTOMATION_INSTRUCTION_COUNT }
-          >"%,
-          config_rust_expr = smart_keymap.automation.config.rust_expr,
-          system_rust_expr = smart_keymap.automation.system.rust_expr,
+            expr = "%{module}::Context::from_config(config.automation)",
+          },
         },
         callback = {
           module = "smart_keymap::key::callback",
-          has_key_data = true,
-          data_lengths = [{ const_name = "CALLBACK", data_field = "callback" }],
-          system_ty.array = m%"%{module}::System<
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "CALLBACK", data_field = "callback" }],
+              rust_expr = smart_keymap.callback.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [%{module}::Key; crate::init::CALLBACK]
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key>
           >"%,
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context",
-          system_rust_expr = smart_keymap.callback.system.rust_expr,
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context",
+          },
         },
         caps_word = {
           module = "smart_keymap::key::caps_word",
-          handles_context_events = true,
-          system_ty.array = "%{module}::System<Ref>",
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context::new()",
+          context_events = 'ContextEvents,
+          system =
+            'System {
+              ty = "%{module}::System<Ref>",
+              expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::new()",
+          },
         },
         chorded = {
           module = "smart_keymap::key::chorded",
-          has_config = true,
-          has_pending_dispatch = true,
-          handles_context_events = true,
-          updates_keymap_context = true,
-          has_key_data = true,
-          data_lengths = [
-            { const_name = "CHORDED", data_field = "chorded" },
-            { const_name = "CHORDED_AUXILIARY", data_field = "chorded_auxiliary" },
-          ],
-          system_ty.array = m%"%{module}::System<
+          config =
+            'Config {
+              ty = m%"%{module}::Config<
+            { crate::init::CHORDED_MAX_CHORDS },
+            { crate::init::CHORDED_MAX_CHORD_SIZE }
+          >"%,
+              rust_expr = smart_keymap.chorded.config.rust_expr,
+            },
+          pending =
+            'PendingKeyState {
+              ty = m%"%{module}::PendingKeyState<
+            { crate::init::CHORDED_MAX_CHORDS },
+            { crate::init::CHORDED_MAX_CHORD_SIZE },
+            CHORDED_MAX_PRESSED_INDICES
+          >"%,
+            },
+          context_events = 'ContextEvents,
+          keymap_context = 'UpdatesKeymapContext,
+          system =
+            'SystemWithData {
+              data_lengths = [
+                { const_name = "CHORDED", data_field = "chorded" },
+                { const_name = "CHORDED_AUXILIARY", data_field = "chorded_auxiliary" },
+              ],
+              rust_expr = smart_keymap.chorded.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [
               %{module}::Key<
@@ -153,7 +195,7 @@
             { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<
               %{module}::Key<
@@ -177,70 +219,88 @@
             { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
-          context_ty = m%"%{module}::Context<
+            },
+          context = {
+            ty = m%"%{module}::Context<
             { crate::init::CHORDED_MAX_CHORDS },
             { crate::init::CHORDED_MAX_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
-          context_expr = "%{module}::Context::from_config(config.chorded)",
-          pending_ty = m%"%{module}::PendingKeyState<
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE },
-            CHORDED_MAX_PRESSED_INDICES
-          >"%,
-          config_ty = m%"%{module}::Config<
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE }
-          >"%,
-          config_rust_expr = smart_keymap.chorded.config.rust_expr,
-          system_rust_expr = smart_keymap.chorded.system.rust_expr,
+            expr = "%{module}::Context::from_config(config.chorded)",
+          },
         },
         consumer = {
           module = "smart_keymap::key::consumer",
-          has_state_update = true,
-          has_key_output = true,
-          system_ty.array = "%{module}::System<Ref>",
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context",
+          state_update = 'StateUpdate,
+          key_output = 'KeyOutput,
+          system =
+            'System {
+              ty = "%{module}::System<Ref>",
+              expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context",
+          },
         },
         custom = {
           module = "smart_keymap::key::custom",
-          has_key_output = true,
-          system_ty.array = "%{module}::System<Ref>",
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context",
+          key_output = 'KeyOutput,
+          system =
+            'System {
+              ty = "%{module}::System<Ref>",
+              expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context",
+          },
         },
         keyboard = {
           module = "smart_keymap::key::keyboard",
-          has_state_update = true,
-          has_key_output = true,
-          has_key_data = true,
-          data_lengths = [{ const_name = "KEYBOARD", data_field = "keyboard" }],
-          system_ty.array = m%"%{module}::System<
+          state_update = 'StateUpdate,
+          key_output = 'KeyOutput,
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "KEYBOARD", data_field = "keyboard" }],
+              rust_expr = smart_keymap.keyboard.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [%{module}::Key; crate::init::KEYBOARD]
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key>
           >"%,
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context",
-          system_rust_expr = smart_keymap.keyboard.system.rust_expr,
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context",
+          },
         },
         layered = {
           module = "smart_keymap::key::layered",
-          has_config = true,
-          has_state_update = true,
-          has_key_output = true,
-          handles_context_events = true,
-          has_key_data = true,
-          key_state_variant = "LayerModifier",
-          data_lengths = [
-            { const_name = "LAYERED", data_field = "layered" },
-            { const_name = "LAYER_MODIFIERS", data_field = "layer_modifiers" },
-          ],
-          system_ty.array = m%"%{module}::System<
+          config =
+            'Config {
+              ty = "%{module}::Config",
+              rust_expr = smart_keymap.layered.config.rust_expr,
+            },
+          state_update = 'StateUpdate,
+          key_output = 'KeyOutput,
+          context_events = 'ContextEvents,
+          key_state =
+            'KeyState {
+              name = "LayerModifier",
+              ty = "%{module}::ModifierKeyState",
+            },
+          system =
+            'SystemWithData {
+              data_lengths = [
+                { const_name = "LAYERED", data_field = "layered" },
+                { const_name = "LAYER_MODIFIERS", data_field = "layer_modifiers" },
+              ],
+              rust_expr = smart_keymap.layered.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [%{module}::ModifierKey; crate::init::LAYER_MODIFIERS],
             [
@@ -249,54 +309,76 @@
             ],
             { crate::init::LAYERED_LAYER_COUNT }
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::ModifierKey>,
             Vec<%{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>>,
             { crate::init::LAYERED_LAYER_COUNT }
           >"%,
-          context_ty = "%{module}::Context<{ crate::init::LAYERED_LAYER_COUNT }>",
-          context_expr = "%{module}::Context::from_config(config.layered)",
+            },
+          context = {
+            ty = "%{module}::Context<{ crate::init::LAYERED_LAYER_COUNT }>",
+            expr = "%{module}::Context::from_config(config.layered)",
+          },
           event_ty = "%{module}::LayerEvent",
-          key_state_ty = "%{module}::ModifierKeyState",
-          config_rust_expr = smart_keymap.layered.config.rust_expr,
-          system_rust_expr = smart_keymap.layered.system.rust_expr,
         },
         mouse = {
           module = "smart_keymap::key::mouse",
-          has_key_output = true,
-          system_ty.array = "%{module}::System<Ref>",
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context",
+          key_output = 'KeyOutput,
+          system =
+            'System {
+              ty = "%{module}::System<Ref>",
+              expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context",
+          },
         },
         sticky = {
           module = "smart_keymap::key::sticky",
-          has_config = true,
-          has_state_update = true,
-          has_key_output = true,
-          handles_context_events = true,
-          has_key_data = true,
-          data_lengths = [{ const_name = "STICKY", data_field = "sticky" }],
-          system_ty.array = m%"%{module}::System<
+          config =
+            'Config {
+              ty = "%{module}::Config",
+              rust_expr = smart_keymap.sticky.config.rust_expr,
+            },
+          state_update = 'StateUpdate,
+          key_output = 'KeyOutput,
+          context_events = 'ContextEvents,
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "STICKY", data_field = "sticky" }],
+              rust_expr = smart_keymap.sticky.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [%{module}::Key; crate::init::STICKY]
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key>
           >"%,
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context::from_config(config.sticky)",
-          config_rust_expr = smart_keymap.sticky.config.rust_expr,
-          system_rust_expr = smart_keymap.sticky.system.rust_expr,
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::from_config(config.sticky)",
+          },
         },
         tap_dance = {
           module = "smart_keymap::key::tap_dance",
-          has_config = true,
-          has_pending_dispatch = true,
-          has_key_data = true,
-          data_lengths = [{ const_name = "TAP_DANCE", data_field = "tap_dance" }],
-          system_ty.array = m%"%{module}::System<
+          config =
+            'Config {
+              ty = "%{module}::Config",
+              rust_expr = smart_keymap.tap_dance.config.rust_expr,
+            },
+          pending =
+            'PendingKeyState {
+              ty = "%{module}::PendingKeyState",
+            },
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "TAP_DANCE", data_field = "tap_dance" }],
+              rust_expr = smart_keymap.tap_dance.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [
               %{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
@@ -304,35 +386,46 @@
             ],
             { crate::init::TAP_DANCE_MAX_DEFINITIONS }
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>>,
             { crate::init::TAP_DANCE_MAX_DEFINITIONS }
           >"%,
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context::from_config(config.tap_dance)",
-          config_rust_expr = smart_keymap.tap_dance.config.rust_expr,
-          system_rust_expr = smart_keymap.tap_dance.system.rust_expr,
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::from_config(config.tap_dance)",
+          },
         },
         tap_hold = {
           module = "smart_keymap::key::tap_hold",
-          has_config = true,
-          has_pending_dispatch = true,
-          updates_keymap_context = true,
-          has_key_data = true,
-          data_lengths = [{ const_name = "TAP_HOLD", data_field = "tap_hold" }],
-          system_ty.array = m%"%{module}::System<
+          config =
+            'Config {
+              ty = "%{module}::Config",
+              rust_expr = smart_keymap.tap_hold.config.rust_expr,
+            },
+          pending =
+            'PendingKeyState {
+              ty = "%{module}::PendingKeyState",
+            },
+          keymap_context = 'UpdatesKeymapContext,
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "TAP_HOLD", data_field = "tap_hold" }],
+              rust_expr = smart_keymap.tap_hold.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
             [%{module}::Key<Ref>; crate::init::TAP_HOLD]
           >"%,
-          system_ty.vec = m%"%{module}::System<
+              ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key<Ref>>
           >"%,
-          context_ty = "%{module}::Context",
-          context_expr = "%{module}::Context::from_config(config.tap_hold)",
-          config_rust_expr = smart_keymap.tap_hold.config.rust_expr,
-          system_rust_expr = smart_keymap.tap_hold.system.rust_expr,
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::from_config(config.tap_hold)",
+          },
         },
       },
     },
