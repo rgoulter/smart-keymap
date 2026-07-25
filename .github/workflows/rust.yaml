@@ -13,8 +13,10 @@ on:
       - 'features/**/*.feature'
       - 'ncl/**/*.ncl'
       - 'src/**/*.rs'
+      - 'smart-keymap-full-system-std/**'
       - 'smart-keymap-nickel-helper/**'
       - 'tests/**/*.rs'
+      - '.github/workflows/rust.yaml'
   pull_request:
     branches:
       - '*'
@@ -24,8 +26,10 @@ on:
       - 'features/**/*.feature'
       - 'ncl/**/*.ncl'
       - 'src/**/*.rs'
+      - 'smart-keymap-full-system-std/**'
       - 'smart-keymap-nickel-helper/**'
       - 'tests/**/*.rs'
+      - '.github/workflows/rust.yaml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -93,7 +97,7 @@ jobs:
 
       - name: Run Sizes
         run: |
-          cargo run --bin sizes | tee sizes.json
+          cargo run -p smart-keymap-full-system-std --bin sizes | tee sizes.json
           echo "# Sizes" >$GITHUB_STEP_SUMMARY
           echo "\`\`\`" >>$GITHUB_STEP_SUMMARY
           cat sizes.json >>$GITHUB_STEP_SUMMARY
@@ -111,14 +115,18 @@ jobs:
         with:
           shared-key: rust-checks
 
-      # std builds emit full+vec composite in build.rs (needs nickel on PATH).
+      # smart-keymap lib unit tests no longer need nickel; keep it for other
+      # workspace members that may still codegen under cargo test --lib.
       - name: Setup Nickel
         uses: ./.github/actions/setup-nickel
         with:
           version: ${{ env.NICKEL_VERSION }}
 
       - name: Run Cargo Test (lib)
-        run: cargo test --lib
+        run: |
+          cargo test --lib
+          # Full-shell keymap tests live on smart-keymap-full-system-std.
+          cargo test -p smart-keymap-full-system-std --test keymap_full_system
 
   cargo-test-rust-integration:
     runs-on: ubuntu-latest
@@ -159,4 +167,4 @@ jobs:
 
       - name: Run Cargo Test (cucumber-keymap)
         timeout-minutes: 15
-        run: cargo test --test cucumber-keymap
+        run: cargo test -p smart-keymap-full-system-std --test cucumber-keymap
