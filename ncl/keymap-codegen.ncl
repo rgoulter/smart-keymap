@@ -13,13 +13,17 @@
 & (import "key_system/families.ncl")
 & (import "key_system/keymap-codegen.ncl")
 & {
+  composite,
+
   KeymapJson
     | doc "Contract for the keymap.json value"
-    = {
-      keys | Array smart_key.Json,
-      config | composite.config.Json | default = {},
-      ..
-    },
+    =
+      let ConfigJson = composite.config.Json in
+      {
+        keys | Array smart_key.Json,
+        config | ConfigJson | default = {},
+        ..
+      },
 
   validators = import "validators.ncl",
 
@@ -201,52 +205,6 @@
               %{keyboard_modifiers.rust_expr key_modifiers}
             )"%,
       },
-  },
-
-  composite = {
-    ref = {
-      # Wraps a family ref into the per-keymap aggregate Ref.
-      # JSON shape stays variant-tagged (same as key::composite) for cucumber;
-      # rust_expr targets the generated `key_system::Ref`.
-      wrap = fun ref @ { module, json, rust_expr, .. } =>
-        let variant =
-          module
-          |> match {
-            "smart_keymap::key::automation" => "Automation",
-            "smart_keymap::key::callback" => "Callback",
-            "smart_keymap::key::caps_word" => "CapsWord",
-            "smart_keymap::key::chorded" => "Chorded",
-            "smart_keymap::key::consumer" => "Consumer",
-            "smart_keymap::key::custom" => "Custom",
-            "smart_keymap::key::keyboard" => "Keyboard",
-            "smart_keymap::key::layered" => "Layered",
-            "smart_keymap::key::mouse" => "Mouse",
-            "smart_keymap::key::sticky" => "Sticky",
-            "smart_keymap::key::tap_dance" => "TapDance",
-            "smart_keymap::key::tap_hold" => "TapHold",
-            _ => std.fail_with "bad ref for composite.ref.wrap: %{std.serialize ref 'Json}",
-          }
-        in
-        {
-          include variant,
-          module = "key_system",
-          json = { "%{variant}" = ref.json },
-          rust_expr = "key_system::Ref::%{variant}(%{ref.rust_expr})",
-        },
-    },
-
-    # Json contract for keymap config; rust_expr / system.* come from
-    # key_system/keymap-codegen.ncl (composite.config.rust_expr, composite.system).
-    config = {
-      Json = {
-        automation | optional | smart_keymap.automation.config.Json,
-        chorded | optional | smart_keymap.chorded.config.Json,
-        layered | optional | smart_keymap.layered.config.Json,
-        sticky | optional | smart_keymap.sticky.config.Json,
-        tap_dance | optional | smart_keymap.tap_dance.config.Json,
-        tap_hold | optional | smart_keymap.tap_hold.config.Json,
-      },
-    },
   },
 
   smart_key = {

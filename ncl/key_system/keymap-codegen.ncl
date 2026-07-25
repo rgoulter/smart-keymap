@@ -8,7 +8,8 @@
 #     `'FullProfile` | `'Profile profile`  (default: `'Profile keymap_profile`)
 # - `composite.data` — key-data storage (`'Array` | `'Vec`; default `'Array`).
 # - Artefacts for the selected profile + data live on `composite` itself:
-#   - `composite.config.rust_expr`
+#   - `composite.ref.wrap` — family ref → aggregate `key_system::Ref`
+#   - `composite.config.Json` / `composite.config.rust_expr`
 #   - `composite.system.rust_expr`
 #   - `composite.system.init_consts_rust_stmts` (fn of key_data)
 #   - `composite.system.rust_mod` (generated `pub mod key_system { … }`)
@@ -42,6 +43,24 @@
       composite.families
       |> std.record.fields
       |> std.array.map family,
+
+    # Wraps a family ref into the per-keymap aggregate Ref.
+    ref.wrap = fun r @ { module, json, rust_expr, .. } =>
+      let f =
+        family_list
+        |> std.array.filter (fun f => f.module == module)
+        |> match {
+          [f] => f,
+          _ =>
+            std.fail_with "bad ref for composite.ref.wrap: no family for module %{module} (ref: %{std.serialize r 'Json})",
+        }
+      in
+      {
+        variant = f.variant,
+        module = "key_system",
+        json = { "%{f.variant}" = r.json },
+        rust_expr = "key_system::Ref::%{f.variant}(%{r.rust_expr})",
+      },
 
     # Family capability predicates / extractors (enum tags from families.ncl).
     family_has_config = fun f =>
@@ -774,12 +793,71 @@ pub mod key_system {
     },
 
     # Public artefacts assembled from active fragments.
-    config.rust_expr = fragments.config_rust_expr,
+    config = {
+      # JSON contract for keymap config fields (optional per family).
+      Json = {
+        automation | optional | smart_keymap.automation.config.Json,
+        chorded | optional | smart_keymap.chorded.config.Json,
+        layered | optional | smart_keymap.layered.config.Json,
+        sticky | optional | smart_keymap.sticky.config.Json,
+        tap_dance | optional | smart_keymap.tap_dance.config.Json,
+        tap_hold | optional | smart_keymap.tap_hold.config.Json,
+      },
+      rust_expr = fragments.config_rust_expr,
+    },
     system = {
       rust_expr = fragments.system_rust_expr,
       rust_mod = fragments.rust_mod,
       init_consts_rust_stmts = fragments.init_consts_rust_stmts,
     },
+  },
+
+  checks.composite_ref_wrap = {
+    check_keyboard =
+      let wrapped =
+        composite.ref.wrap {
+          module = "smart_keymap::key::keyboard",
+          json = { KeyCode = 4 },
+          rust_expr = "smart_keymap::key::keyboard::Ref::KeyCode(4)",
+        }
+      in
+      {
+        check_variant = {
+          actual = wrapped.variant,
+          expected = "Keyboard",
+        },
+        check_module = {
+          actual = wrapped.module,
+          expected = "key_system",
+        },
+        check_json = {
+          actual = wrapped.json,
+          expected = { Keyboard = { KeyCode = 4 } },
+        },
+        check_rust_expr = {
+          actual = wrapped.rust_expr,
+          expected = "key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4))",
+        },
+      },
+
+    check_tap_hold =
+      let wrapped =
+        composite.ref.wrap {
+          module = "smart_keymap::key::tap_hold",
+          json = 0,
+          rust_expr = "smart_keymap::key::tap_hold::Ref(0)",
+        }
+      in
+      {
+        check_variant = {
+          actual = wrapped.variant,
+          expected = "TapHold",
+        },
+        check_rust_expr = {
+          actual = wrapped.rust_expr,
+          expected = "key_system::Ref::TapHold(smart_keymap::key::tap_hold::Ref(0))",
+        },
+      },
   },
 
   checks.composite_profile = {
