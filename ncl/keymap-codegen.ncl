@@ -10,6 +10,7 @@
 & (import "smart_keys/sticky/keymap-codegen.ncl")
 & (import "smart_keys/tap_dance/keymap-codegen.ncl")
 & (import "smart_keys/tap_hold/keymap-codegen.ncl")
+& (import "key_system/families.ncl")
 & (import "key_system/keymap-codegen.ncl")
 & {
   KeymapJson
