@@ -75,9 +75,10 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
-                _event: key::Event<Self::Event>,
+                event: key::Event<Self::Event>,
             ) -> key::KeyEvents<Self::Event> {
                 let mut pke = key::KeyEvents::no_events();
 
@@ -103,6 +104,7 @@ pub mod init {
                 Event::Custom(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::custom::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -190,6 +192,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

@@ -143,6 +143,7 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
                 event: key::Event<Self::Event>,
@@ -237,6 +238,7 @@ pub mod init {
                 Event::TapHold(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::callback::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -246,6 +248,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::chorded::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -255,6 +258,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::consumer::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -264,6 +268,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -273,6 +278,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::layered::LayerEvent {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -282,6 +288,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::mouse::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -291,6 +298,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::sticky::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -300,6 +308,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::tap_dance::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -309,6 +318,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::tap_hold::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -408,6 +418,7 @@ pub mod init {
                 PendingKeyState::TapHold(pks)
             }
         }
+        #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::chorded::PendingKeyState<
                 { crate::init::CHORDED_MAX_CHORDS },
@@ -423,6 +434,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::tap_dance::PendingKeyState
         {
@@ -434,6 +446,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::tap_hold::PendingKeyState
         {
@@ -528,7 +541,7 @@ pub mod init {
         pub struct System {
             callback: smart_keymap::key::callback::System<
                 Ref,
-                [smart_keymap::key::callback::Key; { crate::init::CALLBACK }],
+                [smart_keymap::key::callback::Key; crate::init::CALLBACK],
             >,
             chorded: smart_keymap::key::chorded::System<
                 Ref,
@@ -538,13 +551,13 @@ pub mod init {
                     { crate::init::CHORDED_MAX_CHORD_SIZE },
                     { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; { crate::init::CHORDED }],
+                >; crate::init::CHORDED],
                 [smart_keymap::key::chorded::AuxiliaryKey<
                     Ref,
                     { crate::init::CHORDED_MAX_CHORDS },
                     { crate::init::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; { crate::init::CHORDED_AUXILIARY }],
+                >; crate::init::CHORDED_AUXILIARY],
                 { crate::init::CHORDED_MAX_CHORDS },
                 { crate::init::CHORDED_MAX_CHORD_SIZE },
                 { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
@@ -553,29 +566,29 @@ pub mod init {
             consumer: smart_keymap::key::consumer::System<Ref>,
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
             >,
             layered: smart_keymap::key::layered::System<
                 Ref,
-                [smart_keymap::key::layered::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+                [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
                 [smart_keymap::key::layered::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-                    { crate::init::LAYERED }],
+                    crate::init::LAYERED],
                 { crate::init::LAYERED_LAYER_COUNT },
             >,
             mouse: smart_keymap::key::mouse::System<Ref>,
             sticky: smart_keymap::key::sticky::System<
                 Ref,
-                [smart_keymap::key::sticky::Key; { crate::init::STICKY }],
+                [smart_keymap::key::sticky::Key; crate::init::STICKY],
             >,
             tap_dance: smart_keymap::key::tap_dance::System<
                 Ref,
                 [smart_keymap::key::tap_dance::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
-                    { crate::init::TAP_DANCE }],
+                    crate::init::TAP_DANCE],
                 { crate::init::TAP_DANCE_MAX_DEFINITIONS },
             >,
             tap_hold: smart_keymap::key::tap_hold::System<
                 Ref,
-                [smart_keymap::key::tap_hold::Key<Ref>; { crate::init::TAP_HOLD }],
+                [smart_keymap::key::tap_hold::Key<Ref>; crate::init::TAP_HOLD],
             >,
         }
 
@@ -585,7 +598,7 @@ pub mod init {
             pub const fn new(
                 callback: smart_keymap::key::callback::System<
                     Ref,
-                    [smart_keymap::key::callback::Key; { crate::init::CALLBACK }],
+                    [smart_keymap::key::callback::Key; crate::init::CALLBACK],
                 >,
                 chorded: smart_keymap::key::chorded::System<
                     Ref,
@@ -595,13 +608,13 @@ pub mod init {
                         { crate::init::CHORDED_MAX_CHORD_SIZE },
                         { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; { crate::init::CHORDED }],
+                    >; crate::init::CHORDED],
                     [smart_keymap::key::chorded::AuxiliaryKey<
                         Ref,
                         { crate::init::CHORDED_MAX_CHORDS },
                         { crate::init::CHORDED_MAX_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; { crate::init::CHORDED_AUXILIARY }],
+                    >; crate::init::CHORDED_AUXILIARY],
                     { crate::init::CHORDED_MAX_CHORDS },
                     { crate::init::CHORDED_MAX_CHORD_SIZE },
                     { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
@@ -609,32 +622,32 @@ pub mod init {
                 >,
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
                 >,
                 layered: smart_keymap::key::layered::System<
                     Ref,
-                    [smart_keymap::key::layered::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+                    [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
                     [smart_keymap::key::layered::LayeredKey<
                         Ref,
                         { crate::init::LAYERED_LAYER_COUNT },
-                    >; { crate::init::LAYERED }],
+                    >; crate::init::LAYERED],
                     { crate::init::LAYERED_LAYER_COUNT },
                 >,
                 sticky: smart_keymap::key::sticky::System<
                     Ref,
-                    [smart_keymap::key::sticky::Key; { crate::init::STICKY }],
+                    [smart_keymap::key::sticky::Key; crate::init::STICKY],
                 >,
                 tap_dance: smart_keymap::key::tap_dance::System<
                     Ref,
                     [smart_keymap::key::tap_dance::Key<
                         Ref,
                         { crate::init::TAP_DANCE_MAX_DEFINITIONS },
-                    >; { crate::init::TAP_DANCE }],
+                    >; crate::init::TAP_DANCE],
                     { crate::init::TAP_DANCE_MAX_DEFINITIONS },
                 >,
                 tap_hold: smart_keymap::key::tap_hold::System<
                     Ref,
-                    [smart_keymap::key::tap_hold::Key<Ref>; { crate::init::TAP_HOLD }],
+                    [smart_keymap::key::tap_hold::Key<Ref>; crate::init::TAP_HOLD],
                 >,
             ) -> Self {
                 Self {
@@ -727,6 +740,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

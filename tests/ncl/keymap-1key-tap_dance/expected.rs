@@ -87,9 +87,10 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
-                _event: key::Event<Self::Event>,
+                event: key::Event<Self::Event>,
             ) -> key::KeyEvents<Self::Event> {
                 let mut pke = key::KeyEvents::no_events();
 
@@ -122,6 +123,7 @@ pub mod init {
                 Event::TapDance(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -131,6 +133,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::tap_dance::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -161,6 +164,7 @@ pub mod init {
                 PendingKeyState::TapDance(pks)
             }
         }
+        #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::tap_dance::PendingKeyState
         {
@@ -206,12 +210,12 @@ pub mod init {
         pub struct System {
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
             >,
             tap_dance: smart_keymap::key::tap_dance::System<
                 Ref,
                 [smart_keymap::key::tap_dance::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
-                    { crate::init::TAP_DANCE }],
+                    crate::init::TAP_DANCE],
                 { crate::init::TAP_DANCE_MAX_DEFINITIONS },
             >,
         }
@@ -222,14 +226,14 @@ pub mod init {
             pub const fn new(
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
                 >,
                 tap_dance: smart_keymap::key::tap_dance::System<
                     Ref,
                     [smart_keymap::key::tap_dance::Key<
                         Ref,
                         { crate::init::TAP_DANCE_MAX_DEFINITIONS },
-                    >; { crate::init::TAP_DANCE }],
+                    >; crate::init::TAP_DANCE],
                     { crate::init::TAP_DANCE_MAX_DEFINITIONS },
                 >,
             ) -> Self {
@@ -274,6 +278,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

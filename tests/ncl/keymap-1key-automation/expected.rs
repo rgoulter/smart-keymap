@@ -88,6 +88,7 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
                 event: key::Event<Self::Event>,
@@ -118,6 +119,7 @@ pub mod init {
                 Event::Automation(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::automation::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -168,7 +170,7 @@ pub mod init {
         pub struct System {
             automation: smart_keymap::key::automation::System<
                 Ref,
-                [smart_keymap::key::automation::Key; { crate::init::AUTOMATION }],
+                [smart_keymap::key::automation::Key; crate::init::AUTOMATION],
                 { crate::init::AUTOMATION_INSTRUCTION_COUNT },
             >,
         }
@@ -179,7 +181,7 @@ pub mod init {
             pub const fn new(
                 automation: smart_keymap::key::automation::System<
                     Ref,
-                    [smart_keymap::key::automation::Key; { crate::init::AUTOMATION }],
+                    [smart_keymap::key::automation::Key; crate::init::AUTOMATION],
                     { crate::init::AUTOMATION_INSTRUCTION_COUNT },
                 >,
             ) -> Self {
@@ -215,6 +217,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

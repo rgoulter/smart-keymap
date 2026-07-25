@@ -96,6 +96,7 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
                 event: key::Event<Self::Event>,
@@ -141,6 +142,7 @@ pub mod init {
                 Event::TapHold(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -150,6 +152,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::layered::LayerEvent {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -159,6 +162,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::tap_hold::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -196,6 +200,7 @@ pub mod init {
                 PendingKeyState::TapHold(pks)
             }
         }
+        #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::tap_hold::PendingKeyState
         {
@@ -248,18 +253,18 @@ pub mod init {
         pub struct System {
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
             >,
             layered: smart_keymap::key::layered::System<
                 Ref,
-                [smart_keymap::key::layered::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+                [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
                 [smart_keymap::key::layered::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-                    { crate::init::LAYERED }],
+                    crate::init::LAYERED],
                 { crate::init::LAYERED_LAYER_COUNT },
             >,
             tap_hold: smart_keymap::key::tap_hold::System<
                 Ref,
-                [smart_keymap::key::tap_hold::Key<Ref>; { crate::init::TAP_HOLD }],
+                [smart_keymap::key::tap_hold::Key<Ref>; crate::init::TAP_HOLD],
             >,
         }
 
@@ -269,20 +274,20 @@ pub mod init {
             pub const fn new(
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
                 >,
                 layered: smart_keymap::key::layered::System<
                     Ref,
-                    [smart_keymap::key::layered::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+                    [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
                     [smart_keymap::key::layered::LayeredKey<
                         Ref,
                         { crate::init::LAYERED_LAYER_COUNT },
-                    >; { crate::init::LAYERED }],
+                    >; crate::init::LAYERED],
                     { crate::init::LAYERED_LAYER_COUNT },
                 >,
                 tap_hold: smart_keymap::key::tap_hold::System<
                     Ref,
-                    [smart_keymap::key::tap_hold::Key<Ref>; { crate::init::TAP_HOLD }],
+                    [smart_keymap::key::tap_hold::Key<Ref>; crate::init::TAP_HOLD],
                 >,
             ) -> Self {
                 Self {
@@ -331,6 +336,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

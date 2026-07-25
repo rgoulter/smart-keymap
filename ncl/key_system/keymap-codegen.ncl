@@ -253,6 +253,7 @@ impl From<%{ty_of f}> for %{aggregate} {
           systems
           |> std.array.map (fun f =>
             m%"
+#[allow(unreachable_patterns)]
 impl TryFrom<%{aggregate}> for %{ty_of f} {
       type Error = smart_keymap::key::EventError;
       fn try_from(v: %{aggregate}) -> Result<Self, Self::Error> {
@@ -457,6 +458,7 @@ impl From<%{f.pending_ty}> for PendingKeyState {
           |> std.array.filter (fun f => f.has_pending_dispatch)
           |> std.array.map (fun f =>
             m%"
+#[allow(unreachable_patterns)]
 impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
       type Error = ();
       fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
@@ -509,8 +511,6 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
             "/// [%{f.module}] key state.\n%{f.key_state_variant}(%{f.key_state_ty}),"
           )
           |> join,
-
-        event_param = if context_handle_event == "" then "_event" else "event",
 
         # Array keeps historical doc strings (snapshot-stable).
         # Vec documents the storage flavour.
@@ -577,9 +577,10 @@ pub mod key_system {
       impl key::Context for Context {
           type Event = Event;
 
+          #[allow(unused_mut, unused_variables)]
           fn handle_event(
               &mut self,
-              %{event_param}: key::Event<Self::Event>,
+              event: key::Event<Self::Event>,
           ) -> key::KeyEvents<Self::Event> {
               let mut pke = key::KeyEvents::no_events();
 %{context_handle_event}
@@ -668,6 +669,7 @@ pub mod key_system {
               }
           }
 
+          #[allow(unused_variables)]
           fn update_pending_state(
               &self,
               pending_state: &mut Self::PendingKeyState,
@@ -880,7 +882,7 @@ pub mod key_system {
         expected = true,
       },
       check_array_keyboard_system = {
-        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" rust_mod,
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; crate::init::KEYBOARD\\]" rust_mod,
         expected = true,
       },
       check_no_keys_trait = {
@@ -911,7 +913,7 @@ pub mod key_system {
         expected = true,
       },
       check_not_array_keyboard = {
-        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; \\{ crate::init::KEYBOARD \\}\\]" rust_mod,
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; crate::init::KEYBOARD\\]" rust_mod,
         expected = false,
       },
       check_system_not_copy = {

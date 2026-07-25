@@ -10,11 +10,11 @@ fun smart_keymap =>
     # Shared defaults for a key family.
     # Applied at use sites: `{ name = family_name } & families.<name> & default_family`.
     # Lazy fields see `name` / `variant` / `module` from the merged record (like Nickel `| default`).
-    # Required from the left-hand / partial: system_ty.array, context_ty, context_expr
-    # (and `name` from the resolver). Const-generic / array lengths use
-    # `{ crate::init::… }` in type position (rustc needs braces on paths).
+    # Required from the left-hand / partial:
+    #  system_ty.array, context_ty, context_expr (and `name` from the resolver).
     #
-    # Data-carrying families also set `system_ty.vec` (Vec storage); singletons share `system_ty.array`.
+    # Data-carrying families also set `system_ty.vec` (Vec storage);
+    #  singletons share `system_ty.array`.
     camel_case_from_snake_case = fun s =>
       s
       |> std.string.split "_"
@@ -74,7 +74,7 @@ fun smart_keymap =>
           data_lengths = [{ const_name = "AUTOMATION", data_field = "automation" }],
           system_ty.array = m%"%{module}::System<
           Ref,
-          [%{module}::Key; { crate::init::AUTOMATION }],
+          [%{module}::Key; crate::init::AUTOMATION],
           { crate::init::AUTOMATION_INSTRUCTION_COUNT }
         >"%,
           system_ty.vec = m%"%{module}::System<
@@ -99,7 +99,7 @@ fun smart_keymap =>
           data_lengths = [{ const_name = "CALLBACK", data_field = "callback" }],
           system_ty.array = m%"%{module}::System<
           Ref,
-          [%{module}::Key; { crate::init::CALLBACK }]
+          [%{module}::Key; crate::init::CALLBACK]
         >"%,
           system_ty.vec = m%"%{module}::System<
           Ref,
@@ -139,7 +139,7 @@ fun smart_keymap =>
               { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
               CHORDED_MAX_PRESSED_INDICES
             >;
-            { crate::init::CHORDED }
+            crate::init::CHORDED
           ],
           [
             %{module}::AuxiliaryKey<
@@ -148,7 +148,7 @@ fun smart_keymap =>
               { crate::init::CHORDED_MAX_CHORD_SIZE },
               CHORDED_MAX_PRESSED_INDICES
             >;
-            { crate::init::CHORDED_AUXILIARY }
+            crate::init::CHORDED_AUXILIARY
           ],
           { crate::init::CHORDED_MAX_CHORDS },
           { crate::init::CHORDED_MAX_CHORD_SIZE },
@@ -223,7 +223,7 @@ fun smart_keymap =>
           data_lengths = [{ const_name = "KEYBOARD", data_field = "keyboard" }],
           system_ty.array = m%"%{module}::System<
           Ref,
-          [%{module}::Key; { crate::init::KEYBOARD }]
+          [%{module}::Key; crate::init::KEYBOARD]
         >"%,
           system_ty.vec = m%"%{module}::System<
           Ref,
@@ -248,10 +248,10 @@ fun smart_keymap =>
           ],
           system_ty.array = m%"%{module}::System<
           Ref,
-          [%{module}::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+          [%{module}::ModifierKey; crate::init::LAYER_MODIFIERS],
           [
             %{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-            { crate::init::LAYERED }
+            crate::init::LAYERED
           ],
           { crate::init::LAYERED_LAYER_COUNT }
         >"%,
@@ -287,7 +287,7 @@ fun smart_keymap =>
           data_lengths = [{ const_name = "STICKY", data_field = "sticky" }],
           system_ty.array = m%"%{module}::System<
           Ref,
-          [%{module}::Key; { crate::init::STICKY }]
+          [%{module}::Key; crate::init::STICKY]
         >"%,
           system_ty.vec = m%"%{module}::System<
           Ref,
@@ -309,7 +309,7 @@ fun smart_keymap =>
           Ref,
           [
             %{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
-            { crate::init::TAP_DANCE }
+            crate::init::TAP_DANCE
           ],
           { crate::init::TAP_DANCE_MAX_DEFINITIONS }
         >"%,
@@ -333,7 +333,7 @@ fun smart_keymap =>
           data_lengths = [{ const_name = "TAP_HOLD", data_field = "tap_hold" }],
           system_ty.array = m%"%{module}::System<
           Ref,
-          [%{module}::Key<Ref>; { crate::init::TAP_HOLD }]
+          [%{module}::Key<Ref>; crate::init::TAP_HOLD]
         >"%,
           system_ty.vec = m%"%{module}::System<
           Ref,
