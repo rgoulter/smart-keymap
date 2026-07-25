@@ -66,7 +66,7 @@ clean: clean-generated-keymaps clean.bin clean.uf2
 	rm -f include/smart_keymap.h
 	$(CARGO) clean
 
-include/smart_keymap.h: src/lib.rs
+include/smart_keymap.h: smart_keymap/src/lib.rs src/lib.rs
 	$(CBINDGEN) -c cbindgen.toml -o include/smart_keymap.h ./smart_keymap
 
 .PHONY: clean.bin

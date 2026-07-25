@@ -16,6 +16,10 @@
 //!
 //! This crate can be used directly with Rust, or built as a C library.
 //!
+//! The engine implementation lives in [`smart_keymap_core`]; this package
+//! re-exports it and adds the per-build [`init`] keymap shell (dummy or
+//! codegen via `SMART_KEYMAP_CUSTOM_KEYMAP`).
+//!
 //! # Usage as a C library
 //!
 //! ## Custom Keymap
@@ -49,26 +53,23 @@
 //! The full-profile, Vec-backed composite shell used by Cucumber and other
 //! std harnesses lives in the separate `smart-keymap-full-system-std` package
 //! so default `smart-keymap` builds (including `cargo doc`) do not require
-//! Nickel.
+//! Nickel for the universal shell (custom keymap codegen still needs Nickel
+//! when pointing at a `.ncl` file).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Structs for input to the keymap.
-pub mod input;
-/// Smart key interface and implementations.
-///
-/// The core interface for the smart keymap library is [key::System],
-///  and its associated [key::Context], `PendingKeyState`, and [key::KeyState] types.
-/// Together, these are used to define smart key behaviour.
-pub mod key;
-/// Keymap implementation.
-pub mod keymap;
-
-/// Split keyboard support.
-pub mod split;
-
-/// A helper value type for Copy-able slices.
-pub mod slice;
+// Re-export core engine modules so `use crate as smart_keymap` in generated
+// `init` (and existing `smart_keymap::key::…` call sites) keeps working.
+#[doc(inline)]
+pub use smart_keymap_core::input;
+#[doc(inline)]
+pub use smart_keymap_core::key;
+#[doc(inline)]
+pub use smart_keymap_core::keymap;
+#[doc(inline)]
+pub use smart_keymap_core::slice;
+#[doc(inline)]
+pub use smart_keymap_core::split;
 
 /// Types and initial data used for constructing a [keymap::Keymap].
 ///

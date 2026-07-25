@@ -10,6 +10,7 @@ on:
     paths:
       - 'ncl/**'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'tests/ncl/**'
   pull_request:
     branches:
@@ -17,6 +18,7 @@ on:
     paths:
       - 'ncl/**'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'tests/ncl/**'
 
 concurrency:

@@ -16,6 +16,7 @@ on:
       - 'rp2040-rtic-smart-keyboard/**'
       - 'smart-keymap-nickel-helper/**'
       - 'src/**'
+      - 'smart-keymap-core/**'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -54,6 +55,7 @@ jobs:
           cargo doc \
             --no-deps \
             --package=rp2040-rtic-smart-keyboard \
+            --package=smart-keymap-core \
             --package=smart-keymap \
             --package=keyberon-smart-keyboard
           cp -r target/doc _site/doc

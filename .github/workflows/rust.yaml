@@ -13,6 +13,7 @@ on:
       - 'features/**/*.feature'
       - 'ncl/**/*.ncl'
       - 'src/**/*.rs'
+      - 'smart-keymap-core/**'
       - 'smart-keymap-full-system-std/**'
       - 'smart-keymap-nickel-helper/**'
       - 'tests/**/*.rs'
@@ -26,6 +27,7 @@ on:
       - 'features/**/*.feature'
       - 'ncl/**/*.ncl'
       - 'src/**/*.rs'
+      - 'smart-keymap-core/**'
       - 'smart-keymap-full-system-std/**'
       - 'smart-keymap-nickel-helper/**'
       - 'tests/**/*.rs'
@@ -90,6 +92,7 @@ jobs:
       - name: Run Cargo Doc
         run: |
           cargo doc \
+            --package=smart-keymap-core \
             --package=smart-keymap \
             --package=keyberon-smart-keyboard
         env:
@@ -124,7 +127,8 @@ jobs:
 
       - name: Run Cargo Test (lib)
         run: |
-          cargo test --lib
+          cargo test -p smart-keymap-core --lib
+          cargo test -p smart-keymap --lib
           # Full-shell keymap tests live on smart-keymap-full-system-std.
           cargo test -p smart-keymap-full-system-std --test keymap_full_system
 

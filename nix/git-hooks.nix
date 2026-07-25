@@ -9,7 +9,9 @@ let
   cargoCheckFirmware = pkgs.writeShellScriptBin "cargo-check-firmware" ''
     set -euo pipefail
     # Match firmware CI: no_std cross-compilation for smart-keymap.
+    cargo check --no-default-features --target thumbv6m-none-eabi -p smart-keymap-core
     cargo check --no-default-features --target thumbv6m-none-eabi -p smart-keymap
+    cargo check --no-default-features --target thumbv7em-none-eabihf -p smart-keymap-core
     cargo check --no-default-features --target thumbv7em-none-eabihf -p smart-keymap
   '';
 in

@@ -11,6 +11,7 @@ on:
       - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'smart_keymap/**'
       - 'tests/ceedling/**'
   pull_request:
@@ -20,6 +21,7 @@ on:
       - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'smart_keymap/**'
       - 'tests/ceedling/**'
 
