@@ -23,6 +23,14 @@
 # - `'Array` — concrete `System` with `[Key; N]` (firmware trimmed default).
 # - `'Vec`   — concrete `System` with `Vec<Key>` (cucumber / runtime serde).
 #
+# Serde (`composite.with_serde`, default true):
+# - true  — aggregate Ref/Config derive `serde::Deserialize` (firmware, cucumber).
+# - false — no serde derives (`keymap!` call sites may not depend on serde).
+#
+# Nested-shell path convention (firmware `init`, `keymap!`, full-system-std):
+# - size / data consts live on the parent of `key_system` → types use `super::FOO`
+# - engine paths use the `smart_keymap` crate name (facade: `extern crate self as smart_keymap`)
+#
 # Registry fields come from merging families.ncl; refer via composite.* paths
 # (short names are not shared across merge operands).
 {
@@ -266,6 +274,10 @@
     # Key-data storage for composite artefacts. Default = Array (firmware).
     data | Storage | default = 'Array,
 
+    # Whether aggregate Ref/Config derive serde::Deserialize. Default true.
+    # `keymap!` merges `with_serde = false` (call site may not depend on serde).
+    with_serde | default = true,
+
     # Merge this record to select the full registry profile.
     with_full_profile = {
       profile = 'FullProfile,
@@ -309,6 +321,13 @@
           'Profile _ => false,
         },
       is_vec = data == 'Vec,
+
+      # Aggregate Ref / Config derives (serde optional for keymap! path).
+      aggregate_derives =
+        if with_serde then
+          "serde::Deserialize, Debug, Clone, Copy, PartialEq"
+        else
+          "Debug, Clone, Copy, PartialEq",
 
       join = fun xs => std.string.join "\n" xs,
 
@@ -354,13 +373,17 @@ impl TryFrom<%{aggregate}> for %{ty_of f} {
         |> join,
 
       # Vec-backed shells deserialize sparse key_data/config (cucumber).
-      config_field_attrs = if is_vec then "\n    #[serde(default)]" else "",
+      config_field_attrs =
+        if is_vec && with_serde then
+          "\n    #[serde(default)]"
+        else
+          "",
 
       config_struct =
         if config_systems == [] then
           m%"
 /// Aggregate config (no configurable families in this keymap).
-#[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(%{aggregate_derives})]
 pub struct Config {}
 impl Default for Config {
     fn default() -> Self { Self::new() }
@@ -385,7 +408,7 @@ impl Config {
           in
           m%"
 /// Aggregate config for families used by this keymap.
-#[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
+#[derive(%{aggregate_derives})]
 pub struct Config {
 %{fields}
 }
@@ -636,13 +659,12 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{pty} {
       rust_mod = m%"
 /// %{module_doc}
 pub mod key_system {
-    use crate as smart_keymap;
     use smart_keymap::key;
     use smart_keymap::keymap;
 
 %{module_local_consts}
     /// Aggregate key reference.
-    #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
+    #[derive(%{aggregate_derives})]
     pub enum Ref {
 %{enum_variants (fun f => f.ref_ty)}
     }
@@ -1052,8 +1074,12 @@ pub mod key_system {
         expected = true,
       },
       check_array_keyboard_system = {
-        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; crate::init::KEYBOARD\\]" rust_mod,
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; super::KEYBOARD\\]" rust_mod,
         expected = true,
+      },
+      check_no_use_crate_as_smart_keymap = {
+        actual = std.string.is_match "use crate as smart_keymap" rust_mod,
+        expected = false,
       },
       check_no_keys_trait = {
         actual = std.string.is_match "trait Keys" rust_mod,
@@ -1082,7 +1108,7 @@ pub mod key_system {
         expected = true,
       },
       check_not_array_keyboard = {
-        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; crate::init::KEYBOARD\\]" rust_mod,
+        actual = std.string.is_match "\\[smart_keymap::key::keyboard::Key; super::KEYBOARD\\]" rust_mod,
         expected = false,
       },
       check_system_not_copy = {

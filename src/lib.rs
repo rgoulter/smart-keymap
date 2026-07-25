@@ -58,8 +58,8 @@
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-// Re-export core engine modules so `use crate as smart_keymap` in generated
-// `init` (and existing `smart_keymap::key::…` call sites) keeps working.
+// Re-export core engine modules so `smart_keymap::key::…` works for call sites
+// and for generated `init` / `key_system` (which use the crate name, not `crate::`).
 #[doc(inline)]
 pub use smart_keymap_core::input;
 #[doc(inline)]
@@ -71,6 +71,10 @@ pub use smart_keymap_core::slice;
 #[doc(inline)]
 pub use smart_keymap_core::split;
 
+// Generated modules and the default `init` shell refer to engine paths as
+// `smart_keymap::…`. Inside this package that name is this crate.
+extern crate self as smart_keymap;
+
 /// Types and initial data used for constructing a [keymap::Keymap].
 ///
 /// Without `SMART_KEYMAP_CUSTOM_KEYMAP`, this is a **keyboard-only** dummy map
@@ -80,8 +84,6 @@ pub use smart_keymap_core::split;
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate as smart_keymap;
-
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 1024;
 
@@ -102,7 +104,6 @@ pub mod init {
 
     /// Trivial composite shell: keyboard family only (matches codegen shape).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 

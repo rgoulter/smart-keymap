@@ -19,8 +19,8 @@ for GENERATED_KEYMAP in ${GENERATED_KEYMAPS}; do
     KEYMAP_DIR="$(dirname "${GENERATED_KEYMAP}")"
     # Clean: rm the keymap.rs;
     #  and rm the keymap.json if there's a keymap.ncl
-    rm --force "${KEYMAP_DIR}/keymap.rs"
+    rm -f "${KEYMAP_DIR}/keymap.rs"
     if [ -f "${KEYMAP_DIR}/keymap.ncl" ]; then
-        rm --force "${KEYMAP_DIR}/keymap.json"
+        rm -f "${KEYMAP_DIR}/keymap.json"
     fi
 done

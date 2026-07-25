@@ -482,9 +482,9 @@ fn nickel_to_json_for_hid_report_uncached(
 /// std harnesses). Source of truth: `ncl/key_system/` (merge full profile +
 /// vec data, then `composite.system.rust_mod`).
 ///
-/// Generated code uses `use crate as smart_keymap` and `crate::init::…`;
-/// consumers outside the `smart-keymap` crate should rewrite the alias to
-/// `use smart_keymap` and provide a local `init` module with size constants.
+/// Generated code assumes a nested-shell host: include under a parent module
+/// that defines size consts (referenced as `super::…`), and resolve engine
+/// paths via the `smart_keymap` crate name.
 pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([

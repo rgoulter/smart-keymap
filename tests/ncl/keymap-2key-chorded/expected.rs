@@ -1,6 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
@@ -26,11 +25,10 @@ pub mod init {
 
     /// Per-keymap composite key system (generated; only families used by this keymap).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 
-        const CHORDED_MAX_PRESSED_INDICES: usize = crate::init::CHORDED_MAX_CHORD_SIZE * 2;
+        const CHORDED_MAX_PRESSED_INDICES: usize = super::CHORDED_MAX_CHORD_SIZE * 2;
 
         /// Aggregate key reference.
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -46,8 +44,8 @@ pub mod init {
         pub struct Config {
             /// Config for [smart_keymap::key::chorded].
             pub chorded: smart_keymap::key::chorded::Config<
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
             >,
         }
         impl Default for Config {
@@ -69,8 +67,8 @@ pub mod init {
         pub struct Context {
             keymap_context: smart_keymap::keymap::KeymapContext,
             chorded: smart_keymap::key::chorded::Context<
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >,
             keyboard: smart_keymap::key::keyboard::Context,
@@ -164,8 +162,8 @@ pub mod init {
             /// [smart_keymap::key::chorded] variant.
             Chorded(
                 smart_keymap::key::chorded::PendingKeyState<
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
             ),
@@ -176,16 +174,16 @@ pub mod init {
         impl
             From<
                 smart_keymap::key::chorded::PendingKeyState<
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
             > for PendingKeyState
         {
             fn from(
                 pks: smart_keymap::key::chorded::PendingKeyState<
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
             ) -> Self {
@@ -200,8 +198,8 @@ pub mod init {
         #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::chorded::PendingKeyState<
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >
         {
@@ -249,25 +247,25 @@ pub mod init {
                 Ref,
                 [smart_keymap::key::chorded::Key<
                     Ref,
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
-                    { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; crate::init::CHORDED],
+                >; super::CHORDED],
                 [smart_keymap::key::chorded::AuxiliaryKey<
                     Ref,
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; crate::init::CHORDED_AUXILIARY],
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
-                { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                >; super::CHORDED_AUXILIARY],
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >,
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                [smart_keymap::key::keyboard::Key; super::KEYBOARD],
             >,
         }
 
@@ -279,25 +277,25 @@ pub mod init {
                     Ref,
                     [smart_keymap::key::chorded::Key<
                         Ref,
-                        { crate::init::CHORDED_MAX_CHORDS },
-                        { crate::init::CHORDED_MAX_CHORD_SIZE },
-                        { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                        { super::CHORDED_MAX_CHORDS },
+                        { super::CHORDED_MAX_CHORD_SIZE },
+                        { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; crate::init::CHORDED],
+                    >; super::CHORDED],
                     [smart_keymap::key::chorded::AuxiliaryKey<
                         Ref,
-                        { crate::init::CHORDED_MAX_CHORDS },
-                        { crate::init::CHORDED_MAX_CHORD_SIZE },
+                        { super::CHORDED_MAX_CHORDS },
+                        { super::CHORDED_MAX_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; crate::init::CHORDED_AUXILIARY],
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
-                    { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                    >; super::CHORDED_AUXILIARY],
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                    [smart_keymap::key::keyboard::Key; super::KEYBOARD],
                 >,
             ) -> Self {
                 Self { chorded, keyboard }

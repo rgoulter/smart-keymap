@@ -79,7 +79,7 @@
         init_params | default = [],
 
         # Private consts inside the generated `key_system` module (profile-trimmed).
-        # Each: `{ const_name, rust_expr }` — e.g. derived from `crate::init::…`.
+        # Each: `{ const_name, rust_expr }` — size consts live on parent (`super::…`).
         module_consts | default = [],
       },
 
@@ -93,7 +93,7 @@
           config =
             'Config {
               ty = m%"%{module}::Config<
-            { crate::init::AUTOMATION_INSTRUCTION_COUNT }
+            { super::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
               rust_expr = smart_keymap.automation.config.rust_expr,
             },
@@ -105,18 +105,18 @@
               rust_expr = smart_keymap.automation.system.rust_expr,
               ty.array = m%"%{module}::System<
             Ref,
-            [%{module}::Key; crate::init::AUTOMATION],
-            { crate::init::AUTOMATION_INSTRUCTION_COUNT }
+            [%{module}::Key; super::AUTOMATION],
+            { super::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::Key>,
-            { crate::init::AUTOMATION_INSTRUCTION_COUNT }
+            { super::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
             },
           context = {
             ty = m%"%{module}::Context<
-            { crate::init::AUTOMATION_INSTRUCTION_COUNT }
+            { super::AUTOMATION_INSTRUCTION_COUNT }
           >"%,
             expr = "%{module}::Context::from_config(config.automation)",
           },
@@ -144,7 +144,7 @@
               rust_expr = smart_keymap.callback.system.rust_expr,
               ty.array = m%"%{module}::System<
             Ref,
-            [%{module}::Key; crate::init::CALLBACK]
+            [%{module}::Key; super::CALLBACK]
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
@@ -174,16 +174,16 @@
           config =
             'Config {
               ty = m%"%{module}::Config<
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE }
+            { super::CHORDED_MAX_CHORDS },
+            { super::CHORDED_MAX_CHORD_SIZE }
           >"%,
               rust_expr = smart_keymap.chorded.config.rust_expr,
             },
           pending =
             'PendingKeyState {
               ty = m%"%{module}::PendingKeyState<
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE },
+            { super::CHORDED_MAX_CHORDS },
+            { super::CHORDED_MAX_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
             },
@@ -201,25 +201,25 @@
             [
               %{module}::Key<
                 Ref,
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
-                { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES
               >;
-              crate::init::CHORDED
+              super::CHORDED
             ],
             [
               %{module}::AuxiliaryKey<
                 Ref,
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES
               >;
-              crate::init::CHORDED_AUXILIARY
+              super::CHORDED_AUXILIARY
             ],
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE },
-            { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+            { super::CHORDED_MAX_CHORDS },
+            { super::CHORDED_MAX_CHORD_SIZE },
+            { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
               ty.vec = m%"%{module}::System<
@@ -227,30 +227,30 @@
             Vec<
               %{module}::Key<
                 Ref,
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
-                { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES
               >
             >,
             Vec<
               %{module}::AuxiliaryKey<
                 Ref,
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES
               >
             >,
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE },
-            { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+            { super::CHORDED_MAX_CHORDS },
+            { super::CHORDED_MAX_CHORD_SIZE },
+            { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
             },
           context = {
             ty = m%"%{module}::Context<
-            { crate::init::CHORDED_MAX_CHORDS },
-            { crate::init::CHORDED_MAX_CHORD_SIZE },
+            { super::CHORDED_MAX_CHORDS },
+            { super::CHORDED_MAX_CHORD_SIZE },
             CHORDED_MAX_PRESSED_INDICES
           >"%,
             expr = "%{module}::Context::from_config(config.chorded)",
@@ -292,7 +292,7 @@
           module_consts = [
             {
               const_name = "CHORDED_MAX_PRESSED_INDICES",
-              rust_expr = "crate::init::CHORDED_MAX_CHORD_SIZE * 2",
+              rust_expr = "super::CHORDED_MAX_CHORD_SIZE * 2",
             },
           ],
         },
@@ -333,7 +333,7 @@
               rust_expr = smart_keymap.keyboard.system.rust_expr,
               ty.array = m%"%{module}::System<
             Ref,
-            [%{module}::Key; crate::init::KEYBOARD]
+            [%{module}::Key; super::KEYBOARD]
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
@@ -369,22 +369,22 @@
               rust_expr = smart_keymap.layered.system.rust_expr,
               ty.array = m%"%{module}::System<
             Ref,
-            [%{module}::ModifierKey; crate::init::LAYER_MODIFIERS],
+            [%{module}::ModifierKey; super::LAYER_MODIFIERS],
             [
-              %{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-              crate::init::LAYERED
+              %{module}::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
+              super::LAYERED
             ],
-            { crate::init::LAYERED_LAYER_COUNT }
+            { super::LAYERED_LAYER_COUNT }
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::ModifierKey>,
-            Vec<%{module}::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>>,
-            { crate::init::LAYERED_LAYER_COUNT }
+            Vec<%{module}::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>>,
+            { super::LAYERED_LAYER_COUNT }
           >"%,
             },
           context = {
-            ty = "%{module}::Context<{ crate::init::LAYERED_LAYER_COUNT }>",
+            ty = "%{module}::Context<{ super::LAYERED_LAYER_COUNT }>",
             expr = "%{module}::Context::from_config(config.layered)",
           },
           event_ty = "%{module}::LayerEvent",
@@ -443,7 +443,7 @@
               rust_expr = smart_keymap.sticky.system.rust_expr,
               ty.array = m%"%{module}::System<
             Ref,
-            [%{module}::Key; crate::init::STICKY]
+            [%{module}::Key; super::STICKY]
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
@@ -473,15 +473,15 @@
               ty.array = m%"%{module}::System<
             Ref,
             [
-              %{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
-              crate::init::TAP_DANCE
+              %{module}::Key<Ref, { super::TAP_DANCE_MAX_DEFINITIONS }>;
+              super::TAP_DANCE
             ],
-            { crate::init::TAP_DANCE_MAX_DEFINITIONS }
+            { super::TAP_DANCE_MAX_DEFINITIONS }
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
-            Vec<%{module}::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>>,
-            { crate::init::TAP_DANCE_MAX_DEFINITIONS }
+            Vec<%{module}::Key<Ref, { super::TAP_DANCE_MAX_DEFINITIONS }>>,
+            { super::TAP_DANCE_MAX_DEFINITIONS }
           >"%,
             },
           context = {
@@ -530,7 +530,7 @@
               rust_expr = smart_keymap.tap_hold.system.rust_expr,
               ty.array = m%"%{module}::System<
             Ref,
-            [%{module}::Key<Ref>; crate::init::TAP_HOLD]
+            [%{module}::Key<Ref>; super::TAP_HOLD]
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,

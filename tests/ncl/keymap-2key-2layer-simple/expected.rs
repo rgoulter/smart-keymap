@@ -1,6 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
@@ -26,7 +25,6 @@ pub mod init {
 
     /// Per-keymap composite key system (generated; only families used by this keymap).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 
@@ -64,7 +62,7 @@ pub mod init {
         pub struct Context {
             keymap_context: smart_keymap::keymap::KeymapContext,
             keyboard: smart_keymap::key::keyboard::Context,
-            layered: smart_keymap::key::layered::Context<{ crate::init::LAYERED_LAYER_COUNT }>,
+            layered: smart_keymap::key::layered::Context<{ super::LAYERED_LAYER_COUNT }>,
         }
 
         impl Context {
@@ -201,14 +199,14 @@ pub mod init {
         pub struct System {
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                [smart_keymap::key::keyboard::Key; super::KEYBOARD],
             >,
             layered: smart_keymap::key::layered::System<
                 Ref,
-                [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
-                [smart_keymap::key::layered::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-                    crate::init::LAYERED],
-                { crate::init::LAYERED_LAYER_COUNT },
+                [smart_keymap::key::layered::ModifierKey; super::LAYER_MODIFIERS],
+                [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
+                    super::LAYERED],
+                { super::LAYERED_LAYER_COUNT },
             >,
         }
 
@@ -218,16 +216,14 @@ pub mod init {
             pub const fn new(
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                    [smart_keymap::key::keyboard::Key; super::KEYBOARD],
                 >,
                 layered: smart_keymap::key::layered::System<
                     Ref,
-                    [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
-                    [smart_keymap::key::layered::LayeredKey<
-                        Ref,
-                        { crate::init::LAYERED_LAYER_COUNT },
-                    >; crate::init::LAYERED],
-                    { crate::init::LAYERED_LAYER_COUNT },
+                    [smart_keymap::key::layered::ModifierKey; super::LAYER_MODIFIERS],
+                    [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
+                        super::LAYERED],
+                    { super::LAYERED_LAYER_COUNT },
                 >,
             ) -> Self {
                 Self { keyboard, layered }

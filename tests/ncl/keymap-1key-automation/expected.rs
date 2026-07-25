@@ -1,6 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 1;
@@ -24,7 +23,6 @@ pub mod init {
 
     /// Per-keymap composite key system (generated; only families used by this keymap).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 
@@ -39,9 +37,8 @@ pub mod init {
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
         pub struct Config {
             /// Config for [smart_keymap::key::automation].
-            pub automation: smart_keymap::key::automation::Config<
-                { crate::init::AUTOMATION_INSTRUCTION_COUNT },
-            >,
+            pub automation:
+                smart_keymap::key::automation::Config<{ super::AUTOMATION_INSTRUCTION_COUNT }>,
         }
         impl Default for Config {
             fn default() -> Self {
@@ -61,9 +58,8 @@ pub mod init {
         #[derive(Debug, Clone, Copy)]
         pub struct Context {
             keymap_context: smart_keymap::keymap::KeymapContext,
-            automation: smart_keymap::key::automation::Context<
-                { crate::init::AUTOMATION_INSTRUCTION_COUNT },
-            >,
+            automation:
+                smart_keymap::key::automation::Context<{ super::AUTOMATION_INSTRUCTION_COUNT }>,
         }
 
         impl Context {
@@ -170,8 +166,8 @@ pub mod init {
         pub struct System {
             automation: smart_keymap::key::automation::System<
                 Ref,
-                [smart_keymap::key::automation::Key; crate::init::AUTOMATION],
-                { crate::init::AUTOMATION_INSTRUCTION_COUNT },
+                [smart_keymap::key::automation::Key; super::AUTOMATION],
+                { super::AUTOMATION_INSTRUCTION_COUNT },
             >,
         }
 
@@ -181,8 +177,8 @@ pub mod init {
             pub const fn new(
                 automation: smart_keymap::key::automation::System<
                     Ref,
-                    [smart_keymap::key::automation::Key; crate::init::AUTOMATION],
-                    { crate::init::AUTOMATION_INSTRUCTION_COUNT },
+                    [smart_keymap::key::automation::Key; super::AUTOMATION],
+                    { super::AUTOMATION_INSTRUCTION_COUNT },
                 >,
             ) -> Self {
                 Self { automation }

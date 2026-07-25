@@ -1,6 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
@@ -32,11 +31,10 @@ pub mod init {
 
     /// Per-keymap composite key system (generated; only families used by this keymap).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 
-        const CHORDED_MAX_PRESSED_INDICES: usize = crate::init::CHORDED_MAX_CHORD_SIZE * 2;
+        const CHORDED_MAX_PRESSED_INDICES: usize = super::CHORDED_MAX_CHORD_SIZE * 2;
 
         /// Aggregate key reference.
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -66,8 +64,8 @@ pub mod init {
         pub struct Config {
             /// Config for [smart_keymap::key::chorded].
             pub chorded: smart_keymap::key::chorded::Config<
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
             >,
             /// Config for [smart_keymap::key::layered].
             pub layered: smart_keymap::key::layered::Config,
@@ -102,13 +100,13 @@ pub mod init {
             keymap_context: smart_keymap::keymap::KeymapContext,
             callback: smart_keymap::key::callback::Context,
             chorded: smart_keymap::key::chorded::Context<
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >,
             consumer: smart_keymap::key::consumer::Context,
             keyboard: smart_keymap::key::keyboard::Context,
-            layered: smart_keymap::key::layered::Context<{ crate::init::LAYERED_LAYER_COUNT }>,
+            layered: smart_keymap::key::layered::Context<{ super::LAYERED_LAYER_COUNT }>,
             mouse: smart_keymap::key::mouse::Context,
             sticky: smart_keymap::key::sticky::Context,
             tap_dance: smart_keymap::key::tap_dance::Context,
@@ -338,8 +336,8 @@ pub mod init {
             /// [smart_keymap::key::chorded] variant.
             Chorded(
                 smart_keymap::key::chorded::PendingKeyState<
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
             ),
@@ -367,16 +365,16 @@ pub mod init {
         impl
             From<
                 smart_keymap::key::chorded::PendingKeyState<
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
             > for PendingKeyState
         {
             fn from(
                 pks: smart_keymap::key::chorded::PendingKeyState<
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
             ) -> Self {
@@ -421,8 +419,8 @@ pub mod init {
         #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::chorded::PendingKeyState<
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >
         {
@@ -541,54 +539,54 @@ pub mod init {
         pub struct System {
             callback: smart_keymap::key::callback::System<
                 Ref,
-                [smart_keymap::key::callback::Key; crate::init::CALLBACK],
+                [smart_keymap::key::callback::Key; super::CALLBACK],
             >,
             chorded: smart_keymap::key::chorded::System<
                 Ref,
                 [smart_keymap::key::chorded::Key<
                     Ref,
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
-                    { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; crate::init::CHORDED],
+                >; super::CHORDED],
                 [smart_keymap::key::chorded::AuxiliaryKey<
                     Ref,
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; crate::init::CHORDED_AUXILIARY],
-                { crate::init::CHORDED_MAX_CHORDS },
-                { crate::init::CHORDED_MAX_CHORD_SIZE },
-                { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                >; super::CHORDED_AUXILIARY],
+                { super::CHORDED_MAX_CHORDS },
+                { super::CHORDED_MAX_CHORD_SIZE },
+                { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >,
             consumer: smart_keymap::key::consumer::System<Ref>,
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                [smart_keymap::key::keyboard::Key; super::KEYBOARD],
             >,
             layered: smart_keymap::key::layered::System<
                 Ref,
-                [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
-                [smart_keymap::key::layered::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-                    crate::init::LAYERED],
-                { crate::init::LAYERED_LAYER_COUNT },
+                [smart_keymap::key::layered::ModifierKey; super::LAYER_MODIFIERS],
+                [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
+                    super::LAYERED],
+                { super::LAYERED_LAYER_COUNT },
             >,
             mouse: smart_keymap::key::mouse::System<Ref>,
             sticky: smart_keymap::key::sticky::System<
                 Ref,
-                [smart_keymap::key::sticky::Key; crate::init::STICKY],
+                [smart_keymap::key::sticky::Key; super::STICKY],
             >,
             tap_dance: smart_keymap::key::tap_dance::System<
                 Ref,
-                [smart_keymap::key::tap_dance::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
-                    crate::init::TAP_DANCE],
-                { crate::init::TAP_DANCE_MAX_DEFINITIONS },
+                [smart_keymap::key::tap_dance::Key<Ref, { super::TAP_DANCE_MAX_DEFINITIONS }>;
+                    super::TAP_DANCE],
+                { super::TAP_DANCE_MAX_DEFINITIONS },
             >,
             tap_hold: smart_keymap::key::tap_hold::System<
                 Ref,
-                [smart_keymap::key::tap_hold::Key<Ref>; crate::init::TAP_HOLD],
+                [smart_keymap::key::tap_hold::Key<Ref>; super::TAP_HOLD],
             >,
         }
 
@@ -598,56 +596,52 @@ pub mod init {
             pub const fn new(
                 callback: smart_keymap::key::callback::System<
                     Ref,
-                    [smart_keymap::key::callback::Key; crate::init::CALLBACK],
+                    [smart_keymap::key::callback::Key; super::CALLBACK],
                 >,
                 chorded: smart_keymap::key::chorded::System<
                     Ref,
                     [smart_keymap::key::chorded::Key<
                         Ref,
-                        { crate::init::CHORDED_MAX_CHORDS },
-                        { crate::init::CHORDED_MAX_CHORD_SIZE },
-                        { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                        { super::CHORDED_MAX_CHORDS },
+                        { super::CHORDED_MAX_CHORD_SIZE },
+                        { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; crate::init::CHORDED],
+                    >; super::CHORDED],
                     [smart_keymap::key::chorded::AuxiliaryKey<
                         Ref,
-                        { crate::init::CHORDED_MAX_CHORDS },
-                        { crate::init::CHORDED_MAX_CHORD_SIZE },
+                        { super::CHORDED_MAX_CHORDS },
+                        { super::CHORDED_MAX_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; crate::init::CHORDED_AUXILIARY],
-                    { crate::init::CHORDED_MAX_CHORDS },
-                    { crate::init::CHORDED_MAX_CHORD_SIZE },
-                    { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
+                    >; super::CHORDED_AUXILIARY],
+                    { super::CHORDED_MAX_CHORDS },
+                    { super::CHORDED_MAX_CHORD_SIZE },
+                    { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                    [smart_keymap::key::keyboard::Key; super::KEYBOARD],
                 >,
                 layered: smart_keymap::key::layered::System<
                     Ref,
-                    [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
-                    [smart_keymap::key::layered::LayeredKey<
-                        Ref,
-                        { crate::init::LAYERED_LAYER_COUNT },
-                    >; crate::init::LAYERED],
-                    { crate::init::LAYERED_LAYER_COUNT },
+                    [smart_keymap::key::layered::ModifierKey; super::LAYER_MODIFIERS],
+                    [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
+                        super::LAYERED],
+                    { super::LAYERED_LAYER_COUNT },
                 >,
                 sticky: smart_keymap::key::sticky::System<
                     Ref,
-                    [smart_keymap::key::sticky::Key; crate::init::STICKY],
+                    [smart_keymap::key::sticky::Key; super::STICKY],
                 >,
                 tap_dance: smart_keymap::key::tap_dance::System<
                     Ref,
-                    [smart_keymap::key::tap_dance::Key<
-                        Ref,
-                        { crate::init::TAP_DANCE_MAX_DEFINITIONS },
-                    >; crate::init::TAP_DANCE],
-                    { crate::init::TAP_DANCE_MAX_DEFINITIONS },
+                    [smart_keymap::key::tap_dance::Key<Ref, { super::TAP_DANCE_MAX_DEFINITIONS }>;
+                        super::TAP_DANCE],
+                    { super::TAP_DANCE_MAX_DEFINITIONS },
                 >,
                 tap_hold: smart_keymap::key::tap_hold::System<
                     Ref,
-                    [smart_keymap::key::tap_hold::Key<Ref>; crate::init::TAP_HOLD],
+                    [smart_keymap::key::tap_hold::Key<Ref>; super::TAP_HOLD],
                 >,
             ) -> Self {
                 Self {
