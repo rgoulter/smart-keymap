@@ -93,6 +93,7 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
                 event: key::Event<Self::Event>,
@@ -137,6 +138,7 @@ pub mod init {
                 Event::Layered(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::callback::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -146,6 +148,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -155,6 +158,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::layered::LayerEvent {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -233,17 +237,17 @@ pub mod init {
         pub struct System {
             callback: smart_keymap::key::callback::System<
                 Ref,
-                [smart_keymap::key::callback::Key; { crate::init::CALLBACK }],
+                [smart_keymap::key::callback::Key; crate::init::CALLBACK],
             >,
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
             >,
             layered: smart_keymap::key::layered::System<
                 Ref,
-                [smart_keymap::key::layered::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+                [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
                 [smart_keymap::key::layered::LayeredKey<Ref, { crate::init::LAYERED_LAYER_COUNT }>;
-                    { crate::init::LAYERED }],
+                    crate::init::LAYERED],
                 { crate::init::LAYERED_LAYER_COUNT },
             >,
         }
@@ -254,19 +258,19 @@ pub mod init {
             pub const fn new(
                 callback: smart_keymap::key::callback::System<
                     Ref,
-                    [smart_keymap::key::callback::Key; { crate::init::CALLBACK }],
+                    [smart_keymap::key::callback::Key; crate::init::CALLBACK],
                 >,
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
                 >,
                 layered: smart_keymap::key::layered::System<
                     Ref,
-                    [smart_keymap::key::layered::ModifierKey; { crate::init::LAYER_MODIFIERS }],
+                    [smart_keymap::key::layered::ModifierKey; crate::init::LAYER_MODIFIERS],
                     [smart_keymap::key::layered::LayeredKey<
                         Ref,
                         { crate::init::LAYERED_LAYER_COUNT },
-                    >; { crate::init::LAYERED }],
+                    >; crate::init::LAYERED],
                     { crate::init::LAYERED_LAYER_COUNT },
                 >,
             ) -> Self {
@@ -316,6 +320,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

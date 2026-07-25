@@ -97,6 +97,7 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
                 event: key::Event<Self::Event>,
@@ -135,6 +136,7 @@ pub mod init {
                 Event::Keyboard(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::chorded::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -144,6 +146,7 @@ pub mod init {
                 }
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -194,6 +197,7 @@ pub mod init {
                 PendingKeyState::Keyboard(pks)
             }
         }
+        #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
             for &'pks mut smart_keymap::key::chorded::PendingKeyState<
                 { crate::init::CHORDED_MAX_CHORDS },
@@ -249,13 +253,13 @@ pub mod init {
                     { crate::init::CHORDED_MAX_CHORD_SIZE },
                     { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; { crate::init::CHORDED }],
+                >; crate::init::CHORDED],
                 [smart_keymap::key::chorded::AuxiliaryKey<
                     Ref,
                     { crate::init::CHORDED_MAX_CHORDS },
                     { crate::init::CHORDED_MAX_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
-                >; { crate::init::CHORDED_AUXILIARY }],
+                >; crate::init::CHORDED_AUXILIARY],
                 { crate::init::CHORDED_MAX_CHORDS },
                 { crate::init::CHORDED_MAX_CHORD_SIZE },
                 { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
@@ -263,7 +267,7 @@ pub mod init {
             >,
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
             >,
         }
 
@@ -279,13 +283,13 @@ pub mod init {
                         { crate::init::CHORDED_MAX_CHORD_SIZE },
                         { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; { crate::init::CHORDED }],
+                    >; crate::init::CHORDED],
                     [smart_keymap::key::chorded::AuxiliaryKey<
                         Ref,
                         { crate::init::CHORDED_MAX_CHORDS },
                         { crate::init::CHORDED_MAX_CHORD_SIZE },
                         CHORDED_MAX_PRESSED_INDICES,
-                    >; { crate::init::CHORDED_AUXILIARY }],
+                    >; crate::init::CHORDED_AUXILIARY],
                     { crate::init::CHORDED_MAX_CHORDS },
                     { crate::init::CHORDED_MAX_CHORD_SIZE },
                     { crate::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
@@ -293,7 +297,7 @@ pub mod init {
                 >,
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
                 >,
             ) -> Self {
                 Self { chorded, keyboard }
@@ -332,6 +336,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,

@@ -77,9 +77,10 @@ pub mod init {
         impl key::Context for Context {
             type Event = Event;
 
+            #[allow(unused_mut, unused_variables)]
             fn handle_event(
                 &mut self,
-                _event: key::Event<Self::Event>,
+                event: key::Event<Self::Event>,
             ) -> key::KeyEvents<Self::Event> {
                 let mut pke = key::KeyEvents::no_events();
 
@@ -105,6 +106,7 @@ pub mod init {
                 Event::Keyboard(v)
             }
         }
+        #[allow(unreachable_patterns)]
         impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
             type Error = smart_keymap::key::EventError;
             fn try_from(v: Event) -> Result<Self, Self::Error> {
@@ -155,7 +157,7 @@ pub mod init {
         pub struct System {
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
             >,
         }
 
@@ -165,7 +167,7 @@ pub mod init {
             pub const fn new(
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; { crate::init::KEYBOARD }],
+                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
                 >,
             ) -> Self {
                 Self { keyboard }
@@ -198,6 +200,7 @@ pub mod init {
                 }
             }
 
+            #[allow(unused_variables)]
             fn update_pending_state(
                 &self,
                 pending_state: &mut Self::PendingKeyState,
