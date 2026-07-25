@@ -22,7 +22,7 @@
       smart_keymap.tap_hold.key.is_json json,
 
     check_taphold_codegen_values = {
-      # Current impl: tap_hold::Key<keyboard::Key> is still th::Key<composite::Base>
+      # Nested keys are validated/codegen'd via smart_key (keyboard, etc.).
       check_taphold_keyboard =
         let json = {
           hold = { key_code = 224 },
