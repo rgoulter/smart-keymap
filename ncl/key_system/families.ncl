@@ -1,20 +1,8 @@
-# Static-ish family registry for the composite key_system shell.
-#
-# Big table of per-family flags/types plus config/system rust_expr joins to
-# smart_keymap.* (todo 1). Profile builders and emit live in keymap-codegen.ncl
-# so composite stays one recursive record.
+# Family registry for the composite key_system shell.
 #
 # Only dependency: smart_keymap (for row exprs).
 fun smart_keymap =>
   {
-    # Shared defaults for a key family.
-    # Applied at use sites: `{ name = family_name } & families.<name> & default_family`.
-    # Lazy fields see `name` / `variant` / `module` from the merged record (like Nickel `| default`).
-    # Required from the left-hand / partial:
-    #  system_ty.array, context_ty, context_expr (and `name` from the resolver).
-    #
-    # Data-carrying families also set `system_ty.vec` (Vec storage);
-    #  singletons share `system_ty.array`.
     camel_case_from_snake_case = fun s =>
       s
       |> std.string.split "_"
@@ -26,9 +14,17 @@ fun smart_keymap =>
       )
       |> std.string.join "",
 
+    # Shared defaults for a key family.
+    # Applied at use sites: `{ name = family_name } & families.<name> & default_family`.
+    # Lazy fields see `name` / `variant` / `module` from the merged record (like Nickel `| default`).
+    # Required from the left-hand / partial:
+    #  system_ty.array, context_ty, context_expr (and `name` from the resolver).
+    #
+    # Data-carrying families also set `system_ty.vec` (Vec storage);
+    #  singletons share `system_ty.array`.
     default_family = {
       name,
-      # e.g. tap_hold → TapHold
+      # e.g. "tap_hold" → "TapHold"
       variant | default = camel_case_from_snake_case name,
       system_ty.array,
       context_ty,
@@ -60,8 +56,9 @@ fun smart_keymap =>
       # Lazy until forced — do not confuse with system_expr above.
     },
 
-    # Family registry as a record keyed by snake_case name (stable alphabetical order
-    # via std.record.fields). Partials only — merge `default_family` when resolving.
+    # Family registry as a record keyed by snake_case name
+    #  (stable alphabetical order via std.record.fields).
+    # Partials only — merge `default_family` when resolving.
     # Local `module` lets keep `%{module}` type strings without baking defaults here.
     families = {
       automation =
