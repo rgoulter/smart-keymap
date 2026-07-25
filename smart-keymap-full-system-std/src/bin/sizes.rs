@@ -3,6 +3,7 @@ use std::mem;
 use serde::Serialize;
 
 use smart_keymap::{input, key};
+use smart_keymap_full_system_std::key_system;
 
 #[derive(Serialize)]
 struct StructSizes {
@@ -19,10 +20,10 @@ fn main() {
     let sizes_data = StructSizes {
         input_event: mem::size_of::<input::Event>(),
         key_keyboardmodifiers: mem::size_of::<key::KeyboardModifiers>(),
-        key_composite_context: mem::size_of::<key::key_system::Context>(),
-        key_composite_event: mem::size_of::<key::key_system::Event>(),
-        key_composite_pendingkeystate: mem::size_of::<key::key_system::PendingKeyState>(),
-        key_composite_keystate: mem::size_of::<key::key_system::KeyState>(),
+        key_composite_context: mem::size_of::<key_system::Context>(),
+        key_composite_event: mem::size_of::<key_system::Event>(),
+        key_composite_pendingkeystate: mem::size_of::<key_system::PendingKeyState>(),
+        key_composite_keystate: mem::size_of::<key_system::KeyState>(),
         keymap_keymap: mem::size_of::<smart_keymap::init::Keymap>(),
     };
 

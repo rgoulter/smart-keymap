@@ -478,9 +478,13 @@ fn nickel_to_json_for_hid_report_uncached(
 
 /// Emits the full-profile composite `key_system` module with Vec storage.
 ///
-/// Used by the library `build.rs` under `feature = "std"` (cucumber / runtime serde).
-/// Source of truth: `ncl/key_system/` (merge full profile + vec data,
-/// then `composite.system.rust_mod`).
+/// Used by the `smart-keymap-full-system-std` package build script (cucumber /
+/// std harnesses). Source of truth: `ncl/key_system/` (merge full profile +
+/// vec data, then `composite.system.rust_mod`).
+///
+/// Generated code uses `use crate as smart_keymap` and `crate::init::…`;
+/// consumers outside the `smart-keymap` crate should rewrite the alias to
+/// `use smart_keymap` and provide a local `init` module with size constants.
 pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
     let spawn_nickel_result = Command::new("nickel")
         .args([
