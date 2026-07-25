@@ -275,18 +275,23 @@
         include smart_key,
       }
       in
-      # Firmware / custom-keymap module: included as `crate::init` with
-      # `use crate as smart_keymap` and `crate::init::…` size paths.
-      let keymap_module_src = m%"
+      # Nested shell under `pub mod init`: size/data consts + key_system (uses
+      # `super::` for those consts) + keymap instance surface. Engine paths use
+      # the `smart_keymap` crate name (facade: `extern crate self as smart_keymap`).
+      #
+      # Same text for firmware include and `keymap!` (block-local `pub mod init`
+      # does not leak). Only serde differs: false for `keymap!` call sites.
+      let init_module = fun { serde } =>
+        let sys = (composite & { with_serde = serde }).system in
+        m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
-%{composite.system.init_size_consts_rust_stmts init_size_ctx}
+%{sys.init_size_consts_rust_stmts init_size_ctx}
 
-%{composite.system.init_consts_rust_stmts key_data}
+%{sys.init_consts_rust_stmts key_data}
 
-%{composite.system.rust_mod}
+%{sys.rust_mod}
 
     pub use key_system::Ref;
     pub use key_system::Context;
@@ -308,7 +313,7 @@ pub mod init {
     pub const CONTEXT: Context = %{context_expr};
 
     /// The key system.
-    pub const SYSTEM: System = %{composite.system.rust_expr};
+    pub const SYSTEM: System = %{sys.rust_expr};
 
     /// Alias for the [keymap::Keymap] type.
     pub type Keymap = smart_keymap::keymap::Keymap<
@@ -323,28 +328,14 @@ pub mod init {
 }
 "%,
       in
-      # `keymap!` expands at the call site (integration tests, etc.): nested
-      # trimmed key_system module + Keymap value — not library full composite.
-      # Path rewrites:
-      # - `crate as smart_keymap` → external `smart_keymap` crate
-      # - `crate::init::` → `super::` (size consts live on the nested module)
-      # - drop serde derives (call site may not depend on serde)
-      let keymap_expr =
-        let adapted_module =
-          keymap_module_src
-          |> std.string.replace "pub mod init" "mod __smart_keymap_keymap"
-          |> std.string.replace "use crate as smart_keymap;\n" ""
-          |> std.string.replace "use crate as smart_keymap;" ""
-          |> std.string.replace "crate::init::" "super::"
-          |> std.string.replace "serde::Deserialize, " ""
-        in
-        m%"
+      let keymap_module_src = init_module { serde = true } in
+      let keymap_expr = m%"
 {
-%{adapted_module}
-    __smart_keymap_keymap::Keymap::new(
-        __smart_keymap_keymap::KEY_REFS,
-        __smart_keymap_keymap::CONTEXT,
-        __smart_keymap_keymap::SYSTEM,
+%{init_module { serde = false }}
+    init::Keymap::new(
+        init::KEY_REFS,
+        init::CONTEXT,
+        init::SYSTEM,
     )
 }
 "%,

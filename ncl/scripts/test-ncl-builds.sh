@@ -15,9 +15,9 @@ KEYMAP_DIR="${NCL_TESTS_DIR}/${1}"
 
 # Clean: rm the keymap.rs;
 #  and rm the keymap.json if there's a keymap.ncl
-rm --force "${KEYMAP_DIR}/keymap.rs"
+rm -f "${KEYMAP_DIR}/keymap.rs"
 if [[ -f "${KEYMAP_DIR}/keymap.ncl" ]]; then
-    rm --force "${KEYMAP_DIR}/keymap.json"
+    rm -f "${KEYMAP_DIR}/keymap.json"
 fi
 
 pushd "${REPOSITORY_DIR}"

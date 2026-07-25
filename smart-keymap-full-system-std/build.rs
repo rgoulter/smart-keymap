@@ -29,11 +29,8 @@ fn main() {
 
     match nickel_composite_full_vec_rs(ncl_import_path) {
         Ok(module_src) => {
-            // Generated module assumes it lives inside the smart_keymap crate
-            // (`use crate as smart_keymap`). In this package, smart_keymap is an
-            // external dependency; rewrite the alias accordingly. References to
-            // `crate::init::…` stay and resolve to this package's `init` module.
-            let module_src = module_src.replace("use crate as smart_keymap;", "use smart_keymap;");
+            // Nested under `init` in lib.rs; size consts use `super::…`.
+            // Engine paths use the external `smart_keymap` dependency by name.
             let mut file = fs::File::create(&dest_path).unwrap();
             let formatted = rustfmt(module_src);
             file.write_all(formatted.as_bytes()).unwrap();

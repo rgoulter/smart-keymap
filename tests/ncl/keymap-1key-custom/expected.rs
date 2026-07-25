@@ -1,6 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
@@ -22,7 +21,6 @@ pub mod init {
 
     /// Per-keymap composite key system (generated; only families used by this keymap).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 

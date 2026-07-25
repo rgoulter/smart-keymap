@@ -1,6 +1,5 @@
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 0;
@@ -25,7 +24,6 @@ pub mod init {
 
     /// Per-keymap composite key system (generated; only families used by this keymap).
     pub mod key_system {
-        use crate as smart_keymap;
         use smart_keymap::key;
         use smart_keymap::keymap;
 
@@ -210,13 +208,13 @@ pub mod init {
         pub struct System {
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
-                [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                [smart_keymap::key::keyboard::Key; super::KEYBOARD],
             >,
             tap_dance: smart_keymap::key::tap_dance::System<
                 Ref,
-                [smart_keymap::key::tap_dance::Key<Ref, { crate::init::TAP_DANCE_MAX_DEFINITIONS }>;
-                    crate::init::TAP_DANCE],
-                { crate::init::TAP_DANCE_MAX_DEFINITIONS },
+                [smart_keymap::key::tap_dance::Key<Ref, { super::TAP_DANCE_MAX_DEFINITIONS }>;
+                    super::TAP_DANCE],
+                { super::TAP_DANCE_MAX_DEFINITIONS },
             >,
         }
 
@@ -226,15 +224,13 @@ pub mod init {
             pub const fn new(
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
-                    [smart_keymap::key::keyboard::Key; crate::init::KEYBOARD],
+                    [smart_keymap::key::keyboard::Key; super::KEYBOARD],
                 >,
                 tap_dance: smart_keymap::key::tap_dance::System<
                     Ref,
-                    [smart_keymap::key::tap_dance::Key<
-                        Ref,
-                        { crate::init::TAP_DANCE_MAX_DEFINITIONS },
-                    >; crate::init::TAP_DANCE],
-                    { crate::init::TAP_DANCE_MAX_DEFINITIONS },
+                    [smart_keymap::key::tap_dance::Key<Ref, { super::TAP_DANCE_MAX_DEFINITIONS }>;
+                        super::TAP_DANCE],
+                    { super::TAP_DANCE_MAX_DEFINITIONS },
                 >,
             ) -> Self {
                 Self {
