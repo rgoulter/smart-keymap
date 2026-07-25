@@ -2,43 +2,23 @@
 #
 # Family table: families.ncl (static-ish rows + smart_keymap expr joins).
 #
-# Selection is by merge composition (not by applying builders at call sites):
+# Selection is by merge composition:
 # - `composite.profile` — which families (default: keymap-stripped).
 # - `composite.data` — key-data storage (`'Array` | `'Vec`; default `'Array`).
 # - Artefacts for the selected profile + data live on `composite` itself:
-#     - `composite.config.rust_expr`
-#     - `composite.system.rust_expr`
-#     - `composite.system.init_consts_rust_stmts` (fn of key_data)
-#     - `composite.system.rust_mod` (generated `pub mod key_system { … }`)
+#   - `composite.config.rust_expr`
+#   - `composite.system.rust_expr`
+#   - `composite.system.init_consts_rust_stmts` (fn of key_data)
+#   - `composite.system.rust_mod` (generated `pub mod key_system { … }`)
 #
 # Profile:
 # - Default: keymap-stripped (`keymap_profile` from keys).
-# - Full:    merge `composite.with_full_profile` (or set
-#            `composite.profile = composite.full_profile`).
+# - Full:    merge `composite.with_full_profile`
+#            (or set `composite.profile = composite.full_profile`).
 #
-# Data storage (`composite.Storage` / `composite.data`):
+# Data storage (`composite.data`):
 # - `'Array` — concrete `System` with `[Key; N]` (firmware trimmed default).
 # - `'Vec`   — concrete `System` with `Vec<Key>` (cucumber / runtime serde).
-# - Merge `composite.with_vec_data` (or set `composite.data = 'Vec`).
-#
-# Example (full registry, vec-backed):
-#   let c = r.composite & r.composite.with_full_profile & r.composite.with_vec_data in
-#   c.system.rust_mod
-#
-# Emit is module-shaped fragments over the active selection:
-# - `composite.fragments` — named fields closing over sibling `profile` + `data`
-# - assembled into `composite.config` / `composite.system`
-# - Select via merge on composite: `composite & { profile = full_profile, data = 'Vec }`
-#   (or `composite & with_full_profile & with_vec_data`). No `*_for` re-apply.
-#
-# No Keys trait: each codegen target picks one storage shape; keymaps are not
-# shared across array and vec System types at runtime.
-#
-# Naming:
-# - Nickel surface uses `composite` (aggregating shell).
-# - Generated Rust module is still `key_system` (aggregate types).
-# - `*_ty` — Rust type in type position
-# - `context_expr` / `system_expr` — Rust *expressions* (constructors)
 {
   key_codegen_values,
 
@@ -46,13 +26,10 @@
 
   smart_keymap,
 
-  # One recursive composite: registry fields from families.ncl table, then
-  # profile builders + selection + fragments (short sibling names).
   composite =
-    let skm = smart_keymap in
-    let registry = (import "key_system/families.ncl") skm in
+    let sm_km = smart_keymap in
+    let registry = (import "key_system/families.ncl") sm_km in
     {
-      # Static-ish table (+ defaults) from families.ncl.
       camel_case_from_snake_case = registry.camel_case_from_snake_case,
       default_family = registry.default_family,
       families = registry.families,
@@ -94,9 +71,9 @@
         context_expr | String,
         # Singleton System::new() in struct init body.
         system_expr | String,
-        # From smart_keymap.*.config / .system (lazy until forced).
+        # From smart_keymap.*.config / .system
         config_rust_expr | String | optional,
-        # Required in practice when has_key_data (fail-on-use if missing).
+        # Required when has_key_data
         system_rust_expr | String | optional,
         data_lengths | Array { const_name | String, data_field | String },
       },
@@ -168,13 +145,15 @@
         |> used_modules_from
         |> profile_from_modules,
 
-      # All families in registry order (cucumber / universal shell target).
+      # All families in registry order
+      # (Used by: cucumber / universal shell target).
       full_profile =
         family_list
         |> std.array.map (fun f => f.module)
         |> profile_from_modules,
 
-      # Families used by the current keymap (firmware-trimmed shell).
+      # Families used by the current keymap
+      # (Used by: firmware-trimmed shell).
       keymap_profile =
         key_codegen_values
         |> used_modules_from
@@ -186,12 +165,9 @@
         ),
 
       # Active profile for composite artefacts. Default = keymap-stripped.
-      # `| default` so merge replaces the whole profile (arrays are not deep-merged).
-      # Override via merge: `… & with_full_profile`.
       profile | default = keymap_profile,
 
       # Key-data storage for composite artefacts. Default = Array (firmware).
-      # `| default` so merge can override with `with_vec_data` / `data = 'Vec`.
       data | Storage | default = 'Array,
 
       # Merge this record to select the full registry profile.
@@ -204,11 +180,8 @@
         data | Storage = 'Vec,
       },
 
-      # --- composite fragments (config / system emit) ----------------------------
-      # Named fragments over active profile + data (siblings; rebind under merge).
-      # Override selection by merging into composite (e.g. checks:
-      #   composite & { profile = full_profile, data = 'Array }).
-      # No re-apply factory: fragment fields close over profile / data directly.
+      # --- composite fragments (config / system codegen) -------------------------
+      # Named fragments over active profile + data.
 
       system_ty_for = fun storage f =>
         storage
@@ -217,7 +190,7 @@
           'Vec => f.system_ty.vec,
         },
 
-      # Module-shaped emit fragments for the active profile + data.
+      # Module-shaped codegen fragments for the active profile + data.
       fragments = {
         systems = profile.systems,
         is_full =
@@ -512,8 +485,6 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
           )
           |> join,
 
-        # Array keeps historical doc strings (snapshot-stable).
-        # Vec documents the storage flavour.
         module_doc =
           data
           |> match {
@@ -529,7 +500,6 @@ impl<'pks> TryFrom<&'pks mut PendingKeyState> for &'pks mut %{f.pending_ty} {
                 "Per-keymap composite key system (generated; only families used by this keymap; vec-backed key data).",
           },
 
-        # Vec storage is not Copy.
         system_derives =
           if is_vec then
             "#[derive(Debug, Clone, PartialEq)]"
@@ -738,8 +708,6 @@ pub mod key_system {
     },
 
   checks.composite_profile = {
-    # Inline fixture keys (avoid importing tests/ncl/*.json here — forced when
-    # keymap dirs are on the Nickel import path during keymap-ncl-to-json).
     check_1key_simple_keyboard_only =
       let profile = composite.profile_from_keys [{ key_code = 4 }] in
       {
@@ -847,8 +815,6 @@ pub mod key_system {
       },
   },
 
-  # Full-profile composite (array storage = same concrete System shape as trimmed).
-  # Merge selection so we do not force default `keymap_profile` (needs keys).
   checks.composite_full_emit =
     let rust_mod =
       (composite & { profile = composite.full_profile, data = 'Array }).system.rust_mod
@@ -891,7 +857,6 @@ pub mod key_system {
       },
     },
 
-  # Full-profile composite with Vec storage (cucumber-oriented).
   checks.composite_full_emit_vec =
     let rust_mod =
       (composite & { profile = composite.full_profile, data = 'Vec }).system.rust_mod
@@ -917,7 +882,6 @@ pub mod key_system {
         expected = false,
       },
       check_system_not_copy = {
-        # Vec System derives Clone + PartialEq only (no Copy).
         actual = std.string.is_match "#\\[derive\\(Debug, Clone, PartialEq\\)\\]" rust_mod,
         expected = true,
       },
