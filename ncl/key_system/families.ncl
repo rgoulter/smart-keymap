@@ -69,6 +69,11 @@
 
         ref_ty | default = "%{module}::Ref",
         event_ty | default = "%{module}::Event",
+
+        # Size / const-generic params for `pub mod init` (always emitted).
+        # Each: `{ const_name, doc, value = fun ctx => usize }` where
+        # `ctx = { json_keymap, key_codegen_values, smart_key }`.
+        init_params | default = [],
       },
 
       # Family registry as a record keyed by snake_case name
@@ -108,6 +113,21 @@
           >"%,
             expr = "%{module}::Context::from_config(config.automation)",
           },
+          init_params = [
+            {
+              const_name = "AUTOMATION_INSTRUCTION_COUNT",
+              doc = "Number of instructions used by the [crate::key::automation] implementation.",
+              value = fun { json_keymap, .. } =>
+                if std.record.has_field "automation" json_keymap.config then
+                  let automation_cfg = json_keymap.config.automation in
+                  if std.record.has_field "instructions" automation_cfg then
+                    std.array.length automation_cfg.instructions
+                  else
+                    0
+                else
+                  0,
+            },
+          ],
         },
         callback = {
           module = "smart_keymap::key::callback",
@@ -228,6 +248,39 @@
           >"%,
             expr = "%{module}::Context::from_config(config.chorded)",
           },
+          init_params =
+            let chords_from = fun { json_keymap, .. } =>
+              ((json_keymap.config & { chorded | default = {} }).chorded & { chords | default = [] }).chords
+            in
+            [
+              {
+                const_name = "CHORDED_MAX_CHORD_SIZE",
+                doc = "The maximum number of keys in a chord.",
+                value = fun ctx =>
+                  chords_from ctx
+                  |> std.array.map std.array.length
+                  |> std.array.fold_left std.number.max 0,
+              },
+              {
+                const_name = "CHORDED_MAX_CHORDS",
+                doc = "The maximum number of chords.",
+                value = fun ctx => chords_from ctx |> std.array.length,
+              },
+              {
+                const_name = "CHORDED_MAX_OVERLAPPING_CHORD_SIZE",
+                doc = "The maximum number of overlapping chords for a chorded key.",
+                value = fun ctx =>
+                  chords_from ctx
+                  |> std.array.map (fun [i, ..] => std.to_string i)
+                  |> std.array.fold_left
+                    (fun r i =>
+                      std.record.update i (1 + (std.record.get_or i 0 r)) r
+                    )
+                    {}
+                  |> std.record.values
+                  |> std.array.fold_left std.number.max 0,
+              },
+            ],
         },
         consumer = {
           module = "smart_keymap::key::consumer",
@@ -321,6 +374,31 @@
             expr = "%{module}::Context::from_config(config.layered)",
           },
           event_ty = "%{module}::LayerEvent",
+          init_params = [
+            {
+              const_name = "LAYERED_LAYER_COUNT",
+              doc = "Number of layers supported by the [smart_keymap::key::layered] implementation.",
+              value = fun { key_codegen_values, smart_key, .. } =>
+                # Longest layered array across every key tree (not only the first layered key).
+                key_codegen_values
+                |> std.array.fold_left
+                  (fun acc cv =>
+                    smart_key.traverse
+                      (fun acc cv =>
+                        cv
+                        |> match {
+                          { nested = { layered, .. }, .. } =>
+                            let len = std.array.length layered in
+                            if len > acc then len else acc,
+                          _ => acc,
+                        }
+                      )
+                      acc
+                      cv
+                  )
+                  0,
+            },
+          ],
         },
         mouse = {
           module = "smart_keymap::key::mouse",
@@ -396,6 +474,29 @@
             ty = "%{module}::Context",
             expr = "%{module}::Context::from_config(config.tap_dance)",
           },
+          init_params = [
+            {
+              const_name = "TAP_DANCE_MAX_DEFINITIONS",
+              doc = "The tap-dance definitions.",
+              value = fun { key_codegen_values, smart_key, .. } =>
+                key_codegen_values
+                |> std.array.map (fun cv =>
+                  smart_key.traverse
+                    (fun acc cv =>
+                      cv
+                      |> match {
+                        { nested = { definitions }, .. } =>
+                          let len = std.array.length definitions in
+                          if len > acc then len else acc,
+                        _ => acc,
+                      }
+                    )
+                    0
+                    cv
+                )
+                |> std.array.fold_left (fun x y => if x > y then x else y) 0,
+            },
+          ],
         },
         tap_hold = {
           module = "smart_keymap::key::tap_hold",
