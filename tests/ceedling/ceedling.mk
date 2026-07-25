@@ -9,7 +9,8 @@ CEEDLING_SMART_KEYMAP_RUST_DEPS = \
 	smart_keymap/Cargo.toml \
 	smart_keymap/src/lib.rs \
 	$(wildcard src/*.rs) \
-	$(wildcard src/**/*.rs) \
+	$(wildcard smart-keymap-core/src/*.rs) \
+	$(wildcard smart-keymap-core/src/**/*.rs) \
 	$(wildcard smart-keymap-macros/src/*.rs) \
 	smart-keymap-macros/build.rs \
 	smart-keymap-macros/Cargo.toml \

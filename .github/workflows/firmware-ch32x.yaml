@@ -15,6 +15,7 @@ on:
       - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'smart_keymap/**'
       - 'tests/ncl/keymap-36key-rgoulter/**'
       - 'tests/ncl/keymap-48key-rgoulter/**'
@@ -26,6 +27,7 @@ on:
       - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'smart_keymap/**'
       - 'firmware/ch32x035-usb-device-compositekm-c/**'
 

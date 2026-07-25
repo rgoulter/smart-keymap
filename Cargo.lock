@@ -2146,16 +2146,24 @@ dependencies = [
 name = "smart-keymap"
 version = "0.17.0-dev"
 dependencies = [
+ "ron",
+ "serde",
+ "serde_json",
+ "smart-keymap-core",
+ "smart-keymap-macros",
+ "smart-keymap-nickel-helper",
+]
+
+[[package]]
+name = "smart-keymap-core"
+version = "0.17.0-dev"
+dependencies = [
  "heapless 0.8.0",
- "libc",
  "paste",
  "postcard",
- "ron",
  "seq-macro",
  "serde",
  "serde_json",
- "smart-keymap-macros",
- "smart-keymap-nickel-helper",
 ]
 
 [[package]]
