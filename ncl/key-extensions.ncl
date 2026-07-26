@@ -3,6 +3,7 @@
 & (import "smart_keys/caps_word/key-extensions.ncl")
 & (import "smart_keys/consumer/key-extensions.ncl")
 & (import "smart_keys/custom/key-extensions.ncl")
+& (import "smart_keys/history/key-extensions.ncl")
 & (import "smart_keys/keyboard/key-extensions.ncl")
 & (import "smart_keys/layered/key-extensions.ncl")
 & (import "smart_keys/mouse/key-extensions.ncl")

@@ -65,6 +65,7 @@
 & (import "smart_keys/consumer/keymap-ncl-to-json.ncl")
 & (import "smart_keys/chorded/keymap-ncl-to-json.ncl")
 & (import "smart_keys/custom/keymap-ncl-to-json.ncl")
+& (import "smart_keys/history/keymap-ncl-to-json.ncl")
 & (import "smart_keys/keyboard/keymap-ncl-to-json.ncl")
 & (import "smart_keys/layered/keymap-ncl-to-json.ncl")
 & (import "smart_keys/mouse/keymap-ncl-to-json.ncl")
@@ -279,6 +280,7 @@
       keymap_ncl.caps_word,
       keymap_ncl.consumer,
       keymap_ncl.custom,
+      keymap_ncl.history,
       keymap_ncl.mouse,
       keymap_ncl.sticky,
       keymap_ncl.tap_dance,
