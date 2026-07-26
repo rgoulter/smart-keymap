@@ -33,6 +33,12 @@ impl<
         }
     }
 
+    /// Proxies [keymap::Keymap::init] and clears observed reports.
+    pub fn init(&mut self) {
+        self.keymap.init();
+        self.distinct_reports = keymap::DistinctReports::new();
+    }
+
     /// Proxies [keymap::Keymap::handle_input], `tick`'ing the keymap appropriately.
     pub fn handle_input(&mut self, ev: input::Event) {
         let ObservedKeymap {

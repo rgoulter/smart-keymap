@@ -55,12 +55,21 @@ impl core::fmt::Debug for Key {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context;
 
+impl Context {
+    /// No runtime state to clear.
+    pub fn reset(&mut self) {}
+}
+
 impl key::Context for Context {
     type Event = Event;
 
     /// Used to update the [Context]'s state.
     fn handle_event(&mut self, _event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         key::KeyEvents::no_events()
+    }
+
+    fn reset(&mut self) {
+        Context::reset(self);
     }
 }
 

@@ -232,6 +232,11 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
         }
     }
 
+    /// Re-construct from context's [Config], clearing pressed/chord runtime state.
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
+
     /// Updates the context with the given keymap context.
     pub fn update_keymap_context(
         &mut self,
@@ -442,6 +447,10 @@ impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_IND
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         self.handle_event(event);
         key::KeyEvents::no_events()
+    }
+
+    fn reset(&mut self) {
+        Context::reset(self);
     }
 }
 

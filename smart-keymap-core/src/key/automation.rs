@@ -244,6 +244,11 @@ impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
         }
     }
 
+    /// Re-construct from context's [Config], clearing the execution queue.
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
+
     /// Enqueues a new execution onto the execution queue.
     pub fn enqueue(&mut self, new_execution: Execution) -> usize {
         // Ignore empty executions.
@@ -289,6 +294,10 @@ impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
 
 impl<const INSTRUCTION_COUNT: usize> key::Context for Context<INSTRUCTION_COUNT> {
     type Event = Event;
+
+    fn reset(&mut self) {
+        Context::reset(self);
+    }
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         match event {

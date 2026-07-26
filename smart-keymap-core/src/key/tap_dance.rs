@@ -104,6 +104,11 @@ impl Context {
     pub const fn from_config(config: Config) -> Context {
         Context { config }
     }
+
+    /// Re-construct from context's [Config] (no other runtime state).
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
 }
 
 /// Resolution of a tap-dance key. (Index of the tap-dance definition).

@@ -111,3 +111,28 @@ fn uses_base_when_pressed_after_layer_mod_released() {
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }
+
+#[test]
+fn init_resets_active_layers() {
+    // Assemble: hold layer 1
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.hold 1, K.A],
+                    [K.TTTT, K.B],
+                ],
+            }
+        "#
+    ));
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+
+    // Act: reset, then press the letter key without re-holding the mod
+    keymap.init();
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+
+    // Assert: layer state was cleared — base key, not layer 1
+    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
+    assert_eq!(expected_report, keymap.boot_keyboard_report());
+}

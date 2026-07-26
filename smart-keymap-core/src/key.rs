@@ -258,6 +258,12 @@ pub trait Context: Clone + Copy {
 
     /// Used to update the [Context]'s state.
     fn handle_event(&mut self, event: Event<Self::Event>) -> KeyEvents<Self::Event>;
+
+    /// Restore runtime state from this context's keymap config.
+    ///
+    /// Config data (timeouts, chords, …) is preserved; ephemeral state
+    /// (active layers, sticky mods, queues, …) is cleared.
+    fn reset(&mut self);
 }
 
 /// Bool flags for each of the modifier keys (left ctrl, etc.).

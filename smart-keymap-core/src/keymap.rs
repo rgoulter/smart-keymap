@@ -282,7 +282,12 @@ impl<
     }
 
     /// Initializes or resets the keyboard to an initial state.
+    ///
+    /// Resets [key::Context] from each family's config (clearing active layers and
+    /// other runtime state while keeping that keymap's config), and clears pressed
+    /// keys, pending work, and HID report state.
     pub fn init(&mut self) {
+        self.context.reset();
         self.pressed_inputs.clear();
         self.event_scheduler.init();
         self.hid_reporter.init();

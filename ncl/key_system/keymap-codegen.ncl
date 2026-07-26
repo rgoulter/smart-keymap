@@ -449,6 +449,14 @@ if let Ok(e) = event.try_into_key_event() {
         )
         |> join,
 
+      # Reset each family context (from_config / clear runtime state).
+      context_reset_stmts =
+        (
+          ["self.keymap_context = smart_keymap::keymap::KeymapContext::new();"]
+          @ (systems |> std.array.map (fun f => "self.%{f.field}.reset();"))
+        )
+        |> join,
+
       set_keymap_context_updates =
         systems
         |> std.array.filter family_updates_keymap_context
@@ -704,6 +712,10 @@ pub mod key_system {
             let mut pke = key::KeyEvents::no_events();
 %{context_handle_event}
             pke
+        }
+
+        fn reset(&mut self) {
+%{context_reset_stmts}
         }
     }
 

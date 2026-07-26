@@ -124,6 +124,11 @@ impl Context {
         }
     }
 
+    /// Re-construct from context's [Config], clearing idle-time tracking.
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
+
     /// Updates the context with the given keymap context.
     pub fn update_keymap_context(
         &mut self,

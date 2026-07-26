@@ -338,6 +338,11 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
         }
     }
 
+    /// Re-construct from context's [Config], clearing active layers and sticky state.
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
+
     fn invalidate_sticky_timeouts(&mut self) {
         self.sticky_timeout_id = self.sticky_timeout_id.wrapping_add(1);
     }
@@ -489,6 +494,10 @@ impl<const LAYER_COUNT: usize> key::Context for Context<LAYER_COUNT> {
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         self.handle_event(event)
+    }
+
+    fn reset(&mut self) {
+        Context::reset(self);
     }
 }
 
