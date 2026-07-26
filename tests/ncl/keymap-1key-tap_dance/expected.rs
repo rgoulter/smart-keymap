@@ -16,6 +16,9 @@ pub mod init {
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 0;
 
+    /// Number of conditional layer rules for the [smart_keymap::key::layered] implementation.
+    pub const CONDITIONAL_LAYER_COUNT: usize = 0;
+
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 3;
 

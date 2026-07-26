@@ -90,6 +90,12 @@ pub mod init {
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 8;
 
+    /// Number of conditional layer rules for the [crate::key::layered] implementation.
+    ///
+    /// Generous default for the full-system / cucumber shell; per-keymap codegen
+    /// uses the exact rule count from the keymap.
+    pub const CONDITIONAL_LAYER_COUNT: usize = 4;
+
     /// The maximum number of keys in a chord.
     pub const CHORDED_MAX_CHORD_SIZE: usize = 16;
 
