@@ -13,6 +13,8 @@
 #   - `named_layer_order` Array String — optional index order for named layers
 #                         (listed used names first; rest alphabetical; default alpha)
 #   - `chords`            [{ indices, key }, …]
+#   - `conditional_layers` [{ then_layer, if_layers = [layer, …] }, …]
+#                         → config.layered.conditional_layers (if_layers as bitset)
 #   - `config`            optional per-feature config
 #   - `custom_keys`       extends token vocabulary for string layers
 #   Per-key sugar still present here:
@@ -43,7 +45,8 @@
 #   {
 #     config = author config
 #              & { automation.instructions? }
-#              & { chorded.chords = indices },
+#              & { chorded.chords = indices }
+#              & { layered.conditional_layers?  (from top-level field) },
 #     keys   = [ json key, … ],
 #   }
 #
@@ -179,6 +182,13 @@
 
   chords
     | Array Chord
+    | default
+    = [],
+
+  # Conditional layer rules: then_layer activates while all if_layers are active.
+  # Lowered into config.layered.conditional_layers (if_layers as bitset).
+  conditional_layers
+    | Array keymap_ncl.layered.ConditionalLayer
     | default
     = [],
 
@@ -562,6 +572,22 @@
       in
       let { chorded = km_config_chorded, ..km_config } = config & { chorded = {} } in
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
+      let { layered = km_config_layered, ..km_config } = km_config & { layered = {} } in
+      # Bind authored rules before building the nested `conditional_layers` field
+      # (avoids Nickel recursive field reference on the same name).
+      let authored_conditional_layers = conditional_layers in
+      let layered_config =
+        km_config_layered
+        & (
+          if std.array.length authored_conditional_layers > 0 then
+            {
+              conditional_layers =
+                keymap_ncl.layered.conditional_layers_to_json authored_conditional_layers,
+            }
+          else
+            {}
+        )
+      in
       let config_json_value =
         km_config
         & automation_config
@@ -572,6 +598,12 @@
               chords = chord_indices,
             },
         }
+        & (
+          if layered_config == {} then
+            {}
+          else
+            { layered = layered_config }
+        )
       in
       {
         config = config_json_value,
