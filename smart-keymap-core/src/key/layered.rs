@@ -7,6 +7,7 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 use crate::key::KeyboardModifiers;
+use crate::slice::Slice;
 
 /// The type used for layer index.
 pub type LayerIndex = u32;
@@ -260,9 +261,50 @@ impl<const LAYER_COUNT: usize> core::fmt::Debug for ActiveLayersDebugHelper<'_, 
     }
 }
 
-/// Configuration for layered keys / sticky layers.
+/// Conditional layer rule: activate [Self::then_layer] while every layer in
+/// [Self::if_layers] is active.
+///
+/// Layer indices are 1-based (same as [ModifierKey]). Bit `i` of
+/// [Self::if_layers] corresponds to layer `i` (same layout as [ModifierBitset]).
+#[repr(C)]
+#[derive(Debug, Deserialize, Clone, Copy, Eq, PartialEq)]
+pub struct ConditionalLayer {
+    /// Layer activated while the condition holds.
+    pub then_layer: LayerIndex,
+    /// Bitset of layers that must all be active.
+    pub if_layers: LayerBitset,
+}
+
+impl ConditionalLayer {
+    /// Constructs a rule from a then-layer and an if-layers bitset.
+    pub const fn new(then_layer: LayerIndex, if_layers: LayerBitset) -> Self {
+        Self {
+            then_layer,
+            if_layers,
+        }
+    }
+
+    /// Constructs a rule from a then-layer and if-layer indices.
+    pub const fn from_if_layers(then_layer: LayerIndex, if_layers: &[LayerIndex]) -> Self {
+        let mut bitset: LayerBitset = 0;
+        let mut i = 0;
+        while i < if_layers.len() {
+            let layer = if_layers[i] as usize;
+            if layer <= MAX_BITSET_LAYER {
+                bitset |= 1 << layer;
+            }
+            i += 1;
+        }
+        Self {
+            then_layer,
+            if_layers: bitset,
+        }
+    }
+}
+
+/// Configuration for layered keys / sticky layers / conditional layers.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub struct Config {
+pub struct Config<const CONDITIONAL_LAYER_COUNT: usize = 0> {
     /// Timeout (ms) after which an unused sticky layer deactivates.
     ///
     /// When [None], sticky layers stay active until another key is used.
@@ -272,21 +314,29 @@ pub struct Config {
     /// while sticky is active, the timeout is cancelled / ignored.
     #[serde(default)]
     pub sticky_timeout: Option<u16>,
+
+    /// Rules that activate a then-layer when all of their if-layers are active.
+    #[serde(default)]
+    pub conditional_layers: Slice<ConditionalLayer, CONDITIONAL_LAYER_COUNT>,
 }
 
-/// Default layered config (no sticky timeout).
+/// Default layered config (no sticky timeout, no conditional layers).
 pub const DEFAULT_CONFIG: Config = Config {
     sticky_timeout: None,
+    conditional_layers: Slice::from_slice(&[]),
 };
 
-impl Config {
+impl<const CONDITIONAL_LAYER_COUNT: usize> Config<CONDITIONAL_LAYER_COUNT> {
     /// Constructs a new default [Config].
     pub const fn new() -> Self {
-        DEFAULT_CONFIG
+        Self {
+            sticky_timeout: None,
+            conditional_layers: Slice::from_slice(&[]),
+        }
     }
 }
 
-impl Default for Config {
+impl<const CONDITIONAL_LAYER_COUNT: usize> Default for Config<CONDITIONAL_LAYER_COUNT> {
     fn default() -> Self {
         Self::new()
     }
@@ -294,8 +344,8 @@ impl Default for Config {
 
 /// [crate::key::Context] for [LayeredKey] that tracks active layers.
 #[derive(Clone, Copy)]
-pub struct Context<const LAYER_COUNT: usize> {
-    config: Config,
+pub struct Context<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize = 0> {
+    config: Config<CONDITIONAL_LAYER_COUNT>,
     default_layer: Option<LayerIndex>,
     active_layers: [Activity; LAYER_COUNT],
     // Keymap index which was pressed while a layer was sticky.
@@ -304,7 +354,9 @@ pub struct Context<const LAYER_COUNT: usize> {
     sticky_timeout_id: u8,
 }
 
-impl<const LAYER_COUNT: usize> Debug for Context<LAYER_COUNT> {
+impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize> Debug
+    for Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
+{
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_struct("Context")
             .field("config", &self.config)
@@ -321,14 +373,16 @@ impl<const LAYER_COUNT: usize> Debug for Context<LAYER_COUNT> {
     }
 }
 
-impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
+impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
+    Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
+{
     /// Create a new [Context].
     pub const fn new() -> Self {
-        Self::from_config(DEFAULT_CONFIG)
+        Self::from_config(Config::new())
     }
 
     /// Constructs a context from the given config.
-    pub const fn from_config(config: Config) -> Self {
+    pub const fn from_config(config: Config<CONDITIONAL_LAYER_COUNT>) -> Self {
         Context {
             config,
             default_layer: None,
@@ -351,16 +405,68 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
         self.active_layers.deactivate(layer);
         self.pressed_keymap_index = None;
         self.invalidate_sticky_timeouts();
+        self.apply_conditional_layers();
+    }
+
+    /// Bitset of currently active layers (bit `i` = layer `i`).
+    fn active_layers_bitset(&self) -> LayerBitset {
+        let max_layer = 1 + LAYER_COUNT.min(MAX_BITSET_LAYER);
+        (1..max_layer).fold(0, |bits, li| {
+            if self.active_layers[li - 1].is_active() {
+                bits | (1 << li)
+            } else {
+                bits
+            }
+        })
+    }
+
+    /// One pass over conditional rules; returns whether any then-layer changed.
+    fn apply_conditional_layers_once(&mut self) -> bool {
+        // Copy rules so we can mutate active_layers while iterating.
+        let rules = self.config.conditional_layers;
+        let active = self.active_layers_bitset();
+        rules.as_slice().iter().fold(false, |changed, rule| {
+            let should = (active & rule.if_layers) == rule.if_layers;
+            let is_active = (active & (1 << rule.then_layer)) != 0;
+            if should == is_active {
+                changed
+            } else if should {
+                self.active_layers
+                    .activate(rule.then_layer, ActivationStyle::Regular);
+                true
+            } else {
+                self.active_layers.deactivate(rule.then_layer);
+                true
+            }
+        })
+    }
+
+    /// Evaluate conditional layer rules until stable, or up to one pass per rule.
+    ///
+    /// Nested rules (a then-layer used as an if-layer of another rule) settle
+    /// without depending on rule definition order. The pass limit bounds the
+    /// work for a pure dependency chain and prevents non-termination if rules
+    /// disagree about the same then-layer.
+    fn apply_conditional_layers(&mut self) {
+        for _ in 0..CONDITIONAL_LAYER_COUNT {
+            if !self.apply_conditional_layers_once() {
+                break;
+            }
+        }
     }
 }
 
-impl<const LAYER_COUNT: usize> Default for Context<LAYER_COUNT> {
+impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize> Default
+    for Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
+{
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
+impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
+    Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
+{
     /// Get the active layers.
     pub fn layer_state(&self) -> &[Activity; LAYER_COUNT] {
         &self.active_layers
@@ -382,11 +488,13 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 self.active_layers.activate(layer, ActivationStyle::Regular);
                 // Sticky cancelled / converted to hold — drop any sticky timeout.
                 self.invalidate_sticky_timeouts();
+                self.apply_conditional_layers();
                 key::KeyEvents::no_events()
             }
             LayerEvent::Deactivated(layer) => {
                 self.active_layers.deactivate(layer);
                 self.invalidate_sticky_timeouts();
+                self.apply_conditional_layers();
                 key::KeyEvents::no_events()
             }
             LayerEvent::StickyActivated(layer) => {
@@ -394,6 +502,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 self.pressed_keymap_index = None;
                 // Previous sticky wait is superseded while this sticky key is held.
                 self.invalidate_sticky_timeouts();
+                self.apply_conditional_layers();
                 key::KeyEvents::no_events()
             }
             LayerEvent::StickyReleased => {
@@ -418,6 +527,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
             LayerEvent::StickyTimeout(timeout_id) => {
                 if timeout_id == self.sticky_timeout_id && self.pressed_keymap_index.is_none() {
                     if let Some(layer) = self.sticky_layer() {
+                        // deactivate_sticky_layer applies conditionals.
                         self.deactivate_sticky_layer(layer);
                     }
                 }
@@ -429,6 +539,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                 } else {
                     self.active_layers.activate(layer, ActivationStyle::Regular);
                 }
+                self.apply_conditional_layers();
                 key::KeyEvents::no_events()
             }
             LayerEvent::Set(ModifierBitset { layers, mask }) => {
@@ -445,6 +556,7 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
                         }
                     }
                 }
+                self.apply_conditional_layers();
                 key::KeyEvents::no_events()
             }
             LayerEvent::SetDefault(0) => {
@@ -489,7 +601,9 @@ impl<const LAYER_COUNT: usize> Context<LAYER_COUNT> {
     }
 }
 
-impl<const LAYER_COUNT: usize> key::Context for Context<LAYER_COUNT> {
+impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize> key::Context
+    for Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
+{
     type Event = LayerEvent;
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
@@ -612,7 +726,10 @@ impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_
 
 impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
     /// Presses the key, using the highest active key, if any.
-    fn new_pressed_key(&self, context: &Context<LAYER_COUNT>) -> key::NewPressedKey<R> {
+    fn new_pressed_key<const CONDITIONAL_LAYER_COUNT: usize>(
+        &self,
+        context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
+    ) -> key::NewPressedKey<R> {
         let (_layer, passthrough_ref) = self
             .layered
             .highest_active_key(context.layer_state(), context.default_layer)
@@ -743,12 +860,17 @@ impl ModifierKeyState {
 }
 
 /// The [key::System] implementation for layer system keys.
+///
+/// `CONDITIONAL_LAYER_COUNT` is carried so the system's context
+/// matches the layered [Config] / [Context] used by the keymap
+/// (rules live on context, not system).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<
     R: Copy + Debug + PartialEq,
     ModifierKeys: Index<usize, Output = ModifierKey>,
     LayeredKeys: Index<usize, Output = LayeredKey<R, LAYER_COUNT>>,
     const LAYER_COUNT: usize,
+    const CONDITIONAL_LAYER_COUNT: usize = 0,
 > {
     modifier_keys: ModifierKeys,
     layered_keys: LayeredKeys,
@@ -759,7 +881,8 @@ impl<
         ModifierKeys: Index<usize, Output = ModifierKey>,
         LayeredKeys: Index<usize, Output = LayeredKey<R, LAYER_COUNT>>,
         const LAYER_COUNT: usize,
-    > System<R, ModifierKeys, LayeredKeys, LAYER_COUNT>
+        const CONDITIONAL_LAYER_COUNT: usize,
+    > System<R, ModifierKeys, LayeredKeys, LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
 {
     /// Constructs a new [System] with the given key data.
     pub const fn new(modifier_keys: ModifierKeys, layered_keys: LayeredKeys) -> Self {
@@ -775,10 +898,12 @@ impl<
         ModifierKeys: Debug + Index<usize, Output = ModifierKey>,
         LayeredKeys: Debug + Index<usize, Output = LayeredKey<R, LAYER_COUNT>>,
         const LAYER_COUNT: usize,
-    > key::System<R> for System<R, ModifierKeys, LayeredKeys, LAYER_COUNT>
+        const CONDITIONAL_LAYER_COUNT: usize,
+    > key::System<R>
+    for System<R, ModifierKeys, LayeredKeys, LAYER_COUNT, CONDITIONAL_LAYER_COUNT>
 {
     type Ref = Ref;
-    type Context = Context<LAYER_COUNT>;
+    type Context = Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>;
     type Event = LayerEvent;
     type PendingKeyState = PendingKeyState;
     type KeyState = ModifierKeyState;
@@ -992,6 +1117,116 @@ mod tests {
             ],
             actual_active_layers
         );
+    }
+
+    /// Classic tri-layer: layer 3 active iff layers 1 and 2 are both active.
+    fn tri_layer_context() -> super::Context<LAYER_COUNT, 1> {
+        super::Context::from_config(Config {
+            sticky_timeout: None,
+            conditional_layers: Slice::from_slice(&[ConditionalLayer::from_if_layers(3, &[1, 2])]),
+        })
+    }
+
+    #[test]
+    fn test_conditional_layer_partial_if_layers_does_not_activate_then() {
+        // Assemble
+        let mut context = tri_layer_context();
+
+        // Act
+        context.handle_layer_event(LayerEvent::Activated(1));
+
+        // Assert
+        assert_eq!(Activity::Inactive, context.active_layers[2]);
+    }
+
+    #[test]
+    fn test_conditional_layer_activates_when_all_if_layers_active() {
+        // Assemble
+        let mut context = tri_layer_context();
+        context.handle_layer_event(LayerEvent::Activated(1));
+
+        // Act
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        // Assert
+        assert_eq!(
+            Activity::Active(ActivationStyle::Regular),
+            context.active_layers[2]
+        );
+    }
+
+    #[test]
+    fn test_conditional_layer_deactivates_when_if_layer_releases() {
+        // Assemble
+        let mut context = tri_layer_context();
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        // Act
+        context.handle_layer_event(LayerEvent::Deactivated(1));
+
+        // Assert
+        assert_eq!(Activity::Inactive, context.active_layers[2]);
+    }
+
+    #[test]
+    fn test_conditional_layer_nested_fixed_point() {
+        // Assemble: C ← A ∧ B; E ← C ∧ D  (layers 1,2 → 3; 3,4 → 5)
+        let mut context = super::Context::<LAYER_COUNT, 2>::from_config(Config {
+            sticky_timeout: None,
+            conditional_layers: Slice::from_slice(&[
+                ConditionalLayer::from_if_layers(3, &[1, 2]),
+                ConditionalLayer::from_if_layers(5, &[3, 4]),
+            ]),
+        });
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        // Act: activate D; fixed-point should turn on C (already) and E
+        context.handle_layer_event(LayerEvent::Activated(4));
+
+        // Assert
+        assert_eq!(
+            [
+                Activity::Active(ActivationStyle::Regular), // 3
+                Activity::Active(ActivationStyle::Regular), // 4
+                Activity::Active(ActivationStyle::Regular), // 5
+            ],
+            context.active_layers[2..5]
+        );
+    }
+
+    #[test]
+    fn test_conditional_layer_sticky_if_layer_counts_as_active() {
+        // Assemble
+        let mut context = tri_layer_context();
+        context.handle_layer_event(LayerEvent::StickyActivated(1));
+
+        // Act
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        // Assert
+        assert_eq!(
+            Activity::Active(ActivationStyle::Regular),
+            context.active_layers[2]
+        );
+    }
+
+    #[test]
+    fn test_conditional_layer_set_active_layers_reevaluates() {
+        // Assemble
+        let mut context = tri_layer_context();
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        // Act: clear layer 1 via Set (mask only layer 1)
+        context.handle_layer_event(LayerEvent::Set(ModifierBitset {
+            layers: 0,
+            mask: 1 << 1,
+        }));
+
+        // Assert
+        assert_eq!(Activity::Inactive, context.active_layers[2]);
     }
 
     #[test]
