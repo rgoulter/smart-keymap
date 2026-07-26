@@ -16,6 +16,9 @@ pub mod init {
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 9;
 
+    /// Number of conditional layer rules for the [smart_keymap::key::layered] implementation.
+    pub const CONDITIONAL_LAYER_COUNT: usize = 0;
+
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 2;
 
@@ -68,7 +71,7 @@ pub mod init {
                 { super::CHORDED_MAX_CHORD_SIZE },
             >,
             /// Config for [smart_keymap::key::layered].
-            pub layered: smart_keymap::key::layered::Config,
+            pub layered: smart_keymap::key::layered::Config<{ super::CONDITIONAL_LAYER_COUNT }>,
             /// Config for [smart_keymap::key::sticky].
             pub sticky: smart_keymap::key::sticky::Config,
             /// Config for [smart_keymap::key::tap_dance].
@@ -106,7 +109,10 @@ pub mod init {
             >,
             consumer: smart_keymap::key::consumer::Context,
             keyboard: smart_keymap::key::keyboard::Context,
-            layered: smart_keymap::key::layered::Context<{ super::LAYERED_LAYER_COUNT }>,
+            layered: smart_keymap::key::layered::Context<
+                { super::LAYERED_LAYER_COUNT },
+                { super::CONDITIONAL_LAYER_COUNT },
+            >,
             mouse: smart_keymap::key::mouse::Context,
             sticky: smart_keymap::key::sticky::Context,
             tap_dance: smart_keymap::key::tap_dance::Context,
@@ -585,6 +591,7 @@ pub mod init {
                 [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
                     super::LAYERED],
                 { super::LAYERED_LAYER_COUNT },
+                { super::CONDITIONAL_LAYER_COUNT },
             >,
             mouse: smart_keymap::key::mouse::System<Ref>,
             sticky: smart_keymap::key::sticky::System<
@@ -641,6 +648,7 @@ pub mod init {
                     [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
                         super::LAYERED],
                     { super::LAYERED_LAYER_COUNT },
+                    { super::CONDITIONAL_LAYER_COUNT },
                 >,
                 sticky: smart_keymap::key::sticky::System<
                     Ref,

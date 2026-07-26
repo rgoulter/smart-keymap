@@ -340,19 +340,43 @@
       },
 
       config = {
+        # Intermediate JSON / keymap.json shape (bitset form for if_layers).
+        ConditionalLayerJson = {
+          then_layer | Number,
+          if_layers | Number,
+        },
+
         Json = {
           sticky_timeout | optional | Number,
+          conditional_layers | optional | Array ConditionalLayerJson,
         },
 
         expr =
           if std.record.has_field "layered" json_keymap.config then
             let c = json_keymap.config.layered in
-            if std.record.has_field "sticky_timeout" c then
-              {
-                sticky_timeout = "Some(%{std.to_string c.sticky_timeout})",
-              }
-            else
-              {}
+            (
+              if std.record.has_field "sticky_timeout" c then
+                {
+                  sticky_timeout = "Some(%{std.to_string c.sticky_timeout})",
+                }
+              else
+                {}
+            )
+            & (
+              if std.record.has_field "conditional_layers" c then
+                let rules_fragment =
+                  c.conditional_layers
+                  |> std.array.map (fun { then_layer, if_layers } =>
+                    "%{module}::ConditionalLayer::new(%{std.to_string then_layer}, %{std.to_string if_layers})"
+                  )
+                  |> std.string.join ", "
+                in
+                {
+                  conditional_layers = "smart_keymap::slice::Slice::from_slice(&[%{rules_fragment}])",
+                }
+              else
+                {}
+            )
           else
             {},
 

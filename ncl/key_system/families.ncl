@@ -349,7 +349,9 @@
           module = "smart_keymap::key::layered",
           config =
             'Config {
-              ty = "%{module}::Config",
+              ty = m%"%{module}::Config<
+            { super::CONDITIONAL_LAYER_COUNT }
+          >"%,
               rust_expr = smart_keymap.layered.config.rust_expr,
             },
           state_update = 'StateUpdate,
@@ -374,45 +376,62 @@
               %{module}::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
               super::LAYERED
             ],
-            { super::LAYERED_LAYER_COUNT }
+            { super::LAYERED_LAYER_COUNT },
+            { super::CONDITIONAL_LAYER_COUNT }
           >"%,
               ty.vec = m%"%{module}::System<
             Ref,
             Vec<%{module}::ModifierKey>,
             Vec<%{module}::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>>,
-            { super::LAYERED_LAYER_COUNT }
+            { super::LAYERED_LAYER_COUNT },
+            { super::CONDITIONAL_LAYER_COUNT }
           >"%,
             },
           context = {
-            ty = "%{module}::Context<{ super::LAYERED_LAYER_COUNT }>",
+            ty = m%"%{module}::Context<
+            { super::LAYERED_LAYER_COUNT },
+            { super::CONDITIONAL_LAYER_COUNT }
+          >"%,
             expr = "%{module}::Context::from_config(config.layered)",
           },
           event_ty = "%{module}::LayerEvent",
-          init_params = [
-            {
-              const_name = "LAYERED_LAYER_COUNT",
-              doc = "Number of layers supported by the [smart_keymap::key::layered] implementation.",
-              value = fun { key_codegen_values, smart_key, .. } =>
-                # Longest layered array across every key tree (not only the first layered key).
-                key_codegen_values
-                |> std.array.fold_left
-                  (fun acc cv =>
-                    smart_key.traverse
-                      (fun acc cv =>
+          init_params =
+            let conditional_layers_from = fun { json_keymap, .. } =>
+              (
+                (json_keymap.config & { layered | default = {} }).layered
+                & { conditional_layers | default = [] }
+              ).conditional_layers
+            in
+            [
+              {
+                const_name = "LAYERED_LAYER_COUNT",
+                doc = "Number of layers supported by the [smart_keymap::key::layered] implementation.",
+                value = fun { key_codegen_values, smart_key, .. } =>
+                  # Longest layered array across every key tree (not only the first layered key).
+                  key_codegen_values
+                  |> std.array.fold_left
+                    (fun acc cv =>
+                      smart_key.traverse
+                        (fun acc cv =>
+                          cv
+                          |> match {
+                            { nested = { layered, .. }, .. } =>
+                              let len = std.array.length layered in
+                              if len > acc then len else acc,
+                            _ => acc,
+                          }
+                        )
+                        acc
                         cv
-                        |> match {
-                          { nested = { layered, .. }, .. } =>
-                            let len = std.array.length layered in
-                            if len > acc then len else acc,
-                          _ => acc,
-                        }
-                      )
-                      acc
-                      cv
-                  )
-                  0,
-            },
-          ],
+                    )
+                    0,
+              },
+              {
+                const_name = "CONDITIONAL_LAYER_COUNT",
+                doc = "Number of conditional layer rules for the [smart_keymap::key::layered] implementation.",
+                value = fun ctx => conditional_layers_from ctx |> std.array.length,
+              },
+            ],
         },
         mouse = {
           module = "smart_keymap::key::mouse",

@@ -16,6 +16,9 @@ pub mod init {
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 1;
 
+    /// Number of conditional layer rules for the [smart_keymap::key::layered] implementation.
+    pub const CONDITIONAL_LAYER_COUNT: usize = 0;
+
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 0;
 
@@ -55,7 +58,7 @@ pub mod init {
                 { super::CHORDED_MAX_CHORD_SIZE },
             >,
             /// Config for [smart_keymap::key::layered].
-            pub layered: smart_keymap::key::layered::Config,
+            pub layered: smart_keymap::key::layered::Config<{ super::CONDITIONAL_LAYER_COUNT }>,
             /// Config for [smart_keymap::key::tap_hold].
             pub tap_hold: smart_keymap::key::tap_hold::Config,
         }
@@ -85,7 +88,10 @@ pub mod init {
                 CHORDED_MAX_PRESSED_INDICES,
             >,
             keyboard: smart_keymap::key::keyboard::Context,
-            layered: smart_keymap::key::layered::Context<{ super::LAYERED_LAYER_COUNT }>,
+            layered: smart_keymap::key::layered::Context<
+                { super::LAYERED_LAYER_COUNT },
+                { super::CONDITIONAL_LAYER_COUNT },
+            >,
             tap_hold: smart_keymap::key::tap_hold::Context,
         }
 
@@ -376,6 +382,7 @@ pub mod init {
                 [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
                     super::LAYERED],
                 { super::LAYERED_LAYER_COUNT },
+                { super::CONDITIONAL_LAYER_COUNT },
             >,
             tap_hold: smart_keymap::key::tap_hold::System<
                 Ref,
@@ -417,6 +424,7 @@ pub mod init {
                     [smart_keymap::key::layered::LayeredKey<Ref, { super::LAYERED_LAYER_COUNT }>;
                         super::LAYERED],
                     { super::LAYERED_LAYER_COUNT },
+                    { super::CONDITIONAL_LAYER_COUNT },
                 >,
                 tap_hold: smart_keymap::key::tap_hold::System<
                     Ref,
