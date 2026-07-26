@@ -24,6 +24,7 @@ use smart_keymap_full_system_std::init::CHORDED_MAX_CHORDS;
 use smart_keymap_full_system_std::init::CHORDED_MAX_CHORD_SIZE;
 use smart_keymap_full_system_std::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE;
 use smart_keymap_full_system_std::init::LAYERED_LAYER_COUNT;
+use smart_keymap_full_system_std::init::SEQUENCE_MAX_OVERLAPPING;
 use smart_keymap_full_system_std::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
 /// Workspace root (parent of the `smart-keymap-full-system-std` package).
@@ -156,6 +157,10 @@ struct KeyVecs {
     #[serde(default)]
     layer_modifiers: Vec<key::layered::ModifierKey>,
     #[serde(default)]
+    sequence: Vec<key::sequence::Key<Ref, SEQUENCE_MAX_OVERLAPPING>>,
+    #[serde(default)]
+    sequence_auxiliary: Vec<key::sequence::AuxiliaryKey<Ref>>,
+    #[serde(default)]
     sticky: Vec<key::sticky::Key>,
     #[serde(default)]
     tap_dance: Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEFS>>,
@@ -178,6 +183,7 @@ fn system_from_key_data(keys: KeyVecs) -> System {
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
         smart_keymap::key::keyboard::System::new(keys.keyboard),
         smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
+        smart_keymap::key::sequence::System::new(keys.sequence, keys.sequence_auxiliary),
         smart_keymap::key::sticky::System::new(keys.sticky),
         smart_keymap::key::tap_dance::System::new(keys.tap_dance),
         smart_keymap::key::tap_hold::System::new(keys.tap_hold),
