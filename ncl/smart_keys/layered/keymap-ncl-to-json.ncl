@@ -50,6 +50,16 @@
         expected = 'Error { message = "layer indices must be unique" },
       },
 
+      check_conditional_layers_to_json = {
+        actual =
+          keymap_ncl.layered.conditional_layers_to_json [
+            { then_layer = 3, if_layers = [1, 2] },
+          ],
+        expected = [
+          { then_layer = 3, if_layers = 6 },
+        ],
+      },
+
       # Authoring form: named-layer strings in layer_mod (resolved at km→json).
       check_named_layer_mod_strings = {
         actual =
@@ -276,9 +286,31 @@
   keymap_ncl.layered
     | doc "for key::layered::LayeredKey."
     = {
+      # Intermediate / config JSON: if_layers is a bitset (bit i = layer i).
       Config = {
         sticky_timeout | optional | Number,
+        conditional_layers
+          | optional
+          | Array {
+            then_layer | Number,
+            if_layers | Number,
+          },
       },
+
+      # Keymap.ncl authoring: if_layers as 1-based layer index list.
+      ConditionalLayer = {
+        then_layer | Number,
+        if_layers | Array Number,
+      },
+
+      conditional_layers_to_json = fun rules =>
+        rules
+        |> std.array.map (fun { then_layer, if_layers = if_layer_indices } =>
+          {
+            include then_layer,
+            if_layers = layer_indices_to_bitset if_layer_indices,
+          }
+        ),
 
       Key = std.contract.from_validator key_validator,
 
