@@ -19,6 +19,7 @@ std.array.fold_left
     key_extensions.mouse,
     key_extensions.mouse_aliases,
     key_extensions.literals,
+    key_extensions.sequence,
     key_extensions.sticky,
     key_extensions.tap_hold,
   ]

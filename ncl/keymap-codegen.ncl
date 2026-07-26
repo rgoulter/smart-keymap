@@ -8,6 +8,7 @@
 & (import "smart_keys/keyboard/keymap-codegen.ncl")
 & (import "smart_keys/layered/keymap-codegen.ncl")
 & (import "smart_keys/mouse/keymap-codegen.ncl")
+& (import "smart_keys/sequence/keymap-codegen.ncl")
 & (import "smart_keys/sticky/keymap-codegen.ncl")
 & (import "smart_keys/tap_dance/keymap-codegen.ncl")
 & (import "smart_keys/tap_hold/keymap-codegen.ncl")
@@ -224,6 +225,9 @@
       smart_keymap.mouse.key,
       smart_keymap.layered.layered_key,
       smart_keymap.layered.modifier_key,
+      smart_keymap.sequence.key,
+      smart_keymap.sequence.auxiliary_key,
+      smart_keymap.sequence.start_key,
       smart_keymap.sticky.key,
       smart_keymap.tap_dance.key,
       smart_keymap.tap_hold.key,

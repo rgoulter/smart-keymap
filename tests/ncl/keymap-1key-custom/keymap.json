@@ -2,6 +2,9 @@
   "config": {
     "chorded": {
       "chords": []
+    },
+    "sequence": {
+      "sequences": []
     }
   },
   "keys": [

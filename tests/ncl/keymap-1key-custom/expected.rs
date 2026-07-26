@@ -19,6 +19,15 @@ pub mod init {
     /// Number of conditional layer rules for the [smart_keymap::key::layered] implementation.
     pub const CONDITIONAL_LAYER_COUNT: usize = 0;
 
+    /// The maximum number of steps in a sequence.
+    pub const SEQUENCE_MAX_SEQUENCE_LEN: usize = 0;
+
+    /// The maximum number of sequences.
+    pub const SEQUENCE_MAX_SEQUENCES: usize = 0;
+
+    /// The maximum number of sequences sharing a primary key.
+    pub const SEQUENCE_MAX_OVERLAPPING: usize = 0;
+
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 0;
 
