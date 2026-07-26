@@ -1,5 +1,5 @@
 CEEDLING = ceedling
-CEEDLING_KEYMAP_SUITES = consumer callback keyboard layered mouse sticky tap_hold remap_named_layers
+CEEDLING_KEYMAP_SUITES = consumer callback keyboard layered conditional_layers mouse sticky tap_hold remap_named_layers
 CEEDLING_CARGO_TARGET = tests/ceedling/cargo-target
 
 # Rebuild copied libs when smart_keymap crate inputs change (not only keymap.ncl).
@@ -75,6 +75,7 @@ test-ceedling: $(CEEDLING_FIXTURES)
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/consumer.yml test:path[consumer]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/keyboard.yml test:path[keyboard]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/layered.yml test:path[layered]
+	cd tests/ceedling && $(CEEDLING) --mixin=mixins/conditional_layers.yml test:path[conditional_layers]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/mouse.yml test:path[mouse]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/sticky.yml test:path[sticky]
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/tap_hold.yml test:path[tap_hold]
