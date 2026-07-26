@@ -24,6 +24,8 @@ pub mod keyboard;
 pub mod layered;
 /// Mouse keys.
 pub mod mouse;
+/// Sequence keys (QMK leader-style ordered sequences).
+pub mod sequence;
 /// Sticky Modifier keys.
 pub mod sticky;
 /// Tap-Dance keys.
