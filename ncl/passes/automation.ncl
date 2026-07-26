@@ -1,9 +1,9 @@
 # Pass: fold automation instruction lists into a flat table + per-key refs
 #
-# Inputs (from driver merge): chorded_keys, keymap_ncl
+# Inputs (from driver merge): sequenced_keys, keymap_ncl
 # Outputs: automation_transform { automation_instructions, keys }
 {
-  chorded_keys,
+  sequenced_keys,
   keymap_ncl,
 
   # One slot in `automation_transform.keys` after the instruction fold.
@@ -30,9 +30,9 @@
 
   automation_transform
     | AutomationTransform
-    | doc "Fold chorded keys: flat `{ automation_instructions, keys }` — config instruction list plus post-transform key slots."
+    | doc "Fold sequenced keys: flat `{ automation_instructions, keys }` — config instruction list plus post-transform key slots."
     =
-      chorded_keys
+      sequenced_keys
       |> std.array.fold_left
         (fun { automation_instructions = prior_instructions, keys = prior_keys } k =>
           let { acc, k } =

@@ -7,6 +7,7 @@
 & (import "smart_keys/keyboard/key-extensions.ncl")
 & (import "smart_keys/layered/key-extensions.ncl")
 & (import "smart_keys/mouse/key-extensions.ncl")
+& (import "smart_keys/sequence/key-extensions.ncl")
 & (import "smart_keys/sticky/key-extensions.ncl")
 & (import "smart_keys/tap_hold/key-extensions.ncl")
 & {

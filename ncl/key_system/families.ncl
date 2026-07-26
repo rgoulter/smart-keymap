@@ -460,6 +460,98 @@
             expr = "%{module}::Context",
           },
         },
+        sequence = {
+          module = "smart_keymap::key::sequence",
+          config =
+            'Config {
+              ty = m%"%{module}::Config<
+            { super::SEQUENCE_MAX_SEQUENCES },
+            { super::SEQUENCE_MAX_SEQUENCE_LEN }
+          >"%,
+              rust_expr = smart_keymap.sequence.config.rust_expr,
+            },
+          # Buffer / mode live on Context; no per-key pending session.
+          context_events = 'ContextEvents,
+          keymap_context = 'UpdatesKeymapContext,
+          system =
+            'SystemWithData {
+              data_lengths = [
+                { const_name = "SEQUENCE", data_field = "sequence" },
+                { const_name = "SEQUENCE_AUXILIARY", data_field = "sequence_auxiliary" },
+              ],
+              rust_expr = smart_keymap.sequence.system.rust_expr,
+              ty.array = m%"%{module}::System<
+            Ref,
+            [
+              %{module}::Key<
+                Ref,
+                { super::SEQUENCE_MAX_OVERLAPPING }
+              >;
+              super::SEQUENCE
+            ],
+            [
+              %{module}::AuxiliaryKey<Ref>;
+              super::SEQUENCE_AUXILIARY
+            ],
+            { super::SEQUENCE_MAX_SEQUENCES },
+            { super::SEQUENCE_MAX_SEQUENCE_LEN },
+            { super::SEQUENCE_MAX_OVERLAPPING }
+          >"%,
+              ty.vec = m%"%{module}::System<
+            Ref,
+            Vec<
+              %{module}::Key<
+                Ref,
+                { super::SEQUENCE_MAX_OVERLAPPING }
+              >
+            >,
+            Vec<%{module}::AuxiliaryKey<Ref>>,
+            { super::SEQUENCE_MAX_SEQUENCES },
+            { super::SEQUENCE_MAX_SEQUENCE_LEN },
+            { super::SEQUENCE_MAX_OVERLAPPING }
+          >"%,
+            },
+          context = {
+            ty = m%"%{module}::Context<
+            { super::SEQUENCE_MAX_SEQUENCES },
+            { super::SEQUENCE_MAX_SEQUENCE_LEN }
+          >"%,
+            expr = "%{module}::Context::from_config(config.sequence)",
+          },
+          init_params =
+            let sequences_from = fun { json_keymap, .. } =>
+              ((json_keymap.config & { sequence | default = {} }).sequence & { sequences | default = [] }).sequences
+            in
+            [
+              {
+                const_name = "SEQUENCE_MAX_SEQUENCE_LEN",
+                doc = "The maximum number of steps in a sequence.",
+                value = fun ctx =>
+                  sequences_from ctx
+                  |> std.array.map std.array.length
+                  |> std.array.fold_left std.number.max 0,
+              },
+              {
+                const_name = "SEQUENCE_MAX_SEQUENCES",
+                doc = "The maximum number of sequences.",
+                value = fun ctx => sequences_from ctx |> std.array.length,
+              },
+              {
+                const_name = "SEQUENCE_MAX_OVERLAPPING",
+                doc = "The maximum number of sequences sharing a primary key.",
+                value = fun ctx =>
+                  sequences_from ctx
+                  |> std.array.map (fun [i, ..] => std.to_string i)
+                  |> std.array.fold_left
+                    (fun r i =>
+                      std.record.update i (1 + (std.record.get_or i 0 r)) r
+                    )
+                    {}
+                  |> std.record.values
+                  |> std.array.fold_left std.number.max 0,
+              },
+            ],
+        },
         sticky = {
           module = "smart_keymap::key::sticky",
           config =

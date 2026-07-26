@@ -13,6 +13,7 @@
 #   - `named_layer_order` Array String — optional index order for named layers
 #                         (listed used names first; rest alphabetical; default alpha)
 #   - `chords`            [{ indices, key }, …]
+#   - `sequences`         [{ indices, key }, …]  (ordered leader-style sequences)
 #   - `conditional_layers` [{ then_layer, if_layers = [layer, …] }, …]
 #                         → config.layered.conditional_layers (if_layers as bitset)
 #   - `config`            optional per-feature config
@@ -29,6 +30,7 @@
 #                           KM `named_layers` rows zipped into per-key `named_layers`
 #                           (per-key `named_layers` still allowed; per-key wins on conflict)
 #   - `chorded_keys`       global `chords` attached           (passes/attach-chords.ncl)
+#   - `sequenced_keys`     global `sequences` attached        (passes/attach-sequences.ncl)
 #   - `automation_transform`                                  (passes/automation.ncl)
 #       { automation_instructions, keys }
 #       macros flattened: keys hold { start, length } refs into the instruction list
@@ -46,6 +48,7 @@
 #     config = author config
 #              & { automation.instructions? }
 #              & { chorded.chords = indices }
+#              & { sequence.sequences = indices }
 #              & { layered.conditional_layers?  (from top-level field) },
 #     keys   = [ json key, … ],
 #   }
@@ -69,11 +72,13 @@
 & (import "smart_keys/keyboard/keymap-ncl-to-json.ncl")
 & (import "smart_keys/layered/keymap-ncl-to-json.ncl")
 & (import "smart_keys/mouse/keymap-ncl-to-json.ncl")
+& (import "smart_keys/sequence/keymap-ncl-to-json.ncl")
 & (import "smart_keys/sticky/keymap-ncl-to-json.ncl")
 & (import "smart_keys/tap_dance/keymap-ncl-to-json.ncl")
 & (import "smart_keys/tap_hold/keymap-ncl-to-json.ncl")
 & (import "passes/fold-layers.ncl")
 & (import "passes/attach-chords.ncl")
+& (import "passes/attach-sequences.ncl")
 & (import "passes/automation.ncl")
 & (import "passes/named-layers.ncl")
 & {
@@ -82,16 +87,20 @@
   # Free fields filled by pass modules (ncl/passes/*); needed so the
   # driver record can refer to them (Nickel free ids don't cross `&`).
   automation_transform,
+  sequenced_keys,
   prepare_keys_named_layers,
   max_layered_length_accum,
   pad_key_layered_arrays,
 
   Chord = { indices | Array Number, key | KeymapKey },
 
+  Sequence = { indices | Array Number, key | KeymapKey },
+
   Config = {
     automation | optional | keymap_ncl.automation.Config,
     chorded | optional | keymap_ncl.chorded.Config,
     layered | optional | keymap_ncl.layered.Config,
+    sequence | optional | keymap_ncl.sequence.Config,
     sticky | optional | keymap_ncl.sticky.Config,
     tap_dance | optional | keymap_ncl.tap_dance.Config,
     tap_hold | optional | keymap_ncl.tap_hold.Config,
@@ -186,6 +195,11 @@
     | default
     = [],
 
+  sequences
+    | Array Sequence
+    | default
+    = [],
+
   # Conditional layer rules: then_layer activates while all if_layers are active.
   # Lowered into config.layered.conditional_layers (if_layers as bitset).
   conditional_layers
@@ -275,6 +289,9 @@
     key_modules = [
       keymap_ncl.chorded,
       keymap_ncl.chorded_aux,
+      keymap_ncl.sequence,
+      keymap_ncl.sequence_aux,
+      keymap_ncl.sequence_start,
       keymap_ncl.automation,
       keymap_ncl.callback,
       keymap_ncl.caps_word,
@@ -574,6 +591,8 @@
       in
       let { chorded = km_config_chorded, ..km_config } = config & { chorded = {} } in
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
+      let { sequence = km_config_sequence, ..km_config } = km_config & { sequence = {} } in
+      let sequence_indices = sequences |> std.array.map (fun { key, indices, .. } => indices) in
       let { layered = km_config_layered, ..km_config } = km_config & { layered = {} } in
       # Bind authored rules before building the nested `conditional_layers` field
       # (avoids Nickel recursive field reference on the same name).
@@ -598,6 +617,13 @@
             km_config_chorded
             & {
               chords = chord_indices,
+            },
+        }
+        & {
+          sequence =
+            km_config_sequence
+            & {
+              sequences = sequence_indices,
             },
         }
         & (
