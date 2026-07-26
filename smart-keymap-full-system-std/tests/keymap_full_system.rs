@@ -38,6 +38,7 @@ fn tap_hold_interrupt_keymap(
                 modifiers: smart_keymap::key::KeyboardModifiers::new(),
             }]),
             smart_keymap::key::layered::System::new(Vec::new(), Vec::new()),
+            smart_keymap::key::sequence::System::new(Vec::new(), Vec::new()),
             smart_keymap::key::sticky::System::new(Vec::new()),
             smart_keymap::key::tap_dance::System::new(Vec::new()),
             smart_keymap::key::tap_hold::System::new(vec![smart_keymap::key::tap_hold::Key {
@@ -69,6 +70,7 @@ macro_rules! simple_keyboard_keymap {
                 smart_keymap::key::chorded::System::new(Vec::new(), Vec::new()),
                 smart_keymap::key::keyboard::System::new(Vec::new()),
                 smart_keymap::key::layered::System::new(Vec::new(), Vec::new()),
+                smart_keymap::key::sequence::System::new(Vec::new(), Vec::new()),
                 smart_keymap::key::sticky::System::new(Vec::new()),
                 smart_keymap::key::tap_dance::System::new(Vec::new()),
                 smart_keymap::key::tap_hold::System::new(Vec::new()),
@@ -579,6 +581,7 @@ fn test_keymap_many_input_events_without_tick_or_report() {
                 smart_keymap::key::chorded::System::new(Vec::new(), Vec::new()),
                 smart_keymap::key::keyboard::System::new(Vec::new()),
                 smart_keymap::key::layered::System::new(Vec::new(), Vec::new()),
+                smart_keymap::key::sequence::System::new(Vec::new(), Vec::new()),
                 smart_keymap::key::sticky::System::new(Vec::new()),
                 smart_keymap::key::tap_dance::System::new(Vec::new()),
                 smart_keymap::key::tap_hold::System::new(Vec::new()),

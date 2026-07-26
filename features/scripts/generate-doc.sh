@@ -51,6 +51,7 @@ keymap_ncl_features=(
     "layer_string"
     "layers"
     "named_layers"
+    "sequences"
 )
 
 KEY_FIELDS_MD="${NCL_DIR}/key-docs.md"
