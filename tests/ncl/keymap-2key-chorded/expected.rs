@@ -106,6 +106,12 @@ pub mod init {
                 }
                 pke
             }
+
+            fn reset(&mut self) {
+                self.keymap_context = smart_keymap::keymap::KeymapContext::new();
+                self.chorded.reset();
+                self.keyboard.reset();
+            }
         }
 
         impl keymap::SetKeymapContext for Context {

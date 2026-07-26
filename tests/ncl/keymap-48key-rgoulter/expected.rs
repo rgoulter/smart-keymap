@@ -158,6 +158,19 @@ pub mod init {
                 }
                 pke
             }
+
+            fn reset(&mut self) {
+                self.keymap_context = smart_keymap::keymap::KeymapContext::new();
+                self.callback.reset();
+                self.chorded.reset();
+                self.consumer.reset();
+                self.keyboard.reset();
+                self.layered.reset();
+                self.mouse.reset();
+                self.sticky.reset();
+                self.tap_dance.reset();
+                self.tap_hold.reset();
+            }
         }
 
         impl keymap::SetKeymapContext for Context {

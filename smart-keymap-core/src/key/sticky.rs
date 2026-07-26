@@ -141,6 +141,11 @@ impl Context {
         }
     }
 
+    /// Re-construct from context's [Config], clearing active sticky modifiers.
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
+
     /// Updates the context with the given event.
     fn handle_event(&mut self, event: key::Event<Event>) -> key::KeyEvents<Event> {
         // Cases:
@@ -284,6 +289,10 @@ impl key::Context for Context {
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         self.handle_event(event)
+    }
+
+    fn reset(&mut self) {
+        Context::reset(self);
     }
 }
 

@@ -164,6 +164,11 @@ pub mod init {
             ) -> key::KeyEvents<Self::Event> {
                 key::KeyEvents::no_events()
             }
+
+            fn reset(&mut self) {
+                self.keymap_context = smart_keymap::keymap::KeymapContext::new();
+                self.keyboard.reset();
+            }
         }
 
         impl keymap::SetKeymapContext for Context {

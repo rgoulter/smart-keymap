@@ -15,6 +15,11 @@ pub enum Ref {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Context;
 
+impl Context {
+    /// No runtime state to clear.
+    pub fn reset(&mut self) {}
+}
+
 /// The event type for consumer keys. (No events).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Event;

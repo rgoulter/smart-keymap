@@ -29,6 +29,11 @@ impl Context {
         Context { is_active: false }
     }
 
+    /// Clear caps-word active state.
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
+
     /// Updates the context with the given event.
     fn handle_event(&mut self, event: key::Event<Event>) -> key::KeyEvents<Event> {
         match event {
@@ -102,6 +107,10 @@ impl key::Context for Context {
 
     fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
         self.handle_event(event)
+    }
+
+    fn reset(&mut self) {
+        Context::reset(self);
     }
 }
 
