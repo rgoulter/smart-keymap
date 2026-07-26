@@ -4,6 +4,7 @@ mod chorded;
 mod consumer;
 mod custom;
 mod hid_keycodes;
+mod history;
 mod layered;
 mod mouse;
 mod sticky;
