@@ -14,9 +14,9 @@ error: proc macro panicked
    = help: message: Nickel evaluation failed:
            error: contract broken by the value of `layers`
                   Value is not a valid keymap key
-               ┌─ $WORKSPACE/ncl/keymap-ncl-to-json.ncl:155:13
+               ┌─ $WORKSPACE/ncl/keymap-ncl-to-json.ncl:156:13
                │
-           155 │     | Array KeymapLayer
+           156 │     | Array KeymapLayer
                │             ----------- expected array element type
                │
                ┌─ <stdin>:4:17
