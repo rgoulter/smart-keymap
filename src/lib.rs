@@ -105,6 +105,15 @@ pub mod init {
     /// The maximum number of overlapping chords for a chorded key.
     pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = 16;
 
+    /// The maximum number of steps in a sequence.
+    pub const SEQUENCE_MAX_SEQUENCE_LEN: usize = 8;
+
+    /// The maximum number of sequences.
+    pub const SEQUENCE_MAX_SEQUENCES: usize = 16;
+
+    /// The maximum number of sequences sharing a primary key.
+    pub const SEQUENCE_MAX_OVERLAPPING: usize = 4;
+
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 3;
 
