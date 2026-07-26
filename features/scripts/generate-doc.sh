@@ -47,6 +47,7 @@ keymap_key_features=(
 keymap_ncl_features=(
     "chords"
     "chords-config-required_idle_time"
+    "conditional_layers"
     "layer_string"
     "layers"
     "named_layers"
