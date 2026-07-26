@@ -323,6 +323,20 @@
             expr = "%{module}::Context",
           },
         },
+        history = {
+          module = "smart_keymap::key::history",
+          key_output = 'KeyOutput,
+          context_events = 'ContextEvents,
+          system =
+            'System {
+              ty = "%{module}::System<Ref>",
+              expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::new()",
+          },
+        },
         keyboard = {
           module = "smart_keymap::key::keyboard",
           state_update = 'StateUpdate,
