@@ -59,6 +59,12 @@ impl<T: Copy, const N: usize> core::convert::From<heapless::Vec<T, N>> for Slice
     }
 }
 
+impl<T: Copy, const N: usize> Default for Slice<T, N> {
+    fn default() -> Self {
+        Self::from_slice(&[])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
