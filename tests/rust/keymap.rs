@@ -7,6 +7,7 @@ mod hid_keycodes;
 mod history;
 mod layered;
 mod mouse;
+mod sequence;
 mod sticky;
 mod tap_dance;
 mod tap_hold;

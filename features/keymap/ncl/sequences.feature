@@ -1,11 +1,13 @@
 Feature: Sequences
 
-  "Sequences" (also called "leader keys" in QMK) allow arming a mode,
-  then tapping keys in order to behave as another key.
+  Smart Keymap supports defining sequences of keys to resolve
+   as a different key.
 
-  After tapping the sequence start key, subsequent presses of the
-  sequence members (in order) emit the bound key. Members act as
-  their usual keys when sequence mode is not armed.
+  This is similar to key chords,
+   except is for keys pressed in sequence (pressed one after another)
+   rather than as a chord (pressed all at once).
+
+  This is a similar idea to Vim's "leader key sequences".
 
   For examples of this feature in other smart keyboard firmware, see e.g.:
 
