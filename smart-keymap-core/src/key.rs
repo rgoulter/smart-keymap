@@ -46,17 +46,32 @@ impl<E: Copy + Debug> KeyEvents<E> {
         KeyEvents(None.into_iter().collect())
     }
 
-    /// Constructs a [KeyEvents] with an immediate [Event].
+    /// Constructs a [KeyEvents] with one same-turn [Event].
+    ///
+    /// Prefer this for effects that should run in the current turn
+    ///  (via the event scheduler's pending queue).
+    /// For delayed effects, use [`Self::schedule_event`] or
+    ///  [`Self::scheduled_event`] with [`ScheduledEvent::after`].
+    ///
+    /// This is **not** the physical input delay line
+    ///  (`InputEventQueue` one-per-tick pacing).
     pub fn event(event: Event<E>) -> Self {
         KeyEvents(Some(ScheduledEvent::immediate(event)).into_iter().collect())
     }
 
-    /// Constructs a [KeyEvents] with an [Event] scheduled after a delay.
+    /// Constructs a [KeyEvents] from a single [ScheduledEvent]
+    ///  (typically [`ScheduledEvent::after`]).
     pub fn scheduled_event(sch_event: ScheduledEvent<E>) -> Self {
         KeyEvents(Some(sch_event).into_iter().collect())
     }
 
-    /// Adds an event with the schedule to the [KeyEvents].
+    /// Appends a same-turn [Event] (see [`Self::event`]).
+    pub fn add_event(&mut self, event: Event<E>) {
+        let _ = self.0.push(ScheduledEvent::immediate(event));
+    }
+
+    /// Appends an [Event] scheduled after `delay` ticks/ms units
+    ///  (promoted on `Keymap::tick`, not same-turn).
     pub fn schedule_event(&mut self, delay: u16, event: Event<E>) {
         let _ = self.0.push(ScheduledEvent::after(delay, event));
     }
@@ -66,11 +81,6 @@ impl<E: Copy + Debug> KeyEvents<E> {
         other.0.into_iter().for_each(|ev| {
             let _ = self.0.push(ev);
         });
-    }
-
-    /// Adds an event from to the [KeyEvents].
-    pub fn add_event(&mut self, ev: ScheduledEvent<E>) {
-        let _ = self.0.push(ev);
     }
 
     /// Maps over the KeyEvents.
@@ -818,28 +828,36 @@ impl<T> From<input::Event> for Event<T> {
     }
 }
 
-/// Schedule for a [ScheduledEvent].
-#[allow(unused)]
+/// When the event scheduler should deliver a [ScheduledEvent].
+///
+/// Orthogonal to physical input pacing (`InputEventQueue`):
+/// - [`Schedule::Immediate`] — enqueue for same-turn drain
+///   (`EventScheduler` pending queue → `handle_pending_events`).
+/// - [`Schedule::After`] — wait until `Keymap::tick` advances time;
+///   **not** the same as Immediate even when delay is `0`
+///   (still waits for a tick boundary).
+///
+/// Prefer constructing via [`KeyEvents::event`] / [`KeyEvents::schedule_event`]
+///  rather than building these variants by hand.
 #[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Eq, Ord)]
 pub enum Schedule {
-    /// Immediately.
+    /// Same-turn: pending queue, drained before returning to the caller.
     Immediate,
-    /// After a given number of `tick`s.
+    /// After the given number of `tick` units (ms when `ms_per_tick` is 1).
     After(u16),
 }
 
-/// Schedules a given `T` with [Event], for some [Schedule].
+/// An [Event] with a [Schedule] for the keymap event scheduler.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScheduledEvent<T> {
-    /// Whether to handle the event immediately, or after some delay.
+    /// When to deliver the event (same-turn vs after delay).
     pub schedule: Schedule,
     /// The event.
     pub event: Event<T>,
 }
 
 impl<T: Copy> ScheduledEvent<T> {
-    /// Constructs a [ScheduledEvent] with [Schedule::Immediate].
-    #[allow(unused)]
+    /// Same-turn [ScheduledEvent]; prefer [`KeyEvents::event`] at call sites.
     pub fn immediate(event: Event<T>) -> Self {
         ScheduledEvent {
             schedule: Schedule::Immediate,
@@ -847,7 +865,7 @@ impl<T: Copy> ScheduledEvent<T> {
         }
     }
 
-    /// Constructs a [ScheduledEvent] with [Schedule::After].
+    /// Delayed [ScheduledEvent]; also available as [`KeyEvents::schedule_event`].
     pub fn after(delay: u16, event: Event<T>) -> Self {
         ScheduledEvent {
             schedule: Schedule::After(delay),

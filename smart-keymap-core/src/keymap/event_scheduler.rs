@@ -1,3 +1,15 @@
+//! Keymap event scheduler: same-turn pending queue vs time-based delays.
+//!
+//! Smart keys emit [`key::ScheduledEvent`]s. Delivery is **orthogonal** to
+//!  physical input pacing (`InputEventQueue` one-input-per-tick delay line):
+//!
+//! - [`key::Schedule::Immediate`] → `pending_events`, drained in the same turn
+//!   via `Keymap::handle_pending_events`. Prefer constructing these with
+//!   [`key::KeyEvents::event`].
+//! - [`key::Schedule::After`] → `scheduled_events` timed list, promoted on
+//!   [`EventScheduler::tick`]. Prefer [`key::KeyEvents::schedule_event`].
+//!   Delay `0` still waits for a tick boundary (not the same as Immediate).
+
 use core::cmp::PartialEq;
 use core::fmt::Debug;
 use core::marker::Copy;
