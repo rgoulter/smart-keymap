@@ -278,13 +278,13 @@ impl<const INSTRUCTION_COUNT: usize> Context<INSTRUCTION_COUNT> {
 
             // If there's more to execute, schedule it to execute.
             if !self.execution_queue[0].is_empty() {
-                pke.add_event(key::ScheduledEvent::after(
+                pke.schedule_event(
                     self.config.instruction_duration,
                     key::Event::Key {
                         keymap_index,
                         key_event: Event::NextInstruction,
                     },
-                ));
+                );
             }
         }
 
@@ -363,52 +363,40 @@ pub fn key_events_for<const INSTRUCTION_COUNT: usize>(
 
     match instruction {
         Instruction::NoOp => {
-            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
-            key::KeyEvents::scheduled_event(sch_ev)
+            let mut pke = key::KeyEvents::no_events();
+            pke.schedule_event(config.instruction_duration, next_key_ev);
+            pke
         }
         Instruction::Press(key_output) => {
-            let sch_ev =
-                key::ScheduledEvent::immediate(key::Event::Input(input::Event::VirtualKeyPress {
-                    key_output,
-                }));
-
-            let mut pke = key::KeyEvents::scheduled_event(sch_ev);
-            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
-            pke.add_event(sch_ev);
-
+            let mut pke = key::KeyEvents::event(key::Event::Input(input::Event::VirtualKeyPress {
+                key_output,
+            }));
+            pke.schedule_event(config.instruction_duration, next_key_ev);
             pke
         }
         Instruction::Release(key_output) => {
-            let sch_ev = key::ScheduledEvent::immediate(key::Event::Input(
-                input::Event::VirtualKeyRelease { key_output },
-            ));
-
-            let mut pke = key::KeyEvents::scheduled_event(sch_ev);
-            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
-            pke.add_event(sch_ev);
-
+            let mut pke =
+                key::KeyEvents::event(key::Event::Input(input::Event::VirtualKeyRelease {
+                    key_output,
+                }));
+            pke.schedule_event(config.instruction_duration, next_key_ev);
             pke
         }
         Instruction::Tap(key_output) => {
-            let sch_press_ev =
-                key::ScheduledEvent::immediate(key::Event::Input(input::Event::VirtualKeyPress {
-                    key_output,
-                }));
-            let sch_release_ev = key::ScheduledEvent::after(
+            let mut pke = key::KeyEvents::event(key::Event::Input(input::Event::VirtualKeyPress {
+                key_output,
+            }));
+            pke.schedule_event(
                 config.instruction_duration,
                 key::Event::Input(input::Event::VirtualKeyRelease { key_output }),
             );
-
-            let mut pke = key::KeyEvents::scheduled_event(sch_press_ev);
-            pke.add_event(sch_release_ev);
-            let sch_ev = key::ScheduledEvent::after(config.instruction_duration, next_key_ev);
-            pke.add_event(sch_ev);
-
+            pke.schedule_event(config.instruction_duration, next_key_ev);
             pke
         }
         Instruction::Wait(ticks) => {
-            let sch_ev = key::ScheduledEvent::after(ticks, next_key_ev);
-            key::KeyEvents::scheduled_event(sch_ev)
+            let mut pke = key::KeyEvents::no_events();
+            pke.schedule_event(ticks, next_key_ev);
+            pke
         }
     }
 }

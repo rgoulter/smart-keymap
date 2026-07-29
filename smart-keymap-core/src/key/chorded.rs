@@ -609,15 +609,11 @@ impl<
             };
 
             let ch_r_ev = Event::ChordResolved(ch_state);
-            let sch_ev =
-                key::ScheduledEvent::immediate(key::Event::key_event(keymap_index, ch_r_ev));
+            let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, ch_r_ev));
 
             if let Some(new_key_ref) = maybe_new_key_ref {
-                let pke = key::KeyEvents::scheduled_event(sch_ev);
-
                 (Some(key::NewPressedKey::key(new_key_ref)), pke)
             } else {
-                let pke = key::KeyEvents::scheduled_event(sch_ev);
                 (Some(key::NewPressedKey::no_op()), pke)
             }
         } else {
@@ -724,9 +720,7 @@ impl<
         let ch_state = pending_state.handle_event(keymap_index, event);
         if let Some(ChordResolution::Passthrough) = ch_state {
             let ch_r_ev = Event::ChordResolved(ChordResolution::Passthrough);
-            let sch_ev =
-                key::ScheduledEvent::immediate(key::Event::key_event(keymap_index, ch_r_ev));
-            let pke = key::KeyEvents::scheduled_event(sch_ev);
+            let pke = key::KeyEvents::event(key::Event::key_event(keymap_index, ch_r_ev));
 
             (Some(key::NewPressedKey::key(self.passthrough)), pke)
         } else if let Some(ChordResolution::Chord(resolved_chord_id)) = ch_state {

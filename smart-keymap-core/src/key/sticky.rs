@@ -244,7 +244,7 @@ impl Context {
                         let vk_ev = key::Event::Input(input::Event::VirtualKeyRelease {
                             key_output: sticky_key_output,
                         });
-                        pke.add_event(key::ScheduledEvent::immediate(vk_ev));
+                        pke.add_event(vk_ev);
                     });
 
                 self.active_modifier_count = 0;
@@ -271,7 +271,7 @@ impl Context {
                         let vk_ev = key::Event::Input(input::Event::VirtualKeyRelease {
                             key_output: sticky_key_output,
                         });
-                        pke.add_event(key::ScheduledEvent::immediate(vk_ev));
+                        pke.add_event(vk_ev);
                     });
 
                 self.active_modifier_count = 0;
@@ -395,7 +395,7 @@ impl KeyState {
                             });
 
                             let mut pke = key::KeyEvents::event(k_ev);
-                            pke.add_event(key::ScheduledEvent::immediate(vk_ev));
+                            pke.add_event(vk_ev);
                             pke
                         }
                     }
