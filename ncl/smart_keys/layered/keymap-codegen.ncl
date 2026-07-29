@@ -176,7 +176,9 @@
                 include module,
                 include key_type,
                 variant = "SetActiveLayers",
-                rust_expr = "%{module}::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
+                rust_expr =
+                  let layers_expr = "%{module}::LayerBitset::from_bits(%{active_layers_bitset |> std.to_string})" in
+                  "%{module}::ModifierKey::set_active_layers_from_bitset(%{layers_expr})",
               },
             { SetActiveLayers = { layers = active_layers_bitset, mask = layer_mask } } =>
               {
@@ -185,8 +187,8 @@
                 include key_type,
                 variant = "SetActiveLayers",
                 rust_expr =
-                  let layers_expr = active_layers_bitset |> std.to_string in
-                  let mask_expr = layer_mask |> std.to_string in
+                  let layers_expr = "%{module}::LayerBitset::from_bits(%{active_layers_bitset |> std.to_string})" in
+                  let mask_expr = "%{module}::LayerBitset::from_bits(%{layer_mask |> std.to_string})" in
                   "%{module}::ModifierKey::set_active_layers_from_bitset_with_mask(%{layers_expr}, %{mask_expr})",
               },
           },
@@ -367,7 +369,7 @@
                 let rules_fragment =
                   c.conditional_layers
                   |> std.array.map (fun { then_layer, if_layers } =>
-                    "%{module}::ConditionalLayer::new(%{std.to_string then_layer}, %{std.to_string if_layers})"
+                    "%{module}::ConditionalLayer::new(%{std.to_string then_layer}, %{module}::LayerBitset::from_bits(%{std.to_string if_layers}))"
                   )
                   |> std.string.join ", "
                 in
