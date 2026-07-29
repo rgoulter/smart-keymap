@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 use core::marker::Copy;
-use core::ops::Index;
+use core::ops::{BitAnd, BitOr, Index, Not};
 
 use serde::Deserialize;
 
@@ -12,19 +12,110 @@ use crate::slice::Slice;
 /// The type used for layer index.
 pub type LayerIndex = u32;
 
-/// The type used for set of active layers in ModifierKey.
-/// (Layer bit indices `0..=[MAX_BITSET_LAYER]`.)
-pub type LayerBitset = u32;
+/// Fixed-capacity bitset of layers for modifier / conditional-layer state.
+///
+/// Bit `i` corresponds to layer index `i`. Capacity is [Self::BITS] layers
+/// (indices `0..=[MAX_BITSET_LAYER]`).
+///
+/// This is a thin `no_std` newtype over [`u32`] so keymap `const` data can build
+/// bitsets without a heap or an external bitset crate. Widening capacity later
+/// is a storage-type change (`u64`, `u128`, or multi-limb) behind the same API.
+#[repr(transparent)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize)]
+#[serde(transparent)]
+pub struct LayerBitset(u32);
+
+impl LayerBitset {
+    /// Number of representable layer bits.
+    pub const BITS: usize = 32;
+
+    /// Empty bitset (no layers selected).
+    pub const EMPTY: Self = Self(0);
+
+    /// Bitset with every representable layer bit set.
+    pub const ALL: Self = Self(u32::MAX);
+
+    /// Construct from raw bits (bit `i` = layer `i`).
+    pub const fn from_bits(bits: u32) -> Self {
+        Self(bits)
+    }
+
+    /// Raw bit pattern.
+    pub const fn bits(self) -> u32 {
+        self.0
+    }
+
+    /// Returns true if bit `index` is set.
+    pub const fn contains(self, index: usize) -> bool {
+        index < Self::BITS && (self.0 & (1u32 << index)) != 0
+    }
+
+    /// Returns a copy with bit `index` set, if `index` is in range.
+    pub const fn insert(self, index: usize) -> Self {
+        if index < Self::BITS {
+            Self(self.0 | (1u32 << index))
+        } else {
+            self
+        }
+    }
+
+    /// Returns true if every bit set in `other` is also set in `self`.
+    pub const fn is_superset_of(self, other: Self) -> bool {
+        (self.0 & other.0) == other.0
+    }
+}
+
+impl Default for LayerBitset {
+    fn default() -> Self {
+        Self::EMPTY
+    }
+}
+
+impl From<u32> for LayerBitset {
+    fn from(bits: u32) -> Self {
+        Self::from_bits(bits)
+    }
+}
+
+impl From<LayerBitset> for u32 {
+    fn from(bitset: LayerBitset) -> Self {
+        bitset.bits()
+    }
+}
+
+impl BitAnd for LayerBitset {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
+    }
+}
+
+impl BitOr for LayerBitset {
+    type Output = Self;
+
+    fn bitor(self, rhs: Self) -> Self::Output {
+        Self(self.0 | rhs.0)
+    }
+}
+
+impl Not for LayerBitset {
+    type Output = Self;
+
+    fn not(self) -> Self::Output {
+        Self(!self.0)
+    }
+}
 
 /// The maximum layer bit index representable in a [LayerBitset].
 ///
-/// For `LayerBitset = u32`, this is 31 (bits 0..=31, i.e. 32 layers).
-pub const MAX_BITSET_LAYER: usize = 8 * core::mem::size_of::<LayerBitset>() - 1;
+/// For a 32-bit [LayerBitset], this is 31 (bits 0..=31, i.e. 32 layers).
+pub const MAX_BITSET_LAYER: usize = LayerBitset::BITS - 1;
 
 /// The bitset with all representable modifier layers in the mask.
 ///
-/// Includes bit [MAX_BITSET_LAYER] (e.g. bit 31 for `u32`).
-pub const BITSET_MASK_ALL: LayerBitset = LayerBitset::MAX;
+/// Includes bit [MAX_BITSET_LAYER].
+pub const BITSET_MASK_ALL: LayerBitset = LayerBitset::ALL;
 
 /// Struct for modifying layers with a bitset.
 #[repr(C)]
@@ -96,13 +187,13 @@ impl ModifierKey {
     ///
     /// Each LayerIndex in the slice must be at most [MAX_BITSET_LAYER].
     pub const fn set_active_layers(layers: &[LayerIndex]) -> Self {
-        let mut bitset = 0;
+        let mut bitset = LayerBitset::EMPTY;
 
         let mut idx = 0;
         while idx < layers.len() {
             let layer = layers[idx] as usize;
             if layer <= MAX_BITSET_LAYER {
-                bitset |= 1 << layer;
+                bitset = bitset.insert(layer);
             } else {
                 panic!("LayerIndex must be at most MAX_BITSET_LAYER");
             }
@@ -286,12 +377,12 @@ impl ConditionalLayer {
 
     /// Constructs a rule from a then-layer and if-layer indices.
     pub const fn from_if_layers(then_layer: LayerIndex, if_layers: &[LayerIndex]) -> Self {
-        let mut bitset: LayerBitset = 0;
+        let mut bitset = LayerBitset::EMPTY;
         let mut i = 0;
         while i < if_layers.len() {
             let layer = if_layers[i] as usize;
             if layer <= MAX_BITSET_LAYER {
-                bitset |= 1 << layer;
+                bitset = bitset.insert(layer);
             }
             i += 1;
         }
@@ -411,9 +502,9 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
     /// Bitset of currently active layers (bit `i` = layer `i`).
     fn active_layers_bitset(&self) -> LayerBitset {
         let max_layer = 1 + LAYER_COUNT.min(MAX_BITSET_LAYER);
-        (1..max_layer).fold(0, |bits, li| {
+        (1..max_layer).fold(LayerBitset::EMPTY, |bits, li| {
             if self.active_layers[li - 1].is_active() {
-                bits | (1 << li)
+                bits.insert(li)
             } else {
                 bits
             }
@@ -426,8 +517,8 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
         let rules = self.config.conditional_layers;
         let active = self.active_layers_bitset();
         rules.as_slice().iter().fold(false, |changed, rule| {
-            let should = (active & rule.if_layers) == rule.if_layers;
-            let is_active = (active & (1 << rule.then_layer)) != 0;
+            let should = active.is_superset_of(rule.if_layers);
+            let is_active = active.contains(rule.then_layer as usize);
             if should == is_active {
                 changed
             } else if should {
@@ -547,8 +638,8 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
 
                 // layer 0 is always active.
                 for li in 1..max_layer {
-                    if (mask & (1 << li)) != 0 {
-                        if (layers & (1 << li)) != 0 {
+                    if mask.contains(li) {
+                        if layers.contains(li) {
                             self.active_layers
                                 .activate(li as LayerIndex, ActivationStyle::Regular);
                         } else {
@@ -1011,6 +1102,7 @@ mod tests {
 
     #[test]
     fn test_sizeof_modifier_bitset() {
+        // Two LayerBitset (u32) fields.
         assert_eq!(8, core::mem::size_of::<ModifierBitset>());
     }
 
@@ -1021,11 +1113,23 @@ mod tests {
     }
 
     #[test]
+    fn test_layer_bitset_capacity() {
+        assert_eq!(32, LayerBitset::BITS);
+        assert_eq!(31, MAX_BITSET_LAYER);
+        assert!(LayerBitset::EMPTY.insert(31).contains(31));
+        assert!(!LayerBitset::EMPTY.insert(32).contains(32));
+        assert!(LayerBitset::ALL.is_superset_of(LayerBitset::from_bits(0b1010)));
+    }
+
+    #[test]
     fn deserialize_set_active_layers_record_json() {
         let key: ModifierKey =
             serde_json::from_str(r#"{"SetActiveLayers": {"layers": 5, "mask": 3}}"#).unwrap();
         assert_eq!(
-            ModifierKey::SetActiveLayers(ModifierBitset { layers: 5, mask: 3 }),
+            ModifierKey::SetActiveLayers(ModifierBitset {
+                layers: LayerBitset::from_bits(5),
+                mask: LayerBitset::from_bits(3),
+            }),
             key,
         );
 
@@ -1033,7 +1137,7 @@ mod tests {
             serde_json::from_str(r#"{"SetActiveLayers": {"layers": 5}}"#).unwrap();
         assert_eq!(
             ModifierKey::SetActiveLayers(ModifierBitset {
-                layers: 5,
+                layers: LayerBitset::from_bits(5),
                 mask: BITSET_MASK_ALL,
             }),
             key,
@@ -1221,8 +1325,8 @@ mod tests {
 
         // Act: clear layer 1 via Set (mask only layer 1)
         context.handle_layer_event(LayerEvent::Set(ModifierBitset {
-            layers: 0,
-            mask: 1 << 1,
+            layers: LayerBitset::EMPTY,
+            mask: LayerBitset::EMPTY.insert(1),
         }));
 
         // Assert
