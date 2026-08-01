@@ -35,7 +35,19 @@ all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
-test: test-rust test-fmt test-clippy test-doc test-ncl test-ceedling build-rust-thumbv6m-none-eabi build-rust-stm32f4
+# Run the NCL checks (and NCL codegen snapshot checks)
+test: test-ncl
+# Run the rust tests (incl. integration)
+test: test-rust
+# Run the Ceedling integration tests
+test: test-ceedling
+# Run rust tidyness checks
+test: test-clippy
+test: test-doc
+test: test-fmt
+# Check the rust firmware builds
+test: build-rust-stm32f4
+test: build-rust-thumbv6m-none-eabi
 
 .PHONY: test-rust
 test-rust:
