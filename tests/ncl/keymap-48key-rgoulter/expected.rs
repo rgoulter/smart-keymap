@@ -34,9 +34,11 @@ pub mod init {
     const CALLBACK: usize = 7;
     const CHORDED: usize = 4;
     const CHORDED_AUXILIARY: usize = 4;
+    const CONSUMER: usize = 0;
     const KEYBOARD: usize = 20;
     const LAYERED: usize = 48;
     const LAYER_MODIFIERS: usize = 50;
+    const MOUSE: usize = 0;
     const STICKY: usize = 24;
     const TAP_DANCE: usize = 30;
     const TAP_HOLD: usize = 42;
@@ -595,7 +597,10 @@ pub mod init {
                 { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                 CHORDED_MAX_PRESSED_INDICES,
             >,
-            consumer: smart_keymap::key::consumer::System<Ref>,
+            consumer: smart_keymap::key::consumer::System<
+                Ref,
+                [smart_keymap::key::consumer::Key; super::CONSUMER],
+            >,
             keyboard: smart_keymap::key::keyboard::System<
                 Ref,
                 [smart_keymap::key::keyboard::Key; super::KEYBOARD],
@@ -608,7 +613,10 @@ pub mod init {
                 { super::LAYERED_LAYER_COUNT },
                 { super::CONDITIONAL_LAYER_COUNT },
             >,
-            mouse: smart_keymap::key::mouse::System<Ref>,
+            mouse: smart_keymap::key::mouse::System<
+                Ref,
+                [smart_keymap::key::mouse::Key; super::MOUSE],
+            >,
             sticky: smart_keymap::key::sticky::System<
                 Ref,
                 [smart_keymap::key::sticky::Key; super::STICKY],
@@ -653,6 +661,10 @@ pub mod init {
                     { super::CHORDED_MAX_OVERLAPPING_CHORD_SIZE },
                     CHORDED_MAX_PRESSED_INDICES,
                 >,
+                consumer: smart_keymap::key::consumer::System<
+                    Ref,
+                    [smart_keymap::key::consumer::Key; super::CONSUMER],
+                >,
                 keyboard: smart_keymap::key::keyboard::System<
                     Ref,
                     [smart_keymap::key::keyboard::Key; super::KEYBOARD],
@@ -664,6 +676,10 @@ pub mod init {
                         super::LAYERED],
                     { super::LAYERED_LAYER_COUNT },
                     { super::CONDITIONAL_LAYER_COUNT },
+                >,
+                mouse: smart_keymap::key::mouse::System<
+                    Ref,
+                    [smart_keymap::key::mouse::Key; super::MOUSE],
                 >,
                 sticky: smart_keymap::key::sticky::System<
                     Ref,
@@ -683,13 +699,13 @@ pub mod init {
                 Self {
                     callback,
                     chorded,
+                    consumer,
                     keyboard,
                     layered,
+                    mouse,
                     sticky,
                     tap_dance,
                     tap_hold,
-                    consumer: smart_keymap::key::consumer::System::new(),
-                    mouse: smart_keymap::key::mouse::System::new(),
                 }
             }
         }
@@ -1095,6 +1111,7 @@ pub mod init {
                 )),
             ],
         ),
+        smart_keymap::key::consumer::System::new([]),
         smart_keymap::key::keyboard::System::new([
             smart_keymap::key::keyboard::Key {
                 key_code: 47,
@@ -1822,7 +1839,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(80),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::CursorLeft,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::CursorLeft,
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(182),
@@ -1848,7 +1867,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(81),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::CursorDown,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::CursorDown,
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(234),
@@ -1874,7 +1895,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(82),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::CursorUp,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::CursorUp,
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(233),
@@ -1900,7 +1923,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(79),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::CursorRight,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::CursorRight,
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(181),
@@ -2166,7 +2191,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(74),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::WheelLeft,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::WheelLeft,
+                            ),
                         )),
                         Some(key_system::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
@@ -2192,7 +2219,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(78),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::WheelDown,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::WheelDown,
+                            ),
                         )),
                         Some(key_system::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
@@ -2218,7 +2247,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(75),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::WheelUp,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::WheelUp,
+                            ),
                         )),
                         Some(key_system::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
@@ -2244,7 +2275,9 @@ pub mod init {
                             smart_keymap::key::keyboard::Ref::KeyCode(77),
                         )),
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::WheelRight,
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::WheelRight,
+                            ),
                         )),
                         Some(key_system::Ref::Keyboard(
                             smart_keymap::key::keyboard::Ref::KeyCode(0),
@@ -2470,7 +2503,9 @@ pub mod init {
                         None,
                         None,
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::Button(1),
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::Button(1),
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(205),
@@ -2496,7 +2531,9 @@ pub mod init {
                         None,
                         None,
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::Button(2),
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::Button(2),
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(183),
@@ -2522,7 +2559,9 @@ pub mod init {
                         )),
                         None,
                         Some(key_system::Ref::Mouse(
-                            smart_keymap::key::mouse::Ref::Button(3),
+                            smart_keymap::key::mouse::Ref::Action(
+                                smart_keymap::key::mouse::Action::Button(3),
+                            ),
                         )),
                         Some(key_system::Ref::Consumer(
                             smart_keymap::key::consumer::Ref::UsageCode(226),
@@ -2627,6 +2666,7 @@ pub mod init {
                 ),
             ],
         ),
+        smart_keymap::key::mouse::System::new([]),
         smart_keymap::key::sticky::System::new([
             smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),
             smart_keymap::key::sticky::Key::new(smart_keymap::key::KeyboardModifiers::from_byte(4)),

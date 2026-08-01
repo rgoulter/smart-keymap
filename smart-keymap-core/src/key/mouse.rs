@@ -1,12 +1,14 @@
 use core::fmt::Debug;
+use core::marker::PhantomData;
+use core::ops::Index;
 
 use serde::Deserialize;
 
 use crate::key;
 
-/// Reference for a mouse key.
+/// Mouse action (button, cursor movement, or wheel).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-pub enum Ref {
+pub enum Action {
     /// A mouse button. (Value is button number, 1-8).
     Button(u8),
     /// Move cursor left.
@@ -25,6 +27,46 @@ pub enum Ref {
     WheelLeft,
     /// Scroll wheel right.
     WheelRight,
+}
+
+/// Reference for a mouse key.
+///
+/// Simple actions without keyboard modifiers are represented directly as
+/// [Ref::Action]. Keys that include keyboard modifiers are an index into
+/// [System] key data.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum Ref {
+    /// A mouse action without keyboard modifiers.
+    Action(Action),
+    /// Index into the key data array of [System] for a [Key] (action + modifiers).
+    Key(u8),
+}
+
+/// A mouse key: an [Action] with optional keyboard modifiers.
+///
+/// A modifiers value of zero is equivalent to no modifiers.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Key {
+    /// The mouse action.
+    pub action: Action,
+    /// Keyboard modifiers.
+    #[serde(default)]
+    pub modifiers: key::KeyboardModifiers,
+}
+
+impl Key {
+    /// Constructs a key with the given action and no modifiers.
+    pub const fn new(action: Action) -> Self {
+        Self {
+            action,
+            modifiers: key::KeyboardModifiers::new(),
+        }
+    }
+
+    /// Constructs a key with the given action and modifiers.
+    pub const fn new_with_modifiers(action: Action, modifiers: key::KeyboardModifiers) -> Self {
+        Self { action, modifiers }
+    }
 }
 
 /// Context for mouse keys. (No context).
@@ -50,26 +92,66 @@ pub struct KeyState;
 
 /// The [key::System] implementation for mouse keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<R: Debug> {
-    _marker: core::marker::PhantomData<R>,
+pub struct System<R: Debug, Keys: Index<usize, Output = Key>> {
+    keys: Keys,
+    marker: PhantomData<R>,
 }
 
-impl<R: Debug> System<R> {
-    /// Constructs a new [System].
-    pub const fn new() -> Self {
+impl<R: Debug, Keys: Index<usize, Output = Key>> System<R, Keys> {
+    /// Constructs a new [System] with the given key data.
+    ///
+    /// The key data is for mouse keys that include keyboard modifiers.
+    pub const fn new(keys: Keys) -> Self {
         Self {
-            _marker: core::marker::PhantomData,
+            keys,
+            marker: PhantomData,
         }
     }
 }
 
-impl<R: Debug> Default for System<R> {
-    fn default() -> Self {
-        Self::new()
+fn mouse_output_for_action(action: Action) -> key::MouseOutput {
+    const MOVE_AMOUNT: i8 = 5;
+    match action {
+        Action::Button(b) => key::MouseOutput {
+            pressed_buttons: 1 << (b - 1),
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::CursorLeft => key::MouseOutput {
+            x: -MOVE_AMOUNT,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::CursorRight => key::MouseOutput {
+            x: MOVE_AMOUNT,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::CursorUp => key::MouseOutput {
+            y: -MOVE_AMOUNT,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::CursorDown => key::MouseOutput {
+            y: MOVE_AMOUNT,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::WheelUp => key::MouseOutput {
+            vertical_scroll: 1,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::WheelDown => key::MouseOutput {
+            vertical_scroll: -1,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::WheelLeft => key::MouseOutput {
+            horizontal_scroll: -1,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        Action::WheelRight => key::MouseOutput {
+            horizontal_scroll: 1,
+            ..key::MouseOutput::NO_OUTPUT
+        },
     }
 }
 
-impl<R: Debug> key::System<R> for System<R> {
+impl<R: Debug, Keys: Debug + Index<usize, Output = Key>> key::System<R> for System<R, Keys> {
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
@@ -118,46 +200,18 @@ impl<R: Debug> key::System<R> for System<R> {
         key_ref: &Self::Ref,
         _key_state: &Self::KeyState,
     ) -> Option<key::KeyOutput> {
-        const MOVE_AMOUNT: i8 = 5;
-        let mouse_output = match key_ref {
-            Ref::Button(b) => key::MouseOutput {
-                pressed_buttons: 1 << (b - 1),
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::CursorLeft => key::MouseOutput {
-                x: -MOVE_AMOUNT,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::CursorRight => key::MouseOutput {
-                x: MOVE_AMOUNT,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::CursorUp => key::MouseOutput {
-                y: -MOVE_AMOUNT,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::CursorDown => key::MouseOutput {
-                y: MOVE_AMOUNT,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::WheelUp => key::MouseOutput {
-                vertical_scroll: 1,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::WheelDown => key::MouseOutput {
-                vertical_scroll: -1,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::WheelLeft => key::MouseOutput {
-                horizontal_scroll: -1,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-            Ref::WheelRight => key::MouseOutput {
-                horizontal_scroll: 1,
-                ..key::MouseOutput::NO_OUTPUT
-            },
-        };
-        Some(key::KeyOutput::from_mouse_output(mouse_output))
+        match key_ref {
+            Ref::Action(action) => Some(key::KeyOutput::from_mouse_output(
+                mouse_output_for_action(*action),
+            )),
+            Ref::Key(idx) => {
+                let Key { action, modifiers } = self.keys[*idx as usize];
+                Some(key::KeyOutput::from_usage_with_modifiers(
+                    key::KeyUsage::Mouse(mouse_output_for_action(action)),
+                    modifiers,
+                ))
+            }
+        }
     }
 }
 
@@ -167,6 +221,7 @@ mod tests {
 
     #[test]
     fn test_sizeof_ref() {
+        // Action(Action) niches with Key(u8): still 2 bytes.
         assert_eq!(2, core::mem::size_of::<Ref>());
     }
 
