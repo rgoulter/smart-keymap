@@ -35,11 +35,32 @@ all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
-test: test-rust test-ncl test-ceedling build-rust-thumbv6m-none-eabi build-rust-stm32f4
+test: test-rust test-fmt test-clippy test-doc test-ncl test-ceedling build-rust-thumbv6m-none-eabi build-rust-stm32f4
 
 .PHONY: test-rust
 test-rust:
 	$(CARGO) test
+
+# Match .github/workflows/rust.yaml cargo-fmt-clippy job.
+.PHONY: test-fmt
+test-fmt:
+	$(CARGO) fmt --all -- --check
+
+.PHONY: test-clippy
+test-clippy:
+	$(CARGO) clippy --workspace \
+		--exclude rp2040-rtic-smart-keyboard \
+		--exclude stm32f4-rtic-smart-keyboard \
+		--exclude stm32-embassy-smart-keyboard \
+		-- -D warnings
+
+# Match .github/workflows/rust.yaml cargo-build "Run Cargo Doc" step.
+.PHONY: test-doc
+test-doc:
+	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--package=smart-keymap-core \
+		--package=smart-keymap \
+		--package=keyberon-smart-keyboard
 
 .PHONY: build-rust-thumbv6m-none-eabi
 build-rust-thumbv6m-none-eabi:
