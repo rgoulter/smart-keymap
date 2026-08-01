@@ -303,9 +303,17 @@
           state_update = 'StateUpdate,
           key_output = 'KeyOutput,
           system =
-            'System {
-              ty = "%{module}::System<Ref>",
-              expr = "%{module}::System::new()",
+            'SystemWithData {
+              data_lengths = [{ const_name = "CONSUMER", data_field = "consumer" }],
+              rust_expr = smart_keymap.consumer.system.rust_expr,
+              ty.array = m%"%{module}::System<
+            Ref,
+            [%{module}::Key; super::CONSUMER]
+          >"%,
+              ty.vec = m%"%{module}::System<
+            Ref,
+            Vec<%{module}::Key>
+          >"%,
             },
           context = {
             ty = "%{module}::Context",
@@ -476,9 +484,17 @@
           module = "smart_keymap::key::mouse",
           key_output = 'KeyOutput,
           system =
-            'System {
-              ty = "%{module}::System<Ref>",
-              expr = "%{module}::System::new()",
+            'SystemWithData {
+              data_lengths = [{ const_name = "MOUSE", data_field = "mouse" }],
+              rust_expr = smart_keymap.mouse.system.rust_expr,
+              ty.array = m%"%{module}::System<
+            Ref,
+            [%{module}::Key; super::MOUSE]
+          >"%,
+              ty.vec = m%"%{module}::System<
+            Ref,
+            Vec<%{module}::Key>
+          >"%,
             },
           context = {
             ty = "%{module}::Context",

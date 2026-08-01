@@ -152,6 +152,8 @@ struct KeyVecs {
         >,
     >,
     #[serde(default)]
+    consumer: Vec<key::consumer::Key>,
+    #[serde(default)]
     keyboard: Vec<key::keyboard::Key>,
     #[serde(default)]
     layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
@@ -159,6 +161,8 @@ struct KeyVecs {
     layer_modifiers: Vec<key::layered::ModifierKey>,
     #[serde(default)]
     mod_conditioned: Vec<key::mod_conditioned::Key<Ref>>,
+    #[serde(default)]
+    mouse: Vec<key::mouse::Key>,
     #[serde(default)]
     sequence: Vec<key::sequence::Key<Ref, SEQUENCE_MAX_OVERLAPPING>>,
     #[serde(default)]
@@ -184,9 +188,11 @@ fn system_from_key_data(keys: KeyVecs) -> System {
         smart_keymap::key::automation::System::new(keys.automation),
         smart_keymap::key::callback::System::new(keys.callback),
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
+        smart_keymap::key::consumer::System::new(keys.consumer),
         smart_keymap::key::keyboard::System::new(keys.keyboard),
         smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
         smart_keymap::key::mod_conditioned::System::new(keys.mod_conditioned),
+        smart_keymap::key::mouse::System::new(keys.mouse),
         smart_keymap::key::sequence::System::new(keys.sequence, keys.sequence_auxiliary),
         smart_keymap::key::sticky::System::new(keys.sticky),
         smart_keymap::key::tap_dance::System::new(keys.tap_dance),
