@@ -104,6 +104,7 @@
     family_has_key_output = fun f => f.key_output == 'KeyOutput,
     family_has_context_events = fun f => f.context_events == 'ContextEvents,
     family_updates_keymap_context = fun f => f.keymap_context == 'UpdatesKeymapContext,
+    family_has_report_hints = fun f => f.report_hints == 'ReportHints,
     family_has_key_data = fun f =>
       f.system
       |> match {
@@ -139,6 +140,7 @@
     KeyOutputCap = [| 'NoKeyOutput, 'KeyOutput |],
     ContextEventsCap = [| 'NoContextEvents, 'ContextEvents |],
     KeymapContextCap = [| 'NoKeymapContextUpdate, 'UpdatesKeymapContext |],
+    ReportHintsCap = [| 'NoReportHints, 'ReportHints |],
     KeyStateCap = [|
       'KeyState { name | String, ty | String }
     |],
@@ -171,6 +173,7 @@
       key_output | KeyOutputCap,
       context_events | ContextEventsCap,
       keymap_context | KeymapContextCap,
+      report_hints | ReportHintsCap,
       key_state | KeyStateCap,
       system | SystemCap,
       context | { ty | String, expr | String },
@@ -463,6 +466,22 @@ if let Ok(e) = event.try_into_key_event() {
         |> std.array.map (fun f => "self.%{f.field}.update_keymap_context(&context);")
         |> join,
 
+      report_hints_suppress_union =
+        let hint_families = systems |> std.array.filter family_has_report_hints in
+        if std.array.length hint_families == 0 then
+          "smart_keymap::key::KeyboardModifiers::NONE"
+        else
+          hint_families
+          |> std.array.map (fun f => "self.%{f.field}.suppressed_modifiers()")
+          |> std.array.fold_left
+            (fun acc expr =>
+              if acc == "" then
+                expr
+              else
+                "%{acc}.union(&%{expr})"
+            )
+            "",
+
       system_fields =
         systems
         |> std.array.map (fun f => "%{f.field}: %{sty f},")
@@ -723,6 +742,12 @@ pub mod key_system {
         fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
             self.keymap_context = context;
 %{set_keymap_context_updates}
+        }
+    }
+
+    impl keymap::ReportHints for Context {
+        fn suppressed_modifiers(&self) -> smart_keymap::key::KeyboardModifiers {
+            %{report_hints_suppress_union}
         }
     }
 
@@ -1031,6 +1056,7 @@ pub mod key_system {
             "History",
             "Keyboard",
             "Layered",
+            "ModConditioned",
             "Mouse",
             "Sequence",
             "Sticky",
@@ -1078,6 +1104,7 @@ pub mod key_system {
             "History",
             "Keyboard",
             "Layered",
+            "ModConditioned",
             "Mouse",
             "Sequence",
             "Sticky",

@@ -18,6 +18,7 @@
 #  - key_output:     'NoKeyOutput | 'KeyOutput
 #  - context_events: 'NoContextEvents | 'ContextEvents
 #  - keymap_context: 'NoKeymapContextUpdate | 'UpdatesKeymapContext
+#  - report_hints:   'NoReportHints | 'ReportHints
 #  - init_params:    size / const-generic params emitted in `pub mod init`
 #  - module_consts:  private consts inside generated `pub mod key_system`
 #                    (e.g. chorded pressed-indices derived from init:: size consts)
@@ -59,6 +60,7 @@
         key_output | default = 'NoKeyOutput,
         context_events | default = 'NoContextEvents,
         keymap_context | default = 'NoKeymapContextUpdate,
+        report_hints | default = 'NoReportHints,
 
         # KeyState enum arm name + Rust type. (`name` not `variant`: nested
         # record would shadow the outer family `variant` field.)
@@ -331,6 +333,29 @@
             'System {
               ty = "%{module}::System<Ref>",
               expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::new()",
+          },
+        },
+        mod_conditioned = {
+          module = "smart_keymap::key::mod_conditioned",
+          context_events = 'ContextEvents,
+          keymap_context = 'UpdatesKeymapContext,
+          report_hints = 'ReportHints,
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "MOD_CONDITIONED", data_field = "mod_conditioned" }],
+              rust_expr = smart_keymap.mod_conditioned.system.rust_expr,
+              ty.array = m%"%{module}::System<
+            Ref,
+            [%{module}::Key<Ref>; super::MOD_CONDITIONED]
+          >"%,
+              ty.vec = m%"%{module}::System<
+            Ref,
+            Vec<%{module}::Key<Ref>>
+          >"%,
             },
           context = {
             ty = "%{module}::Context",

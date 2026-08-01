@@ -71,6 +71,7 @@
 & (import "smart_keys/history/keymap-ncl-to-json.ncl")
 & (import "smart_keys/keyboard/keymap-ncl-to-json.ncl")
 & (import "smart_keys/layered/keymap-ncl-to-json.ncl")
+& (import "smart_keys/mod_conditioned/keymap-ncl-to-json.ncl")
 & (import "smart_keys/mouse/keymap-ncl-to-json.ncl")
 & (import "smart_keys/sequence/keymap-ncl-to-json.ncl")
 & (import "smart_keys/sticky/keymap-ncl-to-json.ncl")
@@ -298,6 +299,7 @@
       keymap_ncl.consumer,
       keymap_ncl.custom,
       keymap_ncl.history,
+      keymap_ncl.mod_conditioned,
       keymap_ncl.mouse,
       keymap_ncl.sticky,
       keymap_ncl.tap_dance,

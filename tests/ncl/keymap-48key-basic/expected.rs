@@ -132,6 +132,12 @@ pub mod init {
             }
         }
 
+        impl keymap::ReportHints for Context {
+            fn suppressed_modifiers(&self) -> smart_keymap::key::KeyboardModifiers {
+                smart_keymap::key::KeyboardModifiers::NONE
+            }
+        }
+
         /// Aggregate event.
         #[derive(Debug, Clone, Copy, PartialEq)]
         pub enum Event {
