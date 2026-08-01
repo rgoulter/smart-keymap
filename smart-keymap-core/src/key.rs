@@ -22,6 +22,8 @@ pub mod history;
 pub mod keyboard;
 /// Layered keys. (Layering functionality).
 pub mod layered;
+/// Mod-conditioned keys (dual bind gated on held modifiers + report suppress).
+pub mod mod_conditioned;
 /// Mouse keys.
 pub mod mouse;
 /// Sequence keys (QMK leader-style ordered sequences).
@@ -446,7 +448,15 @@ impl KeyboardModifiers {
         KeyboardModifiers(self.0 | other.0)
     }
 
+    /// Bits present in `self` but not in `other`.
+    pub const fn difference(&self, other: &KeyboardModifiers) -> KeyboardModifiers {
+        KeyboardModifiers(self.0 & !other.0)
+    }
+
     /// Whether this keyboard modifiers includes all the other modifiers.
+    ///
+    /// Note: this is an *any-of* / non-empty intersection check
+    /// (`self.0 & other.0 != 0`), not a full subset check.
     pub const fn has_modifiers(&self, other: &KeyboardModifiers) -> bool {
         self.0 & other.0 != 0
     }
@@ -621,6 +631,14 @@ impl KeyOutput {
     /// Returns the keyboard modifiers of the key output.
     pub const fn key_modifiers(&self) -> KeyboardModifiers {
         self.key_modifiers
+    }
+
+    /// Returns a copy with the given modifier bits cleared.
+    pub const fn without_modifiers(self, suppress: KeyboardModifiers) -> Self {
+        KeyOutput {
+            key_code: self.key_code,
+            key_modifiers: self.key_modifiers.difference(&suppress),
+        }
     }
 }
 

@@ -175,6 +175,12 @@ pub struct KeymapContext {
 
     /// Number of milliseconds since keymap received an input event.
     pub idle_time_ms: u32,
+
+    /// Aggregate keyboard modifiers from already-pressed inputs (physical + virtual).
+    ///
+    /// Updated by the keymap before press handling and on tick
+    ///  so families can branch without maintaining their own mod-tracking.
+    pub pressed_modifiers: key::KeyboardModifiers,
 }
 
 impl KeymapContext {
@@ -183,6 +189,7 @@ impl KeymapContext {
         KeymapContext {
             time_ms: 0,
             idle_time_ms: 0,
+            pressed_modifiers: key::KeyboardModifiers::NONE,
         }
     }
 }
@@ -191,6 +198,18 @@ impl KeymapContext {
 pub trait SetKeymapContext {
     /// Sets the keymap context.
     fn set_keymap_context(&mut self, context: KeymapContext);
+}
+
+/// Report-level policy hints from aggregate context (feature-agnostic).
+///
+/// Families that need to hide held modifiers from the host
+///  (e.g. mod-conditioned morphs) expose a suppress mask;
+///  the keymap applies it when folding [`Keymap::pressed_keys`].
+pub trait ReportHints {
+    /// Modifier bits to strip from the HID report.
+    fn suppressed_modifiers(&self) -> key::KeyboardModifiers {
+        key::KeyboardModifiers::NONE
+    }
 }
 
 /// Events related to the keymap.
@@ -257,7 +276,7 @@ impl<
 impl<
         I: Debug + Index<usize, Output = R>,
         R: Copy + Debug,
-        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
+        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
         Ev: Copy + Debug,
         PKS: Debug,
         KS: Copy + Debug + From<key::NoOpKeyState>,
@@ -395,8 +414,6 @@ impl<
     ///
     /// Silently discards the input event if the active input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
-        self.idle_time = 0;
-
         let ready = if let Some(pending_state) = self.pending_state.as_mut() {
             pending_state.ingest_queue.push_back_or_ignore(ev);
             pending_state.ingest_queue.pop_front_if_ready()
@@ -406,9 +423,15 @@ impl<
         };
 
         if let Some(ie) = ready {
+            // Process before clearing idle_time
+            //  so families that snapshot KeymapContext
+            //  (required_idle_time, pressed_modifiers)
+            //  still see idle accumulated since the previous input.
             self.process_input(ie);
             self.set_active_input_delay();
         }
+
+        self.idle_time = 0;
     }
 
     /// After processing one input, re-arm the active delay line.
@@ -531,6 +554,9 @@ impl<
                 input::Event::Press { keymap_index }
                     if !self.has_pressed_input_with_keymap_index(keymap_index) =>
                 {
+                    // Snapshot held mods (incl. sticky/caps_word VKs) before branching.
+                    self.push_keymap_context();
+
                     let mut maybe_key_ref = Some(self.key_refs[keymap_index as usize]);
 
                     while let Some(key_ref) = maybe_key_ref.take() {
@@ -691,13 +717,33 @@ impl<
         }
     }
 
-    /// Advances the state of the keymap by one tick.
-    pub fn tick(&mut self) {
+    /// Aggregate keyboard modifiers from already-pressed inputs (no suppress).
+    fn aggregate_pressed_modifiers(&self) -> key::KeyboardModifiers {
+        self.pressed_inputs
+            .iter()
+            .filter_map(|pi| match pi {
+                input::PressedInput::Key(input::PressedKey {
+                    key_ref, key_state, ..
+                }) => self.key_system.key_output(key_ref, key_state),
+                &input::PressedInput::Virtual(key_output) => Some(key_output),
+            })
+            .fold(key::KeyboardModifiers::NONE, |acc, ko| {
+                acc.union(&ko.key_modifiers())
+            })
+    }
+
+    fn push_keymap_context(&mut self) {
         let km_context = KeymapContext {
             time_ms: self.event_scheduler.schedule_counter,
             idle_time_ms: self.idle_time,
+            pressed_modifiers: self.aggregate_pressed_modifiers(),
         };
         self.context.set_keymap_context(km_context);
+    }
+
+    /// Advances the state of the keymap by one tick.
+    pub fn tick(&mut self) {
+        self.push_keymap_context();
 
         let ready = if let Some(pending_state) = self.pending_state.as_mut() {
             pending_state.ingest_queue.pop_front_if_ready()
@@ -726,11 +772,21 @@ impl<
 
     /// Returns the the pressed key outputs.
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
-        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| match pi {
-            input::PressedInput::Key(input::PressedKey {
-                key_ref, key_state, ..
-            }) => self.key_system.key_output(key_ref, key_state),
-            &input::PressedInput::Virtual(key_output) => Some(key_output),
+        let suppress = self.context.suppressed_modifiers();
+        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| {
+            let ko = match pi {
+                input::PressedInput::Key(input::PressedKey {
+                    key_ref, key_state, ..
+                }) => self.key_system.key_output(key_ref, key_state)?,
+                &input::PressedInput::Virtual(key_output) => key_output,
+            };
+            let ko = ko.without_modifiers(suppress);
+            // Drop pure-mod outputs that are fully suppressed.
+            if ko == key::KeyOutput::NO_OUTPUT {
+                None
+            } else {
+                Some(ko)
+            }
         });
 
         pressed_key_codes.collect()
@@ -819,7 +875,7 @@ impl<
 impl<
         I: Debug + Index<usize, Output = R>,
         R: Copy + Debug,
-        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
+        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
         Ev: Copy + Debug,
         PKS: Debug,
         KS: Copy + Debug + From<key::NoOpKeyState>,

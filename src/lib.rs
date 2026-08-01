@@ -192,6 +192,8 @@ pub mod init {
             }
         }
 
+        impl keymap::ReportHints for Context {}
+
         /// Aggregate event.
         #[derive(Debug, Clone, Copy, PartialEq)]
         pub enum Event {

@@ -3,7 +3,7 @@ use core::ops::Index;
 
 use smart_keymap::input;
 use smart_keymap::key;
-use smart_keymap::keymap::{self, Keymap, KeymapOutput, SetKeymapContext};
+use smart_keymap::keymap::{self, Keymap, KeymapOutput, ReportHints, SetKeymapContext};
 
 /// Callbacks for the keymap.
 pub struct KeymapCallbacks {
@@ -64,7 +64,7 @@ impl<I, R, Ctx, Ev, PKS, KS, S> KeyboardBackend<I, R, Ctx, Ev, PKS, KS, S>
 where
     I: Debug + Index<usize, Output = R>,
     R: Copy + Debug,
-    Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
+    Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
     Ev: Copy + Debug,
     PKS: Debug,
     KS: Copy + Debug + From<key::NoOpKeyState>,

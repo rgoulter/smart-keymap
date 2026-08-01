@@ -6,6 +6,7 @@ use crate::key;
 use crate::keymap;
 
 use keymap::Keymap;
+use keymap::ReportHints;
 use keymap::SetKeymapContext;
 
 /// Wrapper around a [crate::keymap::Keymap] that also tracks distinct HID reports.
@@ -18,7 +19,7 @@ pub struct ObservedKeymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, K
 impl<
         I: Debug + Index<usize, Output = R>,
         R: Copy + Debug,
-        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext,
+        Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
         Ev: Copy + Debug,
         PKS: Debug,
         KS: Copy + Debug + From<key::NoOpKeyState>,
