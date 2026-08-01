@@ -7,6 +7,7 @@
 & (import "smart_keys/history/keymap-codegen.ncl")
 & (import "smart_keys/keyboard/keymap-codegen.ncl")
 & (import "smart_keys/layered/keymap-codegen.ncl")
+& (import "smart_keys/mod_conditioned/keymap-codegen.ncl")
 & (import "smart_keys/mouse/keymap-codegen.ncl")
 & (import "smart_keys/sequence/keymap-codegen.ncl")
 & (import "smart_keys/sticky/keymap-codegen.ncl")
@@ -222,6 +223,7 @@
       smart_keymap.custom.key,
       smart_keymap.history.key,
       smart_keymap.keyboard.key,
+      smart_keymap.mod_conditioned.key,
       smart_keymap.mouse.key,
       smart_keymap.layered.layered_key,
       smart_keymap.layered.modifier_key,

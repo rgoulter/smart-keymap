@@ -16,6 +16,7 @@ std.array.fold_left
     key_extensions.keyboard_aliases,
     key_extensions.keyboard_abbreviations,
     key_extensions.layered,
+    key_extensions.mod_conditioned,
     key_extensions.mouse,
     key_extensions.mouse_aliases,
     key_extensions.literals,
