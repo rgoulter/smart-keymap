@@ -52,7 +52,8 @@ const TEST_KEYMAP_NCL: &str = r#"
     keys = [
       K.A, K.B, K.C, K.D, K.E, K.F, K.G, K.H, K.I, K.J, K.K, K.L, K.M, K.N, K.O, K.P, K.Q, K.R, K.S, K.T, K.U, K.V, K.W, K.X, K.Y, K.Z,
       K.N0, K.N1, K.N2, K.N3, K.N4, K.N5, K.N6, K.N7, K.N8, K.N9,
-      K.Space, K.Backspace, K.LeftShift, K.LeftCtrl,
+      K.Space, K.Backspace, K.Escape, K.Grave, K.Delete,
+      K.LeftShift, K.RightShift, K.LeftCtrl,
     ]
   }
 "#;
@@ -157,6 +158,8 @@ struct KeyVecs {
     #[serde(default)]
     layer_modifiers: Vec<key::layered::ModifierKey>,
     #[serde(default)]
+    mod_conditioned: Vec<key::mod_conditioned::Key<Ref>>,
+    #[serde(default)]
     sequence: Vec<key::sequence::Key<Ref, SEQUENCE_MAX_OVERLAPPING>>,
     #[serde(default)]
     sequence_auxiliary: Vec<key::sequence::AuxiliaryKey<Ref>>,
@@ -183,6 +186,7 @@ fn system_from_key_data(keys: KeyVecs) -> System {
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
         smart_keymap::key::keyboard::System::new(keys.keyboard),
         smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
+        smart_keymap::key::mod_conditioned::System::new(keys.mod_conditioned),
         smart_keymap::key::sequence::System::new(keys.sequence, keys.sequence_auxiliary),
         smart_keymap::key::sticky::System::new(keys.sticky),
         smart_keymap::key::tap_dance::System::new(keys.tap_dance),
