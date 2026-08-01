@@ -31,6 +31,39 @@ LLM coding agents improved in capability
 
 The codebase's functionality is ensured through extensive automated testing.
 
+## Development tasks (`just`)
+
+Day-to-day commands are exposed through the root [justfile](justfile)
+([just](https://just.systems/)). Make remains the engine for dependency graphs
+and CI; `just` is the human-facing catalog.
+
+```text
+just                              # list recipes (default)
+just choose                       # interactive picker (fzf / JUST_CHOOSER)
+just test-fast                    # daily loop: ncl checks + rust lib + integration
+just test                         # full matrix via Make (pre-push / CI-ish)
+
+just ncl::checks                  # Nickel evaluated_checks
+just ncl::snapshot keymap-…       # one codegen snapshot fixture
+just ncl::snapshot-pick           # fzf a fixture, then run it
+just ncl::save [fixture]          # refresh expected.rs (one or all)
+
+just rust::lib                    # smart-keymap-core + smart-keymap unit tests
+just rust::integration [module]   # tests/rust integration suite / filter
+just rust::cucumber [filter]      # cucumber features (slow)
+just rust::clippy                 # workspace clippy (firmware crates excluded)
+
+just ceedling::all                # all C/FFI suites
+just ceedling::suite keyboard     # one suite (make test-ceedling-<name>)
+just ceedling::suite-pick         # fzf a suite
+```
+
+Modules live under `just/` (`ncl`, `rust`, `ceedling`). Firmware packages keep
+their own justfiles (e.g. `rp2040-rtic-smart-keyboard`).
+
+CI continues to call `make` / `cargo` directly; keep those entry points stable
+when adding recipes.
+
 ## License
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
