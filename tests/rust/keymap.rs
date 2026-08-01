@@ -6,6 +6,7 @@ mod custom;
 mod hid_keycodes;
 mod history;
 mod layered;
+mod mod_conditioned;
 mod mouse;
 mod sequence;
 mod sticky;

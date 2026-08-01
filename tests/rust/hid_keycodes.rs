@@ -17,10 +17,15 @@ pub const KC_M: u8 = 0x10;
 pub const KC_N: u8 = 0x11;
 pub const KC_O: u8 = 0x12;
 pub const KC_P: u8 = 0x13;
+pub const KC_ESCAPE: u8 = 0x29;
+pub const KC_BACKSPACE: u8 = 0x2A;
 pub const KC_SPACE: u8 = 0x2C;
+pub const KC_GRAVE: u8 = 0x35;
 pub const KC_SLASH: u8 = 0x38;
+pub const KC_DELETE: u8 = 0x4C;
 
 /// Modifier bits in HID boot keyboard report byte 0.
 pub const MOD_LCTL: u8 = 0x01;
 pub const MOD_LSHFT: u8 = 0x02;
 pub const MOD_LCTL_LSHFT: u8 = MOD_LCTL | MOD_LSHFT;
+pub const MOD_RSHFT: u8 = 0x20;
