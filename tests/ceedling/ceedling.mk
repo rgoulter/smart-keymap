@@ -73,9 +73,11 @@ CEEDLING_TEST_SUITES = $(CEEDLING_KEYMAP_SUITES) protocol
 define CEEDLING_SUITE_TEST_RULE
 .PHONY: test-ceedling-$(1)
 test-ceedling-$(1): include/smart_keymap.h
-test-ceedling-$(1): fix-ceedling-vendor
 test-ceedling-$(1): tests/ceedling/libs/libsmart_keymap_$(1).a
 test-ceedling-$(1): tests/ceedling/generated/$(1)_test_ceedling_fixture.h
+	# Ceedling re-vendors Unity as read-only from the Nix store each suite;
+	# chmod before every run so a multi-suite make does not hit EACCES.
+	if test -d tests/ceedling/build/vendor; then chmod -R u+w tests/ceedling/build/vendor; fi
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/$(1).yml test:path[$(1)]
 endef
 
@@ -83,8 +85,8 @@ $(foreach suite,$(CEEDLING_KEYMAP_SUITES),$(eval $(call CEEDLING_SUITE_TEST_RULE
 
 .PHONY: test-ceedling-protocol
 test-ceedling-protocol: include/smart_keymap.h
-test-ceedling-protocol: fix-ceedling-vendor
 test-ceedling-protocol: tests/ceedling/libs/libsmart_keymap_default.a
+	if test -d tests/ceedling/build/vendor; then chmod -R u+w tests/ceedling/build/vendor; fi
 	cd tests/ceedling && $(CEEDLING) --mixin=mixins/protocol.yml test:path[protocol]
 
 .PHONY: test-ceedling
