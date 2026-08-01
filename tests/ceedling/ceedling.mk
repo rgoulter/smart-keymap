@@ -65,19 +65,32 @@ tests/ceedling/libs/libsmart_keymap_default.a: $(CEEDLING_CARGO_TARGET)/default/
 	mkdir -p tests/ceedling/libs
 	cp $< $@
 
+# Suites that run under ceedling (keymap-backed + protocol).
+CEEDLING_TEST_SUITES = $(CEEDLING_KEYMAP_SUITES) protocol
+
+# Run one suite: make test-ceedling-keyboard
+# Builds only that suite's lib/fixture (protocol uses the default lib).
+define CEEDLING_SUITE_TEST_RULE
+.PHONY: test-ceedling-$(1)
+test-ceedling-$(1): include/smart_keymap.h
+test-ceedling-$(1): fix-ceedling-vendor
+test-ceedling-$(1): tests/ceedling/libs/libsmart_keymap_$(1).a
+test-ceedling-$(1): tests/ceedling/generated/$(1)_test_ceedling_fixture.h
+	cd tests/ceedling && $(CEEDLING) --mixin=mixins/$(1).yml test:path[$(1)]
+endef
+
+$(foreach suite,$(CEEDLING_KEYMAP_SUITES),$(eval $(call CEEDLING_SUITE_TEST_RULE,$(suite))))
+
+.PHONY: test-ceedling-protocol
+test-ceedling-protocol: include/smart_keymap.h
+test-ceedling-protocol: fix-ceedling-vendor
+test-ceedling-protocol: tests/ceedling/libs/libsmart_keymap_default.a
+	cd tests/ceedling && $(CEEDLING) --mixin=mixins/protocol.yml test:path[protocol]
+
 .PHONY: test-ceedling
 test-ceedling: include/smart_keymap.h
 test-ceedling: fix-ceedling-vendor
 test-ceedling: format-ceedling
 test-ceedling: $(CEEDLING_LIBS)
 test-ceedling: $(CEEDLING_FIXTURES)
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/callback.yml test:path[callback]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/consumer.yml test:path[consumer]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/keyboard.yml test:path[keyboard]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/layered.yml test:path[layered]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/conditional_layers.yml test:path[conditional_layers]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/mouse.yml test:path[mouse]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/sticky.yml test:path[sticky]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/tap_hold.yml test:path[tap_hold]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/remap_named_layers.yml test:path[remap_named_layers]
-	cd tests/ceedling && $(CEEDLING) --mixin=mixins/protocol.yml test:path[protocol]
+test-ceedling: $(addprefix test-ceedling-,$(CEEDLING_TEST_SUITES))
