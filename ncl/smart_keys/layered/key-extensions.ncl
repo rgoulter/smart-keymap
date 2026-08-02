@@ -17,6 +17,13 @@
         {
           layer_modifier = { sticky = layer_num }
         },
+      # Lock highest currently active layer.
+      lock = { layer_modifier = { lock = true } },
+      # Lock/unlock a specific layer.
+      lock_layer = fun layer_num =>
+        {
+          layer_modifier = { lock = layer_num }
+        },
       set_active_layers_to = fun active_layers =>
         {
           layer_modifier = { set_active_layers_to = active_layers }
