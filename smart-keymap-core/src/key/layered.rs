@@ -10,6 +10,11 @@ use crate::key::KeyboardModifiers;
 use crate::slice::Slice;
 
 /// The type used for layer index.
+///
+/// Layer modifiers and layer events use **1-based** indices (`1` = first non-base
+/// layer). Index `0` is reserved (base / always active). Call sites must only
+/// pass indices in range for the keymap's layer count; out-of-range values are
+/// a construction bug and are checked with [`debug_assert`] in debug builds.
 pub type LayerIndex = u32;
 
 /// Fixed-capacity bitset of layers for modifier / conditional-layer state.
@@ -54,6 +59,15 @@ impl LayerBitset {
     pub const fn insert(self, index: usize) -> Self {
         if index < Self::BITS {
             Self(self.0 | (1u32 << index))
+        } else {
+            self
+        }
+    }
+
+    /// Returns a copy with bit `index` cleared, if `index` is in range.
+    pub const fn remove(self, index: usize) -> Self {
+        if index < Self::BITS {
+            Self(self.0 & !(1u32 << index))
         } else {
             self
         }
@@ -141,6 +155,15 @@ pub enum Ref {
     Layered(u8),
 }
 
+/// Target of a layer-lock action.
+#[derive(Debug, Deserialize, Clone, Copy, PartialEq, Eq)]
+pub enum LayerLockTarget {
+    /// Highest currently active layer.
+    HighestActive,
+    /// A specific layer.
+    Layer(LayerIndex),
+}
+
 /// Modifier layer key affects what layers are active.
 #[derive(Debug, Deserialize, Clone, Copy, PartialEq)]
 pub enum ModifierKey {
@@ -157,6 +180,14 @@ pub enum ModifierKey {
     SetActiveLayers(ModifierBitset),
     /// Sets the default layer.
     Default(LayerIndex),
+    /// Layer lock key.
+    ///
+    /// Inverts lock on the [LayerLockTarget]: if unlocked, lock and activate; if locked,
+    /// unlock and deactivate.
+    ///
+    /// While a layer is locked, releasing a [`ModifierKey::Hold`] that activated it leaves the
+    /// layer active. Pressing that [`ModifierKey::Hold`] again unlocks and turns the layer off.
+    Lock(LayerLockTarget),
 }
 
 impl ModifierKey {
@@ -229,6 +260,16 @@ impl ModifierKey {
         ModifierKey::Default(layer)
     }
 
+    /// Create a [ModifierKey::Lock] that targets the highest currently active layer.
+    pub const fn lock() -> Self {
+        ModifierKey::Lock(LayerLockTarget::HighestActive)
+    }
+
+    /// Create a [ModifierKey::Lock] that targets a specific layer.
+    pub const fn lock_layer(layer: LayerIndex) -> Self {
+        ModifierKey::Lock(LayerLockTarget::Layer(layer))
+    }
+
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::Activated] event.
@@ -251,6 +292,10 @@ impl ModifierKey {
             ModifierKey::Default(layer) => (
                 ModifierKeyState::new(),
                 Some(LayerEvent::SetDefault(*layer)),
+            ),
+            ModifierKey::Lock(target) => (
+                ModifierKeyState::new(),
+                Some(LayerEvent::LockInvert(*target)),
             ),
         }
     }
@@ -301,10 +346,12 @@ pub trait LayerState: Copy + Debug {
 impl<const L: usize> LayerState for [Activity; L] {
     fn activate(&mut self, layer_index: LayerIndex, style: ActivationStyle) {
         let layer_index: usize = layer_index as usize;
+        // 1-based layer indices; keymap construction / NCL validation must ensure range.
         debug_assert!(
-            layer_index <= L,
-            "layer must be less than array length of {}",
-            L
+            (1..=L).contains(&layer_index),
+            "layer must be in 1..={} (got {})",
+            L,
+            layer_index
         );
         self[layer_index - 1] = Activity::Active(style);
     }
@@ -312,9 +359,10 @@ impl<const L: usize> LayerState for [Activity; L] {
     fn deactivate(&mut self, layer_index: LayerIndex) {
         let layer_index: usize = layer_index as usize;
         debug_assert!(
-            layer_index <= L,
-            "layer must be less than array length of {}",
-            L
+            (1..=L).contains(&layer_index),
+            "layer must be in 1..={} (got {})",
+            L,
+            layer_index
         );
         self[layer_index - 1] = Activity::Inactive;
     }
@@ -439,6 +487,10 @@ pub struct Context<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usiz
     config: Config<CONDITIONAL_LAYER_COUNT>,
     default_layer: Option<LayerIndex>,
     active_layers: [Activity; LAYER_COUNT],
+    /// Bitset of locked layers (bit `i` = layer `i` is locked).
+    ///
+    /// Locked layers stay active when a [ModifierKey::Hold] for that layer is released.
+    locked_layers: LayerBitset,
     // Keymap index which was pressed while a layer was sticky.
     pressed_keymap_index: Option<u16>,
     // Invalidates pending sticky-timeout events when advanced.
@@ -458,6 +510,7 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize> Debug
                     active_layers: &self.active_layers,
                 },
             )
+            .field("locked_layers", &self.locked_layers)
             .field("pressed_keymap_index", &self.pressed_keymap_index)
             .field("sticky_timeout_id", &self.sticky_timeout_id)
             .finish()
@@ -478,6 +531,7 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
             config,
             default_layer: None,
             active_layers: [Activity::Inactive; LAYER_COUNT],
+            locked_layers: LayerBitset::EMPTY,
             pressed_keymap_index: None,
             sticky_timeout_id: 0,
         }
@@ -494,8 +548,56 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
 
     fn deactivate_sticky_layer(&mut self, layer: LayerIndex) {
         self.active_layers.deactivate(layer);
+        self.clear_layer_lock(layer);
         self.pressed_keymap_index = None;
         self.invalidate_sticky_timeouts();
+        self.apply_conditional_layers();
+    }
+
+    /// Returns true if `layer` is currently locked.
+    pub fn is_layer_locked(&self, layer: LayerIndex) -> bool {
+        self.locked_layers.contains(layer as usize)
+    }
+
+    fn set_layer_lock(&mut self, layer: LayerIndex) {
+        self.locked_layers = self.locked_layers.insert(layer as usize);
+    }
+
+    fn clear_layer_lock(&mut self, layer: LayerIndex) {
+        self.locked_layers = self.locked_layers.remove(layer as usize);
+    }
+
+    /// Highest active layer index, if any (1-based layers only).
+    fn highest_active_layer(&self) -> Option<LayerIndex> {
+        self.active_layers.active_layers().next()
+    }
+
+    /// Invert lock on `layer`.
+    ///
+    /// If unlocked: lock and turn the layer on.
+    /// If locked: unlock and turn the layer off.
+    ///
+    /// `layer` must be a valid 1-based index (`1..=LAYER_COUNT`); debug builds assert this
+    /// via [LayerState::activate] / [LayerState::deactivate].
+    fn lock_invert(&mut self, layer: LayerIndex) {
+        if self.is_layer_locked(layer) {
+            self.clear_layer_lock(layer);
+            self.active_layers.deactivate(layer);
+            if self.sticky_layer() == Some(layer) {
+                self.pressed_keymap_index = None;
+                self.invalidate_sticky_timeouts();
+            }
+        } else {
+            self.set_layer_lock(layer);
+            self.active_layers.activate(layer, ActivationStyle::Regular);
+            // Lock supersedes sticky wait on this layer.
+            if self.sticky_layer() == Some(layer) {
+                self.pressed_keymap_index = None;
+                self.invalidate_sticky_timeouts();
+            } else {
+                self.invalidate_sticky_timeouts();
+            }
+        }
         self.apply_conditional_layers();
     }
 
@@ -525,6 +627,9 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
                 self.active_layers
                     .activate(rule.then_layer, ActivationStyle::Regular);
                 true
+            } else if self.is_layer_locked(rule.then_layer) {
+                // Locked layers stay active even when conditional if-layers drop.
+                changed
             } else {
                 self.active_layers.deactivate(rule.then_layer);
                 true
@@ -576,17 +681,28 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
     fn handle_layer_event(&mut self, event: LayerEvent) -> key::KeyEvents<LayerEvent> {
         match event {
             LayerEvent::Activated(layer) => {
-                self.active_layers.activate(layer, ActivationStyle::Regular);
+                if self.is_layer_locked(layer) {
+                    // Hold pressed while layer is locked: unlock and turn off.
+                    self.clear_layer_lock(layer);
+                    self.active_layers.deactivate(layer);
+                } else {
+                    self.active_layers.activate(layer, ActivationStyle::Regular);
+                }
                 // Sticky cancelled / converted to hold — drop any sticky timeout.
                 self.invalidate_sticky_timeouts();
                 self.apply_conditional_layers();
                 key::KeyEvents::no_events()
             }
             LayerEvent::Deactivated(layer) => {
-                self.active_layers.deactivate(layer);
-                self.invalidate_sticky_timeouts();
-                self.apply_conditional_layers();
-                key::KeyEvents::no_events()
+                if self.is_layer_locked(layer) {
+                    // Locked layers stay on when the Hold that activated them is released.
+                    key::KeyEvents::no_events()
+                } else {
+                    self.active_layers.deactivate(layer);
+                    self.invalidate_sticky_timeouts();
+                    self.apply_conditional_layers();
+                    key::KeyEvents::no_events()
+                }
             }
             LayerEvent::StickyActivated(layer) => {
                 self.active_layers.activate(layer, ActivationStyle::Sticky);
@@ -627,6 +743,7 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
             LayerEvent::Toggled(layer) => {
                 if self.active_layers[layer as usize - 1].is_active() {
                     self.active_layers.deactivate(layer);
+                    self.clear_layer_lock(layer);
                 } else {
                     self.active_layers.activate(layer, ActivationStyle::Regular);
                 }
@@ -644,6 +761,7 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
                                 .activate(li as LayerIndex, ActivationStyle::Regular);
                         } else {
                             self.active_layers.deactivate(li as LayerIndex);
+                            self.clear_layer_lock(li as LayerIndex);
                         }
                     }
                 }
@@ -656,6 +774,16 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
             }
             LayerEvent::SetDefault(layer) => {
                 self.default_layer = Some(layer);
+                key::KeyEvents::no_events()
+            }
+            LayerEvent::LockInvert(target) => {
+                let layer = match target {
+                    LayerLockTarget::HighestActive => self.highest_active_layer(),
+                    LayerLockTarget::Layer(layer) => Some(layer),
+                };
+                if let Some(layer) = layer {
+                    self.lock_invert(layer);
+                }
                 key::KeyEvents::no_events()
             }
         }
@@ -833,11 +961,11 @@ impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_
 /// Events from [ModifierKey] which affect [Context].
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum LayerEvent {
-    /// Activates the given layer.
+    /// Activates the given layer (1-based; see [LayerIndex]).
     Activated(LayerIndex),
-    /// Deactivates the given layer.
+    /// Deactivates the given layer (1-based; see [LayerIndex]).
     Deactivated(LayerIndex),
-    /// Toggles the given layer.
+    /// Toggles the given layer (1-based; see [LayerIndex]).
     Toggled(LayerIndex),
     /// Activates the given layer as sticky (on sticky-mod press).
     StickyActivated(LayerIndex),
@@ -851,6 +979,10 @@ pub enum LayerEvent {
     Set(ModifierBitset),
     /// Changes the default layer.
     SetDefault(LayerIndex),
+    /// Invert lock on the given [LayerLockTarget].
+    ///
+    /// See [ModifierKey::Lock].
+    LockInvert(LayerLockTarget),
 }
 
 /// Struct for layer system pending key state. (No pending state).
@@ -946,6 +1078,7 @@ impl ModifierKeyState {
                 }
                 _ => None,
             },
+            ModifierKey::Lock(_) => None,
         }
     }
 }
@@ -1118,6 +1251,7 @@ mod tests {
         assert_eq!(31, MAX_BITSET_LAYER);
         assert!(LayerBitset::EMPTY.insert(31).contains(31));
         assert!(!LayerBitset::EMPTY.insert(32).contains(32));
+        assert!(!LayerBitset::ALL.remove(31).contains(31));
         assert!(LayerBitset::ALL.is_superset_of(LayerBitset::from_bits(0b1010)));
     }
 
@@ -1271,6 +1405,25 @@ mod tests {
 
         // Assert
         assert_eq!(Activity::Inactive, context.active_layers[2]);
+    }
+
+    #[test]
+    fn test_locked_conditional_layer_stays_active_when_if_layers_release() {
+        // Assemble: lower+raise → adjust; lock adjust while both if-layers held
+        let mut context = tri_layer_context();
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::Activated(2));
+        assert!(context.active_layers[2].is_active());
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::Layer(3)));
+        assert!(context.is_layer_locked(3));
+
+        // Act: release if-layers (would normally turn adjust off)
+        context.handle_layer_event(LayerEvent::Deactivated(1));
+        context.handle_layer_event(LayerEvent::Deactivated(2));
+
+        // Assert: lock keeps adjust on
+        assert!(context.is_layer_locked(3));
+        assert!(context.active_layers[2].is_active());
     }
 
     #[test]
@@ -1461,5 +1614,125 @@ mod tests {
 
         // Assert
         assert_eq!(Some(LayerEvent::Toggled(layer)), layer_event);
+    }
+
+    #[test]
+    fn test_pressing_lock_key_emits_lock_invert_highest() {
+        // Assemble
+        let key = ModifierKey::lock();
+
+        // Act
+        let (_pressed_key, layer_event) = key.new_pressed_key();
+
+        // Assert
+        assert_eq!(
+            Some(LayerEvent::LockInvert(LayerLockTarget::HighestActive)),
+            layer_event
+        );
+    }
+
+    #[test]
+    fn test_pressing_lock_layer_key_emits_lock_invert_layer() {
+        // Assemble
+        let key = ModifierKey::lock_layer(2);
+
+        // Act
+        let (_pressed_key, layer_event) = key.new_pressed_key();
+
+        // Assert
+        assert_eq!(
+            Some(LayerEvent::LockInvert(LayerLockTarget::Layer(2))),
+            layer_event
+        );
+    }
+
+    #[test]
+    fn test_lock_highest_keeps_layer_after_hold_release() {
+        // Assemble: hold activates layer 1, then lock highest
+        let mut context = Context::default();
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::HighestActive));
+        assert!(context.is_layer_locked(1));
+        assert!(context.active_layers[0].is_active());
+
+        // Act: hold release (would normally deactivate)
+        context.handle_layer_event(LayerEvent::Deactivated(1));
+
+        // Assert: still active and locked
+        assert!(context.is_layer_locked(1));
+        assert!(context.active_layers[0].is_active());
+    }
+
+    #[test]
+    fn test_lock_again_unlocks_and_deactivates() {
+        // Assemble: lock highest after hold, then release hold
+        let mut context = Context::default();
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::HighestActive));
+        context.handle_layer_event(LayerEvent::Deactivated(1));
+        assert!(context.is_layer_locked(1));
+        assert!(context.active_layers[0].is_active());
+
+        // Act: lock again (unlock)
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::HighestActive));
+
+        // Assert
+        assert!(!context.is_layer_locked(1));
+        assert!(!context.active_layers[0].is_active());
+    }
+
+    #[test]
+    fn test_hold_press_while_locked_unlocks() {
+        // Assemble: lock layer, then release hold so only lock keeps it active
+        let mut context = Context::default();
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::HighestActive));
+        context.handle_layer_event(LayerEvent::Deactivated(1));
+        assert!(context.is_layer_locked(1));
+        assert!(context.active_layers[0].is_active());
+
+        // Act: press hold again while locked
+        context.handle_layer_event(LayerEvent::Activated(1));
+
+        // Assert
+        assert!(!context.is_layer_locked(1));
+        assert!(!context.active_layers[0].is_active());
+    }
+
+    #[test]
+    fn test_lock_specific_layer_activates_when_inactive() {
+        // Assemble
+        let mut context = Context::default();
+
+        // Act
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::Layer(2)));
+
+        // Assert
+        assert!(context.is_layer_locked(2));
+        assert!(context.active_layers[1].is_active());
+    }
+
+    #[test]
+    fn test_lock_no_active_layer_is_noop() {
+        // Assemble
+        let mut context = Context::default();
+
+        // Act
+        context.handle_layer_event(LayerEvent::LockInvert(LayerLockTarget::HighestActive));
+
+        // Assert
+        assert_eq!(LayerBitset::EMPTY, context.locked_layers);
+        assert!(!context.active_layers.iter().any(|a| a.is_active()));
+    }
+
+    #[test]
+    fn deserialize_lock_json() {
+        // Assemble / Act
+        let highest: ModifierKey = serde_json::from_str(r#"{"Lock":"HighestActive"}"#).unwrap();
+        let layer: ModifierKey = serde_json::from_str(r#"{"Lock":{"Layer":3}}"#).unwrap();
+
+        // Assert
+        assert_eq!(ModifierKey::Lock(LayerLockTarget::HighestActive), highest);
+        assert_eq!(ModifierKey::Lock(LayerLockTarget::Layer(3)), layer);
     }
 }
