@@ -9,6 +9,12 @@ use keymap::Keymap;
 use keymap::ReportHints;
 use keymap::SetKeymapContext;
 
+/// Upper bound on ticks when draining scheduled events in tests.
+///
+/// Prevents integration tests from hanging indefinitely if a key keeps
+/// rescheduling work (e.g. an automation / string-macro loop).
+pub const MAX_TICKS_UNTIL_NO_SCHEDULED_EVENTS: usize = 10_000;
+
 /// Wrapper around a [crate::keymap::Keymap] that also tracks distinct HID reports.
 #[derive(Debug)]
 pub struct ObservedKeymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
@@ -79,15 +85,29 @@ impl<
     }
 
     /// Ticks the keymap until there are no scheduled events, updating reports appropriately.
+    ///
+    /// Panics if the keymap still has scheduled events after
+    /// `MAX_TICKS_UNTIL_NO_SCHEDULED_EVENTS` ticks (likely an infinite
+    /// reschedule loop).
     pub fn tick_until_no_scheduled_events(&mut self) {
         let ObservedKeymap {
             keymap,
             distinct_reports,
         } = self;
 
-        while keymap.has_scheduled_events() {
+        for _ in 0..MAX_TICKS_UNTIL_NO_SCHEDULED_EVENTS {
+            if !keymap.has_scheduled_events() {
+                return;
+            }
             keymap.tick();
             distinct_reports.update(keymap.report_output().as_hid_boot_keyboard_report());
         }
+        if !keymap.has_scheduled_events() {
+            return;
+        }
+        panic!(
+            "keymap did not become idle after {} ticks; possible infinite scheduled-event loop",
+            MAX_TICKS_UNTIL_NO_SCHEDULED_EVENTS
+        );
     }
 }
