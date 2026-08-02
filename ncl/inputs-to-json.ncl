@@ -91,7 +91,12 @@
       let initial_active_layers =
         std.array.generate (std.function.const false) max_layered_length
       in
-      { default_layer = 0, active_layers = initial_active_layers }
+      {
+        default_layer = 0,
+        active_layers = initial_active_layers,
+        # Parallel flags for locked layers.
+        locked_layers = initial_active_layers,
+      }
     in
     let { json_value, .. } =
       std.array.fold_left

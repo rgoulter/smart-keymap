@@ -68,19 +68,120 @@
     },
   },
 
+  # Highest active layer index (1-based), or null if none.
+  highest_active_layer = fun active_layers =>
+    std.array.fold_left
+      (fun acc is_active =>
+        let { idx, found } = acc in
+        if is_active then
+          { idx = idx + 1, found = idx + 1 }
+        else
+          { idx = idx + 1, found = found }
+      )
+      { idx = 0, found = null }
+      active_layers
+    |> (fun { found, .. } => found),
+
+  # True if flags[layer_idx - 1] is set. Invalid / out-of-range indices are false.
+  layer_flag_at = fun flags layer_idx =>
+    let idx = layer_idx - 1 in
+    if idx >= 0 && idx < std.array.length flags then
+      std.array.at idx flags
+    else
+      false,
+
   update_layer_state_for_input = fun input layer_state @ { default_layer, active_layers } =>
     input
     |> match {
       'Press { layer_modifier = { hold }, .. } =>
-        let { active_layers = al, ..layer_state } = layer_state in
-        { active_layers = activate_layer al hold } & layer_state,
+        let { active_layers = al, ..without_active_layers } = layer_state in
+        let ll =
+          if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
+        in
+        let other_fields =
+          if std.record.has_field "locked_layers" without_active_layers then
+            std.record.remove "locked_layers" without_active_layers
+          else
+            without_active_layers
+        in
+        if layer_flag_at ll hold then
+          {
+            active_layers = deactivate_layer al hold,
+            locked_layers = set_layer false ll hold,
+          }
+          & other_fields
+        else
+          { active_layers = activate_layer al hold, locked_layers = ll } & other_fields,
       'Release { layer_modifier = { hold }, .. } =>
-        let { active_layers = al, ..layer_state } = layer_state in
-        { active_layers = deactivate_layer al hold } & layer_state,
+        let { active_layers = al, ..without_active_layers } = layer_state in
+        let ll =
+          if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
+        in
+        let other_fields =
+          if std.record.has_field "locked_layers" without_active_layers then
+            std.record.remove "locked_layers" without_active_layers
+          else
+            without_active_layers
+        in
+        if layer_flag_at ll hold then
+          { active_layers = al, locked_layers = ll } & other_fields
+        else
+          { active_layers = deactivate_layer al hold, locked_layers = ll } & other_fields,
       'Press { layer_modifier = { toggle }, .. } or
       'Tap { layer_modifier = { toggle }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = toggle_layer al toggle } & layer_state,
+      'Press { layer_modifier = { lock = true }, .. } or
+      'Tap { layer_modifier = { lock = true }, .. } =>
+        let { active_layers = al, ..without_active_layers } = layer_state in
+        let ll =
+          if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
+        in
+        let other_fields =
+          if std.record.has_field "locked_layers" without_active_layers then
+            std.record.remove "locked_layers" without_active_layers
+          else
+            without_active_layers
+        in
+        let layer = highest_active_layer al in
+        if layer == null then
+          { active_layers = al, locked_layers = ll } & other_fields
+        else if layer_flag_at ll layer then
+          {
+            active_layers = deactivate_layer al layer,
+            locked_layers = set_layer false ll layer,
+          }
+          & other_fields
+        else
+          {
+            active_layers = activate_layer al layer,
+            locked_layers = set_layer true ll layer,
+          }
+          & other_fields,
+      'Press { layer_modifier = { lock = lock_layer }, .. } or
+      'Tap { layer_modifier = { lock = lock_layer }, .. } =>
+        let { active_layers = al, ..without_active_layers } = layer_state in
+        let ll =
+          if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
+        in
+        let other_fields =
+          if std.record.has_field "locked_layers" without_active_layers then
+            std.record.remove "locked_layers" without_active_layers
+          else
+            without_active_layers
+        in
+        if layer_flag_at ll lock_layer then
+          {
+            active_layers = deactivate_layer al lock_layer,
+            locked_layers = set_layer false ll lock_layer,
+          }
+          & other_fields
+        else
+          {
+            active_layers = activate_layer al lock_layer,
+            locked_layers = set_layer true ll lock_layer,
+          }
+          & other_fields,
       'Press { layer_modifier = lm, .. } or
       'Tap { layer_modifier = lm, .. } =>
         if std.record.has_field "set_active_layers_to" lm then
