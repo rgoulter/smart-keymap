@@ -1,12 +1,3 @@
-mod conditional;
-mod lock;
-mod modified_hold;
-mod set_active_layers;
-mod sticky;
-mod sticky_timeout;
-mod tap_hold;
-mod toggle;
-
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
@@ -14,38 +5,102 @@ use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
-fn press_base_key_when_no_layers_active() {
+fn lock_keeps_layer_after_hold_released() {
     // Assemble
     let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
                 layers = [
-                    [K.layer_mod.hold 1, K.A],
-                    [K.TTTT, K.B],
+                    [K.layer_mod.hold 1, K.layer_mod.lock, K.A],
+                    [K.TTTT, K.TTTT, K.B],
                 ],
             }
         "#
     ));
 
-    // Act
+    // Act: hold layer, lock, release hold, press letter
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_B, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
-    assert_eq!(expected_report, actual_report,);
+    assert_eq!(expected_report, actual_report);
 }
 
 #[test]
-fn press_active_layer_when_layer_mod_held() {
+fn lock_again_unlocks_layer() {
     // Assemble
     let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
                 layers = [
-                    [K.layer_mod.hold 1, K.A],
+                    [K.layer_mod.hold 1, K.layer_mod.lock, K.A],
+                    [K.TTTT, K.TTTT, K.B],
+                ],
+            }
+        "#
+    ));
+
+    // Act: lock layer, unlock with lock again, press letter
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+
+    // Assert
+    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
+    let actual_report = keymap.boot_keyboard_report();
+    assert_eq!(expected_report, actual_report);
+}
+
+#[test]
+fn hold_while_locked_unlocks() {
+    // Assemble
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.hold 1, K.layer_mod.lock, K.A],
+                    [K.TTTT, K.TTTT, K.B],
+                ],
+            }
+        "#
+    ));
+
+    // Act: lock, then tap hold again to unlock
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+
+    // Assert
+    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
+    let actual_report = keymap.boot_keyboard_report();
+    assert_eq!(expected_report, actual_report);
+}
+
+#[test]
+fn lock_layer_activates_specific_layer() {
+    // Assemble
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.lock_layer 1, K.A],
                     [K.TTTT, K.B],
                 ],
             }
@@ -54,6 +109,7 @@ fn press_active_layer_when_layer_mod_held() {
 
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
@@ -63,40 +119,14 @@ fn press_active_layer_when_layer_mod_held() {
 }
 
 #[test]
-fn press_retained_when_layer_mod_released() {
+fn lock_layer_twice_deactivates() {
     // Assemble
     let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
             {
                 layers = [
-                    [K.layer_mod.hold 1, K.A],
-                    [K.TTTT, K.B],
-                ],
-            }
-        "#
-    ));
-
-    // Act
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-    keymap.handle_input(input::Event::Press { keymap_index: 1 });
-    keymap.handle_input(input::Event::Release { keymap_index: 0 });
-
-    // Assert
-    let expected_report: [u8; 8] = [0, 0, KC_B, 0, 0, 0, 0, 0];
-    let actual_report = keymap.boot_keyboard_report();
-    assert_eq!(expected_report, actual_report);
-}
-
-#[test]
-fn uses_base_when_pressed_after_layer_mod_released() {
-    // Assemble
-    let mut keymap = ObservedKeymap::new(keymap!(
-        r#"
-            let K = import "keys.ncl" in
-            {
-                layers = [
-                    [K.layer_mod.hold 1, K.A],
+                    [K.layer_mod.lock_layer 1, K.A],
                     [K.TTTT, K.B],
                 ],
             }
@@ -106,35 +136,12 @@ fn uses_base_when_pressed_after_layer_mod_released() {
     // Act
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
     keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
     let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
-}
-
-#[test]
-fn init_resets_active_layers() {
-    // Assemble: hold layer 1
-    let mut keymap = ObservedKeymap::new(keymap!(
-        r#"
-            let K = import "keys.ncl" in
-            {
-                layers = [
-                    [K.layer_mod.hold 1, K.A],
-                    [K.TTTT, K.B],
-                ],
-            }
-        "#
-    ));
-    keymap.handle_input(input::Event::Press { keymap_index: 0 });
-
-    // Act: reset, then press the letter key without re-holding the mod
-    keymap.init();
-    keymap.handle_input(input::Event::Press { keymap_index: 1 });
-
-    // Assert: layer state was cleared — base key, not layer 1
-    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
-    assert_eq!(expected_report, keymap.boot_keyboard_report());
 }
