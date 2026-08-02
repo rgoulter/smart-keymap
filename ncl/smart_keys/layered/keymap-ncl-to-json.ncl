@@ -25,6 +25,26 @@
         actual = K.layer_mod.toggle 1 |> keymap_ncl.key.to_json_value,
         expected = { Toggle = 1 },
       },
+
+      keymap_example_lock = {
+        actual = K.layer_mod.lock,
+        expected = { layer_modifier.lock = true },
+      },
+
+      check_json_value_lock = {
+        actual = K.layer_mod.lock |> keymap_ncl.key.to_json_value,
+        expected = { Lock = "HighestActive" },
+      },
+
+      keymap_example_lock_layer = {
+        actual = K.layer_mod.lock_layer 2,
+        expected = { layer_modifier.lock = 2 },
+      },
+
+      check_json_value_lock_layer = {
+        actual = K.layer_mod.lock_layer 2 |> keymap_ncl.key.to_json_value,
+        expected = { Lock = { Layer = 2 } },
+      },
       check_json_value_set_active_layers_amongst = {
         actual =
           K.layer_mod.set_active_layers_amongst {
@@ -155,6 +175,14 @@
               'Ok
             else
               validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
+          { layer_modifier = { lock } } =>
+            # true = highest active; named layer string ok; numeric layer index must be > 0.
+            if std.is_bool lock then
+              if lock then 'Ok else 'Error { message = "layer_modifier.lock must be true or a layer index" }
+            else if std.is_string lock then
+              'Ok
+            else
+              validators.all_of [validators.is_number, validators.is_greater_than 0] lock,
           { layer_modifier = { set_active_layers_to } } => layer_indices_array set_active_layers_to,
           { layer_modifier = { set_active_layers_to, affected_layers } } =>
             validators.all_ok [
@@ -163,7 +191,7 @@
             ],
           _ =>
             'Error {
-              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
             },
         },
 
@@ -185,6 +213,10 @@
             { Toggle = toggle_layer },
           { layer_modifier = { sticky = sticky_layer } } =>
             { Sticky = sticky_layer },
+          { layer_modifier = { lock = true } } =>
+            { Lock = "HighestActive" },
+          { layer_modifier = { lock = lock_layer } } =>
+            { Lock = { Layer = lock_layer } },
           { layer_modifier = { set_active_layers_to = active_layers } } =>
             let modifier_bitset = { layers = layer_indices_to_bitset active_layers } in
             { SetActiveLayers = modifier_bitset },
@@ -197,7 +229,7 @@
             { SetActiveLayers = modifier_bitset },
           _ =>
             'Error {
-              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
             },
         },
 

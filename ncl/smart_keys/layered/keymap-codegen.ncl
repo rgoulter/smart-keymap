@@ -74,6 +74,12 @@
     check_json_is_toggle =
       let json = { Toggle = 1 } in
       smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_lock =
+      let json = { Lock = "HighestActive" } in
+      smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_lock_layer =
+      let json = { Lock = { Layer = 2 } } in
+      smart_keymap.layered.modifier_key.is_json json,
   },
 
   smart_keymap.layered
@@ -87,13 +93,13 @@
         key_type = "%{module}::ModifierKey",
 
         # c.f. doc_de_layered.md.
-        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold([layer, kb_mods]), SetActiveLayers({ layers, mask? }).
+        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold([layer, kb_mods]), SetActiveLayers({ layers, mask? }), Lock("HighestActive"|{ Layer }).
         json_validator =
           validators.record.validator {
             fields_validator =
               validators.all_of [
-                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
-                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
+                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "Lock"],
+                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "Lock"],
               ],
             field_validators =
               let modifier_bitset_validator =
@@ -122,6 +128,23 @@
                   },
                 Toggle = validators.is_number,
                 Sticky = validators.is_number,
+                # LayerLockTarget: "HighestActive" | { Layer = layer_index } (1-based).
+                Lock = fun lock =>
+                  lock
+                  |> match {
+                    "HighestActive" => 'Ok,
+                    { Layer = layer_index } =>
+                      validators.all_of
+                        [
+                          validators.is_number,
+                          validators.is_greater_than 0,
+                        ]
+                        layer_index,
+                    _ =>
+                      'Error {
+                        message = "expected Lock to be \"HighestActive\" or { Layer = layer_index > 0 }",
+                      },
+                  },
                 SetActiveLayers = modifier_bitset_validator,
               },
           },
@@ -169,6 +192,22 @@
                 include key_type,
                 variant = "Sticky",
                 rust_expr = "%{module}::ModifierKey::sticky(%{std.to_string layer_index})",
+              },
+            { Lock = "HighestActive" } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Lock",
+                rust_expr = "%{module}::ModifierKey::lock()",
+              },
+            { Lock = { Layer = layer_index } } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Lock",
+                rust_expr = "%{module}::ModifierKey::lock_layer(%{std.to_string layer_index})",
               },
             { SetActiveLayers = { layers = active_layers_bitset } } =>
               {
