@@ -30,5 +30,11 @@ pub fn keymap(input: TokenStream) -> TokenStream {
         Err(NickelError::NickelNotFound) => {
             panic!("`nickel` executable not found in PATH");
         }
+        Err(NickelError::Timeout { timeout_secs }) => {
+            panic!(
+                "Nickel evaluation timed out after {}s (set SMART_KEYMAP_NICKEL_TIMEOUT_SECS=0 to disable, or raise the limit)",
+                timeout_secs
+            );
+        }
     }
 }

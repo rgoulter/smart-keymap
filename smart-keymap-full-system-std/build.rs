@@ -3,7 +3,9 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use smart_keymap_nickel_helper::{nickel_composite_full_vec_rs, rustfmt, NickelError};
+use smart_keymap_nickel_helper::{
+    nickel_composite_full_vec_rs, rustfmt, NickelError, NICKEL_TIMEOUT_ENV,
+};
 
 fn main() {
     // Workspace root is the parent of this package.
@@ -23,6 +25,7 @@ fn main() {
     );
     // Family modules can affect the registry merge / types referenced by emit.
     println!("cargo:rerun-if-changed={}/smart_keys", ncl_import_path);
+    println!("cargo:rerun-if-env-changed={NICKEL_TIMEOUT_ENV}");
 
     let out_dir = env::var("OUT_DIR").unwrap();
     let dest_path = Path::new(&out_dir).join("composite_full_vec.rs");
@@ -40,6 +43,12 @@ fn main() {
         }
         Err(NickelError::EvalError(e)) => {
             panic!("Nickel evaluation failed while emitting composite_full_vec:\n{e}");
+        }
+        Err(NickelError::Timeout { timeout_secs }) => {
+            panic!(
+                "Nickel evaluation timed out after {timeout_secs}s while emitting composite_full_vec \
+                 (set {NICKEL_TIMEOUT_ENV}=0 to disable, or raise the limit)"
+            );
         }
     }
 }

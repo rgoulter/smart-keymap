@@ -226,6 +226,10 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
                 "\n\nerror evaluating step's doc string nickel:\n\n{}",
                 nickel_error_message
             ),
+            NickelError::Timeout { timeout_secs } => panic!(
+                "\n\nNickel evaluation timed out after {}s (set SMART_KEYMAP_NICKEL_TIMEOUT_SECS=0 to disable, or raise the limit)\n",
+                timeout_secs
+            ),
         },
     }
 }
@@ -287,6 +291,10 @@ fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<Input> {
             NickelError::EvalError(nickel_error_message) => panic!(
                 "\n\nerror evaluating step's doc string nickel:\n\n{}",
                 nickel_error_message
+            ),
+            NickelError::Timeout { timeout_secs } => panic!(
+                "\n\nNickel evaluation timed out after {}s (set SMART_KEYMAP_NICKEL_TIMEOUT_SECS=0 to disable, or raise the limit)\n",
+                timeout_secs
             ),
         },
     }
