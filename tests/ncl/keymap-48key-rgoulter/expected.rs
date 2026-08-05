@@ -2819,170 +2819,212 @@ pub mod init {
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(18)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(8)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(22)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(8)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(8)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(7)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(24)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(2)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(9)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(2)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(11)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(32)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(13)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(32)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(23)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(14)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(17)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(128)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(15)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(128)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(22)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(51)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(24)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(25)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(26)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(27)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(43)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(28)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(29)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(30)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(31)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(32)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(44)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(33)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(44)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(34)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(44)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(35)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(44)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(36)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(37)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(40)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(38)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(40)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(39)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(40)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(40)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(40)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(41)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(42)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(42)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(42)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(43)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(42)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(44)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(42)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(45)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(46)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(47)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(48)),
+                hold_trigger_positions: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(76)),
                 hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(49)),
+                hold_trigger_positions: None,
             },
         ]),
     );
