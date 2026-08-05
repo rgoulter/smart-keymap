@@ -1,9 +1,12 @@
 mod hold_on_interrupt_press;
 mod hold_on_interrupt_tap;
+mod hold_trigger_positions;
 mod interrupt_ignore;
 mod layered;
 mod no_timeout;
+mod quick_tap;
 mod required_idle_time;
+mod retro_tap;
 
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;

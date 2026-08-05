@@ -39,9 +39,12 @@ keymap_key_features=(
     "tap_hold-config-interrupt-ignore"
     "tap_hold-config-interrupt-presses"
     "tap_hold-config-interrupt-tap"
+    "tap_hold-config-quick_tap"
     "tap_hold-config-required_idle_time"
+    "tap_hold-config-retro_tap"
     "tap_hold-config-timeout"
     "tap_hold-config-timeout-none"
+    "tap_hold-hold_trigger_positions"
 )
 
 keymap_ncl_features=(
