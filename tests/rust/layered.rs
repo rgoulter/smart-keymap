@@ -4,6 +4,7 @@ mod set_active_layers;
 mod sticky;
 mod sticky_timeout;
 mod tap_hold;
+mod tlex;
 mod toggle;
 
 use smart_keymap::input;
