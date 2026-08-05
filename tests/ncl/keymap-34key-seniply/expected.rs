@@ -13,6 +13,9 @@ pub mod init {
     /// The maximum number of overlapping chords for a chorded key.
     pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = 0;
 
+    /// Number of alternate-repeat rules for the [crate::key::history] implementation.
+    pub const HISTORY_ALT_REPEAT_RULE_COUNT: usize = 0;
+
     /// Number of layers supported by the [smart_keymap::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 5;
 

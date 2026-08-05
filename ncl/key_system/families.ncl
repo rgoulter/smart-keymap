@@ -337,15 +337,42 @@
           module = "smart_keymap::key::history",
           key_output = 'KeyOutput,
           context_events = 'ContextEvents,
+          config =
+            'Config {
+              ty = m%"%{module}::Config<
+            { super::HISTORY_ALT_REPEAT_RULE_COUNT }
+          >"%,
+              rust_expr = smart_keymap.history.config.rust_expr,
+            },
           system =
             'System {
-              ty = "%{module}::System<Ref>",
+              ty = m%"%{module}::System<
+            Ref,
+            { super::HISTORY_ALT_REPEAT_RULE_COUNT }
+          >"%,
               expr = "%{module}::System::new()",
             },
           context = {
-            ty = "%{module}::Context",
-            expr = "%{module}::Context::new()",
+            ty = m%"%{module}::Context<
+            { super::HISTORY_ALT_REPEAT_RULE_COUNT }
+          >"%,
+            expr = "%{module}::Context::from_config(config.history)",
           },
+          init_params = [
+            {
+              const_name = "HISTORY_ALT_REPEAT_RULE_COUNT",
+              doc = "Number of alternate-repeat rules for the [crate::key::history] implementation.",
+              value = fun { json_keymap, .. } =>
+                if std.record.has_field "history" json_keymap.config then
+                  let history_cfg = json_keymap.config.history in
+                  if std.record.has_field "alt_repeat" history_cfg then
+                    std.array.length history_cfg.alt_repeat
+                  else
+                    0
+                else
+                  0,
+            },
+          ],
         },
         mod_conditioned = {
           module = "smart_keymap::key::mod_conditioned",

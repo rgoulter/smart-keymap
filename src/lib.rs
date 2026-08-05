@@ -87,6 +87,12 @@ pub mod init {
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 1024;
 
+    /// Number of alternate-repeat rules for the [crate::key::history] implementation.
+    ///
+    /// Generous default for the full-system / cucumber shell; per-keymap codegen
+    /// uses the exact rule count from the keymap.
+    pub const HISTORY_ALT_REPEAT_RULE_COUNT: usize = 64;
+
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 8;
 
