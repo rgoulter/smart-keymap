@@ -23,6 +23,10 @@ pub const KC_SPACE: u8 = 0x2C;
 pub const KC_GRAVE: u8 = 0x35;
 pub const KC_SLASH: u8 = 0x38;
 pub const KC_DELETE: u8 = 0x4C;
+pub const KC_RIGHT: u8 = 0x4F;
+pub const KC_LEFT: u8 = 0x50;
+pub const KC_DOWN: u8 = 0x51;
+pub const KC_UP: u8 = 0x52;
 
 /// Modifier bits in HID boot keyboard report byte 0.
 pub const MOD_LCTL: u8 = 0x01;
