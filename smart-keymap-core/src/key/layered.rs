@@ -153,6 +153,17 @@ pub enum ModifierKey {
     /// Acts the same as `Hold` variant if interrupted.
     /// If tapped, then the layer is activated for the next key tap.
     Sticky(LayerIndex),
+    /// Tap-toggle layer modifier.
+    ///
+    /// - **Hold** (interrupted by another key, or released after hold use):
+    ///   acts as [`ModifierKey::Hold`] — layer on while pressed.
+    /// - **Tap** (released without interruption): toggles the layer.
+    ///
+    /// On press the layer is always activated so nested keys resolve on the
+    /// target layer immediately. On release, the layer is left active only when
+    /// the press was a tap that turned the layer *on*, or a hold of a layer
+    /// that was already active before the press (i.e. already toggled on).
+    TapToggle(LayerIndex),
     /// Sets the set of active layers to the given layers when the key is pressed.
     SetActiveLayers(ModifierBitset),
     /// Sets the default layer.
@@ -181,6 +192,14 @@ impl ModifierKey {
     /// Create a new [ModifierKey] that toggles the given layer.
     pub const fn toggle(layer: LayerIndex) -> Self {
         ModifierKey::Toggle(layer)
+    }
+
+    /// Create a new [ModifierKey] that holds the layer while pressed, or toggles it when tapped.
+    ///
+    /// Hold-vs-tap is decided by interruption (another key pressed while this
+    /// key is held), same as sticky. A single uninterrupted tap toggles the layer.
+    pub const fn tap_toggle(layer: LayerIndex) -> Self {
+        ModifierKey::TapToggle(layer)
     }
 
     /// Create a new [ModifierKey] that sets the active layers to the given slice of layers when pressed.
@@ -232,7 +251,13 @@ impl ModifierKey {
     /// Create a new [input::PressedKey] and [key::ScheduledEvent] for the given keymap index.
     ///
     /// Pressing a [ModifierKey::Hold] emits a [LayerEvent::Activated] event.
-    pub fn new_pressed_key(&self) -> (ModifierKeyState, Option<LayerEvent>) {
+    ///
+    /// `context` is used by [ModifierKey::TapToggle] to record whether the layer
+    /// was already active before this press (needed for correct release).
+    pub fn new_pressed_key<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>(
+        &self,
+        context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
+    ) -> (ModifierKeyState, Option<LayerEvent>) {
         match self {
             ModifierKey::Hold(layer, _) => {
                 (ModifierKeyState::new(), Some(LayerEvent::Activated(*layer)))
@@ -244,6 +269,16 @@ impl ModifierKey {
                 ModifierKeyState::sticky(),
                 Some(LayerEvent::StickyActivated(*layer)),
             ),
+            ModifierKey::TapToggle(layer) => {
+                let was_active = context
+                    .layer_state()
+                    .get(*layer as usize - 1)
+                    .is_some_and(|a| a.is_active());
+                (
+                    ModifierKeyState::tap_toggle(was_active),
+                    Some(LayerEvent::Activated(*layer)),
+                )
+            }
             ModifierKey::SetActiveLayers(modifier_bitset) => (
                 ModifierKeyState::new(),
                 Some(LayerEvent::Set(*modifier_bitset)),
@@ -857,19 +892,28 @@ pub enum LayerEvent {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PendingKeyState;
 
-/// Whether the pressed Sticky modifier key is "sticky" or "regular".
+/// Whether the pressed Sticky / TapToggle modifier key is still "pending tap" or "held".
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum Behavior {
-    /// Key state is "sticky". (Will activate sticky modifier when released).
+    /// Key state is "sticky" / pending tap. (Not interrupted by another key.)
+    ///
+    /// For sticky: activates sticky layer on release.
+    /// For tap-toggle: release toggles relative to pre-press layer state.
     Sticky,
-    /// Key state is "regular". (No sticky modifiers activated when released).
+    /// Key state is "regular" / hold. (Interrupted by another key, or non-tap key.)
+    ///
+    /// For sticky: deactivates layer on release (hold behavior).
+    /// For tap-toggle: deactivates layer on release unless it was already active.
     Regular,
 }
 
 /// [crate::key::KeyState] of [ModifierKey].
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ModifierKeyState {
-    behavior: Behavior,
+    /// Hold-vs-tap (sticky / tap-toggle pending) classification.
+    pub behavior: Behavior,
+    /// For [ModifierKey::TapToggle]: whether the layer was active before press.
+    pub was_active: bool,
 }
 
 impl Default for ModifierKeyState {
@@ -883,6 +927,7 @@ impl ModifierKeyState {
     pub fn new() -> Self {
         Self {
             behavior: Behavior::Regular,
+            was_active: false,
         }
     }
 
@@ -890,6 +935,18 @@ impl ModifierKeyState {
     pub fn sticky() -> Self {
         Self {
             behavior: Behavior::Sticky,
+            was_active: false,
+        }
+    }
+
+    /// Constructs a tap-toggle ModifierKeyState.
+    ///
+    /// Starts as pending-tap ([Behavior::Sticky]); interruption converts to hold.
+    /// `was_active` is whether the target layer was already active when pressed.
+    pub fn tap_toggle(was_active: bool) -> Self {
+        Self {
+            behavior: Behavior::Sticky,
+            was_active,
         }
     }
 
@@ -931,6 +988,30 @@ impl ModifierKeyState {
                         // Sticky key tapped (released without interruption):
                         // layer stays sticky; arm optional timeout via context.
                         Behavior::Sticky => Some(LayerEvent::StickyReleased),
+                    }
+                }
+                _ => None,
+            },
+            ModifierKey::TapToggle(layer) => match event {
+                key::Event::Input(input::Event::Press { keymap_index: _ }) => {
+                    // Another key pressed while TT is held → hold (MO) path.
+                    if self.behavior == Behavior::Sticky {
+                        self.behavior = Behavior::Regular;
+                    }
+                    None
+                }
+                key::Event::Input(input::Event::Release { keymap_index: ki })
+                    if keymap_index == ki =>
+                {
+                    // End state:
+                    // - hold → restore pre-press activity (deactivate only if was inactive)
+                    // - tap  → invert pre-press activity (deactivate only if was active)
+                    // i.e. deactivate iff (is_hold XOR was_active).
+                    let is_hold = self.behavior == Behavior::Regular;
+                    if is_hold != self.was_active {
+                        Some(LayerEvent::Deactivated(*layer))
+                    } else {
+                        None
                     }
                 }
                 _ => None,
@@ -1011,7 +1092,7 @@ impl<
         match key_ref {
             Ref::Modifier(mod_key_index) => {
                 let key = self.modifier_keys[mod_key_index as usize];
-                let (m_ks, maybe_lmod_ev) = key.new_pressed_key();
+                let (m_ks, maybe_lmod_ev) = key.new_pressed_key(context);
                 let pks = key::PressedKeyResult::Resolved(m_ks);
                 let pke = match maybe_lmod_ev {
                     Some(lmod_ev) => {
@@ -1148,8 +1229,9 @@ mod tests {
     fn test_pressing_hold_modifier_key_emits_event_activate_layer() {
         let layer = 1;
         let key = ModifierKey::hold(layer);
+        let context = Context::default();
 
-        let (_pressed_key, layer_event) = key.new_pressed_key();
+        let (_pressed_key, layer_event) = key.new_pressed_key(&context);
 
         assert_eq!(Some(LayerEvent::Activated(layer)), layer_event);
     }
@@ -1159,8 +1241,9 @@ mod tests {
         // Assemble: press a Hold layer modifier key
         let layer = 1;
         let key = ModifierKey::hold(layer);
+        let context = Context::default();
         let keymap_index = 9; // arbitrary
-        let (mut pressed_key_state, _) = key.new_pressed_key();
+        let (mut pressed_key_state, _) = key.new_pressed_key(&context);
 
         // Act: the modifier key handles "release key" input event
         let actual_events = pressed_key_state
@@ -1187,8 +1270,9 @@ mod tests {
         // Assemble: press a Hold layer modifier key
         let layer = 1;
         let key = ModifierKey::hold(layer);
+        let context = Context::default();
         let keymap_index = 9; // arbitrary
-        let (mut pressed_key_state, _) = key.new_pressed_key();
+        let (mut pressed_key_state, _) = key.new_pressed_key(&context);
 
         // Act: the modifier key handles "release key" input event for a different key
         let different_keymap_index = keymap_index + 1;
@@ -1455,11 +1539,126 @@ mod tests {
         // Assemble
         let layer = 1;
         let key = ModifierKey::Toggle(layer);
+        let context = Context::default();
 
         // Act
-        let (_pressed_key, layer_event) = key.new_pressed_key();
+        let (_pressed_key, layer_event) = key.new_pressed_key(&context);
 
         // Assert
         assert_eq!(Some(LayerEvent::Toggled(layer)), layer_event);
+    }
+
+    #[test]
+    fn test_pressing_tap_toggle_emits_activated_and_records_was_inactive() {
+        let layer = 1;
+        let key = ModifierKey::tap_toggle(layer);
+        let context = Context::default();
+
+        let (state, layer_event) = key.new_pressed_key(&context);
+
+        assert_eq!(Some(LayerEvent::Activated(layer)), layer_event);
+        assert!(!state.was_active);
+        assert_eq!(Behavior::Sticky, state.behavior);
+    }
+
+    #[test]
+    fn test_pressing_tap_toggle_records_was_active() {
+        let layer = 1;
+        let key = ModifierKey::tap_toggle(layer);
+        let mut context = Context::default();
+        context.handle_layer_event(LayerEvent::Activated(layer));
+
+        let (state, layer_event) = key.new_pressed_key(&context);
+
+        assert_eq!(Some(LayerEvent::Activated(layer)), layer_event);
+        assert!(state.was_active);
+    }
+
+    #[test]
+    fn test_tap_toggle_tap_release_when_inactive_leaves_layer_on() {
+        // Press when inactive + tap release → layer stays active (toggled on).
+        let layer = 1;
+        let key = ModifierKey::tap_toggle(layer);
+        let context = Context::default();
+        let keymap_index = 0;
+        let (mut state, _) = key.new_pressed_key(&context);
+
+        let ev = state.handle_event(
+            keymap_index,
+            key::Event::Input(input::Event::Release { keymap_index }),
+            &key,
+        );
+
+        assert_eq!(None, ev);
+    }
+
+    #[test]
+    fn test_tap_toggle_tap_release_when_active_deactivates() {
+        // Press when already active + tap release → toggle off.
+        let layer = 1;
+        let key = ModifierKey::tap_toggle(layer);
+        let mut context = Context::default();
+        context.handle_layer_event(LayerEvent::Activated(layer));
+        let keymap_index = 0;
+        let (mut state, _) = key.new_pressed_key(&context);
+
+        let ev = state.handle_event(
+            keymap_index,
+            key::Event::Input(input::Event::Release { keymap_index }),
+            &key,
+        );
+
+        assert_eq!(Some(LayerEvent::Deactivated(layer)), ev);
+    }
+
+    #[test]
+    fn test_tap_toggle_hold_release_when_inactive_deactivates() {
+        // Press when inactive + interrupt + release → MO off.
+        let layer = 1;
+        let key = ModifierKey::tap_toggle(layer);
+        let context = Context::default();
+        let keymap_index = 0;
+        let (mut state, _) = key.new_pressed_key(&context);
+
+        // Interrupt with another key
+        let _ = state.handle_event(
+            keymap_index,
+            key::Event::Input(input::Event::Press { keymap_index: 1 }),
+            &key,
+        );
+        assert_eq!(Behavior::Regular, state.behavior);
+
+        let ev = state.handle_event(
+            keymap_index,
+            key::Event::Input(input::Event::Release { keymap_index }),
+            &key,
+        );
+
+        assert_eq!(Some(LayerEvent::Deactivated(layer)), ev);
+    }
+
+    #[test]
+    fn test_tap_toggle_hold_release_when_active_leaves_layer_on() {
+        // Press when already toggled on + interrupt + release → stay on.
+        let layer = 1;
+        let key = ModifierKey::tap_toggle(layer);
+        let mut context = Context::default();
+        context.handle_layer_event(LayerEvent::Activated(layer));
+        let keymap_index = 0;
+        let (mut state, _) = key.new_pressed_key(&context);
+
+        let _ = state.handle_event(
+            keymap_index,
+            key::Event::Input(input::Event::Press { keymap_index: 1 }),
+            &key,
+        );
+
+        let ev = state.handle_event(
+            keymap_index,
+            key::Event::Input(input::Event::Release { keymap_index }),
+            &key,
+        );
+
+        assert_eq!(None, ev);
     }
 }
