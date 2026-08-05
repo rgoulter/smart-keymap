@@ -907,6 +907,7 @@ pub mod key_system {
       Json = {
         automation | optional | smart_keymap.automation.config.Json,
         chorded | optional | smart_keymap.chorded.config.Json,
+        history | optional | smart_keymap.history.config.Json,
         layered | optional | smart_keymap.layered.config.Json,
         sequence | optional | smart_keymap.sequence.config.Json,
         sticky | optional | smart_keymap.sticky.config.Json,
@@ -1073,6 +1074,7 @@ pub mod key_system {
           expected = [
             "automation",
             "chorded",
+            "history",
             "layered",
             "sequence",
             "sticky",

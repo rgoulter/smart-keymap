@@ -100,6 +100,7 @@
   Config = {
     automation | optional | keymap_ncl.automation.Config,
     chorded | optional | keymap_ncl.chorded.Config,
+    history | optional | keymap_ncl.history.Config,
     layered | optional | keymap_ncl.layered.Config,
     sequence | optional | keymap_ncl.sequence.Config,
     sticky | optional | keymap_ncl.sticky.Config,
@@ -595,6 +596,8 @@
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
       let { sequence = km_config_sequence, ..km_config } = km_config & { sequence = {} } in
       let sequence_indices = sequences |> std.array.map (fun { key, indices, .. } => indices) in
+      let { history = km_config_history, ..km_config } = km_config & { history = {} } in
+      let history_config = keymap_ncl.history.config_to_json km_config_history in
       let { layered = km_config_layered, ..km_config } = km_config & { layered = {} } in
       # Bind authored rules before building the nested `conditional_layers` field
       # (avoids Nickel recursive field reference on the same name).
@@ -628,6 +631,12 @@
               sequences = sequence_indices,
             },
         }
+        & (
+          if history_config == {} then
+            {}
+          else
+            { history = history_config }
+        )
         & (
           if layered_config == {} then
             {}
