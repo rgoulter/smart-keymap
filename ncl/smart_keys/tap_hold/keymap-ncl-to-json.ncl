@@ -27,6 +27,36 @@
         actual = K.A & K.hold K.LeftCtrl |> keymap_ncl.key.to_json_value,
         expected = { tap = { key_code = 4 }, hold = { modifiers = 1 } },
       },
+
+      # Autoshift is tap-hold sugar: tap key / hold Shift+key.
+      check_autoshift_expands_to_tap_hold = {
+        actual = K.autoshift K.A,
+        expected = K.A & K.hold (K.A & K.LeftShift),
+      },
+
+      check_autoshift_is_tap_hold_key =
+        keymap_ncl.tap_hold.is_key (K.autoshift K.A),
+
+      check_autoshift_to_json = {
+        actual = K.autoshift K.A |> keymap_ncl.key.to_json_value,
+        expected = {
+          tap = { key_code = 4 },
+          hold = { key_code = 4, modifiers = 2 },
+        },
+      },
+
+      check_autoshift_as_expands_to_tap_hold = {
+        actual = K.autoshift_as K.Comma K.Semicolon,
+        expected = K.Comma & K.hold K.Semicolon,
+      },
+
+      check_autoshift_as_to_json = {
+        actual = K.autoshift_as K.Comma K.Semicolon |> keymap_ncl.key.to_json_value,
+        expected = {
+          tap = { key_code = 54 },
+          hold = { key_code = 51 },
+        },
+      },
     },
 
   keymap_ncl.tap_hold
