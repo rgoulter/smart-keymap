@@ -5,6 +5,7 @@ mod consumer;
 mod custom;
 mod hid_keycodes;
 mod history;
+mod key_lock;
 mod layered;
 mod mod_conditioned;
 mod mouse;
