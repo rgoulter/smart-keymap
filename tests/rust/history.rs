@@ -194,3 +194,147 @@ fn double_repeat_types_letter_twice() {
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn alt_repeat_maps_left_to_right() {
+    // Assemble
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.history.alt_repeat = [
+                    { prev = K.Left, emit = K.Right },
+                    { prev = K.Right, emit = K.Left },
+                ],
+                keys = [
+                    K.Left,
+                    K.Right,
+                    K.history.alt_repeat,
+                ],
+            }
+        "#
+    ));
+
+    // Act: Left, then AltRepeat → Right
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_LEFT, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_RIGHT, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn alt_repeat_maps_right_to_left() {
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.history.alt_repeat = [
+                    { prev = K.Left, emit = K.Right },
+                    { prev = K.Right, emit = K.Left },
+                ],
+                keys = [
+                    K.Left,
+                    K.Right,
+                    K.history.alt_repeat,
+                ],
+            }
+        "#
+    ));
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_RIGHT, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_LEFT, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn alt_repeat_unmapped_does_nothing() {
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.history.alt_repeat = [
+                    { prev = K.Left, emit = K.Right },
+                ],
+                keys = [
+                    K.A,
+                    K.history.alt_repeat,
+                ],
+            }
+        "#
+    ));
+
+    // Tap A (unmapped), then AltRepeat → no second output
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn hold_alt_repeat_holds_mapped_output() {
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                config.history.alt_repeat = [
+                    { prev = K.Left, emit = K.Right },
+                ],
+                keys = [
+                    K.Left,
+                    K.history.alt_repeat,
+                ],
+            }
+        "#
+    ));
+
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_LEFT, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_RIGHT, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
