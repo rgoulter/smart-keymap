@@ -15,6 +15,7 @@ KEYMAP_FEATURE_MD=""
 keymap_key_features=(
     "automation"
     "automation-string"
+    "autoshift"
     "callback"
     "callback-bluetooth"
     "caps_word"
