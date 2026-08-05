@@ -11,6 +11,7 @@ std.array.fold_left
     key_extensions.consumer_aliases,
     key_extensions.custom,
     key_extensions.history,
+    key_extensions.key_lock,
     key_extensions.keyboard,
     key_extensions.keyboard_shifted,
     key_extensions.keyboard_aliases,

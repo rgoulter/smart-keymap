@@ -5,6 +5,7 @@
 & (import "smart_keys/chorded/keymap-codegen.ncl")
 & (import "smart_keys/custom/keymap-codegen.ncl")
 & (import "smart_keys/history/keymap-codegen.ncl")
+& (import "smart_keys/key_lock/keymap-codegen.ncl")
 & (import "smart_keys/keyboard/keymap-codegen.ncl")
 & (import "smart_keys/layered/keymap-codegen.ncl")
 & (import "smart_keys/mod_conditioned/keymap-codegen.ncl")
@@ -222,6 +223,7 @@
       smart_keymap.consumer.key,
       smart_keymap.custom.key,
       smart_keymap.history.key,
+      smart_keymap.key_lock.key,
       smart_keymap.keyboard.key,
       smart_keymap.mod_conditioned.key,
       smart_keymap.mouse.key,
