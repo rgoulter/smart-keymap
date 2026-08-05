@@ -1,5 +1,8 @@
 {
   key_extensions.history = {
-    history = { repeat = "Repeat" },
+    history = {
+      repeat = "Repeat",
+      alt_repeat = "AltRepeat",
+    },
   },
 }
