@@ -31,6 +31,7 @@ keymap_key_features=(
     "layer_modifier-sticky-config-timeout"
     "semantic_os_desktop"
     "layer_modifier-toggle"
+    "layer_modifier-tap_toggle"
     "mouse"
     "sticky_modifiers"
     "sticky_modifiers-config-release_on_next_press"
