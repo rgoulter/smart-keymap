@@ -43,6 +43,10 @@
     # Layer Transparency
     TTTT = null,
 
+    # Transparent layer exit (Fak `tap.tlex`): deactivate the defining layer
+    # (non-persistent) and act as the lower binding under the finger.
+    tlex = { transparent_layer_exit = true },
+
     # Semantic / variant key sugar: `named_layers` form of LayeredKey.
     # Unit `{}` base (keyboard noop) so callers can use `K.semantic {..}` without
     # `K.NO &`. Indices for names are assigned globally when compiling the keymap.

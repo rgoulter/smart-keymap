@@ -228,6 +228,7 @@
         #   }
         # ```
         # JSON serialization of key::layered::Layered has fields: { base, layered }
+        # Layer cells: null | { TransparentLayerExit = null } | nested key JSON
         json_validator =
           validators.record.validator {
             fields_validator = validators.record.has_exact_fields ["base", "layered"],
@@ -237,6 +238,13 @@
                 validators.array.validator (
                   validators.any_of [
                     validators.is_null,
+                    fun json =>
+                      json
+                      |> match {
+                        { TransparentLayerExit = null } => 'Ok,
+                        { TransparentLayerExit = _ } => 'Ok,
+                        _ => 'Error { message = "not tlex" },
+                      },
                     smart_key.json_validator,
                   ]
                 ),
@@ -245,14 +253,37 @@
 
         is_json = fun json => 'Ok == json_validator json,
 
+        # Layer cell JSON: null | { TransparentLayerExit = null } | nested key JSON
+        is_tlex_json = fun json =>
+          json
+          |> match {
+            { TransparentLayerExit = null } => true,
+            { TransparentLayerExit = _ } => true,
+            _ => false,
+          },
+
         codegen_values = fun json @ { base, layered } =>
           let base_cv = base |> smart_key.codegen_values in
-          let non_null_layered = std.array.filter ((!=) null) layered in
           let layered_cvs =
-            std.array.map (fun json => if json != null then json |> smart_key.codegen_values else null) layered
+            std.array.map
+              (fun json =>
+                if json == null then
+                  null
+                else if is_tlex_json json then
+                  {
+                    kind = 'tlex,
+                    rust_expr = "%{module}::LayeredBinding::TransparentLayerExit",
+                    json = { TransparentLayerExit = null },
+                  }
+                else
+                  (json |> smart_key.codegen_values) & { kind = 'key }
+              )
+              layered
           in
-          let nn_layered_cvs =
-            std.array.filter ((!=) null) layered_cvs
+          let has_tlex =
+            std.array.any
+              (fun cv => cv != null && std.record.has_field "kind" cv && cv.kind == 'tlex)
+              layered_cvs
           in
 
           {
@@ -263,14 +294,28 @@
             include json,
             include module,
             include key_type,
+            include has_tlex,
             rust_expr =
               let base_expr = nested.base.rust_expr in
               let layered_exprs =
                 nested.layered
-                |> std.array.map (fun cv => if cv == null then "None" else "Some(%{cv.rust_expr})")
+                |> std.array.map (fun cv =>
+                  if cv == null then
+                    "None"
+                  else if has_tlex then
+                    if cv.kind == 'tlex then
+                      "Some(%{cv.rust_expr})"
+                    else
+                      "Some(%{module}::LayeredBinding::Key(%{cv.rust_expr}))"
+                  else
+                    "Some(%{cv.rust_expr})"
+                )
                 |> std.string.join ","
               in
-              "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+              if has_tlex then
+                "smart_keymap::key::layered::LayeredKey::with_bindings(%{base_expr}, [%{layered_exprs}])"
+              else
+                "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -278,24 +323,38 @@
           & {
             nested = {
               base = f cv.nested.base,
-              layered = std.array.map (fun cv => if cv != null then f cv else null) cv.nested.layered,
+              layered =
+                std.array.map
+                  (fun cv =>
+                    if cv == null then
+                      null
+                    else if std.record.has_field "kind" cv && cv.kind == 'tlex then
+                      cv
+                    else
+                      f cv
+                  )
+                  cv.nested.layered,
             },
           },
 
         # Traverse by visiting the layered key itself,
-        #  then traversing the base, non-null nested layered keys.
+        #  then traversing the base, non-null nested layered keys (not tlex markers).
         traverse = fun f acc cv =>
           let acc = f acc cv in
           let acc = smart_key.traverse f acc cv.nested.base in
           let nn_layered_cvs =
-            std.array.filter ((!=) null) cv.nested.layered
+            cv.nested.layered
+            |> std.array.filter (fun nested_cv =>
+              nested_cv != null
+              && !(std.record.has_field "kind" nested_cv && nested_cv.kind == 'tlex)
+            )
           in
           std.array.fold_left
             (fun acc nested_cv => smart_key.traverse f acc nested_cv)
             acc
             nn_layered_cvs,
 
-        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
+        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, has_tlex, .. } =>
           let { key_data, ref = base_ref } = smart_key.data_and_ref key_data base_cv in
           let base_ref = base_ref |> composite.ref.wrap in
           let { key_data, layered_refs } =
@@ -303,27 +362,68 @@
               (fun { key_data, layered_refs = parts } cv =>
                 if cv == null then
                   { include key_data, layered_refs = std.array.append null parts }
+                else if std.record.has_field "kind" cv && cv.kind == 'tlex then
+                  {
+                    include key_data,
+                    layered_refs =
+                      std.array.append
+                        {
+                          kind = 'tlex,
+                          json = { TransparentLayerExit = null },
+                          rust_expr = "%{module}::LayeredBinding::TransparentLayerExit",
+                        }
+                        parts,
+                  }
                 else
                   let { key_data, ref = layer_ref } = smart_key.data_and_ref key_data cv in
                   let layer_ref = layer_ref |> composite.ref.wrap in
-                  { include key_data, layered_refs = std.array.append layer_ref parts }
+                  {
+                    include key_data,
+                    layered_refs =
+                      std.array.append (layer_ref & { kind = 'key }) parts,
+                  }
               )
               { include key_data, layered_refs = [] }
               layered_cvs
           in
           let { layered = layered_, ..other_data } = key_data & { layered | default = [] } in
           let new_index = std.array.length layered_ in
+          let cell_json = fun layer_ref =>
+            if layer_ref == null then
+              null
+            else if layer_ref.kind == 'tlex then
+              layer_ref.json
+            else
+              layer_ref.json
+          in
+          let cell_rust = fun layer_ref =>
+            if layer_ref == null then
+              "None"
+            else if has_tlex then
+              if layer_ref.kind == 'tlex then
+                "Some(%{layer_ref.rust_expr})"
+              else
+                "Some(%{module}::LayeredBinding::Key(%{layer_ref.rust_expr}))"
+            else
+              "Some(%{layer_ref.rust_expr})"
+          in
+          let ctor =
+            if has_tlex then
+              "%{module}::LayeredKey::with_bindings"
+            else
+              "%{module}::LayeredKey::new"
+          in
           let new_key = {
             json = {
               base = base_ref.json,
-              layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
+              layered = layered_refs |> std.array.map cell_json,
             },
             rust_expr = m%"
-            %{module}::LayeredKey::new(
+            %{ctor}(
               %{base_ref.rust_expr},
               [%{
                 layered_refs
-                |> std.array.map (fun layer_ref => if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})")
+                |> std.array.map cell_rust
                 |> std.string.join ", "
               }],
             )

@@ -68,6 +68,24 @@
     },
   },
 
+  # Highest 1-based layer index that is active, or null if none.
+  highest_active_layer = fun active_layers =>
+    active_layers
+    |> std.array.map_with_index (fun i is_active => if is_active then i + 1 else null)
+    |> std.array.filter ((!=) null)
+    |> match {
+      [] => null,
+      indices => std.array.last indices,
+    },
+
+  is_tlex_key = fun k =>
+    k
+    |> match {
+      { transparent_layer_exit = true } => true,
+      { transparent_layer_exit = {} } => true,
+      _ => false,
+    },
+
   update_layer_state_for_input = fun input layer_state @ { default_layer, active_layers } =>
     input
     |> match {
@@ -97,6 +115,27 @@
       'Release { layer_modifier = { default_ }, .. } =>
         let { default_layer, ..layer_state } = layer_state in
         { default_layer = default_ } & layer_state,
+      # Transparent layer exit: deactivate the highest active (defining) layer.
+      'Press k =>
+        if is_tlex_key k then
+          let { active_layers = al, ..layer_state } = layer_state in
+          highest_active_layer al
+          |> match {
+            null => layer_state,
+            layer_idx => { active_layers = deactivate_layer al layer_idx } & layer_state,
+          }
+        else
+          layer_state,
+      'Tap k =>
+        if is_tlex_key k then
+          let { active_layers = al, ..layer_state } = layer_state in
+          highest_active_layer al
+          |> match {
+            null => layer_state,
+            layer_idx => { active_layers = deactivate_layer al layer_idx } & layer_state,
+          }
+        else
+          layer_state,
       _ => layer_state,
     },
 
@@ -138,10 +177,13 @@
             (fun { layer_is_active, .. } => layer_is_active)
             zipped_layered_keys
         in
+        # Walk high → low; skip null (transparency). Tlex is a real cell for
+        # lookup matching (input uses K.tlex), not continue-eval here.
         let active_keys =
           std.array.map
             (fun { key, .. } => key)
             zipped_active_keys
+          |> std.array.filter ((!=) null)
         in
         if (std.array.length active_keys) > 0 then
           std.array.last active_keys

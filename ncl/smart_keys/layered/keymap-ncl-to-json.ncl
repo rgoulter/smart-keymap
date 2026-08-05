@@ -314,9 +314,13 @@
 
       Key = std.contract.from_validator key_validator,
 
-      # Element of a layered / named_layers slot: Key or transparent null.
+      # Element of a layered / named_layers slot: Key, tlex, or transparent null.
       layer_element_validator =
-        validators.any_of [validators.is_null, keymap_ncl.key.key_validator],
+        validators.any_of [
+          validators.is_null,
+          keymap_ncl.transparent_layer_exit.key_validator,
+          keymap_ncl.key.key_validator,
+        ],
 
       layered_array_validator =
         validators.array.validator layer_element_validator,
@@ -372,7 +376,14 @@
               base = keymap_ncl.key.to_json_value base_key,
               layered =
                 std.array.map
-                  (fun k => if k != null then keymap_ncl.key.to_json_value k else null)
+                  (fun k =>
+                    if k == null then
+                      null
+                    else if keymap_ncl.transparent_layer_exit.is_key k then
+                      keymap_ncl.transparent_layer_exit.to_json_value k
+                    else
+                      keymap_ncl.key.to_json_value k
+                  )
                   layered_keys,
             },
         },
