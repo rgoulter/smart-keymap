@@ -374,6 +374,19 @@
             },
           ],
         },
+        key_lock = {
+          module = "smart_keymap::key::key_lock",
+          context_events = 'ContextEvents,
+          system =
+            'System {
+              ty = "%{module}::System<Ref>",
+              expr = "%{module}::System::new()",
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::new()",
+          },
+        },
         mod_conditioned = {
           module = "smart_keymap::key::mod_conditioned",
           context_events = 'ContextEvents,
