@@ -720,40 +720,132 @@ impl core::fmt::Display for LayersError {
     }
 }
 
-/// Trait for layers of [LayeredKey].
-pub trait Layers<R>: Copy + Debug {
-    /// Get the highest active key, if any, for the given [LayerState].
-    fn highest_active_key<LS: LayerState>(
-        &self,
-        layer_state: &LS,
-        default_layer: Option<LayerIndex>,
-    ) -> Option<(LayerIndex, R)>;
-    /// Constructs layers; return Err if the iterable has more keys than Layers can store.
-    fn from_iterable<I: IntoIterator<Item = Option<R>>>(keys: I) -> Result<Self, LayersError>;
+/// Which layers participate in a layered lookup.
+///
+/// Orthogonal to which layers are active in [Context]: this filters the walk
+/// over the active set (and default layer) for one resolution.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum LayerResolution {
+    /// All currently active layers (and default layer), high → low.
+    #[default]
+    Active,
+    /// Active layers except `0`, still consulting default/base as usual.
+    ActiveExcluding(LayerIndex),
 }
 
-impl<R: Copy + Debug, const L: usize> Layers<R> for [Option<R>; L] {
+impl LayerResolution {
+    /// Returns true if `layer` is excluded from this resolution set.
+    pub const fn excludes(self, layer: LayerIndex) -> bool {
+        match self {
+            LayerResolution::Active => false,
+            LayerResolution::ActiveExcluding(excluded) => excluded == layer,
+        }
+    }
+}
+
+/// A non-transparent binding on a layer of a [LayeredKey].
+///
+/// Full transparency remains [None] in the layered array (`null` in JSON / `K.TTTT`).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LayeredBinding<R> {
+    /// Concrete nested key reference.
+    Key(R),
+    /// Transparent layer exit (Fak `tap.tlex`): deactivate this defining layer
+    /// (when non-persistent) and continue resolving this slot without it.
+    TransparentLayerExit,
+}
+
+impl<R> LayeredBinding<R> {
+    /// Wraps a nested key ref.
+    pub const fn key(r: R) -> Self {
+        LayeredBinding::Key(r)
+    }
+
+    /// Transparent layer exit marker.
+    pub const fn transparent_layer_exit() -> Self {
+        LayeredBinding::TransparentLayerExit
+    }
+}
+
+impl<'de, R: Deserialize<'de>> Deserialize<'de> for LayeredBinding<R> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        // Untagged: try nested key first, then tlex marker.
+        // JSON: <R> | `{"TransparentLayerExit": null}`
+        //
+        // Key-first avoids matching ordinary key objects as tlex under
+        // `#[serde(untagged)]` (extra fields are ignored by default).
+        #[derive(Deserialize)]
+        #[serde(untagged)]
+        enum Helper<R> {
+            Key(R),
+            Tlex {
+                #[serde(rename = "TransparentLayerExit")]
+                _marker: (),
+            },
+        }
+
+        match Helper::<R>::deserialize(deserializer)? {
+            Helper::Key(r) => Ok(LayeredBinding::Key(r)),
+            Helper::Tlex { .. } => Ok(LayeredBinding::TransparentLayerExit),
+        }
+    }
+}
+
+/// Resolved non-transparent pick from a layered walk (before tlex continue-eval).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum LayerPick<R> {
+    /// Nested key on the defining layer.
+    Key(R),
+    /// Transparent layer exit on the defining layer.
+    TransparentLayerExit,
+}
+
+/// Trait for layers of [LayeredKey].
+pub trait Layers<R>: Copy + Debug {
+    /// Highest defined binding among layers allowed by `resolution`.
+    ///
+    /// Walks active layers high → low, then the default layer. Skips
+    /// transparent (`None`) cells and layers excluded by `resolution`.
     fn highest_active_key<LS: LayerState>(
         &self,
         layer_state: &LS,
         default_layer: Option<LayerIndex>,
-    ) -> Option<(LayerIndex, R)> {
+        resolution: LayerResolution,
+    ) -> Option<(LayerIndex, LayerPick<R>)>;
+    /// Constructs layers; return Err if the iterable has more keys than Layers can store.
+    fn from_iterable<I: IntoIterator<Item = Option<LayeredBinding<R>>>>(
+        keys: I,
+    ) -> Result<Self, LayersError>;
+}
+
+impl<R: Copy + Debug, const L: usize> Layers<R> for [Option<LayeredBinding<R>>; L] {
+    fn highest_active_key<LS: LayerState>(
+        &self,
+        layer_state: &LS,
+        default_layer: Option<LayerIndex>,
+        resolution: LayerResolution,
+    ) -> Option<(LayerIndex, LayerPick<R>)> {
         for layer_index in layer_state.active_layers() {
-            if self[layer_index as usize - 1].is_some() {
-                return self[layer_index as usize - 1].map(|k| (layer_index, k));
+            if resolution.excludes(layer_index) {
+                continue;
+            }
+            if let Some(pick) = layer_pick_from_cell(self[layer_index as usize - 1]) {
+                return Some((layer_index, pick));
             }
         }
 
         match default_layer {
-            Some(layer_index) if self[layer_index as usize - 1].is_some() => {
-                self[layer_index as usize - 1].map(|k| (layer_index, k))
+            Some(layer_index) if !resolution.excludes(layer_index) => {
+                layer_pick_from_cell(self[layer_index as usize - 1]).map(|pick| (layer_index, pick))
             }
             _ => None,
         }
     }
 
-    fn from_iterable<I: IntoIterator<Item = Option<R>>>(keys: I) -> Result<Self, LayersError> {
-        let mut layered: [Option<R>; L] = [None; L];
+    fn from_iterable<I: IntoIterator<Item = Option<LayeredBinding<R>>>>(
+        keys: I,
+    ) -> Result<Self, LayersError> {
+        let mut layered: [Option<LayeredBinding<R>>; L] = [None; L];
         for (i, maybe_key) in keys.into_iter().enumerate() {
             if i < L {
                 layered[i] = maybe_key;
@@ -765,14 +857,45 @@ impl<R: Copy + Debug, const L: usize> Layers<R> for [Option<R>; L] {
     }
 }
 
-/// Constructs an array of keys for the given array.
+fn layer_pick_from_cell<R: Copy>(cell: Option<LayeredBinding<R>>) -> Option<LayerPick<R>> {
+    match cell {
+        Some(LayeredBinding::Key(r)) => Some(LayerPick::Key(r)),
+        Some(LayeredBinding::TransparentLayerExit) => Some(LayerPick::TransparentLayerExit),
+        None => None,
+    }
+}
+
+/// Constructs a layer array from nested key options (`Some(r)` → key binding).
 pub const fn layered_keys<K: Copy, const L: usize, const LAYER_COUNT: usize>(
     keys: [Option<K>; L],
-) -> [Option<K>; LAYER_COUNT] {
-    let mut layered: [Option<K>; LAYER_COUNT] = [None; LAYER_COUNT];
+) -> [Option<LayeredBinding<K>>; LAYER_COUNT] {
+    let mut layered: [Option<LayeredBinding<K>>; LAYER_COUNT] = [None; LAYER_COUNT];
 
     if L > LAYER_COUNT {
         panic!("Too many layers for layered_keys");
+    }
+
+    let mut i = 0;
+
+    while i < L {
+        layered[i] = match keys[i] {
+            Some(r) => Some(LayeredBinding::Key(r)),
+            None => None,
+        };
+        i += 1;
+    }
+
+    layered
+}
+
+/// Constructs a layer array from explicit [LayeredBinding] options (supports tlex).
+pub const fn layered_bindings<K: Copy, const L: usize, const LAYER_COUNT: usize>(
+    keys: [Option<LayeredBinding<K>>; L],
+) -> [Option<LayeredBinding<K>>; LAYER_COUNT] {
+    let mut layered: [Option<LayeredBinding<K>>; LAYER_COUNT] = [None; LAYER_COUNT];
+
+    if L > LAYER_COUNT {
+        panic!("Too many layers for layered_bindings");
     }
 
     let mut i = 0;
@@ -791,9 +914,12 @@ pub struct LayeredKey<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> {
     /// The base key, used when no layers are active.
     pub base: R,
     /// The layered keys, used when the corresponding layer is active.
+    ///
+    /// `None` is full transparency for that layer. `Some(Key(r))` is a nested
+    /// key. `Some(TransparentLayerExit)` is Fak-style transparent layer exit.
     #[serde(deserialize_with = "deserialize_layered")]
     #[serde(bound(deserialize = "R: Deserialize<'de>"))]
-    pub layered: [Option<R>; LAYER_COUNT],
+    pub layered: [Option<LayeredBinding<R>>; LAYER_COUNT],
 }
 
 /// Deserialize a [Layers].
@@ -802,32 +928,100 @@ where
     R: Deserialize<'de>,
     D: serde::Deserializer<'de>,
 {
-    let keys_vec: heapless::Vec<Option<R>, 64> = Deserialize::deserialize(deserializer)?;
+    let keys_vec: heapless::Vec<Option<LayeredBinding<R>>, 64> =
+        Deserialize::deserialize(deserializer)?;
 
     L::from_iterable(keys_vec).map_err(serde::de::Error::custom)
 }
 
 impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
-    /// Constructs a new [LayeredKey].
+    /// Constructs a new [LayeredKey] from nested key options.
     pub const fn new<const L: usize>(base: R, layered: [Option<R>; L]) -> Self {
         let layered = layered_keys(layered);
         Self { base, layered }
     }
-}
 
-impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
-    /// Presses the key, using the highest active key, if any.
+    /// Constructs a [LayeredKey] from explicit bindings (including tlex cells).
+    pub const fn with_bindings<const L: usize>(
+        base: R,
+        layered: [Option<LayeredBinding<R>>; L],
+    ) -> Self {
+        let layered = layered_bindings(layered);
+        Self { base, layered }
+    }
+
+    /// `eval(LK, S)` — defining layer (0 = base) and selected nested ref, or tlex pick.
+    pub fn resolve<const CONDITIONAL_LAYER_COUNT: usize>(
+        &self,
+        context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
+        resolution: LayerResolution,
+    ) -> (LayerIndex, LayerPick<R>) {
+        self.layered
+            .highest_active_key(context.layer_state(), context.default_layer, resolution)
+            .unwrap_or((0, LayerPick::Key(self.base)))
+    }
+
+    /// Presses the key: resolve under [LayerResolution::Active], applying tlex
+    /// continue-eval (and scheduling [LayerEvent::Deactivated] for non-persistent
+    /// defining layers).
     fn new_pressed_key<const CONDITIONAL_LAYER_COUNT: usize>(
         &self,
         context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
-    ) -> key::NewPressedKey<R> {
-        let (_layer, passthrough_ref) = self
-            .layered
-            .highest_active_key(context.layer_state(), context.default_layer)
-            .unwrap_or((0, self.base));
+        keymap_index: u16,
+    ) -> (key::NewPressedKey<R>, key::KeyEvents<LayerEvent>) {
+        let mut resolution = LayerResolution::Active;
+        let mut events = key::KeyEvents::no_events();
 
-        key::NewPressedKey::key(passthrough_ref)
+        // Bound stacked tlex (pathological) by layer count.
+        for _ in 0..=LAYER_COUNT {
+            let (layer, pick) = self.resolve(context, resolution);
+
+            match pick {
+                LayerPick::Key(r) => {
+                    return (key::NewPressedKey::key(r), events);
+                }
+                LayerPick::TransparentLayerExit => {
+                    // Base (layer 0) tlex is a no-op marker: fall through to base key.
+                    if layer == 0 {
+                        return (key::NewPressedKey::key(self.base), events);
+                    }
+
+                    // Real exit for later presses when the layer is non-persistent.
+                    // (Default layer alone is persistent-like; Hold/Toggle/Sticky are not.)
+                    if is_tlex_deactivatable(context, layer) {
+                        events.add_event(key::Event::key_event(
+                            keymap_index,
+                            LayerEvent::Deactivated(layer),
+                        ));
+                    }
+
+                    // This press: continue-eval without mutating Context yet.
+                    resolution = LayerResolution::ActiveExcluding(layer);
+                }
+            }
+        }
+
+        // All layers tlex / exhausted — act as base.
+        (key::NewPressedKey::key(self.base), events)
     }
+}
+
+/// Whether tlex should schedule a real [LayerEvent::Deactivated] for `layer`.
+///
+/// Mirrors Fak: only non-persistent activations (regular hold/toggle and sticky).
+/// A layer that is only the default (not Regular/Sticky-active) is not cleared.
+fn is_tlex_deactivatable<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>(
+    context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
+    layer: LayerIndex,
+) -> bool {
+    let idx = layer as usize;
+    if idx == 0 || idx > LAYER_COUNT {
+        return false;
+    }
+    matches!(
+        context.active_layers[idx - 1],
+        Activity::Active(ActivationStyle::Regular | ActivationStyle::Sticky)
+    )
 }
 
 /// Events from [ModifierKey] which affect [Context].
@@ -1023,11 +1217,8 @@ impl<
             }
             Ref::Layered(i) => {
                 let key = &self.layered_keys[i as usize];
-                let npk = key.new_pressed_key(context);
-                (
-                    key::PressedKeyResult::NewPressedKey(npk),
-                    key::KeyEvents::no_events(),
-                )
+                let (npk, pke) = key.new_pressed_key(context, keymap_index);
+                (key::PressedKeyResult::NewPressedKey(npk), pke)
             }
         }
     }
@@ -1461,5 +1652,133 @@ mod tests {
 
         // Assert
         assert_eq!(Some(LayerEvent::Toggled(layer)), layer_event);
+    }
+
+    #[test]
+    fn test_active_excluding_selects_next_lower_defined_layer() {
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let mid = keyboard::Ref::KeyCode(0x05);
+        let high = keyboard::Ref::KeyCode(0x06);
+        let layered_key = LayeredKey::new(base, [Some(mid), Some(high)]);
+
+        context.handle_layer_event(LayerEvent::Activated(1));
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        let (layer, pick) = layered_key.resolve(&context, LayerResolution::Active);
+        assert_eq!(2, layer);
+        assert_eq!(LayerPick::Key(high), pick);
+
+        let (layer, pick) = layered_key.resolve(&context, LayerResolution::ActiveExcluding(2));
+        assert_eq!(1, layer);
+        assert_eq!(LayerPick::Key(mid), pick);
+
+        let (layer, pick) = layered_key.resolve(&context, LayerResolution::ActiveExcluding(1));
+        // Layer 2 still active and not excluded.
+        assert_eq!(2, layer);
+        assert_eq!(LayerPick::Key(high), pick);
+    }
+
+    #[test]
+    fn test_active_excluding_falls_to_base_when_no_lower_defined() {
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let high = keyboard::Ref::KeyCode(0x06);
+        let layered_key = LayeredKey::new(base, [None, Some(high)]);
+
+        context.handle_layer_event(LayerEvent::Activated(2));
+
+        let (layer, pick) = layered_key.resolve(&context, LayerResolution::ActiveExcluding(2));
+        assert_eq!(0, layer);
+        assert_eq!(LayerPick::Key(base), pick);
+    }
+
+    #[test]
+    fn test_tlex_emits_deactivated_and_resolves_to_lower_key() {
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let layered_key =
+            LayeredKey::with_bindings(base, [Some(LayeredBinding::TransparentLayerExit), None]);
+        let system = System::new([], [layered_key]);
+
+        context.handle_layer_event(LayerEvent::Activated(1));
+        let keymap_index = 3;
+        let (pkr, pke) = system.new_pressed_key(keymap_index, &context, Ref::Layered(0));
+
+        assert_eq!(
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(base)),
+            pkr,
+        );
+
+        let events: Vec<_> = pke.into_iter().collect();
+        assert_eq!(1, events.len());
+        assert_eq!(
+            key::ScheduledEvent::immediate(key::Event::key_event(
+                keymap_index,
+                LayerEvent::Deactivated(1)
+            )),
+            events[0],
+        );
+    }
+
+    #[test]
+    fn test_tlex_deactivates_sticky_layer() {
+        // Sticky is non-persistent → tlex schedules Deactivated.
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let layered_key =
+            LayeredKey::with_bindings(base, [Some(LayeredBinding::TransparentLayerExit)]);
+        let system = System::new([], [layered_key]);
+
+        context.handle_layer_event(LayerEvent::StickyActivated(1));
+
+        let (pkr, pke) = system.new_pressed_key(0, &context, Ref::Layered(0));
+        assert_eq!(
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(base)),
+            pkr,
+        );
+        let events: Vec<_> = pke.into_iter().collect();
+        assert_eq!(1, events.len());
+    }
+
+    #[test]
+    fn test_tlex_resolution_local_until_deactivated_handled() {
+        // ActiveExcluding alone does not clear context.
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let other = keyboard::Ref::KeyCode(0x10);
+        let tlex_key =
+            LayeredKey::with_bindings(base, [Some(LayeredBinding::TransparentLayerExit)]);
+        let normal_key = LayeredKey::new(other, [Some(keyboard::Ref::KeyCode(0x11))]);
+        let system = System::new([], [tlex_key, normal_key]);
+
+        context.handle_layer_event(LayerEvent::Activated(1));
+
+        let (_pkr, _pke) = system.new_pressed_key(0, &context, Ref::Layered(0));
+        // Context still has layer 1 active (event not handled yet).
+        assert!(context.layer_state()[0].is_active());
+
+        // Other key still sees layer 1.
+        let (pkr, _) = system.new_pressed_key(1, &context, Ref::Layered(1));
+        assert_eq!(
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(keyboard::Ref::KeyCode(
+                0x11
+            ))),
+            pkr,
+        );
+    }
+
+    #[test]
+    fn deserialize_layered_binding_tlex_json() {
+        let cell: Option<LayeredBinding<keyboard::Ref>> =
+            serde_json::from_str(r#"{"TransparentLayerExit": null}"#).unwrap();
+        assert_eq!(Some(LayeredBinding::TransparentLayerExit), cell);
+
+        let cell: Option<LayeredBinding<keyboard::Ref>> =
+            serde_json::from_str(r#"{"KeyCode": 4}"#).unwrap();
+        assert_eq!(Some(LayeredBinding::Key(keyboard::Ref::KeyCode(4))), cell,);
+
+        let cell: Option<LayeredBinding<keyboard::Ref>> = serde_json::from_str("null").unwrap();
+        assert_eq!(None, cell);
     }
 }
