@@ -25,6 +25,17 @@
         actual = K.layer_mod.toggle 1 |> keymap_ncl.key.to_json_value,
         expected = { Toggle = 1 },
       },
+
+      keymap_example_tap_toggle = {
+        actual = K.layer_mod.tap_toggle 1,
+        expected = { layer_modifier.tap_toggle = 1 },
+      },
+
+      check_json_value_tap_toggle = {
+        actual = K.layer_mod.tap_toggle 1 |> keymap_ncl.key.to_json_value,
+        expected = { TapToggle = 1 },
+      },
+
       check_json_value_set_active_layers_amongst = {
         actual =
           K.layer_mod.set_active_layers_amongst {
@@ -155,6 +166,11 @@
               'Ok
             else
               validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
+          { layer_modifier = { tap_toggle } } =>
+            if std.is_string tap_toggle then
+              'Ok
+            else
+              validators.all_of [validators.is_number, validators.is_greater_than 0] tap_toggle,
           { layer_modifier = { set_active_layers_to } } => layer_indices_array set_active_layers_to,
           { layer_modifier = { set_active_layers_to, affected_layers } } =>
             validators.all_ok [
@@ -163,7 +179,7 @@
             ],
           _ =>
             'Error {
-              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { tap_toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
             },
         },
 
@@ -183,6 +199,8 @@
             { Hold = [hold_layer, 0] },
           { layer_modifier = { toggle = toggle_layer } } =>
             { Toggle = toggle_layer },
+          { layer_modifier = { tap_toggle = tap_toggle_layer } } =>
+            { TapToggle = tap_toggle_layer },
           { layer_modifier = { sticky = sticky_layer } } =>
             { Sticky = sticky_layer },
           { layer_modifier = { set_active_layers_to = active_layers } } =>
@@ -197,7 +215,7 @@
             { SetActiveLayers = modifier_bitset },
           _ =>
             'Error {
-              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { tap_toggle }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
             },
         },
 

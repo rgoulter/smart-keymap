@@ -74,6 +74,9 @@
     check_json_is_toggle =
       let json = { Toggle = 1 } in
       smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_tap_toggle =
+      let json = { TapToggle = 1 } in
+      smart_keymap.layered.modifier_key.is_json json,
   },
 
   smart_keymap.layered
@@ -92,8 +95,8 @@
           validators.record.validator {
             fields_validator =
               validators.all_of [
-                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
-                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
+                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "TapToggle"],
+                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "TapToggle"],
               ],
             field_validators =
               let modifier_bitset_validator =
@@ -121,6 +124,7 @@
                     _ => 'Error { message = "expected Hold to be [layer_index, kb_mods]" },
                   },
                 Toggle = validators.is_number,
+                TapToggle = validators.is_number,
                 Sticky = validators.is_number,
                 SetActiveLayers = modifier_bitset_validator,
               },
@@ -161,6 +165,14 @@
                 include key_type,
                 variant = "Toggle",
                 rust_expr = "%{module}::ModifierKey::toggle(%{std.to_string layer_index})",
+              },
+            { TapToggle = layer_index } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "TapToggle",
+                rust_expr = "%{module}::ModifierKey::tap_toggle(%{std.to_string layer_index})",
               },
             { Sticky = layer_index } =>
               {

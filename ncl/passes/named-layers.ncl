@@ -261,6 +261,8 @@
         { layer_modifier = { sticky = resolve_layer_index name_to_idx s } },
       { layer_modifier = { toggle = t } } =>
         { layer_modifier = { toggle = resolve_layer_index name_to_idx t } },
+      { layer_modifier = { tap_toggle = t } } =>
+        { layer_modifier = { tap_toggle = resolve_layer_index name_to_idx t } },
       { layer_modifier = { set_active_layers_to = active, affected_layers = mask } } =>
         {
           layer_modifier = {

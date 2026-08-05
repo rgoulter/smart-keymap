@@ -77,13 +77,28 @@
       'Release { layer_modifier = { hold }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = deactivate_layer al hold } & layer_state,
+      # Tap-toggle hold path (press while held): activate like MO.
+      'Press { layer_modifier = { tap_toggle }, .. } =>
+        let { active_layers = al, ..layer_state } = layer_state in
+        { active_layers = activate_layer al tap_toggle } & layer_state,
+      # Tap-toggle release after hold: deactivate like MO.
+      # (NCL sim does not track interruption; pure taps use 'Tap below.)
+      'Release { layer_modifier = { tap_toggle }, .. } =>
+        let { active_layers = al, ..layer_state } = layer_state in
+        { active_layers = deactivate_layer al tap_toggle } & layer_state,
       'Press { layer_modifier = { toggle }, .. } or
       'Tap { layer_modifier = { toggle }, .. } =>
         let { active_layers = al, ..layer_state } = layer_state in
         { active_layers = toggle_layer al toggle } & layer_state,
+      # Note: dedicated Press/Tap arms for every layer_mod variant can hang Nickel
+      # match compilation; fold remaining (incl. tap_toggle tap) into this arm.
       'Press { layer_modifier = lm, .. } or
       'Tap { layer_modifier = lm, .. } =>
-        if std.record.has_field "set_active_layers_to" lm then
+        if std.record.has_field "tap_toggle" lm then
+          # 'Tap of tap_toggle: net toggle.
+          let { active_layers = al, ..layer_state } = layer_state in
+          { active_layers = toggle_layer al lm.tap_toggle } & layer_state
+        else if std.record.has_field "set_active_layers_to" lm then
           let { active_layers = prior_active_layers, ..layer_state } = layer_state in
           let new_active_layers =
             if std.record.has_field "affected_layers" lm then
