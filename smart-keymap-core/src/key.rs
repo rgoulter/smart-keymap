@@ -16,7 +16,7 @@ pub mod chorded;
 pub mod consumer;
 /// Custom keys.
 pub mod custom;
-/// History keys (e.g. Repeat last output).
+/// History keys (Repeat / Alt-Repeat of last output).
 pub mod history;
 /// HID Keyboard keys.
 pub mod keyboard;
