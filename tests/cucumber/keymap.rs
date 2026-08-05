@@ -53,6 +53,7 @@ const TEST_KEYMAP_NCL: &str = r#"
       K.A, K.B, K.C, K.D, K.E, K.F, K.G, K.H, K.I, K.J, K.K, K.L, K.M, K.N, K.O, K.P, K.Q, K.R, K.S, K.T, K.U, K.V, K.W, K.X, K.Y, K.Z,
       K.N0, K.N1, K.N2, K.N3, K.N4, K.N5, K.N6, K.N7, K.N8, K.N9,
       K.Space, K.Backspace, K.Escape, K.Grave, K.Delete,
+      K.Left, K.Down, K.Up, K.Right,
       K.LeftShift, K.RightShift, K.LeftCtrl,
     ]
   }
