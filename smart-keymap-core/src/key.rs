@@ -18,6 +18,8 @@ pub mod consumer;
 pub mod custom;
 /// History keys (e.g. Repeat last output).
 pub mod history;
+/// Key Lock (hold the next key until pressed again).
+pub mod key_lock;
 /// HID Keyboard keys.
 pub mod keyboard;
 /// Layered keys. (Layering functionality).
