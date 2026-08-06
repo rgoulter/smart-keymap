@@ -59,3 +59,21 @@ save-pick:
 [group('ncl')]
 format:
     make ncl-format
+
+# Format Nickel sources and fail if whitelisted files would change (CI-style)
+[group('ncl')]
+format-check:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    make ncl-format
+    files=()
+    while IFS= read -r f; do
+      [[ -n "$f" ]] && files+=("$f")
+    done < <(ncl/scripts/ncl-format-files.sh)
+    if [[ ${#files[@]} -eq 0 ]]; then
+      exit 0
+    fi
+    if ! git diff --exit-code -- "${files[@]}"; then
+      echo "Nickel formatting changed files. Run 'just ncl::format' (or 'just fmt') and commit." >&2
+      exit 1
+    fi
