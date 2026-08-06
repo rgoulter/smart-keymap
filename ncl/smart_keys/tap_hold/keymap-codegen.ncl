@@ -59,34 +59,59 @@
         key_type = "%{module}::Key",
 
         # c.f. doc_de_tap_hold.md.
-        # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
+        # JSON: { tap, hold, hold_trigger_key_positions? }
         json_validator =
           validators.record.validator {
-            fields_validator = validators.record.has_exact_fields ["tap", "hold"],
+            fields_validator =
+              validators.all_of [
+                validators.record.has_all_fields ["tap", "hold"],
+                validators.record.has_only_fields [
+                  "tap",
+                  "hold",
+                  "hold_trigger_key_positions",
+                ],
+              ],
             field_validators = {
               tap = smart_key.json_validator,
               hold = smart_key.json_validator,
+              hold_trigger_key_positions =
+                validators.array.validator validators.is_number,
             },
           },
 
         is_json = fun json => 'Ok == json_validator json,
 
-        codegen_values = fun json @ { hold, tap } =>
+        codegen_values = fun json @ { hold, tap, ..rest } =>
           let hold_cv = hold |> smart_key.codegen_values in
           let tap_cv = tap |> smart_key.codegen_values in
+          let hold_triggers =
+            if std.record.has_field "hold_trigger_key_positions" rest then
+              rest.hold_trigger_key_positions
+            else
+              null
+          in
 
           {
             nested = {
               tap = tap_cv,
               hold = hold_cv,
             },
+            hold_trigger_key_positions = hold_triggers,
             include json,
             include module,
             include key_type,
             rust_expr =
               let hold_expr = nested.hold.rust_expr in
               let tap_expr = nested.tap.rust_expr in
-              "%{module}::Key::new(%{tap_expr}, %{hold_expr})",
+              if hold_triggers == null then
+                "%{module}::Key::new(%{tap_expr}, %{hold_expr})"
+              else
+                let idxs =
+                  hold_triggers
+                  |> std.array.map (fun i => "%{std.to_string i}")
+                  |> std.string.join ", "
+                in
+                "%{module}::Key::with_hold_triggers(%{tap_expr}, %{hold_expr}, %{module}::KeyPositionMask::from_indices(&[%{idxs}]))",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -105,22 +130,46 @@
           let acc = smart_key.traverse f acc cv.nested.tap in
           smart_key.traverse f acc cv.nested.hold,
 
-        data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
+        data_and_ref = fun key_data cv @ {
+          nested = { tap = tap_cv, hold = hold_cv },
+          hold_trigger_key_positions = hold_triggers,
+          ..
+        } =>
           let { key_data, ref = tap_ref } = smart_key.data_and_ref key_data tap_cv in
           let tap_ref = tap_ref |> composite.ref.wrap in
           let { key_data, ref = hold_ref } = smart_key.data_and_ref key_data hold_cv in
           let hold_ref = hold_ref |> composite.ref.wrap in
           let { tap_hold = tap_hold_, ..other_data } = key_data & { tap_hold | default = [] } in
           let new_index = std.array.length tap_hold_ in
+          let hold_triggers_rust =
+            if hold_triggers == null then
+              "None"
+            else
+              let idxs =
+                hold_triggers
+                |> std.array.map (fun i => "%{std.to_string i}")
+                |> std.string.join ", "
+              in
+              "Some(%{module}::KeyPositionMask::from_indices(&[%{idxs}]))"
+          in
+          let triggers_json =
+            if hold_triggers == null then
+              {}
+            else
+              { hold_trigger_key_positions = hold_triggers }
+          in
           let new_key = {
-            json = {
-              tap = tap_ref.json,
-              hold = hold_ref.json,
-            },
+            json =
+              {
+                tap = tap_ref.json,
+                hold = hold_ref.json,
+              }
+              & triggers_json,
             rust_expr = m%"
             %{module}::Key {
               tap: %{tap_ref.rust_expr},
               hold: %{hold_ref.rust_expr},
+              hold_trigger_positions: %{hold_triggers_rust},
             }
           "%,
           }

@@ -1,5 +1,6 @@
 mod hold_on_interrupt_press;
 mod hold_on_interrupt_tap;
+mod hold_trigger_positions;
 mod interrupt_ignore;
 mod layered;
 mod no_timeout;

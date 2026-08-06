@@ -44,10 +44,10 @@ fn tap_hold_interrupt_keymap(
             smart_keymap::key::sequence::System::new(Vec::new(), Vec::new()),
             smart_keymap::key::sticky::System::new(Vec::new()),
             smart_keymap::key::tap_dance::System::new(Vec::new()),
-            smart_keymap::key::tap_hold::System::new(vec![smart_keymap::key::tap_hold::Key {
-                tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0x04)),
-                hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0xE0)),
-            }]),
+            smart_keymap::key::tap_hold::System::new(vec![smart_keymap::key::tap_hold::Key::new(
+                key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0x04)),
+                key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0xE0)),
+            )]),
         ),
     )
 }
