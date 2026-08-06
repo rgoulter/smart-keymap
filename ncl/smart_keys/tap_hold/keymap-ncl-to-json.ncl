@@ -52,6 +52,7 @@
           ),
         interrupt_response | optional | TapHoldInterruptResponse,
         required_idle_time | optional | Number,
+        retro_tap | optional | Bool,
       },
 
       Key = std.contract.from_validator key_validator,
