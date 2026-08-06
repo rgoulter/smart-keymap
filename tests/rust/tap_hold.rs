@@ -3,6 +3,7 @@ mod hold_on_interrupt_tap;
 mod interrupt_ignore;
 mod layered;
 mod no_timeout;
+mod quick_tap;
 mod hold_trigger_positions;
 mod required_idle_time;
 mod retro_tap;
