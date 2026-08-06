@@ -52,6 +52,7 @@
           ),
         interrupt_response | optional | TapHoldInterruptResponse,
         required_idle_time | optional | Number,
+        quick_tap_ms | optional | Number,
         retro_tap | optional | Bool,
       },
 

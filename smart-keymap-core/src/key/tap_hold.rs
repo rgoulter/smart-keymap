@@ -190,6 +190,14 @@ pub struct Config {
     ///  when typing quickly.
     pub required_idle_time: Option<u16>,
 
+    /// If a tap-hold key is pressed again within this many milliseconds of its
+    /// previous press (ZMK `quick-tap-ms`), immediately resolve as tap.
+    ///
+    /// Useful for hold-to-repeat on the tap letter (e.g. backspace) without
+    /// waiting for the hold timeout. `None` disables (default).
+    #[serde(default)]
+    pub quick_tap_ms: Option<u16>,
+
     /// When true, timeout alone never resolves as hold (ZMK `retro-tap`).
     ///
     /// Hold activates only when another key interrupts (per
@@ -218,6 +226,7 @@ pub const DEFAULT_CONFIG: Config = Config {
     timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
+    quick_tap_ms: None,
     retro_tap: false,
 };
 
@@ -240,6 +249,9 @@ impl Default for Config {
 pub struct Context {
     config: Config,
     idle_time_ms: u32,
+    time_ms: u32,
+    recent_presses: [(u16, u32); keymap::MAX_RECENT_PRESSES],
+    recent_press_count: u8,
 }
 
 impl Context {
@@ -248,6 +260,9 @@ impl Context {
         Context {
             config,
             idle_time_ms: 0,
+            time_ms: 0,
+            recent_presses: [(0, 0); keymap::MAX_RECENT_PRESSES],
+            recent_press_count: 0,
         }
     }
 
@@ -259,9 +274,37 @@ impl Context {
     /// Updates the context with the given keymap context.
     pub fn update_keymap_context(
         &mut self,
-        keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
+        keymap::KeymapContext {
+            idle_time_ms,
+            time_ms,
+            recent_presses,
+            recent_press_count,
+            ..
+        }: &keymap::KeymapContext,
     ) {
         self.idle_time_ms = *idle_time_ms;
+        self.time_ms = *time_ms;
+        self.recent_presses = *recent_presses;
+        self.recent_press_count = *recent_press_count;
+    }
+
+    fn last_press_time_ms(&self, keymap_index: u16) -> Option<u32> {
+        self.recent_presses[..self.recent_press_count as usize]
+            .iter()
+            .rev()
+            .find(|(ki, _)| *ki == keymap_index)
+            .map(|(_, t)| *t)
+    }
+
+    /// Whether a re-press of `keymap_index` falls within `quick_tap_ms`.
+    fn is_quick_tap(&self, keymap_index: u16) -> bool {
+        let Some(quick_tap_ms) = self.config.quick_tap_ms else {
+            return false;
+        };
+        let Some(last_t) = self.last_press_time_ms(keymap_index) else {
+            return false;
+        };
+        self.time_ms.saturating_sub(last_t) < quick_tap_ms as u32
     }
 }
 
@@ -451,6 +494,24 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         (pending, scheduled)
     }
 
+    fn resolve_as_tap(
+        &self,
+        key_index: u8,
+    ) -> (
+        key::PressedKeyResult<R, PendingKeyState, KeyState>,
+        key::KeyEvents<Event>,
+    )
+    where
+        R: Copy,
+    {
+        let Key {
+            tap: tap_key_ref, ..
+        } = self.keys[key_index as usize];
+        (
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
+            key::KeyEvents::no_events(),
+        )
+    }
 }
 
 impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
@@ -471,6 +532,11 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
+        // ZMK quick-tap: re-press within window of prior press → force tap.
+        if context.is_quick_tap(keymap_index) {
+            return self.resolve_as_tap(key_index);
+        }
+
         match context.config.required_idle_time {
             Some(required_idle_time) => {
                 if context.idle_time_ms >= required_idle_time as u32 {
@@ -487,13 +553,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
                 } else {
                     // Keymap has not been idle for long enough;
                     // immediately resolve as tap.
-                    let Key {
-                        tap: tap_key_ref, ..
-                    } = self.keys[key_index as usize];
-                    (
-                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
-                        key::KeyEvents::no_events(),
-                    )
+                    self.resolve_as_tap(key_index)
                 }
             }
             None => {
