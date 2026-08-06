@@ -23,6 +23,7 @@ endif()
 set(
     CODEGEN_DEPS_LIST
     "${BOARD_FULL_PATH}"
+    "${NCL_CODEGEN_DIR}/debug.ncl"
     "${NCL_CODEGEN_DIR}/gpio.ncl"
     "${NCL_CODEGEN_DIR}/keyboard_matrix.ncl"
 )
