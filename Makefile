@@ -66,11 +66,36 @@ test-clippy:
 		--exclude stm32-embassy-smart-keyboard \
 		-- -D warnings
 
-# Match .github/workflows/rust.yaml cargo-build "Run Cargo Doc" step.
+# Match CI cargo-doc steps (host + firmware packages).
+# Host: .github/workflows/rust.yaml
+# Firmware: rust-stm32f4.yaml, rust-thumbv6m-none-eabi.yaml
 .PHONY: test-doc
-test-doc:
+test-doc: test-doc-host test-doc-firmware
+
+.PHONY: test-doc-host
+test-doc-host:
 	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
 		--package=smart-keymap-core \
+		--package=smart-keymap \
+		--package=keyberon-smart-keyboard
+
+.PHONY: test-doc-firmware
+test-doc-firmware: test-doc-stm32f4 test-doc-rp2040
+
+# Match .github/workflows/rust-stm32f4.yaml "Run Cargo Doc"
+.PHONY: test-doc-stm32f4
+test-doc-stm32f4:
+	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--no-default-features \
+		--package=stm32f4-rtic-smart-keyboard \
+		--package=smart-keymap \
+		--package=keyberon-smart-keyboard
+
+# Match .github/workflows/rust-thumbv6m-none-eabi.yaml "Run Cargo Doc"
+.PHONY: test-doc-rp2040
+test-doc-rp2040:
+	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--package=rp2040-rtic-smart-keyboard \
 		--package=smart-keymap \
 		--package=keyberon-smart-keyboard
 
