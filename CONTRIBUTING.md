@@ -37,26 +37,40 @@ Day-to-day commands are exposed through the root [justfile](justfile)
 ([just](https://just.systems/)). Make remains the engine for dependency graphs
 and CI; `just` is the human-facing catalog.
 
+Agent-oriented notes (including the pre-push checklist and recipe naming) live in
+[AGENTS.md](AGENTS.md).
+
 ```text
 just                              # list recipes (default)
 just choose                       # interactive picker (fzf / JUST_CHOOSER)
+just check-quick                  # quick pre-push hygiene: fmt, clippy, doc, nickel format
 just test-fast                    # daily loop: ncl checks + rust lib + integration
-just test                         # full matrix via Make (pre-push / CI-ish)
+just test                         # full matrix via Make (comprehensive / CI-ish)
 
 just ncl::checks                  # Nickel evaluated_checks
 just ncl::snapshot keymap-…       # one codegen snapshot fixture
 just ncl::snapshot-pick           # fzf a fixture, then run it
 just ncl::save [fixture]          # refresh expected.rs (one or all)
+just ncl::format-check            # format Nickel and fail if files would change
 
 just rust::lib                    # smart-keymap-core + smart-keymap unit tests
 just rust::integration [module]   # tests/rust integration suite / filter
 just rust::cucumber [filter]      # cucumber features (slow)
 just rust::clippy                 # workspace clippy (firmware crates excluded)
+just rust::doc                    # cargo doc with --deny warnings (core + firmware)
 
 just ceedling::all                # all C/FFI suites
 just ceedling::suite keyboard     # one suite (make test-ceedling-<name>)
 just ceedling::suite-pick         # fzf a suite
 ```
+
+Recipe names use **kebab-case** (`test-fast`, `check-quick`). Module recipes use
+Just's **`module::recipe`** form (`ncl::checks`, `rust::clippy`). Paths with `/`
+are filesystem only (e.g. `just/ncl.just`), not recipe names.
+
+Before pushing, prefer `just check-quick` so rustfmt, clippy, `cargo doc`
+(including firmware packages), and Nickel formatting match CI. Use `just test`
+for the full local matrix.
 
 Modules live under `just/` (`ncl`, `rust`, `ceedling`). Firmware packages keep
 their own justfiles (e.g. `rp2040-rtic-smart-keyboard`).
