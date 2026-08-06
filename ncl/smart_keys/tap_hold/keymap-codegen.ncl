@@ -196,6 +196,7 @@
             ),
           interrupt_response | optional | TapHoldInterruptResponseJson,
           required_idle_time | optional | Number,
+          retro_tap | optional | Bool,
         },
 
         expr =
@@ -225,6 +226,14 @@
               if std.record.has_field "required_idle_time" c then
                 {
                   required_idle_time = "Some(%{std.to_string c.required_idle_time})",
+                }
+              else
+                {}
+            )
+            & (
+              if std.record.has_field "retro_tap" c then
+                {
+                  retro_tap = if c.retro_tap then "true" else "false",
                 }
               else
                 {}

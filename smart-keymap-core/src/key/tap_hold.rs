@@ -189,6 +189,14 @@ pub struct Config {
     /// This reduces disruption from unexpected hold resolutions
     ///  when typing quickly.
     pub required_idle_time: Option<u16>,
+
+    /// When true, timeout alone never resolves as hold (ZMK `retro-tap`).
+    ///
+    /// Hold activates only when another key interrupts (per
+    /// [InterruptResponse]); releasing the key alone always yields tap,
+    /// even after the timeout has elapsed.
+    #[serde(default)]
+    pub retro_tap: bool,
 }
 
 /// The default timeout.
@@ -210,6 +218,7 @@ pub const DEFAULT_CONFIG: Config = Config {
     timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
+    retro_tap: false,
 };
 
 impl Config {
@@ -292,6 +301,7 @@ impl PendingKeyState {
     fn hold_resolution(
         &self,
         interrupt_response: InterruptResponse,
+        retro_tap: bool,
         keymap_index: u16,
         event: key::Event<Event>,
         allows_hold_trigger: impl Fn(u16) -> bool,
@@ -320,8 +330,12 @@ impl PendingKeyState {
                         key_event: Event::TapHoldTimeout,
                         ..
                     } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
+                        if retro_tap {
+                            // Stay pending until interrupt or self-release.
+                            None
+                        } else {
+                            Some(TapHoldState::Hold)
+                        }
                     }
                     _ => None,
                 }
@@ -345,8 +359,11 @@ impl PendingKeyState {
                         key_event: Event::TapHoldTimeout,
                         ..
                     } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
+                        if retro_tap {
+                            None
+                        } else {
+                            Some(TapHoldState::Hold)
+                        }
                     }
                     _ => None,
                 }
@@ -365,8 +382,11 @@ impl PendingKeyState {
                         key_event: Event::TapHoldTimeout,
                         ..
                     } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
+                        if retro_tap {
+                            None
+                        } else {
+                            Some(TapHoldState::Hold)
+                        }
                     }
                     _ => None,
                 }
@@ -392,6 +412,7 @@ impl PendingKeyState {
         let Context { config, .. } = context;
         self.hold_resolution(
             config.interrupt_response,
+            config.retro_tap,
             keymap_index,
             event,
             allows_hold_trigger,
