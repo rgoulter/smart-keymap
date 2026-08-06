@@ -11,6 +11,88 @@ use crate::keymap;
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Ref(pub u8);
 
+/// Bitmask of keymap indices (0..128) used for positional hold triggers.
+///
+/// Empty mask means "no restriction" only when wrapped in [`Option::None`] on
+/// [Key]; a `Some(empty)` mask matches no positions.
+///
+/// JSON accepts an array of keymap indices (e.g. `[2, 3, 18]`), matching the
+/// Nickel authoring surface `hold_trigger_key_positions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct KeyPositionMask {
+    /// Bits for keymap indices 0..63.
+    pub lo: u64,
+    /// Bits for keymap indices 64..127.
+    pub hi: u64,
+}
+
+impl<'de> Deserialize<'de> for KeyPositionMask {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = KeyPositionMask;
+
+            fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                f.write_str("an array of keymap indices")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut mask = KeyPositionMask::EMPTY;
+                while let Some(idx) = seq.next_element::<u16>()? {
+                    mask = mask.with(idx);
+                }
+                Ok(mask)
+            }
+        }
+
+        deserializer.deserialize_seq(Visitor)
+    }
+}
+
+impl KeyPositionMask {
+    /// Empty mask (matches no indices).
+    pub const EMPTY: Self = Self { lo: 0, hi: 0 };
+
+    /// Whether `keymap_index` is set in the mask.
+    pub const fn contains(self, keymap_index: u16) -> bool {
+        if keymap_index < 64 {
+            (self.lo & (1u64 << keymap_index)) != 0
+        } else if keymap_index < 128 {
+            (self.hi & (1u64 << (keymap_index - 64))) != 0
+        } else {
+            false
+        }
+    }
+
+    /// Returns a copy with `keymap_index` set (indices ≥ 128 are ignored).
+    pub const fn with(mut self, keymap_index: u16) -> Self {
+        if keymap_index < 64 {
+            self.lo |= 1u64 << keymap_index;
+        } else if keymap_index < 128 {
+            self.hi |= 1u64 << (keymap_index - 64);
+        }
+        self
+    }
+
+    /// Build a mask from a list of keymap indices.
+    pub const fn from_indices(indices: &[u16]) -> Self {
+        let mut mask = Self::EMPTY;
+        let mut i = 0;
+        while i < indices.len() {
+            mask = mask.with(indices[i]);
+            i += 1;
+        }
+        mask
+    }
+}
+
 /// A key with tap-hold functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Key<R> {
@@ -18,12 +100,47 @@ pub struct Key<R> {
     pub tap: R,
     /// The 'hold' key.
     pub hold: R,
+    /// When set, only these keymap indices may resolve an interrupt as hold
+    /// (ZMK `hold-trigger-key-positions` / opposite-hand HRM polish).
+    ///
+    /// `None` means any other key may trigger hold (default).
+    ///
+    /// JSON field name matches the Nickel authoring surface
+    ///  (`hold_trigger_key_positions`).
+    #[serde(default, rename = "hold_trigger_key_positions")]
+    pub hold_trigger_positions: Option<KeyPositionMask>,
 }
 
 impl<R> Key<R> {
-    /// Constructs a new tap-hold key.
+    /// Constructs a new tap-hold key (no positional hold restriction).
     pub const fn new(tap: R, hold: R) -> Key<R> {
-        Key { tap, hold }
+        Key {
+            tap,
+            hold,
+            hold_trigger_positions: None,
+        }
+    }
+
+    /// Constructs a tap-hold key that only resolves as hold when interrupted
+    /// by a key whose keymap index is in `hold_trigger_positions`.
+    pub const fn with_hold_triggers(
+        tap: R,
+        hold: R,
+        hold_trigger_positions: KeyPositionMask,
+    ) -> Key<R> {
+        Key {
+            tap,
+            hold,
+            hold_trigger_positions: Some(hold_trigger_positions),
+        }
+    }
+
+    /// Whether `other_keymap_index` is allowed to resolve this key as hold.
+    pub const fn allows_hold_trigger(&self, other_keymap_index: u16) -> bool {
+        match self.hold_trigger_positions {
+            None => true,
+            Some(mask) => mask.contains(other_keymap_index),
+        }
     }
 }
 
@@ -33,6 +150,7 @@ impl<R: Default> Default for Key<R> {
         Key {
             tap: R::default(),
             hold: R::default(),
+            hold_trigger_positions: None,
         }
     }
 }
@@ -176,13 +294,19 @@ impl PendingKeyState {
         interrupt_response: InterruptResponse,
         keymap_index: u16,
         event: key::Event<Event>,
+        allows_hold_trigger: impl Fn(u16) -> bool,
     ) -> Option<TapHoldState> {
         match interrupt_response {
             InterruptResponse::HoldOnKeyPress => {
                 match event {
-                    key::Event::Input(input::Event::Press { .. }) => {
-                        // TapHold: any interruption resolves pending TapHold as Hold.
-                        Some(TapHoldState::Hold)
+                    key::Event::Input(input::Event::Press { keymap_index: ki }) => {
+                        // TapHold: interruption resolves as Hold when positional
+                        //  filter (if any) allows the interrupting key.
+                        if allows_hold_trigger(ki) {
+                            Some(TapHoldState::Hold)
+                        } else {
+                            None
+                        }
                     }
                     key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                         if keymap_index == ki {
@@ -208,7 +332,9 @@ impl PendingKeyState {
                         if keymap_index == ki {
                             // TapHold: not interrupted; resolved as tap.
                             Some(TapHoldState::Tap)
-                        } else if Some(ki) == self.other_pressed_keymap_index {
+                        } else if Some(ki) == self.other_pressed_keymap_index
+                            && allows_hold_trigger(ki)
+                        {
                             // TapHold: interrupted by key tap (press + release); resolved as hold.
                             Some(TapHoldState::Hold)
                         } else {
@@ -254,6 +380,7 @@ impl PendingKeyState {
         context: &Context,
         keymap_index: u16,
         event: key::Event<Event>,
+        allows_hold_trigger: impl Fn(u16) -> bool,
     ) -> Option<TapHoldState> {
         // Check for interrupting taps
         // (track other key press)
@@ -263,7 +390,12 @@ impl PendingKeyState {
 
         // Resolve tap-hold state per the event.
         let Context { config, .. } = context;
-        self.hold_resolution(config.interrupt_response, keymap_index, event)
+        self.hold_resolution(
+            config.interrupt_response,
+            keymap_index,
+            event,
+            allows_hold_trigger,
+        )
     }
 }
 
@@ -297,6 +429,7 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         });
         (pending, scheduled)
     }
+
 }
 
 impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
@@ -363,9 +496,12 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         Ref(key_index): Ref,
         event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        let th_state = pending_state.handle_event(context, keymap_index, event);
+        let key_def = &self.keys[key_index as usize];
+        let th_state = pending_state.handle_event(context, keymap_index, event, |ki| {
+            key_def.allows_hold_trigger(ki)
+        });
         if let Some(th_state) = th_state {
-            let Key { tap, hold } = self.keys[key_index as usize];
+            let Key { tap, hold, .. } = *key_def;
             let new_key_ref = match th_state {
                 key::tap_hold::TapHoldState::Tap => tap,
                 key::tap_hold::TapHoldState::Hold => hold,
@@ -412,5 +548,32 @@ mod tests {
     #[test]
     fn test_sizeof_event() {
         assert_eq!(0, core::mem::size_of::<Event>());
+    }
+
+    #[test]
+    fn test_key_position_mask_contains() {
+        let mask = KeyPositionMask::from_indices(&[0, 5, 64, 127]);
+        assert!(mask.contains(0));
+        assert!(mask.contains(5));
+        assert!(mask.contains(64));
+        assert!(mask.contains(127));
+        assert!(!mask.contains(1));
+        assert!(!mask.contains(63));
+        assert!(!mask.contains(65));
+    }
+
+    #[test]
+    fn test_allows_hold_trigger_default() {
+        let key = Key::new(0u8, 1u8);
+        assert!(key.allows_hold_trigger(0));
+        assert!(key.allows_hold_trigger(99));
+    }
+
+    #[test]
+    fn test_allows_hold_trigger_restricted() {
+        let key = Key::with_hold_triggers(0u8, 1u8, KeyPositionMask::from_indices(&[2, 3]));
+        assert!(!key.allows_hold_trigger(0));
+        assert!(key.allows_hold_trigger(2));
+        assert!(key.allows_hold_trigger(3));
     }
 }
