@@ -1,16 +1,12 @@
 # In order to use debug with UART1 (TX=PA9),
 #  this means the keyboard cannot use row2=PA9.
+let C = import "keyboard/contracts.ncl" in
+
 {
   gpio_pins,
 
-  board = {
+  board | C.Board = {
     matrix
-      | {
-        cols | Array { port | String, pin | Number },
-        rows | Array { port | String, pin | Number },
-        key_count | Number,
-        implementation | String,
-      }
       | doc "the cols/rows, and number of keys, used for generating the matrix scan code."
       =
         let gp = gpio_pins in
@@ -24,6 +20,9 @@
           key_count = 60,
           implementation = "col_to_row",
         },
+
+    # for UART1 TX = PA9
+    debug.tx = 1,
 
     # The WABBLE-60 uses a digital matrix of 8x8 rows and columns,
     #  forming a physical 5x12 matrix of keys.
