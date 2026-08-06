@@ -2,7 +2,12 @@
 #
 # Make remains the engine for dependency graphs and CI.
 # Day-to-day: `just` / `just choose` / `just test-fast`
-# Pre-push:   `just test` (full matrix via Make)
+# Pre-push:   `just check-quick` (fmt/clippy/doc/nickel) then `just test` when needed
+# Full matrix: `just test` (via Make)
+#
+# Naming: `module::recipe` is Just submodule syntax; multi-word recipes use
+# kebab-case (`test-fast`, `fmt-check`). `/` is only for filesystem paths
+# (e.g. mod ncl "just/ncl.just"), never recipe names. See AGENTS.md.
 #
 #   just --list --list-submodules
 #   just --choose
@@ -60,7 +65,11 @@ test-rust: rust::all
 [group('test')]
 test-ceedling: ceedling::all
 
-# ── lint / format ────────────────────────────────────────────────────
+# ── lint / format / pre-push ─────────────────────────────────────────
+
+# Quick pre-push hygiene: rustfmt, clippy, cargo doc (core+firmware), nickel format
+[group('lint')]
+check-quick: rust::fmt-check rust::clippy rust::doc ncl::format-check
 
 # rustfmt --check + clippy; also runs ncl-format (writes Nickel sources)
 [group('lint')]

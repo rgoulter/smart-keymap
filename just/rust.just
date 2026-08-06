@@ -77,7 +77,17 @@ fmt-check:
 fmt:
     cargo fmt --all
 
-# cargo doc with deny warnings (core packages)
+# cargo doc with deny warnings (core + firmware packages; matches CI)
 [group('rust')]
 doc:
     make test-doc
+
+# Host/core packages only (rust.yaml cargo-build doc step)
+[group('rust')]
+doc-host:
+    make test-doc-host
+
+# Firmware package docs (stm32f4 + rp2040 workflows)
+[group('rust')]
+doc-firmware:
+    make test-doc-firmware
