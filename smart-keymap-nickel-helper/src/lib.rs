@@ -19,6 +19,10 @@ pub const NICKEL_TIMEOUT_ENV: &str = "SMART_KEYMAP_NICKEL_TIMEOUT_SECS";
 /// Default Nickel subprocess timeout when [`NICKEL_TIMEOUT_ENV`] is unset.
 pub const DEFAULT_NICKEL_TIMEOUT_SECS: u64 = 60;
 
+mod disk_cache;
+
+pub use disk_cache::{NICKEL_JSON_CACHE_DIR_ENV, NICKEL_JSON_CACHE_ENV, NICKEL_JSON_CACHE_LOG_ENV};
+
 /// Identifies a cached Nickel JSON export (keymap, inputs, or HID report).
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 enum NickelJsonExport {
@@ -85,6 +89,38 @@ mod eval_cache {
 /// Clears the in-process Nickel JSON eval cache (for tests).
 pub fn clear_nickel_eval_cache() {
     eval_cache::clear();
+}
+
+/// RAM cache, then optional content-addressed disk cache, then `eval`.
+///
+/// Successful JSON is stored in RAM and (when enabled) on disk. Errors are not.
+fn get_or_eval_json(key: NickelJsonExport, eval: impl FnOnce() -> NickelResult) -> NickelResult {
+    if let Some(json) = eval_cache::get(&key) {
+        return Ok(json);
+    }
+
+    if let Some(cache_dir) = disk_cache::configured_cache_dir() {
+        let digest = disk_cache::content_digest_for_key(&key);
+        if let Some(json) = disk_cache::read_entry(&cache_dir, &digest) {
+            eval_cache::insert(key, json.clone());
+            return Ok(json);
+        }
+        disk_cache::log_miss(&digest);
+
+        let result = eval();
+        if let Ok(ref json) = result {
+            eval_cache::insert(key, json.clone());
+            // Best-effort: a failed disk write must not fail the export.
+            let _ = disk_cache::write_entry_atomic(&cache_dir, &digest, json);
+        }
+        return result;
+    }
+
+    let result = eval();
+    if let Ok(ref json) = result {
+        eval_cache::insert(key, json.clone());
+    }
+    result
 }
 
 /// Inputs for Nickel evaluation.
@@ -344,15 +380,9 @@ pub fn rustfmt(rust_src: String) -> String {
 /// Evaluates the Nickel expr for a keymap, returning the json serialization.
 pub fn nickel_json_value_for_keymap(ncl_import_path: String, keymap_ncl: &str) -> NickelResult {
     let cache_key = NickelJsonExport::keymap(&ncl_import_path, keymap_ncl);
-    if let Some(json) = eval_cache::get(&cache_key) {
-        return Ok(json);
-    }
-
-    let result = nickel_json_value_for_keymap_uncached(&ncl_import_path, keymap_ncl);
-    if let Ok(ref json) = result {
-        eval_cache::insert(cache_key, json.clone());
-    }
-    result
+    get_or_eval_json(cache_key, || {
+        nickel_json_value_for_keymap_uncached(&ncl_import_path, keymap_ncl)
+    })
 }
 
 fn nickel_json_value_for_keymap_uncached(ncl_import_path: &str, keymap_ncl: &str) -> NickelResult {
@@ -378,15 +408,9 @@ pub fn nickel_json_value_for_inputs(
     inputs_ncl: &str,
 ) -> NickelResult {
     let cache_key = NickelJsonExport::inputs(&ncl_import_path, keymap_ncl, inputs_ncl);
-    if let Some(json) = eval_cache::get(&cache_key) {
-        return Ok(json);
-    }
-
-    let result = nickel_json_value_for_inputs_uncached(&ncl_import_path, keymap_ncl, inputs_ncl);
-    if let Ok(ref json) = result {
-        eval_cache::insert(cache_key, json.clone());
-    }
-    result
+    get_or_eval_json(cache_key, || {
+        nickel_json_value_for_inputs_uncached(&ncl_import_path, keymap_ncl, inputs_ncl)
+    })
 }
 
 fn nickel_json_value_for_inputs_uncached(
@@ -435,13 +459,9 @@ pub fn nickel_to_json_for_hid_report(
     hid_report_ncl: &str,
 ) -> NickelResult {
     let cache_key = NickelJsonExport::hid_report(&ncl_import_path, hid_report_ncl);
-    if let Some(json) = eval_cache::get(&cache_key) {
-        return Ok(json);
-    }
-
-    let json = nickel_to_json_for_hid_report_uncached(&ncl_import_path, hid_report_ncl)?;
-    eval_cache::insert(cache_key, json.clone());
-    Ok(json)
+    get_or_eval_json(cache_key, || {
+        nickel_to_json_for_hid_report_uncached(&ncl_import_path, hid_report_ncl)
+    })
 }
 
 fn nickel_to_json_for_hid_report_uncached(
@@ -556,10 +576,12 @@ pub fn codegen_rust_module(
 #[cfg(test)]
 mod tests {
     use super::{
-        clear_nickel_eval_cache, eval_cache, nickel_timeout, wait_with_optional_timeout,
-        NickelError, NickelJsonExport, DEFAULT_NICKEL_TIMEOUT_SECS, NICKEL_TIMEOUT_ENV,
+        clear_nickel_eval_cache, disk_cache, eval_cache, get_or_eval_json, nickel_timeout,
+        wait_with_optional_timeout, NickelError, NickelJsonExport, DEFAULT_NICKEL_TIMEOUT_SECS,
+        NICKEL_TIMEOUT_ENV,
     };
     use std::process::{Command, Stdio};
+    use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::{Duration, Instant};
 
     #[test]
@@ -638,5 +660,228 @@ mod tests {
             "kill path should return promptly, elapsed {:?}",
             elapsed
         );
+    }
+
+    fn temp_cache_and_ncl(label: &str) -> (std::path::PathBuf, String) {
+        let dir = std::env::temp_dir().join(format!(
+            "sk-ncl-goe-{}-{}-{}",
+            label,
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&dir).unwrap();
+        let ncl_root = dir.join("ncl");
+        std::fs::create_dir_all(&ncl_root).unwrap();
+        std::fs::write(ncl_root.join("x.ncl"), "1").unwrap();
+        let ncl_path = ncl_root.to_str().unwrap().to_owned();
+        (dir, ncl_path)
+    }
+
+    fn restore_cache_env(
+        prev_dir: Option<std::ffi::OsString>,
+        prev_mode: Option<std::ffi::OsString>,
+    ) {
+        match prev_dir {
+            Some(v) => std::env::set_var(disk_cache::NICKEL_JSON_CACHE_DIR_ENV, v),
+            None => std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_DIR_ENV),
+        }
+        match prev_mode {
+            Some(v) => std::env::set_var(disk_cache::NICKEL_JSON_CACHE_ENV, v),
+            None => std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_ENV),
+        }
+        clear_nickel_eval_cache();
+    }
+
+    /// Live Nickel: cold export fills disk; second process-clear (RAM only)
+    /// should hit disk. Requires `nickel` and workspace `ncl/` cwd layout.
+    ///
+    /// ```text
+    /// cargo test -p smart-keymap-nickel-helper --lib live_keymap_disk_cache -- --ignored --nocapture
+    /// ```
+    #[test]
+    #[ignore = "requires nickel + ncl/; run manually for smoke timing"]
+    fn live_keymap_disk_cache_cold_then_warm() {
+        use super::nickel_json_value_for_keymap;
+
+        let _g = disk_cache::test_env_lock();
+        let nickel_ok = Command::new("nickel")
+            .arg("--version")
+            .output()
+            .map(|o| o.status.success())
+            .unwrap_or(false);
+        assert!(nickel_ok, "nickel not available");
+
+        let ncl = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../ncl");
+        assert!(ncl.is_dir(), "expected ncl next to crate: {:?}", ncl);
+        let ncl = ncl.canonicalize().unwrap();
+        let ncl_s = ncl.to_str().unwrap().to_owned();
+
+        let cache_dir = std::env::temp_dir().join(format!(
+            "sk-ncl-live-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        std::fs::create_dir_all(&cache_dir).unwrap();
+
+        let prev_dir = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_DIR_ENV);
+        let prev_mode = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_ENV);
+        let prev_log = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_LOG_ENV);
+        std::env::set_var(disk_cache::NICKEL_JSON_CACHE_DIR_ENV, &cache_dir);
+        std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_ENV);
+        std::env::set_var(disk_cache::NICKEL_JSON_CACHE_LOG_ENV, "1");
+
+        // Minimal valid keymap docstring (matches feature style).
+        let keymap_ncl = r#"
+            let K = import "keys.ncl" in
+            { keys = [ K.A, K.B ] }
+        "#;
+
+        clear_nickel_eval_cache();
+        let t0 = Instant::now();
+        let json1 = nickel_json_value_for_keymap(ncl_s.clone(), keymap_ncl)
+            .unwrap_or_else(|e| panic!("cold eval failed: {:?}", e));
+        let cold = t0.elapsed();
+        assert!(
+            json1.contains('['),
+            "expected JSON array-ish keymap: {json1}"
+        );
+
+        clear_nickel_eval_cache(); // force disk path, not RAM
+        let t1 = Instant::now();
+        let json2 = nickel_json_value_for_keymap(ncl_s, keymap_ncl)
+            .unwrap_or_else(|e| panic!("warm eval failed: {:?}", e));
+        let warm = t1.elapsed();
+        assert_eq!(json1, json2);
+        eprintln!("live nickel-json disk cache: cold={cold:?} warm={warm:?}");
+        assert!(
+            warm < cold || warm.as_millis() < 50,
+            "warm path should beat cold Nickel (cold={cold:?}, warm={warm:?})"
+        );
+
+        match prev_log {
+            Some(v) => std::env::set_var(disk_cache::NICKEL_JSON_CACHE_LOG_ENV, v),
+            None => std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_LOG_ENV),
+        }
+        restore_cache_env(prev_dir, prev_mode);
+        let _ = std::fs::remove_dir_all(&cache_dir);
+    }
+
+    #[test]
+    fn get_or_eval_disk_hit_skips_eval() {
+        let _g = disk_cache::test_env_lock();
+        let (dir, ncl_path) = temp_cache_and_ncl("hit");
+
+        let prev_dir = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_DIR_ENV);
+        let prev_mode = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_ENV);
+        std::env::set_var(disk_cache::NICKEL_JSON_CACHE_DIR_ENV, &dir);
+        std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_ENV);
+
+        let key = NickelJsonExport::keymap(&ncl_path, "{ keys = [] }");
+        let digest = disk_cache::content_digest_for_key(&key);
+        disk_cache::write_entry_atomic(&dir, &digest, r#"{"from":"disk"}"#).unwrap();
+
+        clear_nickel_eval_cache();
+        let calls = AtomicUsize::new(0);
+        let got = get_or_eval_json(key, || {
+            calls.fetch_add(1, Ordering::SeqCst);
+            panic!("eval must not run on disk hit");
+        })
+        .unwrap();
+        assert_eq!(got, r#"{"from":"disk"}"#);
+        assert_eq!(calls.load(Ordering::SeqCst), 0);
+
+        // RAM should now serve without disk/eval.
+        let got2 = get_or_eval_json(NickelJsonExport::keymap(&ncl_path, "{ keys = [] }"), || {
+            panic!("eval must not run on ram hit");
+        })
+        .unwrap();
+        assert_eq!(got2, r#"{"from":"disk"}"#);
+
+        restore_cache_env(prev_dir, prev_mode);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn get_or_eval_does_not_store_errors() {
+        let _g = disk_cache::test_env_lock();
+        let (dir, ncl_path) = temp_cache_and_ncl("err");
+
+        let prev_dir = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_DIR_ENV);
+        let prev_mode = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_ENV);
+        std::env::set_var(disk_cache::NICKEL_JSON_CACHE_DIR_ENV, &dir);
+        std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_ENV);
+        clear_nickel_eval_cache();
+
+        let key = NickelJsonExport::keymap(&ncl_path, "{ keys = [error] }");
+        let digest = disk_cache::content_digest_for_key(&key);
+        let calls = AtomicUsize::new(0);
+
+        let err = get_or_eval_json(key.clone(), || {
+            calls.fetch_add(1, Ordering::SeqCst);
+            Err(NickelError::EvalError("boom".into()))
+        })
+        .expect_err("error");
+        match err {
+            NickelError::EvalError(m) => assert_eq!(m, "boom"),
+            other => panic!("unexpected: {:?}", other),
+        }
+        assert!(disk_cache::read_entry(&dir, &digest).is_none());
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+
+        // Second call still invokes eval (nothing cached).
+        let _ = get_or_eval_json(key, || {
+            calls.fetch_add(1, Ordering::SeqCst);
+            Err(NickelError::EvalError("boom".into()))
+        });
+        assert_eq!(calls.load(Ordering::SeqCst), 2);
+
+        restore_cache_env(prev_dir, prev_mode);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn get_or_eval_stores_ok_on_disk() {
+        let _g = disk_cache::test_env_lock();
+        let (dir, ncl_path) = temp_cache_and_ncl("store");
+
+        let prev_dir = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_DIR_ENV);
+        let prev_mode = std::env::var_os(disk_cache::NICKEL_JSON_CACHE_ENV);
+        std::env::set_var(disk_cache::NICKEL_JSON_CACHE_DIR_ENV, &dir);
+        std::env::remove_var(disk_cache::NICKEL_JSON_CACHE_ENV);
+        clear_nickel_eval_cache();
+
+        let key = NickelJsonExport::keymap(&ncl_path, "{ keys = [ok] }");
+        let digest = disk_cache::content_digest_for_key(&key);
+        let calls = AtomicUsize::new(0);
+
+        let got = get_or_eval_json(key.clone(), || {
+            calls.fetch_add(1, Ordering::SeqCst);
+            Ok(r#"{"ok":1}"#.into())
+        })
+        .unwrap();
+        assert_eq!(got, r#"{"ok":1}"#);
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            disk_cache::read_entry(&dir, &digest).as_deref(),
+            Some(r#"{"ok":1}"#)
+        );
+
+        clear_nickel_eval_cache();
+        let got2 = get_or_eval_json(key, || {
+            calls.fetch_add(1, Ordering::SeqCst);
+            panic!("should hit disk");
+        })
+        .unwrap();
+        assert_eq!(got2, r#"{"ok":1}"#);
+        assert_eq!(calls.load(Ordering::SeqCst), 1);
+
+        restore_cache_env(prev_dir, prev_mode);
+        let _ = std::fs::remove_dir_all(&dir);
     }
 }
