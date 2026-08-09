@@ -661,6 +661,12 @@
             else
               {}
           )
+          & (
+            if std.record.has_field "hold_trigger_key_positions" th_config then
+              { hold_trigger_key_positions = th_config.hold_trigger_key_positions }
+            else
+              {}
+          )
         in
         let profiles_array =
           th_profile_names
