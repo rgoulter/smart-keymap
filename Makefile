@@ -69,6 +69,11 @@ test-clippy:
 # Match CI cargo-doc steps (host + firmware packages).
 # Host: .github/workflows/rust.yaml
 # Firmware: rust-stm32f4.yaml, rust-thumbv6m-none-eabi.yaml
+#
+# Firmware packages pull in PAC crates that use ELF `#[link_section =
+# ".vector_table.interrupts"]`. Documenting them for the *host* triple works on
+# Linux CI (ELF) but fails on macOS (Mach-O rejects those section names). Pass
+# the firmware `--target` so docs build for the real target on all hosts.
 .PHONY: test-doc
 test-doc: test-doc-host test-doc-firmware
 
@@ -82,19 +87,25 @@ test-doc-host:
 .PHONY: test-doc-firmware
 test-doc-firmware: test-doc-stm32f4 test-doc-rp2040
 
-# Match .github/workflows/rust-stm32f4.yaml "Run Cargo Doc"
+# Match .github/workflows/rust-stm32f4.yaml "Run Cargo Doc" packages/flags,
+# with --target so this also works on Darwin hosts (see comment above).
 .PHONY: test-doc-stm32f4
 test-doc-stm32f4:
 	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--target=$(STM32F4_TARGET) \
 		--no-default-features \
 		--package=stm32f4-rtic-smart-keyboard \
 		--package=smart-keymap \
 		--package=keyberon-smart-keyboard
 
-# Match .github/workflows/rust-thumbv6m-none-eabi.yaml "Run Cargo Doc"
+# Match .github/workflows/rust-thumbv6m-none-eabi.yaml "Run Cargo Doc" packages,
+# with --target (and --no-default-features) for Darwin hosts (see comment above).
+# CI currently omits both flags and relies on Linux host ELF; we need them here.
 .PHONY: test-doc-rp2040
 test-doc-rp2040:
 	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--target=$(RP2040_TARGET) \
+		--no-default-features \
 		--package=rp2040-rtic-smart-keyboard \
 		--package=smart-keymap \
 		--package=keyberon-smart-keyboard
