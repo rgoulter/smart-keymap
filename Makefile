@@ -69,11 +69,6 @@ test-clippy:
 # Match CI cargo-doc steps (host + firmware packages).
 # Host: .github/workflows/rust.yaml
 # Firmware: rust-stm32f4.yaml, rust-thumbv6m-none-eabi.yaml
-#
-# Firmware packages pull in PAC crates that use ELF `#[link_section =
-# ".vector_table.interrupts"]`. Documenting them for the *host* triple works on
-# Linux CI (ELF) but fails on macOS (Mach-O rejects those section names). Pass
-# the firmware `--target` so docs build for the real target on all hosts.
 .PHONY: test-doc
 test-doc: test-doc-host test-doc-firmware
 
@@ -84,11 +79,14 @@ test-doc-host:
 		--package=smart-keymap \
 		--package=keyberon-smart-keyboard
 
+# Firmware package docs must use the firmware `--target`.
+# PAC crates use ELF `#[link_section = ".vector_table.interrupts"]`;
+# documenting them for the host triple works on Linux CI (ELF)
+# but fails on Darwin (Mach-O rejects those section names).
 .PHONY: test-doc-firmware
 test-doc-firmware: test-doc-stm32f4 test-doc-rp2040
 
-# Match .github/workflows/rust-stm32f4.yaml "Run Cargo Doc" packages/flags,
-# with --target so this also works on Darwin hosts (see comment above).
+# Match .github/workflows/rust-stm32f4.yaml "Run Cargo Doc".
 .PHONY: test-doc-stm32f4
 test-doc-stm32f4:
 	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
@@ -98,9 +96,8 @@ test-doc-stm32f4:
 		--package=smart-keymap \
 		--package=keyberon-smart-keyboard
 
-# Match .github/workflows/rust-thumbv6m-none-eabi.yaml "Run Cargo Doc" packages,
-# with --target (and --no-default-features) for Darwin hosts (see comment above).
-# CI currently omits both flags and relies on Linux host ELF; we need them here.
+# Match .github/workflows/rust-thumbv6m-none-eabi.yaml "Run Cargo Doc".
+# `--no-default-features` keeps the no_std graph on the thumb target.
 .PHONY: test-doc-rp2040
 test-doc-rp2040:
 	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
