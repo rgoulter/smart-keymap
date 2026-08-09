@@ -12,13 +12,95 @@ use crate::slice::Slice;
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Ref(pub u8);
 
+/// Bitmask of keymap indices (0..128) used for positional hold triggers.
+///
+/// Empty mask means "no restriction" only when wrapped in [`Option::None`] on
+/// [Profile] / [Config]; a `Some(empty)` mask matches no positions.
+///
+/// JSON accepts an array of keymap indices (e.g. `[2, 3, 18]`), matching the
+/// Nickel authoring surface `hold_trigger_key_positions`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct KeyPositionMask {
+    /// Bits for keymap indices 0..63.
+    pub lo: u64,
+    /// Bits for keymap indices 64..127.
+    pub hi: u64,
+}
+
+impl<'de> Deserialize<'de> for KeyPositionMask {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = KeyPositionMask;
+
+            fn expecting(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+                f.write_str("an array of keymap indices")
+            }
+
+            fn visit_seq<A>(self, mut seq: A) -> Result<Self::Value, A::Error>
+            where
+                A: serde::de::SeqAccess<'de>,
+            {
+                let mut mask = KeyPositionMask::EMPTY;
+                while let Some(idx) = seq.next_element::<u16>()? {
+                    mask = mask.with(idx);
+                }
+                Ok(mask)
+            }
+        }
+
+        deserializer.deserialize_seq(Visitor)
+    }
+}
+
+impl KeyPositionMask {
+    /// Empty mask (matches no indices).
+    pub const EMPTY: Self = Self { lo: 0, hi: 0 };
+
+    /// Whether `keymap_index` is set in the mask.
+    pub const fn contains(self, keymap_index: u16) -> bool {
+        if keymap_index < 64 {
+            (self.lo & (1u64 << keymap_index)) != 0
+        } else if keymap_index < 128 {
+            (self.hi & (1u64 << (keymap_index - 64))) != 0
+        } else {
+            false
+        }
+    }
+
+    /// Returns a copy with `keymap_index` set (indices ≥ 128 are ignored).
+    pub const fn with(mut self, keymap_index: u16) -> Self {
+        if keymap_index < 64 {
+            self.lo |= 1u64 << keymap_index;
+        } else if keymap_index < 128 {
+            self.hi |= 1u64 << (keymap_index - 64);
+        }
+        self
+    }
+
+    /// Build a mask from a list of keymap indices.
+    pub const fn from_indices(indices: &[u16]) -> Self {
+        let mut mask = Self::EMPTY;
+        let mut i = 0;
+        while i < indices.len() {
+            mask = mask.with(indices[i]);
+            i += 1;
+        }
+        mask
+    }
+}
+
 /// Maximum number of *extra* tap-hold profiles beyond the default (profile 0).
 ///
 /// Profile indices on keys are `0` ([`Config::default_profile`]) then
 /// `1..` into [`Config::profiles`]. Total usable profiles = `1 + MAX_EXTRA_PROFILES`.
 pub const MAX_EXTRA_PROFILES: usize = 7;
 
-/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate).
+/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers).
 ///
 /// Profile 0 is [`Config::default_profile`]; extra profiles live in
 /// [`Config::profiles`] and are selected per key via [`Key::profile`].
@@ -43,12 +125,31 @@ pub struct Profile {
     ///  when typing quickly.
     #[serde(default)]
     pub required_idle_time: Option<u16>,
+
+    /// When set, only these keymap indices may force an interrupt-as-hold
+    /// resolution. When unset, any interrupting key may force hold
+    /// (subject to [InterruptResponse]).
+    ///
+    /// JSON field name matches the Nickel authoring surface
+    /// (`hold_trigger_key_positions`).
+    #[serde(default, rename = "hold_trigger_key_positions")]
+    pub hold_trigger_positions: Option<KeyPositionMask>,
 }
 
 impl Profile {
     /// Constructs a new default [Profile].
     pub const fn new() -> Self {
         DEFAULT_PROFILE
+    }
+
+    /// Whether `other_keymap_index` is allowed to resolve this profile as hold.
+    ///
+    /// Unrestricted when [`Self::hold_trigger_positions`] is `None`.
+    pub const fn allows_hold_trigger(&self, other_keymap_index: u16) -> bool {
+        match self.hold_trigger_positions {
+            None => true,
+            Some(mask) => mask.contains(other_keymap_index),
+        }
     }
 }
 
@@ -152,6 +253,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
     timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
+    hold_trigger_positions: None,
 };
 
 /// Default tap hold config.
@@ -260,19 +362,24 @@ impl PendingKeyState {
     }
 
     /// Compute whether the tap-hold key should resolve as tap or hold,
-    ///  given the tap hold config, the current state, and the key event.
+    ///  given the behavior profile, the current state, and the key event.
     fn hold_resolution(
         &self,
-        interrupt_response: InterruptResponse,
+        profile: &Profile,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> Option<TapHoldState> {
-        match interrupt_response {
+        match profile.interrupt_response {
             InterruptResponse::HoldOnKeyPress => {
                 match event {
-                    key::Event::Input(input::Event::Press { .. }) => {
-                        // TapHold: any interruption resolves pending TapHold as Hold.
-                        Some(TapHoldState::Hold)
+                    key::Event::Input(input::Event::Press { keymap_index: ki }) => {
+                        // Interruption resolves as Hold when the positional
+                        // filter (if any) allows the interrupting key.
+                        if profile.allows_hold_trigger(ki) {
+                            Some(TapHoldState::Hold)
+                        } else {
+                            None
+                        }
                     }
                     key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                         if keymap_index == ki {
@@ -298,7 +405,9 @@ impl PendingKeyState {
                         if keymap_index == ki {
                             // TapHold: not interrupted; resolved as tap.
                             Some(TapHoldState::Tap)
-                        } else if Some(ki) == self.other_pressed_keymap_index {
+                        } else if Some(ki) == self.other_pressed_keymap_index
+                            && profile.allows_hold_trigger(ki)
+                        {
                             // TapHold: interrupted by key tap (press + release); resolved as hold.
                             Some(TapHoldState::Hold)
                         } else {
@@ -352,7 +461,7 @@ impl PendingKeyState {
         }
 
         // Resolve tap-hold state per the event.
-        self.hold_resolution(profile.interrupt_response, keymap_index, event)
+        self.hold_resolution(profile, keymap_index, event)
     }
 }
 
@@ -524,6 +633,7 @@ mod tests {
                 timeout,
                 interrupt_response,
                 required_idle_time,
+                hold_trigger_positions: None,
             },
             profiles: Slice::from_slice(&[]),
         }
@@ -1093,6 +1203,7 @@ mod tests {
                 timeout: Some(50),
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: Some(10),
+                hold_trigger_positions: Some(KeyPositionMask::from_indices(&[2, 3])),
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1101,6 +1212,10 @@ mod tests {
         assert_eq!(p.timeout, Some(50));
         assert_eq!(p.interrupt_response, InterruptResponse::HoldOnKeyPress);
         assert_eq!(p.required_idle_time, Some(10));
+        assert_eq!(
+            p.hold_trigger_positions,
+            Some(KeyPositionMask::from_indices(&[2, 3]))
+        );
     }
 
     #[test]
@@ -1109,12 +1224,14 @@ mod tests {
             timeout: Some(300),
             interrupt_response: InterruptResponse::HoldOnKeyTap,
             required_idle_time: None,
+            hold_trigger_positions: Some(KeyPositionMask::from_indices(&[5])),
         };
         let config = Config {
             default_profile: Profile {
                 timeout: Some(200),
                 interrupt_response: InterruptResponse::Ignore,
                 required_idle_time: None,
+                hold_trigger_positions: None,
             },
             profiles: Slice::from_slice(&[extra]),
         };
@@ -1122,6 +1239,10 @@ mod tests {
         assert_eq!(
             config.profile(1).interrupt_response,
             InterruptResponse::HoldOnKeyTap
+        );
+        assert_eq!(
+            config.profile(1).hold_trigger_positions,
+            Some(KeyPositionMask::from_indices(&[5]))
         );
         // OOR falls back to default
         assert_eq!(config.profile(9).timeout, Some(200));
@@ -1134,5 +1255,90 @@ mod tests {
         assert_eq!(key.profile, 0);
         let key = Key::with_profile(0u8, 1u8, 2);
         assert_eq!(key.profile, 2);
+    }
+
+    // --- hold_trigger_positions ---
+
+    #[test]
+    fn test_key_position_mask_contains() {
+        let mask = KeyPositionMask::from_indices(&[0, 5, 64, 127]);
+        assert!(mask.contains(0));
+        assert!(mask.contains(5));
+        assert!(mask.contains(64));
+        assert!(mask.contains(127));
+        assert!(!mask.contains(1));
+        assert!(!mask.contains(63));
+        assert!(!mask.contains(65));
+    }
+
+    #[test]
+    fn test_allows_hold_trigger_default() {
+        let profile = Profile::new();
+        assert!(profile.allows_hold_trigger(0));
+        assert!(profile.allows_hold_trigger(99));
+    }
+
+    #[test]
+    fn test_allows_hold_trigger_restricted() {
+        let profile = Profile {
+            hold_trigger_positions: Some(KeyPositionMask::from_indices(&[2, 3])),
+            ..Profile::new()
+        };
+        assert!(!profile.allows_hold_trigger(0));
+        assert!(profile.allows_hold_trigger(2));
+        assert!(profile.allows_hold_trigger(3));
+    }
+
+    #[test]
+    fn hold_on_key_press_non_trigger_press_does_not_resolve() {
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: Some(KeyPositionMask::from_indices(&[2])),
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+
+        // OTHER_INDEX is 1; only index 2 is allowed.
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn hold_on_key_press_allowed_trigger_resolves_as_hold() {
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: Some(KeyPositionMask::from_indices(&[2])),
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(2));
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_non_trigger_tap_does_not_resolve() {
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyTap,
+                required_idle_time: None,
+                hold_trigger_positions: Some(KeyPositionMask::from_indices(&[2])),
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+        let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
+
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
+        assert_eq!(None, resolution);
     }
 }

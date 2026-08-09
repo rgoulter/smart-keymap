@@ -51,6 +51,24 @@
             expected = "smart_keymap::key::tap_hold::Key::with_profile(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224), 1)",
           },
         },
+
+      check_profile_with_hold_triggers =
+        let rust_expr =
+          smart_keymap.tap_hold.profile_rust_expr {
+            interrupt_response = "HoldOnKeyPress",
+            hold_trigger_key_positions = [2, 3],
+          }
+        in
+        {
+          check_rust_expr = {
+            actual = rust_expr,
+            expected = m%"smart_keymap::key::tap_hold::Profile {
+            hold_trigger_positions: Some(smart_keymap::key::tap_hold::KeyPositionMask::from_indices(&[2, 3])),
+            interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyPress,
+            ..smart_keymap::key::tap_hold::Profile::new()
+          }"%,
+          },
+        },
     },
   },
 
@@ -67,6 +85,14 @@
         ),
 
       module = "smart_keymap::key::tap_hold",
+
+      hold_trigger_positions_expr = fun positions =>
+        let idxs =
+          positions
+          |> std.array.map (fun i => "%{std.to_string i}")
+          |> std.string.join ", "
+        in
+        "Some(%{module}::KeyPositionMask::from_indices(&[%{idxs}]))",
 
       profile_field_expr = fun c =>
         (
@@ -93,6 +119,14 @@
           if std.record.has_field "required_idle_time" c then
             {
               required_idle_time = "Some(%{std.to_string c.required_idle_time})",
+            }
+          else
+            {}
+        )
+        & (
+          if std.record.has_field "hold_trigger_key_positions" c then
+            {
+              hold_trigger_positions = hold_trigger_positions_expr c.hold_trigger_key_positions,
             }
           else
             {}
@@ -235,6 +269,7 @@
             ),
           interrupt_response | optional | TapHoldInterruptResponseJson,
           required_idle_time | optional | Number,
+          hold_trigger_key_positions | optional | Array Number,
         },
 
         # Lowered JSON form: nested default_profile + profiles array.
