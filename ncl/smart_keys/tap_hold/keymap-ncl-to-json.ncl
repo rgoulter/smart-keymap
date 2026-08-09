@@ -63,7 +63,8 @@
           ]
         ),
 
-      # One behavior profile (same fields as default config.tap_hold).
+      # One behavior profile. Profile 0 is Config's default (flat on config.tap_hold);
+      # extras live under config.tap_hold.profiles.
       Profile = {
         timeout
           | optional
@@ -77,6 +78,8 @@
         required_idle_time | optional | Number,
       },
 
+      # Authoring keeps default-profile knobs flat on config.tap_hold;
+      # lowering nests them as default_profile for JSON / Rust Config.
       Config = {
         timeout
           | optional

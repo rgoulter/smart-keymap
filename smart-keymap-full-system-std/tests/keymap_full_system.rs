@@ -21,7 +21,7 @@ fn tap_hold_interrupt_keymap(
     use smart_keymap_full_system_std::key_system;
 
     let mut config = key_system::Config::new();
-    config.tap_hold.interrupt_response = interrupt_response;
+    config.tap_hold.default_profile.interrupt_response = interrupt_response;
 
     smart_keymap::keymap::Keymap::new(
         [
