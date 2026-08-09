@@ -36,6 +36,21 @@
             expected = "smart_keymap::key::tap_hold::Key::new(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224))",
           },
         },
+
+      check_taphold_with_profile =
+        let json = {
+          hold = { key_code = 224 },
+          tap = { key_code = 4 },
+          profile = 1,
+        }
+        in
+        let cv = smart_keymap.tap_hold.key.codegen_values json in
+        {
+          check_rust_expr = {
+            actual = cv.rust_expr,
+            expected = "smart_keymap::key::tap_hold::Key::with_profile(smart_keymap::key::keyboard::Key::new(4), smart_keymap::key::keyboard::Key::new(224), 1)",
+          },
+        },
     },
   },
 
@@ -53,40 +68,100 @@
 
       module = "smart_keymap::key::tap_hold",
 
+      profile_field_expr = fun c =>
+        (
+          if std.record.has_field "timeout" c then
+            {
+              timeout =
+                if c.timeout == null then
+                  "None"
+                else
+                  "Some(%{std.to_string c.timeout})",
+            }
+          else
+            {}
+        )
+        & (
+          if std.record.has_field "interrupt_response" c then
+            {
+              interrupt_response = "%{module}::InterruptResponse::%{c.interrupt_response}",
+            }
+          else
+            {}
+        )
+        & (
+          if std.record.has_field "required_idle_time" c then
+            {
+              required_idle_time = "Some(%{std.to_string c.required_idle_time})",
+            }
+          else
+            {}
+        ),
+
+      profile_rust_expr = fun c =>
+        let fields = profile_field_expr c in
+        if fields == {} then
+          "%{module}::Profile::new()"
+        else
+          let field_lines =
+            fields
+            |> std.record.to_array
+            |> std.array.map (fun { field, value } => "%{field}: %{value},")
+            |> std.string.join "\n"
+          in
+          m%"%{module}::Profile {
+            %{field_lines}
+            ..%{module}::Profile::new()
+          }"%,
+
       key = {
         Json = std.contract.from_validator json_validator,
 
         key_type = "%{module}::Key",
 
-        # c.f. doc_de_tap_hold.md.
-        # JSON serialization of key::tap_hold::Key is { tap: key, hold: key }
+        # JSON: { tap, hold, profile? }
         json_validator =
           validators.record.validator {
-            fields_validator = validators.record.has_exact_fields ["tap", "hold"],
+            fields_validator =
+              validators.all_of [
+                validators.record.has_all_fields ["tap", "hold"],
+                validators.record.has_only_fields ["tap", "hold", "profile"],
+              ],
             field_validators = {
               tap = smart_key.json_validator,
               hold = smart_key.json_validator,
+              profile = validators.is_number,
             },
           },
 
         is_json = fun json => 'Ok == json_validator json,
 
-        codegen_values = fun json @ { hold, tap } =>
+        codegen_values = fun json @ { hold, tap, ..rest } =>
           let hold_cv = hold |> smart_key.codegen_values in
           let tap_cv = tap |> smart_key.codegen_values in
+          let profile =
+            if std.record.has_field "profile" rest then
+              rest.profile
+            else
+              0
+          in
 
           {
             nested = {
               tap = tap_cv,
               hold = hold_cv,
             },
+            include profile,
             include json,
             include module,
             include key_type,
             rust_expr =
               let hold_expr = nested.hold.rust_expr in
               let tap_expr = nested.tap.rust_expr in
-              "%{module}::Key::new(%{tap_expr}, %{hold_expr})",
+              if profile == 0 then
+                "%{module}::Key::new(%{tap_expr}, %{hold_expr})"
+              else
+                "%{module}::Key::with_profile(%{tap_expr}, %{hold_expr}, %{std.to_string profile})",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -105,22 +180,35 @@
           let acc = smart_key.traverse f acc cv.nested.tap in
           smart_key.traverse f acc cv.nested.hold,
 
-        data_and_ref = fun key_data cv @ { nested = { tap = tap_cv, hold = hold_cv }, .. } =>
+        data_and_ref = fun key_data cv @ {
+          nested = { tap = tap_cv, hold = hold_cv },
+          profile = profile_id,
+          ..
+        } =>
           let { key_data, ref = tap_ref } = smart_key.data_and_ref key_data tap_cv in
           let tap_ref = tap_ref |> composite.ref.wrap in
           let { key_data, ref = hold_ref } = smart_key.data_and_ref key_data hold_cv in
           let hold_ref = hold_ref |> composite.ref.wrap in
           let { tap_hold = tap_hold_, ..other_data } = key_data & { tap_hold | default = [] } in
           let new_index = std.array.length tap_hold_ in
+          let profile_json =
+            if profile_id == 0 then
+              {}
+            else
+              { profile = profile_id }
+          in
           let new_key = {
-            json = {
-              tap = tap_ref.json,
-              hold = hold_ref.json,
-            },
+            json =
+              {
+                tap = tap_ref.json,
+                hold = hold_ref.json,
+              }
+              & profile_json,
             rust_expr = m%"
             %{module}::Key {
               tap: %{tap_ref.rust_expr},
               hold: %{hold_ref.rust_expr},
+              profile: %{std.to_string profile_id},
             }
           "%,
           }
@@ -136,6 +224,19 @@
       },
 
       config = {
+        ProfileJson = {
+          timeout
+            | optional
+            | std.contract.from_validator (
+              validators.any_of [
+                validators.is_null,
+                validators.is_number,
+              ]
+            ),
+          interrupt_response | optional | TapHoldInterruptResponseJson,
+          required_idle_time | optional | Number,
+        },
+
         Json = {
           timeout
             | optional
@@ -147,6 +248,8 @@
             ),
           interrupt_response | optional | TapHoldInterruptResponseJson,
           required_idle_time | optional | Number,
+          # Lowered form: array of extra profiles (index 1..).
+          profiles | optional | Array ProfileJson,
         },
 
         expr =
@@ -176,6 +279,19 @@
               if std.record.has_field "required_idle_time" c then
                 {
                   required_idle_time = "Some(%{std.to_string c.required_idle_time})",
+                }
+              else
+                {}
+            )
+            & (
+              if std.record.has_field "profiles" c && c.profiles != [] then
+                let profiles_fragment =
+                  c.profiles
+                  |> std.array.map (fun p => profile_rust_expr p)
+                  |> std.string.join ", "
+                in
+                {
+                  profiles = "smart_keymap::slice::Slice::from_slice(&[%{profiles_fragment}])",
                 }
               else
                 {}

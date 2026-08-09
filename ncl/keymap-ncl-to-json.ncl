@@ -40,6 +40,7 @@
 #       named_layers -> dense `layered` array layout: [numbered slots…] ++ [named slots…]
 #       named slots ordered by `named_layer_order` (else alphabetical)
 #       resolve layer_mod name strings -> 1-based indices
+#   - resolve tap_hold_profile names -> indices (1.. from config.tap_hold.profiles)
 #   - pad layered arrays   every layered key shares the same array length
 #   - to_json_value        per-key module projection (array-form layered only)
 #
@@ -49,7 +50,8 @@
 #              & { automation.instructions? }
 #              & { chorded.chords = indices }
 #              & { sequence.sequences = indices }
-#              & { layered.conditional_layers?  (from top-level field) },
+#              & { layered.conditional_layers?  (from top-level field) }
+#              & { tap_hold.profiles? as array (indices 1..) },
 #     keys   = [ json key, … ],
 #   }
 #
@@ -566,6 +568,49 @@
     else
       l,
 
+  # Tap-hold behavior profiles:
+  #   config.tap_hold.profiles = { hml = { … }, hmr = { … } }  (authoring, name → Profile)
+  # lowers to a JSON array at indices 1.. (alphabetical name order); profile 0 = default fields.
+  # Keys may set `tap_hold_profile = "hml"` (or a number); names resolve before to_json_value.
+  # Name order = Nickel record field order (same idea as named_layers).
+  tap_hold_profile_names = fun th_config =>
+    if std.record.has_field "profiles" th_config then
+      std.record.fields th_config.profiles
+    else
+      [],
+
+  tap_hold_name_to_index = fun names =>
+    names
+    |> std.array.fold_left
+      (fun state name =>
+        # Let-bind fields so the result record does not recurse on `acc`/`i`.
+        let idx = state.i in
+        let prev = state.acc in
+        {
+          i = idx + 1,
+          acc = prev & { "%{name}" = idx },
+        }
+      )
+      { i = 1, acc = {} }
+    |> (fun state => state.acc),
+
+  resolve_tap_hold_profile_on_key = fun name_to_index acc k =>
+    if std.is_record k
+    && std.record.has_field "hold" k
+    && std.record.has_field "tap_hold_profile" k then
+      let p = k.tap_hold_profile in
+      if std.is_string p then
+        if std.record.has_field p name_to_index then
+          let idx = name_to_index."%{p}" in
+          let new_k = std.record.update "tap_hold_profile" idx k in
+          { include acc, k = new_k }
+        else
+          std.fail_with "unknown tap_hold_profile \"%{p}\" (not in config.tap_hold.profiles)"
+      else
+        { include acc, include k }
+    else
+      { include acc, include k },
+
   json_keymap
     | default
     | doc "The keymap.json output value."
@@ -582,6 +627,35 @@
       # Named order: `named_layer_order` if set, else alphabetical. Skipped if unused.
       # Layer_mod fields may use those names as strings; resolve to 1-based indices.
       let keys = prepare_keys_named_layers keys in
+      # Tap-hold profiles: lower name map → array; resolve key name selectors → indices.
+      let { tap_hold = th_config, ..km_config_after_th } = config & { tap_hold = {} } in
+      let th_profile_names = tap_hold_profile_names th_config in
+      let th_name_to_index = tap_hold_name_to_index th_profile_names in
+      let keys =
+        keys
+        |> std.array.map (fun k =>
+          (keymap_ncl.nullable_key.map_tree (resolve_tap_hold_profile_on_key th_name_to_index) {} k).k
+        )
+      in
+      let th_config_json =
+        let th_base =
+          if std.record.has_field "profiles" th_config then
+            std.record.remove "profiles" th_config
+          else
+            th_config
+        in
+        let profiles_array =
+          th_profile_names
+          |> std.array.map (fun name => th_config.profiles."%{name}")
+        in
+        th_base
+        & (
+          if profiles_array == [] then
+            {}
+          else
+            { profiles = profiles_array }
+        )
+      in
       # Equalise layered array lengths (pad shorter with null / transparency).
       let layer_count =
         keys |> std.array.fold_left max_layered_length_accum 0
@@ -591,7 +665,7 @@
         |> std.array.map (pad_key_layered_arrays layer_count)
         |> std.array.map keymap_ncl.key.to_json_value
       in
-      let { chorded = km_config_chorded, ..km_config } = config & { chorded = {} } in
+      let { chorded = km_config_chorded, ..km_config } = km_config_after_th & { chorded = {} } in
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in
       let { sequence = km_config_sequence, ..km_config } = km_config & { sequence = {} } in
       let sequence_indices = sequences |> std.array.map (fun { key, indices, .. } => indices) in
@@ -614,6 +688,12 @@
       let config_json_value =
         km_config
         & automation_config
+        & (
+          if th_config_json == {} then
+            {}
+          else
+            { tap_hold = th_config_json }
+        )
         & {
           chorded =
             km_config_chorded
