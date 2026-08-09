@@ -18,7 +18,13 @@ pub struct Ref(pub u8);
 /// `1..` into [`Config::profiles`]. Total usable profiles = `1 + MAX_EXTRA_PROFILES`.
 pub const MAX_EXTRA_PROFILES: usize = 7;
 
-/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate).
+/// Maximum keymap indices listed in one profile's `hold_trigger_key_positions`.
+///
+/// Sparse opposite-hand lists are expected (on the order of ~10), not a dense
+/// mask of every key on the board.
+pub const MAX_HOLD_TRIGGER_POSITIONS: usize = 16;
+
+/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers).
 ///
 /// Profile 0 is [`Config::default_profile`]; extra profiles live in
 /// [`Config::profiles`] and are selected per key via [`Key::profile`].
@@ -43,12 +49,43 @@ pub struct Profile {
     ///  when typing quickly.
     #[serde(default)]
     pub required_idle_time: Option<u16>,
+
+    /// When set, only these keymap indices may force an interrupt-as-hold
+    /// resolution. When unset, any interrupting key may force hold
+    /// (subject to [InterruptResponse]).
+    ///
+    /// JSON field name matches the Nickel authoring surface
+    /// (`hold_trigger_key_positions`). Length is bounded by
+    /// [`MAX_HOLD_TRIGGER_POSITIONS`].
+    #[serde(default, rename = "hold_trigger_key_positions")]
+    pub hold_trigger_positions: Option<Slice<u16, MAX_HOLD_TRIGGER_POSITIONS>>,
 }
 
 impl Profile {
     /// Constructs a new default [Profile].
     pub const fn new() -> Self {
         DEFAULT_PROFILE
+    }
+
+    /// Whether an interrupt from `other_keymap_index` may force hold.
+    ///
+    /// When [`Self::hold_trigger_positions`] is set, only those indices count as
+    /// hold triggers. When unset, any other key may force hold.
+    pub const fn allows_hold_trigger(&self, other_keymap_index: u16) -> bool {
+        match self.hold_trigger_positions {
+            None => true,
+            Some(positions) => {
+                let list = positions.as_slice();
+                let mut i = 0;
+                while i < list.len() {
+                    if list[i] == other_keymap_index {
+                        return true;
+                    }
+                    i += 1;
+                }
+                false
+            }
+        }
     }
 }
 
@@ -152,6 +189,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
     timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
+    hold_trigger_positions: None,
 };
 
 /// Default tap hold config.
@@ -260,19 +298,24 @@ impl PendingKeyState {
     }
 
     /// Compute whether the tap-hold key should resolve as tap or hold,
-    ///  given the tap hold config, the current state, and the key event.
+    ///  given the behavior profile, the current state, and the key event.
     fn hold_resolution(
         &self,
-        interrupt_response: InterruptResponse,
+        profile: &Profile,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> Option<TapHoldState> {
-        match interrupt_response {
+        match profile.interrupt_response {
             InterruptResponse::HoldOnKeyPress => {
                 match event {
-                    key::Event::Input(input::Event::Press { .. }) => {
-                        // TapHold: any interruption resolves pending TapHold as Hold.
-                        Some(TapHoldState::Hold)
+                    key::Event::Input(input::Event::Press { keymap_index: ki }) => {
+                        // Interruption resolves as Hold when the interrupting
+                        // key is a hold trigger position (or triggers unset).
+                        if profile.allows_hold_trigger(ki) {
+                            Some(TapHoldState::Hold)
+                        } else {
+                            None
+                        }
                     }
                     key::Event::Input(input::Event::Release { keymap_index: ki }) => {
                         if keymap_index == ki {
@@ -298,7 +341,9 @@ impl PendingKeyState {
                         if keymap_index == ki {
                             // TapHold: not interrupted; resolved as tap.
                             Some(TapHoldState::Tap)
-                        } else if Some(ki) == self.other_pressed_keymap_index {
+                        } else if Some(ki) == self.other_pressed_keymap_index
+                            && profile.allows_hold_trigger(ki)
+                        {
                             // TapHold: interrupted by key tap (press + release); resolved as hold.
                             Some(TapHoldState::Hold)
                         } else {
@@ -352,7 +397,7 @@ impl PendingKeyState {
         }
 
         // Resolve tap-hold state per the event.
-        self.hold_resolution(profile.interrupt_response, keymap_index, event)
+        self.hold_resolution(profile, keymap_index, event)
     }
 }
 
@@ -524,6 +569,7 @@ mod tests {
                 timeout,
                 interrupt_response,
                 required_idle_time,
+                hold_trigger_positions: None,
             },
             profiles: Slice::from_slice(&[]),
         }
@@ -1088,15 +1134,21 @@ mod tests {
 
     #[test]
     fn test_profile_zero_is_default_fields() {
+        // Assemble: non-default knobs only on default_profile.
         let config = Config {
             default_profile: Profile {
                 timeout: Some(50),
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: Some(10),
+                hold_trigger_positions: None,
             },
             profiles: Slice::from_slice(&[]),
         };
+
+        // Act
         let p = config.profile(0);
+
+        // Assert: profile 0 is default_profile by identity and field values.
         assert_eq!(p, config.default_profile);
         assert_eq!(p.timeout, Some(50));
         assert_eq!(p.interrupt_response, InterruptResponse::HoldOnKeyPress);
@@ -1105,34 +1157,201 @@ mod tests {
 
     #[test]
     fn test_profile_extra_lookup() {
+        // Assemble: one extra profile at index 1.
         let extra = Profile {
             timeout: Some(300),
             interrupt_response: InterruptResponse::HoldOnKeyTap,
             required_idle_time: None,
+            hold_trigger_positions: None,
         };
         let config = Config {
             default_profile: Profile {
                 timeout: Some(200),
                 interrupt_response: InterruptResponse::Ignore,
                 required_idle_time: None,
+                hold_trigger_positions: None,
             },
             profiles: Slice::from_slice(&[extra]),
         };
-        assert_eq!(config.profile(1).timeout, Some(300));
-        assert_eq!(
-            config.profile(1).interrupt_response,
-            InterruptResponse::HoldOnKeyTap
-        );
-        // OOR falls back to default
-        assert_eq!(config.profile(9).timeout, Some(200));
+
+        // Act / Assert: index 1 is the extra profile.
+        assert_eq!(config.profile(1), extra);
+    }
+
+    #[test]
+    fn test_profile_out_of_range_falls_back_to_default() {
+        // Assemble: only default_profile populated.
+        let config = Config {
+            default_profile: Profile {
+                timeout: Some(200),
+                interrupt_response: InterruptResponse::Ignore,
+                required_idle_time: None,
+                hold_trigger_positions: None,
+            },
+            profiles: Slice::from_slice(&[]),
+        };
+
+        // Act / Assert: unknown id uses default_profile.
         assert_eq!(config.profile(9), config.default_profile);
     }
 
     #[test]
-    fn test_key_default_profile_is_zero() {
+    fn test_key_new_uses_profile_zero() {
+        // Assemble / Act
         let key = Key::new(0u8, 1u8);
+
+        // Assert
         assert_eq!(key.profile, 0);
+    }
+
+    #[test]
+    fn test_key_with_profile_stores_index() {
+        // Assemble / Act
         let key = Key::with_profile(0u8, 1u8, 2);
+
+        // Assert
         assert_eq!(key.profile, 2);
+    }
+
+    // --- hold_trigger_positions ---
+
+    #[test]
+    fn allows_hold_trigger_when_unset_accepts_any_index() {
+        // Assemble: no hold_trigger_positions on the profile.
+        let profile = Profile::new();
+
+        // Act / Assert: any keymap index may force hold.
+        assert!(profile.allows_hold_trigger(0));
+        assert!(profile.allows_hold_trigger(99));
+    }
+
+    #[test]
+    fn allows_hold_trigger_when_set_accepts_trigger_position() {
+        // Assemble: hold trigger positions {2, 3}.
+        let profile = Profile {
+            hold_trigger_positions: Some(Slice::from_slice(&[2, 3])),
+            ..Profile::new()
+        };
+
+        // Act / Assert
+        assert!(profile.allows_hold_trigger(2));
+        assert!(profile.allows_hold_trigger(3));
+    }
+
+    #[test]
+    fn allows_hold_trigger_when_set_rejects_non_trigger_position() {
+        // Assemble: hold trigger positions {2, 3}.
+        let profile = Profile {
+            hold_trigger_positions: Some(Slice::from_slice(&[2, 3])),
+            ..Profile::new()
+        };
+
+        // Act / Assert
+        assert!(!profile.allows_hold_trigger(0));
+        assert!(!profile.allows_hold_trigger(1));
+    }
+
+    #[test]
+    fn hold_on_key_press_non_trigger_press_does_not_resolve() {
+        // Assemble: HoldOnKeyPress with hold trigger positions {2}; pending TH.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: Some(Slice::from_slice(&[2])),
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+
+        // Act: interrupt from a non-trigger position (OTHER_INDEX = 1).
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Assert: still pending (not forced to hold).
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn hold_on_key_press_trigger_position_resolves_as_hold() {
+        // Assemble: HoldOnKeyPress with hold trigger positions {2}.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: Some(Slice::from_slice(&[2])),
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+
+        // Act: interrupt from trigger position 2.
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(2));
+
+        // Assert: resolves as hold.
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_non_trigger_tap_does_not_resolve() {
+        // Assemble: HoldOnKeyTap with hold trigger positions {2}; track non-trigger press.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyTap,
+                required_idle_time: None,
+                hold_trigger_positions: Some(Slice::from_slice(&[2])),
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+        let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Act: complete the non-trigger key's tap (release).
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
+
+        // Assert: tap of a non-trigger key does not force hold.
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn profile_zero_includes_hold_trigger_positions() {
+        // Assemble: default_profile carries hold trigger positions.
+        let triggers = Slice::from_slice(&[2, 3]);
+        let config = Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: Some(triggers),
+            },
+            profiles: Slice::from_slice(&[]),
+        };
+
+        // Act
+        let p = config.profile(0);
+
+        // Assert: profile 0 exposes the same hold trigger positions.
+        assert_eq!(p.hold_trigger_positions, Some(triggers));
+    }
+
+    #[test]
+    fn profile_extra_includes_hold_trigger_positions() {
+        // Assemble: extra profile (index 1) with its own hold trigger positions.
+        let triggers = Slice::from_slice(&[5]);
+        let extra = Profile {
+            timeout: Some(300),
+            interrupt_response: InterruptResponse::HoldOnKeyTap,
+            required_idle_time: None,
+            hold_trigger_positions: Some(triggers),
+        };
+        let config = Config {
+            default_profile: Profile::new(),
+            profiles: Slice::from_slice(&[extra]),
+        };
+
+        // Act / Assert
+        assert_eq!(config.profile(1).hold_trigger_positions, Some(triggers));
     }
 }

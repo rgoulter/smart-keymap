@@ -76,6 +76,8 @@
           ),
         interrupt_response | optional | TapHoldInterruptResponse,
         required_idle_time | optional | Number,
+        # Only listed keymap indices may force interrupt-as-hold; unset = unrestricted.
+        hold_trigger_key_positions | optional | Array Number,
       },
 
       # Authoring keeps default-profile knobs flat on config.tap_hold;
@@ -91,6 +93,8 @@
           ),
         interrupt_response | optional | TapHoldInterruptResponse,
         required_idle_time | optional | Number,
+        # Only listed keymap indices may force interrupt-as-hold; unset = unrestricted.
+        hold_trigger_key_positions | optional | Array Number,
         # Authoring: name → profile record. Lowered to a JSON array (indices 1..).
         profiles | optional | { _ | Profile },
       },
