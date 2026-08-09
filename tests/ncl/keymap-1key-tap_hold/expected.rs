@@ -390,6 +390,7 @@ pub mod init {
         smart_keymap::key::tap_hold::System::new([smart_keymap::key::tap_hold::Key {
             tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4)),
             hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(224)),
+            profile: 0,
         }]),
     );
 

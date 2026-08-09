@@ -6,10 +6,57 @@ use serde::Deserialize;
 use crate::input;
 use crate::key;
 use crate::keymap;
+use crate::slice::Slice;
 
 /// Reference for a tap_hold key.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Ref(pub u8);
+
+/// Maximum number of *extra* tap-hold profiles beyond the default (profile 0).
+///
+/// Profile indices on keys are `0` (default / [`Config`] top-level fields) then
+/// `1..` into [`Config::profiles`]. Total usable profiles = `1 + MAX_EXTRA_PROFILES`.
+pub const MAX_EXTRA_PROFILES: usize = 7;
+
+/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate).
+///
+/// Profile 0 is the default [`Config`] fields; extra profiles live in
+/// [`Config::profiles`] and are selected per key via [`Key::profile`].
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Profile {
+    /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
+    ///
+    /// When `None`, the tap/hold decision does not timeout;
+    /// the key resolves only on release (as tap) or interruption
+    /// (depending on [InterruptResponse]).
+    #[serde(default = "default_timeout")]
+    pub timeout: Option<u16>,
+
+    /// How the tap-hold key should respond to interruptions.
+    #[serde(default = "default_interrupt_response")]
+    pub interrupt_response: InterruptResponse,
+
+    /// Amount of time (in milliseconds) the keymap must have been idle
+    ///  in order for tap hold to support 'hold' functionality.
+    ///
+    /// This reduces disruption from unexpected hold resolutions
+    ///  when typing quickly.
+    #[serde(default)]
+    pub required_idle_time: Option<u16>,
+}
+
+impl Profile {
+    /// Constructs a new default [Profile].
+    pub const fn new() -> Self {
+        DEFAULT_PROFILE
+    }
+}
+
+impl Default for Profile {
+    fn default() -> Self {
+        DEFAULT_PROFILE
+    }
+}
 
 /// A key with tap-hold functionality.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
@@ -18,12 +65,24 @@ pub struct Key<R> {
     pub tap: R,
     /// The 'hold' key.
     pub hold: R,
+    /// Behavior profile index: `0` = default [`Config`] fields; `1..` = [`Config::profiles`].
+    #[serde(default)]
+    pub profile: u8,
 }
 
 impl<R> Key<R> {
-    /// Constructs a new tap-hold key.
+    /// Constructs a new tap-hold key using the default profile (0).
     pub const fn new(tap: R, hold: R) -> Key<R> {
-        Key { tap, hold }
+        Key {
+            tap,
+            hold,
+            profile: 0,
+        }
+    }
+
+    /// Constructs a tap-hold key that uses the given behavior profile index.
+    pub const fn with_profile(tap: R, hold: R, profile: u8) -> Key<R> {
+        Key { tap, hold, profile }
     }
 }
 
@@ -33,6 +92,7 @@ impl<R: Default> Default for Key<R> {
         Key {
             tap: R::default(),
             hold: R::default(),
+            profile: 0,
         }
     }
 }
@@ -51,6 +111,9 @@ pub enum InterruptResponse {
 }
 
 /// Configuration settings for tap hold keys.
+///
+/// Top-level fields are **profile 0** (the default). Optional [`Config::profiles`]
+/// are extra behaviors at indices `1..`. Keys select a profile via [`Key::profile`].
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
@@ -71,6 +134,10 @@ pub struct Config {
     /// This reduces disruption from unexpected hold resolutions
     ///  when typing quickly.
     pub required_idle_time: Option<u16>,
+
+    /// Extra behavior profiles (indices `1..=len`). Profile `0` is the top-level fields.
+    #[serde(default)]
+    pub profiles: Slice<Profile, MAX_EXTRA_PROFILES>,
 }
 
 /// The default timeout.
@@ -87,17 +154,52 @@ fn default_interrupt_response() -> InterruptResponse {
     DEFAULT_INTERRUPT_RESPONSE
 }
 
+/// Default profile (same values as default [`Config`] top-level fields).
+pub const DEFAULT_PROFILE: Profile = Profile {
+    timeout: Some(DEFAULT_TIMEOUT),
+    interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
+    required_idle_time: None,
+};
+
 /// Default tap hold config.
 pub const DEFAULT_CONFIG: Config = Config {
     timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
+    profiles: Slice::from_slice(&[]),
 };
 
 impl Config {
     /// Constructs a new default [Config].
     pub const fn new() -> Self {
         DEFAULT_CONFIG
+    }
+
+    /// Resolves the behavior profile for `profile_id`.
+    ///
+    /// - `0` → top-level default fields
+    /// - `1..` → [`Self::profiles`] entry `id - 1`
+    ///
+    /// Out-of-range ids fall back to the default profile.
+    pub const fn profile(&self, profile_id: u8) -> Profile {
+        if profile_id == 0 {
+            return Profile {
+                timeout: self.timeout,
+                interrupt_response: self.interrupt_response,
+                required_idle_time: self.required_idle_time,
+            };
+        }
+        let idx = (profile_id - 1) as usize;
+        let extras = self.profiles.as_slice();
+        if idx < extras.len() {
+            extras[idx]
+        } else {
+            Profile {
+                timeout: self.timeout,
+                interrupt_response: self.interrupt_response,
+                required_idle_time: self.required_idle_time,
+            }
+        }
     }
 }
 
@@ -135,6 +237,11 @@ impl Context {
         keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
     ) {
         self.idle_time_ms = *idle_time_ms;
+    }
+
+    /// Returns the resolved [Profile] for `profile_id`.
+    pub const fn profile(&self, profile_id: u8) -> Profile {
+        self.config.profile(profile_id)
     }
 }
 
@@ -251,7 +358,7 @@ impl PendingKeyState {
     /// Returns at most 2 events
     pub fn handle_event(
         &mut self,
-        context: &Context,
+        profile: &Profile,
         keymap_index: u16,
         event: key::Event<Event>,
     ) -> Option<TapHoldState> {
@@ -262,8 +369,7 @@ impl PendingKeyState {
         }
 
         // Resolve tap-hold state per the event.
-        let Context { config, .. } = context;
-        self.hold_resolution(config.interrupt_response, keymap_index, event)
+        self.hold_resolution(profile.interrupt_response, keymap_index, event)
     }
 }
 
@@ -285,11 +391,11 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
 
     fn new_pending_key(
         &self,
-        context: &Context,
+        profile: &Profile,
         keymap_index: u16,
     ) -> (PendingKeyState, Option<key::ScheduledEvent<Event>>) {
         let pending = PendingKeyState::new();
-        let scheduled = context.config.timeout.map(|timeout| {
+        let scheduled = profile.timeout.map(|timeout| {
             key::ScheduledEvent::after(
                 timeout,
                 key::Event::key_event(keymap_index, Event::TapHoldTimeout),
@@ -317,11 +423,14 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
         key::KeyEvents<Self::Event>,
     ) {
-        match context.config.required_idle_time {
+        let key_def = &self.keys[key_index as usize];
+        let profile = context.profile(key_def.profile);
+
+        match profile.required_idle_time {
             Some(required_idle_time) => {
                 if context.idle_time_ms >= required_idle_time as u32 {
                     // Keymap has been idle long enough; use pending tap-hold key state.
-                    let (th_pks, maybe_sch_ev) = self.new_pending_key(context, keymap_index);
+                    let (th_pks, maybe_sch_ev) = self.new_pending_key(&profile, keymap_index);
                     let pk = key::PressedKeyResult::Pending(th_pks);
                     let pke = match maybe_sch_ev {
                         Some(sch_ev) => {
@@ -335,7 +444,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
                     // immediately resolve as tap.
                     let Key {
                         tap: tap_key_ref, ..
-                    } = self.keys[key_index as usize];
+                    } = *key_def;
                     (
                         key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
                         key::KeyEvents::no_events(),
@@ -344,7 +453,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             }
             None => {
                 // Idle time not considered. Use pending tap-hold key state.
-                let (th_pks, maybe_sch_ev) = self.new_pending_key(context, keymap_index);
+                let (th_pks, maybe_sch_ev) = self.new_pending_key(&profile, keymap_index);
                 let pk = key::PressedKeyResult::Pending(th_pks);
                 let pke = match maybe_sch_ev {
                     Some(sch_ev) => key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event()),
@@ -363,9 +472,11 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         Ref(key_index): Ref,
         event: key::Event<Self::Event>,
     ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
-        let th_state = pending_state.handle_event(context, keymap_index, event);
+        let key_def = &self.keys[key_index as usize];
+        let profile = context.profile(key_def.profile);
+        let th_state = pending_state.handle_event(&profile, keymap_index, event);
         if let Some(th_state) = th_state {
-            let Key { tap, hold } = self.keys[key_index as usize];
+            let Key { tap, hold, .. } = *key_def;
             let new_key_ref = match th_state {
                 key::tap_hold::TapHoldState::Tap => tap,
                 key::tap_hold::TapHoldState::Hold => hold,
@@ -429,6 +540,7 @@ mod tests {
             timeout,
             interrupt_response,
             required_idle_time,
+            profiles: Slice::from_slice(&[]),
         }
     }
 
@@ -473,7 +585,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(KEYMAP_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Tap), resolution);
@@ -490,7 +602,8 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+        let resolution =
+            pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Hold), resolution);
@@ -507,7 +620,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Assert
         assert_eq!(None, resolution);
@@ -524,7 +637,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
 
         // Assert
         assert_eq!(None, resolution);
@@ -543,7 +656,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Hold), resolution);
@@ -560,7 +673,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(KEYMAP_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Tap), resolution);
@@ -577,7 +690,8 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+        let resolution =
+            pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Hold), resolution);
@@ -594,7 +708,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
 
         // Assert
         assert_eq!(None, resolution);
@@ -613,7 +727,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(KEYMAP_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Tap), resolution);
@@ -630,7 +744,8 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+        let resolution =
+            pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Hold), resolution);
@@ -647,7 +762,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Assert
         assert_eq!(None, resolution);
@@ -662,10 +777,10 @@ mod tests {
             None,
         ));
         let mut pks = PendingKeyState::new();
-        let _ = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+        let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
 
         // Assert
         assert_eq!(Some(TapHoldState::Hold), resolution);
@@ -682,7 +797,7 @@ mod tests {
         let mut pks = PendingKeyState::new();
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
 
         // Assert
         assert_eq!(None, resolution);
@@ -697,10 +812,10 @@ mod tests {
             None,
         ));
         let mut pks = PendingKeyState::new();
-        let _ = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+        let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Act
-        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(2));
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(2));
 
         // Assert
         assert_eq!(None, resolution);
@@ -982,5 +1097,51 @@ mod tests {
 
         // Assert
         assert_eq!(config, ctx.config);
+    }
+
+    // --- profiles ---
+
+    #[test]
+    fn test_profile_zero_is_default_fields() {
+        let config = Config {
+            timeout: Some(50),
+            interrupt_response: InterruptResponse::HoldOnKeyPress,
+            required_idle_time: Some(10),
+            profiles: Slice::from_slice(&[]),
+        };
+        let p = config.profile(0);
+        assert_eq!(p.timeout, Some(50));
+        assert_eq!(p.interrupt_response, InterruptResponse::HoldOnKeyPress);
+        assert_eq!(p.required_idle_time, Some(10));
+    }
+
+    #[test]
+    fn test_profile_extra_lookup() {
+        let extra = Profile {
+            timeout: Some(300),
+            interrupt_response: InterruptResponse::HoldOnKeyTap,
+            required_idle_time: None,
+        };
+        let config = Config {
+            timeout: Some(200),
+            interrupt_response: InterruptResponse::Ignore,
+            required_idle_time: None,
+            profiles: Slice::from_slice(&[extra]),
+        };
+        assert_eq!(config.profile(1).timeout, Some(300));
+        assert_eq!(
+            config.profile(1).interrupt_response,
+            InterruptResponse::HoldOnKeyTap
+        );
+        // OOR falls back to default
+        assert_eq!(config.profile(9).timeout, Some(200));
+    }
+
+    #[test]
+    fn test_key_default_profile_is_zero() {
+        let key = Key::new(0u8, 1u8);
+        assert_eq!(key.profile, 0);
+        let key = Key::with_profile(0u8, 1u8, 2);
+        assert_eq!(key.profile, 2);
     }
 }

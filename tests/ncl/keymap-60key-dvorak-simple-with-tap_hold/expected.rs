@@ -450,34 +450,42 @@ pub mod init {
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(18)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(8)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(8)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(24)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(2)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(11)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(32)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(23)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(16)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(17)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(128)),
+                profile: 0,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(22)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(64)),
+                profile: 0,
             },
         ]),
     );

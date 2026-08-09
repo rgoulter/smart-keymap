@@ -42,6 +42,7 @@ keymap_key_features=(
     "tap_hold-config-required_idle_time"
     "tap_hold-config-timeout"
     "tap_hold-config-timeout-none"
+    "tap_hold-profiles"
 )
 
 keymap_ncl_features=(
