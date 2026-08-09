@@ -237,17 +237,9 @@
           required_idle_time | optional | Number,
         },
 
+        # Lowered JSON form: nested default_profile + profiles array.
         Json = {
-          timeout
-            | optional
-            | std.contract.from_validator (
-              validators.any_of [
-                validators.is_null,
-                validators.is_number,
-              ]
-            ),
-          interrupt_response | optional | TapHoldInterruptResponseJson,
-          required_idle_time | optional | Number,
+          default_profile | optional | ProfileJson,
           # Lowered form: array of extra profiles (index 1..).
           profiles | optional | Array ProfileJson,
         },
@@ -256,30 +248,8 @@
           if std.record.has_field "tap_hold" json_keymap.config then
             let c = json_keymap.config.tap_hold in
             (
-              if std.record.has_field "timeout" c then
-                {
-                  timeout =
-                    if c.timeout == null then
-                      "None"
-                    else
-                      "Some(%{std.to_string c.timeout})",
-                }
-              else
-                {}
-            )
-            & (
-              if std.record.has_field "interrupt_response" c then
-                {
-                  interrupt_response = "%{module}::InterruptResponse::%{c.interrupt_response}",
-                }
-              else
-                {}
-            )
-            & (
-              if std.record.has_field "required_idle_time" c then
-                {
-                  required_idle_time = "Some(%{std.to_string c.required_idle_time})",
-                }
+              if std.record.has_field "default_profile" c then
+                { default_profile = profile_rust_expr c.default_profile }
               else
                 {}
             )

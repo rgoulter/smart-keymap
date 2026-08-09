@@ -1011,7 +1011,10 @@ pub mod init {
         sticky: smart_keymap::key::sticky::Config::new(),
         tap_dance: smart_keymap::key::tap_dance::Config::new(),
         tap_hold: smart_keymap::key::tap_hold::Config {
-            interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
+            default_profile: smart_keymap::key::tap_hold::Profile {
+                interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
+                ..smart_keymap::key::tap_hold::Profile::new()
+            },
             ..smart_keymap::key::tap_hold::Config::new()
         },
     };
@@ -1031,7 +1034,10 @@ pub mod init {
         sticky: smart_keymap::key::sticky::Config::new(),
         tap_dance: smart_keymap::key::tap_dance::Config::new(),
         tap_hold: smart_keymap::key::tap_hold::Config {
-            interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
+            default_profile: smart_keymap::key::tap_hold::Profile {
+                interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyTap,
+                ..smart_keymap::key::tap_hold::Profile::new()
+            },
             ..smart_keymap::key::tap_hold::Config::new()
         },
     });

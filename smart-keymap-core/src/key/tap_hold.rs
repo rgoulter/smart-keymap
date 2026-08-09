@@ -14,13 +14,13 @@ pub struct Ref(pub u8);
 
 /// Maximum number of *extra* tap-hold profiles beyond the default (profile 0).
 ///
-/// Profile indices on keys are `0` (default / [`Config`] top-level fields) then
+/// Profile indices on keys are `0` ([`Config::default_profile`]) then
 /// `1..` into [`Config::profiles`]. Total usable profiles = `1 + MAX_EXTRA_PROFILES`.
 pub const MAX_EXTRA_PROFILES: usize = 7;
 
 /// One tap-hold behavior profile (timeout, interrupt flavor, idle gate).
 ///
-/// Profile 0 is the default [`Config`] fields; extra profiles live in
+/// Profile 0 is [`Config::default_profile`]; extra profiles live in
 /// [`Config::profiles`] and are selected per key via [`Key::profile`].
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Profile {
@@ -65,7 +65,7 @@ pub struct Key<R> {
     pub tap: R,
     /// The 'hold' key.
     pub hold: R,
-    /// Behavior profile index: `0` = default [`Config`] fields; `1..` = [`Config::profiles`].
+    /// Behavior profile index: `0` = [`Config::default_profile`]; `1..` = [`Config::profiles`].
     #[serde(default)]
     pub profile: u8,
 }
@@ -112,30 +112,19 @@ pub enum InterruptResponse {
 
 /// Configuration settings for tap hold keys.
 ///
-/// Top-level fields are **profile 0** (the default). Optional [`Config::profiles`]
+/// [`Config::default_profile`] is **profile 0**. Optional [`Config::profiles`]
 /// are extra behaviors at indices `1..`. Keys select a profile via [`Key::profile`].
+///
+/// Nickel authoring keeps profile-0 knobs flat on `config.tap_hold`
+/// (`timeout`, `interrupt_response`, …); lowering nests them as
+/// `default_profile` in JSON (no `serde(flatten)` — that needs alloc).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
-    /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
-    ///
-    /// When `None`, the tap/hold decision does not timeout;
-    /// the key resolves only on release (as tap) or interruption
-    /// (depending on [InterruptResponse]).
-    #[serde(default = "default_timeout")]
-    pub timeout: Option<u16>,
+    /// Default behavior (profile index 0).
+    #[serde(default = "default_profile_value")]
+    pub default_profile: Profile,
 
-    /// How the tap-hold key should respond to interruptions.
-    #[serde(default = "default_interrupt_response")]
-    pub interrupt_response: InterruptResponse,
-
-    /// Amount of time (in milliseconds) the keymap must have been idle
-    ///  in order for tap hold to support 'hold' functionality.
-    ///
-    /// This reduces disruption from unexpected hold resolutions
-    ///  when typing quickly.
-    pub required_idle_time: Option<u16>,
-
-    /// Extra behavior profiles (indices `1..=len`). Profile `0` is the top-level fields.
+    /// Extra behavior profiles (indices `1..=len`).
     #[serde(default)]
     pub profiles: Slice<Profile, MAX_EXTRA_PROFILES>,
 }
@@ -154,7 +143,11 @@ fn default_interrupt_response() -> InterruptResponse {
     DEFAULT_INTERRUPT_RESPONSE
 }
 
-/// Default profile (same values as default [`Config`] top-level fields).
+fn default_profile_value() -> Profile {
+    DEFAULT_PROFILE
+}
+
+/// Default profile (also the contents of [`DEFAULT_CONFIG`]'s default profile).
 pub const DEFAULT_PROFILE: Profile = Profile {
     timeout: Some(DEFAULT_TIMEOUT),
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
@@ -163,9 +156,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
 
 /// Default tap hold config.
 pub const DEFAULT_CONFIG: Config = Config {
-    timeout: Some(DEFAULT_TIMEOUT),
-    interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
-    required_idle_time: None,
+    default_profile: DEFAULT_PROFILE,
     profiles: Slice::from_slice(&[]),
 };
 
@@ -177,28 +168,20 @@ impl Config {
 
     /// Resolves the behavior profile for `profile_id`.
     ///
-    /// - `0` → top-level default fields
+    /// - `0` → [`Self::default_profile`]
     /// - `1..` → [`Self::profiles`] entry `id - 1`
     ///
     /// Out-of-range ids fall back to the default profile.
     pub const fn profile(&self, profile_id: u8) -> Profile {
         if profile_id == 0 {
-            return Profile {
-                timeout: self.timeout,
-                interrupt_response: self.interrupt_response,
-                required_idle_time: self.required_idle_time,
-            };
+            return self.default_profile;
         }
         let idx = (profile_id - 1) as usize;
         let extras = self.profiles.as_slice();
         if idx < extras.len() {
             extras[idx]
         } else {
-            Profile {
-                timeout: self.timeout,
-                interrupt_response: self.interrupt_response,
-                required_idle_time: self.required_idle_time,
-            }
+            self.default_profile
         }
     }
 }
@@ -537,9 +520,11 @@ mod tests {
         required_idle_time: Option<u16>,
     ) -> Config {
         Config {
-            timeout,
-            interrupt_response,
-            required_idle_time,
+            default_profile: Profile {
+                timeout,
+                interrupt_response,
+                required_idle_time,
+            },
             profiles: Slice::from_slice(&[]),
         }
     }
@@ -1104,12 +1089,15 @@ mod tests {
     #[test]
     fn test_profile_zero_is_default_fields() {
         let config = Config {
-            timeout: Some(50),
-            interrupt_response: InterruptResponse::HoldOnKeyPress,
-            required_idle_time: Some(10),
+            default_profile: Profile {
+                timeout: Some(50),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: Some(10),
+            },
             profiles: Slice::from_slice(&[]),
         };
         let p = config.profile(0);
+        assert_eq!(p, config.default_profile);
         assert_eq!(p.timeout, Some(50));
         assert_eq!(p.interrupt_response, InterruptResponse::HoldOnKeyPress);
         assert_eq!(p.required_idle_time, Some(10));
@@ -1123,9 +1111,11 @@ mod tests {
             required_idle_time: None,
         };
         let config = Config {
-            timeout: Some(200),
-            interrupt_response: InterruptResponse::Ignore,
-            required_idle_time: None,
+            default_profile: Profile {
+                timeout: Some(200),
+                interrupt_response: InterruptResponse::Ignore,
+                required_idle_time: None,
+            },
             profiles: Slice::from_slice(&[extra]),
         };
         assert_eq!(config.profile(1).timeout, Some(300));
@@ -1135,6 +1125,7 @@ mod tests {
         );
         // OOR falls back to default
         assert_eq!(config.profile(9).timeout, Some(200));
+        assert_eq!(config.profile(9), config.default_profile);
     }
 
     #[test]

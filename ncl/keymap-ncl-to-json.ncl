@@ -569,10 +569,10 @@
       l,
 
   # Tap-hold behavior profiles:
+  #   config.tap_hold flat knobs → JSON default_profile (profile 0)
   #   config.tap_hold.profiles = { hml = { … }, hmr = { … } }  (authoring, name → Profile)
-  # lowers to a JSON array at indices 1.. (alphabetical name order); profile 0 = default fields.
+  # lowers to a JSON array at indices 1.. (record field order).
   # Keys may set `tap_hold_profile = "hml"` (or a number); names resolve before to_json_value.
-  # Name order = Nickel record field order (same idea as named_layers).
   tap_hold_profile_names = fun th_config =>
     if std.record.has_field "profiles" th_config then
       std.record.fields th_config.profiles
@@ -638,17 +638,40 @@
         )
       in
       let th_config_json =
-        let th_base =
-          if std.record.has_field "profiles" th_config then
-            std.record.remove "profiles" th_config
-          else
-            th_config
+        # Flat authoring knobs (timeout, interrupt_response, …) nest as
+        # default_profile for JSON / Rust Config (no serde flatten on no_std).
+        # Pick only real Profile fields — Config contracts leave optional field
+        # stubs that must not be nested into ProfileJson.
+        let default_profile_json =
+          (
+            if std.record.has_field "timeout" th_config then
+              { timeout = th_config.timeout }
+            else
+              {}
+          )
+          & (
+            if std.record.has_field "interrupt_response" th_config then
+              { interrupt_response = th_config.interrupt_response }
+            else
+              {}
+          )
+          & (
+            if std.record.has_field "required_idle_time" th_config then
+              { required_idle_time = th_config.required_idle_time }
+            else
+              {}
+          )
         in
         let profiles_array =
           th_profile_names
           |> std.array.map (fun name => th_config.profiles."%{name}")
         in
-        th_base
+        (
+          if default_profile_json == {} then
+            {}
+          else
+            { default_profile = default_profile_json }
+        )
         & (
           if profiles_array == [] then
             {}

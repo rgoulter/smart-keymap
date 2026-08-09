@@ -1,9 +1,10 @@
 Feature: TapHold Key (behavior profiles)
 
-  Tap-hold keys use behavior **profiles**. Profile 0 is `config.tap_hold`
-  (timeout, interrupt_response, required_idle_time). Extra profiles are
-  authored as `config.tap_hold.profiles = { name = { … }, … }` and selected
-  per key with `tap_hold_profile` (name string or numeric index).
+  Tap-hold keys use behavior **profiles**. Profile 0 is the default profile
+  (`config.tap_hold` knobs: timeout, interrupt_response, required_idle_time —
+  stored as `Config.default_profile`). Extra profiles are authored as
+  `config.tap_hold.profiles = { name = { … }, … }` and selected per key with
+  `tap_hold_profile` (name string or numeric index).
 
   Names lower to indices 1.. in record field order (JSON array on config).
 
