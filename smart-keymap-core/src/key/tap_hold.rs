@@ -404,6 +404,52 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
 mod tests {
     use super::*;
 
+    use crate::key::System as _;
+    use crate::keymap::KeymapContext;
+
+    const TAP: u8 = 1;
+    const HOLD: u8 = 2;
+    const KEYMAP_INDEX: u16 = 0;
+    const OTHER_INDEX: u16 = 1;
+
+    fn context_with(config: Config) -> Context {
+        Context::from_config(config)
+    }
+
+    fn default_context() -> Context {
+        context_with(Config::new())
+    }
+
+    fn config(
+        timeout: Option<u16>,
+        interrupt_response: InterruptResponse,
+        required_idle_time: Option<u16>,
+    ) -> Config {
+        Config {
+            timeout,
+            interrupt_response,
+            required_idle_time,
+        }
+    }
+
+    fn system() -> System<u8, [Key<u8>; 1]> {
+        System::new([Key::new(TAP, HOLD)])
+    }
+
+    fn timeout_event(keymap_index: u16) -> key::Event<Event> {
+        key::Event::key_event(keymap_index, Event::TapHoldTimeout)
+    }
+
+    fn press(keymap_index: u16) -> key::Event<Event> {
+        key::Event::Input(input::Event::Press { keymap_index })
+    }
+
+    fn release(keymap_index: u16) -> key::Event<Event> {
+        key::Event::Input(input::Event::Release { keymap_index })
+    }
+
+    // --- sizeof ---
+
     #[test]
     fn test_sizeof_ref() {
         assert_eq!(1, core::mem::size_of::<Ref>());
@@ -412,5 +458,529 @@ mod tests {
     #[test]
     fn test_sizeof_event() {
         assert_eq!(0, core::mem::size_of::<Event>());
+    }
+
+    // --- PendingKeyState: Ignore ---
+
+    #[test]
+    fn ignore_own_release_resolves_as_tap() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(KEYMAP_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Tap), resolution);
+    }
+
+    #[test]
+    fn ignore_timeout_resolves_as_hold() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn ignore_other_press_does_not_resolve() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn ignore_other_release_does_not_resolve() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(None, resolution);
+    }
+
+    // --- PendingKeyState: HoldOnKeyPress ---
+
+    #[test]
+    fn hold_on_key_press_other_press_resolves_as_hold() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyPress,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_press_own_release_resolves_as_tap() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyPress,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(KEYMAP_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Tap), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_press_timeout_resolves_as_hold() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyPress,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_press_other_release_does_not_resolve() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyPress,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(None, resolution);
+    }
+
+    // --- PendingKeyState: HoldOnKeyTap ---
+
+    #[test]
+    fn hold_on_key_tap_own_release_resolves_as_tap() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyTap,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(KEYMAP_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Tap), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_timeout_resolves_as_hold() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyTap,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_other_press_does_not_resolve() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyTap,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_other_tap_resolves_as_hold() {
+        // Assemble
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyTap,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+        let _ = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_unmatched_other_release_does_not_resolve() {
+        // Assemble: no prior press of OTHER_INDEX tracked
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyTap,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn hold_on_key_tap_release_of_different_key_does_not_resolve() {
+        // Assemble: track press of index 1, then release index 2
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyTap,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+        let _ = pks.handle_event(&ctx, KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Act
+        let resolution = pks.handle_event(&ctx, KEYMAP_INDEX, release(2));
+
+        // Assert
+        assert_eq!(None, resolution);
+    }
+
+    // --- System::new_pressed_key ---
+
+    #[test]
+    fn new_pressed_key_is_pending_by_default() {
+        // Assemble
+        let system = system();
+        let ctx = default_context();
+
+        // Act
+        let (pkr, _) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        assert!(matches!(pkr, key::PressedKeyResult::Pending(_)));
+    }
+
+    #[test]
+    fn new_pressed_key_schedules_default_timeout() {
+        // Assemble
+        let system = system();
+        let ctx = default_context();
+
+        // Act
+        let (_, events) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        let expected = key::KeyEvents::scheduled_event(key::ScheduledEvent::after(
+            DEFAULT_TIMEOUT,
+            timeout_event(KEYMAP_INDEX),
+        ));
+        assert_eq!(expected, events);
+    }
+
+    #[test]
+    fn new_pressed_key_with_no_timeout_schedules_nothing() {
+        // Assemble
+        let system = system();
+        let ctx = context_with(config(None, InterruptResponse::Ignore, None));
+
+        // Act
+        let (_, events) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        assert_eq!(key::KeyEvents::no_events(), events);
+    }
+
+    #[test]
+    fn new_pressed_key_with_no_timeout_is_still_pending() {
+        // Assemble
+        let system = system();
+        let ctx = context_with(config(None, InterruptResponse::Ignore, None));
+
+        // Act
+        let (pkr, _) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        assert!(matches!(pkr, key::PressedKeyResult::Pending(_)));
+    }
+
+    #[test]
+    fn new_pressed_key_resolves_as_tap_when_idle_time_insufficient() {
+        // Assemble
+        let system = system();
+        let mut ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            Some(100),
+        ));
+        ctx.idle_time_ms = 50;
+
+        // Act
+        let (pkr, _) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        assert_eq!(
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(TAP)),
+            pkr
+        );
+    }
+
+    #[test]
+    fn new_pressed_key_insufficient_idle_emits_no_events() {
+        // Assemble
+        let system = system();
+        let mut ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            Some(100),
+        ));
+        ctx.idle_time_ms = 50;
+
+        // Act
+        let (_, events) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        assert_eq!(key::KeyEvents::no_events(), events);
+    }
+
+    #[test]
+    fn new_pressed_key_is_pending_when_idle_time_sufficient() {
+        // Assemble
+        let system = system();
+        let mut ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            Some(100),
+        ));
+        ctx.idle_time_ms = 100;
+
+        // Act
+        let (pkr, _) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        assert!(matches!(pkr, key::PressedKeyResult::Pending(_)));
+    }
+
+    #[test]
+    fn new_pressed_key_schedules_timeout_when_idle_time_sufficient() {
+        // Assemble
+        let system = system();
+        let mut ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::Ignore,
+            Some(100),
+        ));
+        ctx.idle_time_ms = 100;
+
+        // Act
+        let (_, events) = system.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert
+        let expected = key::KeyEvents::scheduled_event(key::ScheduledEvent::after(
+            DEFAULT_TIMEOUT,
+            timeout_event(KEYMAP_INDEX),
+        ));
+        assert_eq!(expected, events);
+    }
+
+    // --- System::update_pending_state ---
+
+    #[test]
+    fn update_pending_own_release_resolves_to_tap_ref() {
+        // Assemble
+        let system = system();
+        let ctx = default_context();
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let (resolved, _) = system.update_pending_state(
+            &mut pks,
+            KEYMAP_INDEX,
+            &ctx,
+            Ref(0),
+            release(KEYMAP_INDEX),
+        );
+
+        // Assert
+        assert_eq!(Some(key::NewPressedKey::key(TAP)), resolved);
+    }
+
+    #[test]
+    fn update_pending_timeout_resolves_to_hold_ref() {
+        // Assemble
+        let system = system();
+        let ctx = default_context();
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let (resolved, _) = system.update_pending_state(
+            &mut pks,
+            KEYMAP_INDEX,
+            &ctx,
+            Ref(0),
+            timeout_event(KEYMAP_INDEX),
+        );
+
+        // Assert
+        assert_eq!(Some(key::NewPressedKey::key(HOLD)), resolved);
+    }
+
+    #[test]
+    fn update_pending_hold_on_press_interrupt_resolves_to_hold_ref() {
+        // Assemble
+        let system = system();
+        let ctx = context_with(config(
+            Some(DEFAULT_TIMEOUT),
+            InterruptResponse::HoldOnKeyPress,
+            None,
+        ));
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let (resolved, _) =
+            system.update_pending_state(&mut pks, KEYMAP_INDEX, &ctx, Ref(0), press(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(Some(key::NewPressedKey::key(HOLD)), resolved);
+    }
+
+    #[test]
+    fn update_pending_non_resolving_event_yields_none() {
+        // Assemble
+        let system = system();
+        let ctx = default_context();
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let (resolved, _) =
+            system.update_pending_state(&mut pks, KEYMAP_INDEX, &ctx, Ref(0), press(OTHER_INDEX));
+
+        // Assert
+        assert_eq!(None, resolved);
+    }
+
+    #[test]
+    fn update_pending_resolution_emits_no_events() {
+        // Assemble
+        let system = system();
+        let ctx = default_context();
+        let mut pks = PendingKeyState::new();
+
+        // Act
+        let (_, events) = system.update_pending_state(
+            &mut pks,
+            KEYMAP_INDEX,
+            &ctx,
+            Ref(0),
+            release(KEYMAP_INDEX),
+        );
+
+        // Assert
+        assert_eq!(key::KeyEvents::no_events(), events);
+    }
+
+    // --- Context ---
+
+    #[test]
+    fn context_update_keymap_context_sets_idle_time() {
+        // Assemble
+        let mut ctx = default_context();
+        let km_ctx = KeymapContext {
+            idle_time_ms: 42,
+            ..KeymapContext::new()
+        };
+
+        // Act
+        ctx.update_keymap_context(&km_ctx);
+
+        // Assert
+        assert_eq!(42, ctx.idle_time_ms);
+    }
+
+    #[test]
+    fn context_reset_clears_idle_time() {
+        // Assemble
+        let mut ctx = default_context();
+        ctx.idle_time_ms = 99;
+
+        // Act
+        ctx.reset();
+
+        // Assert
+        assert_eq!(0, ctx.idle_time_ms);
+    }
+
+    #[test]
+    fn context_reset_preserves_config() {
+        // Assemble
+        let config = config(None, InterruptResponse::HoldOnKeyPress, Some(50));
+        let mut ctx = context_with(config);
+        ctx.idle_time_ms = 99;
+
+        // Act
+        ctx.reset();
+
+        // Assert
+        assert_eq!(config, ctx.config);
     }
 }
