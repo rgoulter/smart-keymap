@@ -120,7 +120,8 @@ impl<E: Debug> EventScheduler<E> {
         self.pending_events.dequeue().flatten()
     }
 
-    /// Returns the time until the soonest scheduled event (0 if pending), or None if there are no pending nor scheduled events
+    /// Returns the time until the soonest scheduled event (0 if pending),
+    ///  or None if there are no pending nor scheduled events
     pub fn next_event_time(&self) -> Option<u32> {
         if self.pending_events.is_empty() {
             self.scheduled_events

@@ -1,10 +1,10 @@
 //! Sequence keys (ordered key sequences).
 //!
-//! After a [Ref::SequenceStart](crate::key::sequence::Ref::SequenceStart) key arms sequence
-//! mode on [Context](crate::key::sequence::Context), subsequent presses of
-//! sequence member keys append to a buffer in
-//! [Context](crate::key::sequence::Context). An exact match resolves to a bound
-//! key (looked up from primary sequence keys).
+//! After a [Ref::SequenceStart](crate::key::sequence::Ref::SequenceStart) key
+//!  arms sequence mode on [Context](crate::key::sequence::Context),
+//!  subsequent presses of sequence member keys
+//!  append to a buffer in [Context](crate::key::sequence::Context).
+//! An exact match resolves to a bound key (looked up from primary sequence keys).
 //!
 //! Behaviour (v1):
 //! - SequenceStart: no HID output; arms mode (or restarts if already armed).

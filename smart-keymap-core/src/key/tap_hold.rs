@@ -14,27 +14,29 @@ pub struct Ref(pub u8);
 
 /// Maximum number of *extra* tap-hold profiles beyond the default (profile 0).
 ///
-/// Profile indices on keys are `0` ([`Config::default_profile`]) then
-/// `1..` into [`Config::profiles`]. Total usable profiles = `1 + MAX_EXTRA_PROFILES`.
+/// Profile indices on keys are `0` ([`Config::default_profile`])
+///  then `1..` into [`Config::profiles`].
+/// Total usable profiles = `1 + MAX_EXTRA_PROFILES`.
 pub const MAX_EXTRA_PROFILES: usize = 7;
 
 /// Maximum keymap indices listed in one profile's `hold_trigger_key_positions`.
 ///
-/// Sparse opposite-hand lists are expected (on the order of ~10), not a dense
-/// mask of every key on the board.
+/// Sparse opposite-hand lists are expected (on the order of ~10),
+///  not a dense mask of every key on the board.
 pub const MAX_HOLD_TRIGGER_POSITIONS: usize = 16;
 
 /// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers).
 ///
-/// Profile 0 is [`Config::default_profile`]; extra profiles live in
-/// [`Config::profiles`] and are selected per key via [`Key::profile`].
+/// Profile 0 is [`Config::default_profile`];
+///  extra profiles live in [`Config::profiles`]
+///  and are selected per key via [`Key::profile`].
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Profile {
     /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
     ///
     /// When `None`, the tap/hold decision does not timeout;
-    /// the key resolves only on release (as tap) or interruption
-    /// (depending on [InterruptResponse]).
+    ///  the key resolves only on release (as tap) or interruption
+    ///  (depending on [InterruptResponse]).
     #[serde(default = "default_timeout")]
     pub timeout: Option<u16>,
 
@@ -50,13 +52,12 @@ pub struct Profile {
     #[serde(default)]
     pub required_idle_time: Option<u16>,
 
-    /// When set, only these keymap indices may force an interrupt-as-hold
-    /// resolution. When unset, any interrupting key may force hold
-    /// (subject to [InterruptResponse]).
+    /// When set, only these keymap indices may force an interrupt-as-hold resolution.
+    /// When unset, any interrupting key may force hold
+    ///  (subject to [InterruptResponse]).
     ///
-    /// JSON field name matches the Nickel authoring surface
-    /// (`hold_trigger_key_positions`). Length is bounded by
-    /// [`MAX_HOLD_TRIGGER_POSITIONS`].
+    /// JSON field name matches the Nickel authoring surface (`hold_trigger_key_positions`).
+    /// Length is bounded by [`MAX_HOLD_TRIGGER_POSITIONS`].
     #[serde(default, rename = "hold_trigger_key_positions")]
     pub hold_trigger_positions: Option<Slice<u16, MAX_HOLD_TRIGGER_POSITIONS>>,
 }
@@ -69,8 +70,9 @@ impl Profile {
 
     /// Whether an interrupt from `other_keymap_index` may force hold.
     ///
-    /// When [`Self::hold_trigger_positions`] is set, only those indices count as
-    /// hold triggers. When unset, any other key may force hold.
+    /// When [`Self::hold_trigger_positions`] is set,
+    ///  only those indices count as hold triggers.
+    /// When unset, any other key may force hold.
     pub const fn allows_hold_trigger(&self, other_keymap_index: u16) -> bool {
         match self.hold_trigger_positions {
             None => true,
@@ -149,12 +151,13 @@ pub enum InterruptResponse {
 
 /// Configuration settings for tap hold keys.
 ///
-/// [`Config::default_profile`] is **profile 0**. Optional [`Config::profiles`]
-/// are extra behaviors at indices `1..`. Keys select a profile via [`Key::profile`].
+/// [`Config::default_profile`] is **profile 0**.
+/// Optional [`Config::profiles`] are extra behaviors at indices `1..`.
+/// Keys select a profile via [`Key::profile`].
 ///
 /// Nickel authoring keeps profile-0 knobs flat on `config.tap_hold`
-/// (`timeout`, `interrupt_response`, …); lowering nests them as
-/// `default_profile` in JSON (no `serde(flatten)` — that needs alloc).
+///  (`timeout`, `interrupt_response`, …);
+///  lowering nests them as `default_profile` in JSON.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// Default behavior (profile index 0).
@@ -309,8 +312,8 @@ impl PendingKeyState {
             InterruptResponse::HoldOnKeyPress => {
                 match event {
                     key::Event::Input(input::Event::Press { keymap_index: ki }) => {
-                        // Interruption resolves as Hold when the interrupting
-                        // key is a hold trigger position (or triggers unset).
+                        // Interruption resolves as Hold
+                        //  when the interrupting key is a hold trigger position (or triggers unset).
                         if profile.allows_hold_trigger(ki) {
                             Some(TapHoldState::Hold)
                         } else {

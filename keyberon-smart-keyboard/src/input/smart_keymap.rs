@@ -13,9 +13,10 @@ pub struct KeymapCallbacks {
     pub reset_to_bootloader: Option<fn() -> ()>,
 }
 
-/// The keyboard "backend", manages the keyboard from the events received
-/// (presses/releases of coordinates on a keyboard layout).
-/// through to listing HID scancodes to report using HIDs.
+/// The keyboard "backend",
+///  manages the keyboard from the events received
+///  (presses/releases of coordinates on a keyboard layout)
+///  through to listing HID scancodes to report using HIDs.
 ///
 /// Type parameters match [Keymap].
 #[derive(Debug)]

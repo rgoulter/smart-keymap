@@ -52,8 +52,9 @@ impl<E: Copy + Debug> KeyEvents<E> {
     ///
     /// Prefer this for effects that should run in the current turn
     ///  (via the event scheduler's pending queue).
-    /// For delayed effects, use [`Self::schedule_event`] or
-    ///  [`Self::scheduled_event`] with [`ScheduledEvent::after`].
+    /// For delayed effects,
+    ///  use [`Self::schedule_event`] or [`Self::scheduled_event`]
+    ///  with [`ScheduledEvent::after`].
     ///
     /// This is **not** the physical input delay line
     ///  (`InputEventQueue` one-per-tick pacing).
@@ -200,16 +201,16 @@ pub type NewPressedKeyOutput<R, PKS, KS, E> = (PressedKeyResult<R, PKS, KS>, Key
 ///
 /// A `System` has an associated `Ref`, [Context], `Event`, and [KeyState].
 ///
-/// The generic `PK` is used as the type of the `PressedKey` that the `Key`
-///  produces.
+/// The generic `PK` is used as
+///  the type of the `PressedKey` that the `Key` produces.
 /// (e.g. [layered::LayeredKey]'s pressed key state passes-through to
 ///  the keys of its layers).
 pub trait System<R>: Debug {
     /// Used to identify the key definition in the keymap.
     type Ref: Copy;
 
-    /// The associated [Context] is used to provide state that
-    ///  may affect behaviour when pressing the key.
+    /// The associated [Context] is used to provide state
+    ///  that may affect behaviour when pressing the key.
     /// (e.g. the behaviour of [layered::LayeredKey] depends on which
     ///  layers are active in [layered::Context]).
     type Context: Copy;
@@ -224,8 +225,8 @@ pub trait System<R>: Debug {
     /// Associated key state type.
     type KeyState;
 
-    /// Produces a pressed key value, and may
-    ///  yield some [ScheduledEvent]s.
+    /// Produces a pressed key value,
+    ///  and may yield some [ScheduledEvent]s.
     /// (e.g. [tap_hold::Key] may schedule a [tap_hold::Event::TapHoldTimeout]
     ///  so that holding the key resolves as a hold,
     ///  when a timeout is configured).
@@ -266,8 +267,8 @@ pub trait System<R>: Debug {
 
 /// Used to provide state that may affect behaviour when pressing the key.
 ///
-/// e.g. the behaviour of [layered::LayeredKey] depends on which
-///  layers are active in [layered::Context].
+/// e.g. the behaviour of [layered::LayeredKey]
+///  depends on which layers are active in [layered::Context].
 pub trait Context: Clone + Copy {
     /// The type of `Event` the context handles.
     type Event;
@@ -277,8 +278,8 @@ pub trait Context: Clone + Copy {
 
     /// Restore runtime state from this context's keymap config.
     ///
-    /// Config data (timeouts, chords, …) is preserved; ephemeral state
-    /// (active layers, sticky mods, queues, …) is cleared.
+    /// Config data (timeouts, chords, …) is preserved;
+    ///  ephemeral state (active layers, sticky mods, queues, …) is cleared.
     fn reset(&mut self);
 }
 
@@ -795,7 +796,7 @@ impl<T: Copy> Event<T> {
     /// Whether this event targets the given `keymap_index`.
     ///
     /// Input press/release and key-specific events carry a `keymap_index`;
-    /// keymap callbacks and other variants do not.
+    ///  keymap callbacks and other variants do not.
     pub(crate) fn targets_keymap_index(&self, keymap_index: u16) -> bool {
         match self {
             Event::Input(input::Event::Press {

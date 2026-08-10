@@ -14,12 +14,14 @@ pub type LayerIndex = u32;
 
 /// Fixed-capacity bitset of layers for modifier / conditional-layer state.
 ///
-/// Bit `i` corresponds to layer index `i`. Capacity is [Self::BITS] layers
-/// (indices `0..=[MAX_BITSET_LAYER]`).
+/// Bit `i` corresponds to layer index `i`.
+///  Capacity is [Self::BITS] layers (indices `0..=[MAX_BITSET_LAYER]`).
 ///
-/// This is a thin `no_std` newtype over [`u32`] so keymap `const` data can build
-/// bitsets without a heap or an external bitset crate. Widening capacity later
-/// is a storage-type change (`u64`, `u128`, or multi-limb) behind the same API.
+/// This is a thin `no_std` newtype over [`u32`]
+///  so keymap `const` data can build bitsets
+///  without a heap or an external bitset crate.
+/// Widening capacity later is a storage-type change (`u64`, `u128`, or multi-limb)
+///  behind the same API.
 #[repr(transparent)]
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Deserialize)]
 #[serde(transparent)]
@@ -173,7 +175,8 @@ impl ModifierKey {
         }
     }
 
-    /// Create a new [ModifierKey] that activates the layer when held, or makes it sticky when tapped.
+    /// Create a new [ModifierKey] that activates the layer when held,
+    ///  or makes it sticky when tapped.
     pub const fn sticky(layer: LayerIndex) -> Self {
         ModifierKey::Sticky(layer)
     }
@@ -355,8 +358,8 @@ impl<const LAYER_COUNT: usize> core::fmt::Debug for ActiveLayersDebugHelper<'_, 
 /// Conditional layer rule: activate [Self::then_layer] while every layer in
 /// [Self::if_layers] is active.
 ///
-/// Layer indices are 1-based (same as [ModifierKey]). Bit `i` of
-/// [Self::if_layers] corresponds to layer `i` (same layout as [ModifierBitset]).
+/// Layer indices are 1-based (same as [ModifierKey]).
+///  Bit `i` of [Self::if_layers] corresponds to layer `i` (same layout as [ModifierBitset]).
 #[repr(C)]
 #[derive(Debug, Deserialize, Clone, Copy, Eq, PartialEq)]
 pub struct ConditionalLayer {
@@ -401,8 +404,9 @@ pub struct Config<const CONDITIONAL_LAYER_COUNT: usize = 0> {
     /// When [None], sticky layers stay active until another key is used.
     ///
     /// The timeout starts when a sticky layer modifier is *released*
-    /// without interruption (sticky committed). If another key is pressed
-    /// while sticky is active, the timeout is cancelled / ignored.
+    ///  without interruption (sticky committed).
+    /// If another key is pressed while sticky is active,
+    ///  the timeout is cancelled / ignored.
     #[serde(default)]
     pub sticky_timeout: Option<u16>,
 
@@ -534,10 +538,11 @@ impl<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>
 
     /// Evaluate conditional layer rules until stable, or up to one pass per rule.
     ///
-    /// Nested rules (a then-layer used as an if-layer of another rule) settle
-    /// without depending on rule definition order. The pass limit bounds the
-    /// work for a pure dependency chain and prevents non-termination if rules
-    /// disagree about the same then-layer.
+    /// Nested rules (a then-layer used as an if-layer of another rule)
+    ///  settle without depending on rule definition order.
+    /// The pass limit bounds the work for a pure dependency chain
+    ///  and prevents non-termination
+    ///  if rules disagree about the same then-layer.
     fn apply_conditional_layers(&mut self) {
         for _ in 0..CONDITIONAL_LAYER_COUNT {
             if !self.apply_conditional_layers_once() {
@@ -952,9 +957,9 @@ impl ModifierKeyState {
 
 /// The [key::System] implementation for layer system keys.
 ///
-/// `CONDITIONAL_LAYER_COUNT` is carried so the system's context
-/// matches the layered [Config] / [Context] used by the keymap
-/// (rules live on context, not system).
+/// `CONDITIONAL_LAYER_COUNT` is carried so
+///  the system's context matches the layered [Config] / [Context] used by the keymap
+///  (rules live on context, not system).
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct System<
     R: Copy + Debug + PartialEq,

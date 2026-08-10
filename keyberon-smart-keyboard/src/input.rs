@@ -17,8 +17,9 @@ pub trait MatrixScanner<const COLS: usize, const ROWS: usize, E = Infallible> {
     fn get(&mut self) -> Result<[[bool; COLS]; ROWS], E>;
 }
 
-/// The keyboard "frontend", manages the keyboard from the hardware matrix
-/// through to keyboard events (presses/releases of coordinates on a keyboard layout).
+/// The keyboard "frontend",
+///  manages the keyboard from the hardware matrix through to keyboard events
+///  (presses/releases of coordinates on a keyboard layout).
 ///
 /// This takes care of scanning the keyboard matrix, debouncing.
 pub struct Keyboard<const COLS: usize, const ROWS: usize, M: MatrixScanner<COLS, ROWS>> {

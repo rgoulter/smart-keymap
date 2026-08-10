@@ -31,9 +31,10 @@ pub enum Action {
 
 /// Reference for a mouse key.
 ///
-/// Simple actions without keyboard modifiers are represented directly as
-/// [Ref::Action]. Keys that include keyboard modifiers are an index into
-/// [System] key data.
+/// Simple actions without keyboard modifiers
+///  are represented directly as [Ref::Action].
+/// Keys that include keyboard modifiers
+///  are an index into [System] key data.
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum Ref {
     /// A mouse action without keyboard modifiers.

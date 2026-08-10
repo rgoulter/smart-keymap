@@ -54,8 +54,10 @@
 //! }
 //! ```
 //!
-//! With this crate, [input::Keyboard] manages scanning/debouncing events
-//!  from the keyboard matrix. Chording is handled by smart keymap.
+//! With this crate,
+//!  [input::Keyboard] manages scanning/debouncing events
+//!  from the keyboard matrix.
+//! Chording is handled by smart keymap.
 //!
 //! For computing the key codes, this uses [input::smart_keymap::KeyboardBackend]:
 //!
