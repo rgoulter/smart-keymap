@@ -13,6 +13,11 @@
         {
           layer_modifier = { toggle = layer_num }
         },
+      # Hold = momentary layer; tap = toggle layer.
+      tap_toggle = fun layer_num =>
+        {
+          layer_modifier = { tap_toggle = layer_num }
+        },
       sticky = fun layer_num =>
         {
           layer_modifier = { sticky = layer_num }

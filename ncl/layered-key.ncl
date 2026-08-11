@@ -93,125 +93,165 @@
     else
       false,
 
+  # Helpers for layer_mod simulation on the inputs path.
+  # Broad outer arms + has_field (not nested `{ layer_modifier = { … } }` multi-arms):
+  # extra dedicated Press/Tap/Release nested patterns hang Nickel match compilation.
+  apply_hold_press = fun hold layer_state =>
+    let { active_layers = al, ..without_active_layers } = layer_state in
+    let ll =
+      if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
+    in
+    let other_fields =
+      if std.record.has_field "locked_layers" without_active_layers then
+        std.record.remove "locked_layers" without_active_layers
+      else
+        without_active_layers
+    in
+    if layer_flag_at ll hold then
+      {
+        active_layers = deactivate_layer al hold,
+        locked_layers = set_layer false ll hold,
+      }
+      & other_fields
+    else
+      { active_layers = activate_layer al hold, locked_layers = ll } & other_fields,
+
+  apply_hold_release = fun hold layer_state =>
+    let { active_layers = al, ..without_active_layers } = layer_state in
+    let ll =
+      if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
+    in
+    let other_fields =
+      if std.record.has_field "locked_layers" without_active_layers then
+        std.record.remove "locked_layers" without_active_layers
+      else
+        without_active_layers
+    in
+    if layer_flag_at ll hold then
+      { active_layers = al, locked_layers = ll } & other_fields
+    else
+      { active_layers = deactivate_layer al hold, locked_layers = ll } & other_fields,
+
+  apply_lock_invert = fun lm layer_state =>
+    let { active_layers = al, ..without_active_layers } = layer_state in
+    let ll =
+      if std.record.has_field "locked_layers" without_active_layers then
+        without_active_layers.locked_layers
+      else
+        []
+    in
+    let other_fields =
+      if std.record.has_field "locked_layers" without_active_layers then
+        std.record.remove "locked_layers" without_active_layers
+      else
+        without_active_layers
+    in
+    # true = highest active layer; number = specific layer index.
+    let layer =
+      if lm.lock == true then
+        highest_active_layer al
+      else
+        lm.lock
+    in
+    if layer == null then
+      { active_layers = al, locked_layers = ll } & other_fields
+    else if layer_flag_at ll layer then
+      {
+        active_layers = deactivate_layer al layer,
+        locked_layers = set_layer false ll layer,
+      }
+      & other_fields
+    else
+      {
+        active_layers = activate_layer al layer,
+        locked_layers = set_layer true ll layer,
+      }
+      & other_fields,
+
+  # Tap of hold: net press+release — unlock if locked, else no-op.
+  apply_hold_tap = fun hold layer_state =>
+    let { active_layers = al, ..without_active_layers } = layer_state in
+    let ll =
+      if std.record.has_field "locked_layers" without_active_layers then
+        without_active_layers.locked_layers
+      else
+        []
+    in
+    let other_fields =
+      if std.record.has_field "locked_layers" without_active_layers then
+        std.record.remove "locked_layers" without_active_layers
+      else
+        without_active_layers
+    in
+    if layer_flag_at ll hold then
+      {
+        active_layers = deactivate_layer al hold,
+        locked_layers = set_layer false ll hold,
+      }
+      & other_fields
+    else
+      { active_layers = al, locked_layers = ll } & other_fields,
+
+  apply_set_active_layers_mod = fun lm layer_state =>
+    let { active_layers = prior_active_layers, ..layer_state } = layer_state in
+    let new_active_layers =
+      if std.record.has_field "affected_layers" lm then
+        apply_set_active_layers_masked lm.set_active_layers_to lm.affected_layers prior_active_layers
+      else
+        apply_set_active_layers lm.set_active_layers_to prior_active_layers
+    in
+    { active_layers = new_active_layers } & layer_state,
+
   # `..` keeps the pattern open so locked_layers (and future fields) are accepted.
   update_layer_state_for_input = fun input layer_state @ { default_layer, active_layers, .. } =>
     input
     |> match {
-      'Press { layer_modifier = { hold }, .. } =>
-        let { active_layers = al, ..without_active_layers } = layer_state in
-        let ll =
-          if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
-        in
-        let other_fields =
-          if std.record.has_field "locked_layers" without_active_layers then
-            std.record.remove "locked_layers" without_active_layers
-          else
-            without_active_layers
-        in
-        if layer_flag_at ll hold then
-          {
-            active_layers = deactivate_layer al hold,
-            locked_layers = set_layer false ll hold,
-          }
-          & other_fields
-        else
-          { active_layers = activate_layer al hold, locked_layers = ll } & other_fields,
-      'Release { layer_modifier = { hold }, .. } =>
-        let { active_layers = al, ..without_active_layers } = layer_state in
-        let ll =
-          if std.record.has_field "locked_layers" without_active_layers then without_active_layers.locked_layers else []
-        in
-        let other_fields =
-          if std.record.has_field "locked_layers" without_active_layers then
-            std.record.remove "locked_layers" without_active_layers
-          else
-            without_active_layers
-        in
-        if layer_flag_at ll hold then
-          { active_layers = al, locked_layers = ll } & other_fields
-        else
-          { active_layers = deactivate_layer al hold, locked_layers = ll } & other_fields,
-      'Press { layer_modifier = { toggle }, .. } or
-      'Tap { layer_modifier = { toggle }, .. } =>
-        let { active_layers = al, ..layer_state } = layer_state in
-        { active_layers = toggle_layer al toggle } & layer_state,
-      # Note: lock (and Tap-hold) are handled inside this arm — extra dedicated Press/Tap
-      # or-patterns make Nickel's match compilation hang/time out.
-      # Press/Release hold are matched above; Tap hold falls through here.
-      'Press { layer_modifier = lm, .. } or
-      'Tap { layer_modifier = lm, .. } =>
-        if std.record.has_field "lock" lm then
-          let { active_layers = al, ..without_active_layers } = layer_state in
-          let ll =
-            if std.record.has_field "locked_layers" without_active_layers then
-              without_active_layers.locked_layers
-            else
-              []
-          in
-          let other_fields =
-            if std.record.has_field "locked_layers" without_active_layers then
-              std.record.remove "locked_layers" without_active_layers
-            else
-              without_active_layers
-          in
-          # true = highest active layer; number = specific layer index.
-          let layer =
-            if lm.lock == true then
-              highest_active_layer al
-            else
-              lm.lock
-          in
-          if layer == null then
-            { active_layers = al, locked_layers = ll } & other_fields
-          else if layer_flag_at ll layer then
-            {
-              active_layers = deactivate_layer al layer,
-              locked_layers = set_layer false ll layer,
-            }
-            & other_fields
-          else
-            {
-              active_layers = activate_layer al layer,
-              locked_layers = set_layer true ll layer,
-            }
-            & other_fields
-        else if std.record.has_field "hold" lm then
-          # Tap hold only (Press/Release matched above). Net press+release: unlock if locked, else no-op.
-          let { active_layers = al, ..without_active_layers } = layer_state in
-          let ll =
-            if std.record.has_field "locked_layers" without_active_layers then
-              without_active_layers.locked_layers
-            else
-              []
-          in
-          let other_fields =
-            if std.record.has_field "locked_layers" without_active_layers then
-              std.record.remove "locked_layers" without_active_layers
-            else
-              without_active_layers
-          in
-          if layer_flag_at ll lm.hold then
-            {
-              active_layers = deactivate_layer al lm.hold,
-              locked_layers = set_layer false ll lm.hold,
-            }
-            & other_fields
-          else
-            { active_layers = al, locked_layers = ll } & other_fields
+      # One broad arm per input kind + has_field on `lm` (match-tax).
+      'Press { layer_modifier = lm, .. } =>
+        if std.record.has_field "hold" lm then
+          apply_hold_press lm.hold layer_state
+        else if std.record.has_field "tap_toggle" lm then
+          # Hold path: activate like MO while pressed.
+          let { active_layers = al, ..layer_state } = layer_state in
+          { active_layers = activate_layer al lm.tap_toggle } & layer_state
+        else if std.record.has_field "toggle" lm then
+          let { active_layers = al, ..layer_state } = layer_state in
+          { active_layers = toggle_layer al lm.toggle } & layer_state
+        else if std.record.has_field "lock" lm then
+          apply_lock_invert lm layer_state
         else if std.record.has_field "set_active_layers_to" lm then
-          let { active_layers = prior_active_layers, ..layer_state } = layer_state in
-          let new_active_layers =
-            if std.record.has_field "affected_layers" lm then
-              apply_set_active_layers_masked lm.set_active_layers_to lm.affected_layers prior_active_layers
-            else
-              apply_set_active_layers lm.set_active_layers_to prior_active_layers
-          in
-          { active_layers = new_active_layers } & layer_state
+          apply_set_active_layers_mod lm layer_state
         else
           layer_state,
-      'Release { layer_modifier = { default_ }, .. } =>
-        let { default_layer, ..layer_state } = layer_state in
-        { default_layer = default_ } & layer_state,
+      'Release { layer_modifier = lm, .. } =>
+        if std.record.has_field "hold" lm then
+          apply_hold_release lm.hold layer_state
+        else if std.record.has_field "tap_toggle" lm then
+          # Hold-release path: deactivate like MO.
+          # (NCL sim does not track interruption; pure taps use 'Tap below.)
+          let { active_layers = al, ..layer_state } = layer_state in
+          { active_layers = deactivate_layer al lm.tap_toggle } & layer_state
+        else if std.record.has_field "default_" lm then
+          let { default_layer, ..layer_state } = layer_state in
+          { default_layer = lm.default_ } & layer_state
+        else
+          layer_state,
+      'Tap { layer_modifier = lm, .. } =>
+        if std.record.has_field "toggle" lm then
+          let { active_layers = al, ..layer_state } = layer_state in
+          { active_layers = toggle_layer al lm.toggle } & layer_state
+        else if std.record.has_field "tap_toggle" lm then
+          # Net toggle (press+release without interruption).
+          let { active_layers = al, ..layer_state } = layer_state in
+          { active_layers = toggle_layer al lm.tap_toggle } & layer_state
+        else if std.record.has_field "lock" lm then
+          apply_lock_invert lm layer_state
+        else if std.record.has_field "hold" lm then
+          apply_hold_tap lm.hold layer_state
+        else if std.record.has_field "set_active_layers_to" lm then
+          apply_set_active_layers_mod lm layer_state
+        else
+          layer_state,
       _ => layer_state,
     },
 

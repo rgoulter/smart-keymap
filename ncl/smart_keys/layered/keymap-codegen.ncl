@@ -74,6 +74,9 @@
     check_json_is_toggle =
       let json = { Toggle = 1 } in
       smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_tap_toggle =
+      let json = { TapToggle = 1 } in
+      smart_keymap.layered.modifier_key.is_json json,
     check_json_is_lock =
       let json = { Lock = "HighestActive" } in
       smart_keymap.layered.modifier_key.is_json json,
@@ -93,13 +96,13 @@
         key_type = "%{module}::ModifierKey",
 
         # c.f. doc_de_layered.md.
-        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold([layer, kb_mods]), SetActiveLayers({ layers, mask? }), Lock("HighestActive"|{ Layer }).
+        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold([layer, kb_mods]), SetActiveLayers({ layers, mask? }), TapToggle(layer), Lock("HighestActive"|{ Layer }).
         json_validator =
           validators.record.validator {
             fields_validator =
               validators.all_of [
-                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "Lock"],
-                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "Lock"],
+                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "TapToggle", "Lock"],
+                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "TapToggle", "Lock"],
               ],
             field_validators =
               let modifier_bitset_validator =
@@ -127,6 +130,7 @@
                     _ => 'Error { message = "expected Hold to be [layer_index, kb_mods]" },
                   },
                 Toggle = validators.is_number,
+                TapToggle = validators.is_number,
                 Sticky = validators.is_number,
                 # LayerLockTarget: "HighestActive" | { Layer = layer_index } (1-based).
                 Lock = fun lock =>
@@ -184,6 +188,14 @@
                 include key_type,
                 variant = "Toggle",
                 rust_expr = "%{module}::ModifierKey::toggle(%{std.to_string layer_index})",
+              },
+            { TapToggle = layer_index } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "TapToggle",
+                rust_expr = "%{module}::ModifierKey::tap_toggle(%{std.to_string layer_index})",
               },
             { Sticky = layer_index } =>
               {

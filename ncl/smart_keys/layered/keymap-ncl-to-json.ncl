@@ -26,6 +26,16 @@
         expected = { Toggle = 1 },
       },
 
+      keymap_example_tap_toggle = {
+        actual = K.layer_mod.tap_toggle 1,
+        expected = { layer_modifier.tap_toggle = 1 },
+      },
+
+      check_json_value_tap_toggle = {
+        actual = K.layer_mod.tap_toggle 1 |> keymap_ncl.key.to_json_value,
+        expected = { TapToggle = 1 },
+      },
+
       keymap_example_lock = {
         actual = K.layer_mod.lock,
         expected = { layer_modifier.lock = true },
@@ -188,6 +198,11 @@
                   'Ok
                 else
                   validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
+              { tap_toggle } =>
+                if std.is_string tap_toggle then
+                  'Ok
+                else
+                  validators.all_of [validators.is_number, validators.is_greater_than 0] tap_toggle,
               { lock } =>
                 # true = highest active; named layer string ok; numeric layer index must be > 0.
                 if std.is_bool lock then
@@ -207,12 +222,12 @@
               { set_active_layers_to } => layer_indices_array set_active_layers_to,
               _ =>
                 'Error {
-                  message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+                  message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { tap_toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
                 },
             },
           _ =>
             'Error {
-              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { tap_toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
             },
         },
 
@@ -246,6 +261,8 @@
                 { Toggle = toggle_layer },
               { sticky = sticky_layer } =>
                 { Sticky = sticky_layer },
+              { tap_toggle = tap_toggle_layer } =>
+                { TapToggle = tap_toggle_layer },
               { lock = true } =>
                 { Lock = "HighestActive" },
               { lock = lock_layer } =>
@@ -262,12 +279,12 @@
                 { SetActiveLayers = modifier_bitset },
               _ =>
                 'Error {
-                  message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+                  message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { tap_toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
                 },
             },
           _ =>
             'Error {
-              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+              message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { tap_toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
             },
         },
 

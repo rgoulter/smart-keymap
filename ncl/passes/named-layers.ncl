@@ -271,6 +271,8 @@
             { layer_modifier = { sticky = resolve_layer_index name_to_idx s } },
           { toggle = t } =>
             { layer_modifier = { toggle = resolve_layer_index name_to_idx t } },
+          { tap_toggle = t } =>
+            { layer_modifier = { tap_toggle = resolve_layer_index name_to_idx t } },
           # true = highest active (no named-layer resolution); number/string = specific layer.
           { lock = true } =>
             { layer_modifier = { lock = true } },
