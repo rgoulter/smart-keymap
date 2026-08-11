@@ -69,6 +69,24 @@
           }"%,
           },
         },
+
+      check_profile_with_quick_tap_ms =
+        let rust_expr =
+          smart_keymap.tap_hold.profile_rust_expr {
+            interrupt_response = "HoldOnKeyPress",
+            quick_tap_ms = 175,
+          }
+        in
+        {
+          check_rust_expr = {
+            actual = rust_expr,
+            expected = m%"smart_keymap::key::tap_hold::Profile {
+            interrupt_response: smart_keymap::key::tap_hold::InterruptResponse::HoldOnKeyPress,
+            quick_tap_ms: Some(175),
+            ..smart_keymap::key::tap_hold::Profile::new()
+          }"%,
+          },
+        },
     },
   },
 
@@ -127,6 +145,14 @@
           if std.record.has_field "hold_trigger_key_positions" c then
             {
               hold_trigger_positions = hold_trigger_positions_expr c.hold_trigger_key_positions,
+            }
+          else
+            {}
+        )
+        & (
+          if std.record.has_field "quick_tap_ms" c then
+            {
+              quick_tap_ms = "Some(%{std.to_string c.quick_tap_ms})",
             }
           else
             {}
@@ -270,6 +296,7 @@
           interrupt_response | optional | TapHoldInterruptResponseJson,
           required_idle_time | optional | Number,
           hold_trigger_key_positions | optional | Array Number,
+          quick_tap_ms | optional | Number,
         },
 
         # Lowered JSON form: nested default_profile + profiles array.

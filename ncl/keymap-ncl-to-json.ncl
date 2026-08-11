@@ -670,6 +670,12 @@
             else
               {}
           )
+          & (
+            if std.record.has_field "quick_tap_ms" th_config then
+              { quick_tap_ms = th_config.quick_tap_ms }
+            else
+              {}
+          )
         in
         let profiles_array =
           th_profile_names
