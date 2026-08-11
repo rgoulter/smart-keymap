@@ -670,6 +670,12 @@
             else
               {}
           )
+          & (
+            if std.record.has_field "retro_tap" th_config then
+              { retro_tap = th_config.retro_tap }
+            else
+              {}
+          )
         in
         let profiles_array =
           th_profile_names

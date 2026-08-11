@@ -6,6 +6,7 @@ mod layered;
 mod no_timeout;
 mod profiles;
 mod required_idle_time;
+mod retro_tap;
 
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;

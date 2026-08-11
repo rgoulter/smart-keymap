@@ -78,6 +78,8 @@
         required_idle_time | optional | Number,
         # Only listed keymap indices may force interrupt-as-hold; unset = unrestricted.
         hold_trigger_key_positions | optional | Array Number,
+        # When true, timeout alone never resolves as hold (ZMK retro-tap).
+        retro_tap | optional | Bool,
       },
 
       # Authoring keeps default-profile knobs flat on config.tap_hold;
@@ -95,6 +97,8 @@
         required_idle_time | optional | Number,
         # Only listed keymap indices may force interrupt-as-hold; unset = unrestricted.
         hold_trigger_key_positions | optional | Array Number,
+        # When true, timeout alone never resolves as hold (ZMK retro-tap).
+        retro_tap | optional | Bool,
         # Authoring: name → profile record. Lowered to a JSON array (indices 1..).
         profiles | optional | { _ | Profile },
       },

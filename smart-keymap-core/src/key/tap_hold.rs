@@ -25,7 +25,7 @@ pub const MAX_EXTRA_PROFILES: usize = 7;
 ///  not a dense mask of every key on the board.
 pub const MAX_HOLD_TRIGGER_POSITIONS: usize = 16;
 
-/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers).
+/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers, retro-tap).
 ///
 /// Profile 0 is [`Config::default_profile`];
 ///  extra profiles live in [`Config::profiles`]
@@ -60,6 +60,14 @@ pub struct Profile {
     /// Length is bounded by [`MAX_HOLD_TRIGGER_POSITIONS`].
     #[serde(default, rename = "hold_trigger_key_positions")]
     pub hold_trigger_positions: Option<Slice<u16, MAX_HOLD_TRIGGER_POSITIONS>>,
+
+    /// When true, timeout alone never resolves as hold (ZMK `retro-tap`).
+    ///
+    /// Hold activates only when another key interrupts (per
+    /// [InterruptResponse]); releasing the key alone always yields tap,
+    /// even after the timeout has elapsed.
+    #[serde(default)]
+    pub retro_tap: bool,
 }
 
 impl Profile {
@@ -193,6 +201,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
     hold_trigger_positions: None,
+    retro_tap: false,
 };
 
 /// Default tap hold config.
@@ -332,8 +341,13 @@ impl PendingKeyState {
                         key_event: Event::TapHoldTimeout,
                         ..
                     } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
+                        if profile.retro_tap {
+                            // Stay pending until interrupt or self-release.
+                            None
+                        } else {
+                            // Key held long enough to resolve as hold.
+                            Some(TapHoldState::Hold)
+                        }
                     }
                     _ => None,
                 }
@@ -357,8 +371,12 @@ impl PendingKeyState {
                         key_event: Event::TapHoldTimeout,
                         ..
                     } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
+                        if profile.retro_tap {
+                            None
+                        } else {
+                            // Key held long enough to resolve as hold.
+                            Some(TapHoldState::Hold)
+                        }
                     }
                     _ => None,
                 }
@@ -377,8 +395,12 @@ impl PendingKeyState {
                         key_event: Event::TapHoldTimeout,
                         ..
                     } => {
-                        // Key held long enough to resolve as hold.
-                        Some(TapHoldState::Hold)
+                        if profile.retro_tap {
+                            None
+                        } else {
+                            // Key held long enough to resolve as hold.
+                            Some(TapHoldState::Hold)
+                        }
                     }
                     _ => None,
                 }
@@ -573,6 +595,7 @@ mod tests {
                 interrupt_response,
                 required_idle_time,
                 hold_trigger_positions: None,
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         }
@@ -1144,6 +1167,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: Some(10),
                 hold_trigger_positions: None,
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1166,6 +1190,7 @@ mod tests {
             interrupt_response: InterruptResponse::HoldOnKeyTap,
             required_idle_time: None,
             hold_trigger_positions: None,
+            retro_tap: false,
         };
         let config = Config {
             default_profile: Profile {
@@ -1173,6 +1198,7 @@ mod tests {
                 interrupt_response: InterruptResponse::Ignore,
                 required_idle_time: None,
                 hold_trigger_positions: None,
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[extra]),
         };
@@ -1190,6 +1216,7 @@ mod tests {
                 interrupt_response: InterruptResponse::Ignore,
                 required_idle_time: None,
                 hold_trigger_positions: None,
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1263,6 +1290,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1284,6 +1312,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1305,6 +1334,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyTap,
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1328,6 +1358,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: None,
                 hold_trigger_positions: Some(triggers),
+                retro_tap: false,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1348,6 +1379,7 @@ mod tests {
             interrupt_response: InterruptResponse::HoldOnKeyTap,
             required_idle_time: None,
             hold_trigger_positions: Some(triggers),
+            retro_tap: false,
         };
         let config = Config {
             default_profile: Profile::new(),
@@ -1356,5 +1388,98 @@ mod tests {
 
         // Act / Assert
         assert_eq!(config.profile(1).hold_trigger_positions, Some(triggers));
+    }
+
+    // --- retro_tap ---
+
+    #[test]
+    fn retro_tap_timeout_does_not_resolve_as_hold() {
+        // Assemble: retro_tap on default profile; pending TH.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: None,
+                retro_tap: true,
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+
+        // Act: timeout elapses alone.
+        let resolution =
+            pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+
+        // Assert: stays pending (timeout alone never hold).
+        assert_eq!(None, resolution);
+    }
+
+    #[test]
+    fn retro_tap_self_release_after_timeout_resolves_as_tap() {
+        // Assemble: retro_tap; timeout already ignored.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: None,
+                retro_tap: true,
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+        let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+
+        // Act: release the TH key alone.
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
+
+        // Assert: alone release is always tap.
+        assert_eq!(Some(TapHoldState::Tap), resolution);
+    }
+
+    #[test]
+    fn retro_tap_interrupt_press_resolves_as_hold() {
+        // Assemble: retro_tap + HoldOnKeyPress.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: None,
+                retro_tap: true,
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+
+        // Act: interrupting press.
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Assert: hold still activates on interrupt.
+        assert_eq!(Some(TapHoldState::Hold), resolution);
+    }
+
+    #[test]
+    fn retro_tap_interrupt_after_timeout_resolves_as_hold() {
+        // Assemble: retro_tap; timeout first, then interrupt.
+        let ctx = context_with(Config {
+            default_profile: Profile {
+                timeout: Some(DEFAULT_TIMEOUT),
+                interrupt_response: InterruptResponse::HoldOnKeyPress,
+                required_idle_time: None,
+                hold_trigger_positions: None,
+                retro_tap: true,
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        let mut pks = PendingKeyState::new();
+        let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, timeout_event(KEYMAP_INDEX));
+
+        // Act: interrupt after timeout.
+        let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
+
+        // Assert: hold activates when another key is pressed after timeout.
+        assert_eq!(Some(TapHoldState::Hold), resolution);
     }
 }
