@@ -158,37 +158,58 @@
     = {
       Key = std.contract.from_validator key_validator,
 
+      # Broad outer arm + flat match on `lm`: nested `{ layer_modifier = { … } }`
+      # multi-arms tax Nickel match compilation heavily when this family grows.
       key_validator = fun k =>
         k
         |> match {
-          { layer_modifier = { default_ } } => layer_index default_,
-          { layer_modifier = { hold }, modifiers } =>
-            validators.all_ok [
-              layer_index hold,
-              keyboard_modifiers.validator modifiers,
-            ],
-          { layer_modifier = { hold } } => layer_index hold,
-          { layer_modifier = { sticky } } => layer_index sticky,
-          { layer_modifier = { toggle } } =>
-            # Named layers: string ok; numeric toggle still requires > 0.
-            if std.is_string toggle then
-              'Ok
-            else
-              validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
-          { layer_modifier = { lock } } =>
-            # true = highest active; named layer string ok; numeric layer index must be > 0.
-            if std.is_bool lock then
-              if lock then 'Ok else 'Error { message = "layer_modifier.lock must be true or a layer index" }
-            else if std.is_string lock then
-              'Ok
-            else
-              validators.all_of [validators.is_number, validators.is_greater_than 0] lock,
-          { layer_modifier = { set_active_layers_to } } => layer_indices_array set_active_layers_to,
-          { layer_modifier = { set_active_layers_to, affected_layers } } =>
-            validators.all_ok [
-              layer_indices_array set_active_layers_to,
-              layer_indices_array affected_layers,
-            ],
+          { layer_modifier = lm, modifiers = m } =>
+            lm
+            |> match {
+              { hold } =>
+                validators.all_ok [
+                  layer_index hold,
+                  keyboard_modifiers.validator m,
+                ],
+              _ =>
+                'Error {
+                  message = "expected { layer_modifier = { hold }, modifiers }",
+                },
+            },
+          { layer_modifier = lm } =>
+            lm
+            |> match {
+              { default_ } => layer_index default_,
+              { hold } => layer_index hold,
+              { sticky } => layer_index sticky,
+              { toggle } =>
+                # Named layers: string ok; numeric toggle still requires > 0.
+                if std.is_string toggle then
+                  'Ok
+                else
+                  validators.all_of [validators.is_number, validators.is_greater_than 0] toggle,
+              { lock } =>
+                # true = highest active; named layer string ok; numeric layer index must be > 0.
+                if std.is_bool lock then
+                  if lock then
+                    'Ok
+                  else
+                    'Error { message = "layer_modifier.lock must be true or a layer index" }
+                else if std.is_string lock then
+                  'Ok
+                else
+                  validators.all_of [validators.is_number, validators.is_greater_than 0] lock,
+              { set_active_layers_to, affected_layers } =>
+                validators.all_ok [
+                  layer_indices_array set_active_layers_to,
+                  layer_indices_array affected_layers,
+                ],
+              { set_active_layers_to } => layer_indices_array set_active_layers_to,
+              _ =>
+                'Error {
+                  message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+                },
+            },
           _ =>
             'Error {
               message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
@@ -199,34 +220,51 @@
 
       # JSON projection expects numeric layer indices. Named-layer strings must be
       # resolved (see keymap-ncl-to-json resolve_named_layer_refs) before to_json_value.
+      # Same broad-outer / flat-inner style as key_validator (match-tax).
       to_json_value = fun layer_modifier_key =>
         layer_modifier_key
         |> match {
-          { layer_modifier = { default_ = default_layer } } =>
-            { Default = default_layer },
-          { layer_modifier = { hold = hold_layer }, modifiers = km } =>
-            let km = keyboard_modifiers.to_json_value km in
-            { Hold = [hold_layer, km] },
-          { layer_modifier = { hold = hold_layer } } =>
-            { Hold = [hold_layer, 0] },
-          { layer_modifier = { toggle = toggle_layer } } =>
-            { Toggle = toggle_layer },
-          { layer_modifier = { sticky = sticky_layer } } =>
-            { Sticky = sticky_layer },
-          { layer_modifier = { lock = true } } =>
-            { Lock = "HighestActive" },
-          { layer_modifier = { lock = lock_layer } } =>
-            { Lock = { Layer = lock_layer } },
-          { layer_modifier = { set_active_layers_to = active_layers } } =>
-            let modifier_bitset = { layers = layer_indices_to_bitset active_layers } in
-            { SetActiveLayers = modifier_bitset },
-          { layer_modifier = { set_active_layers_to = active_layers, affected_layers = mask_layers } } =>
-            let modifier_bitset = {
-              layers = layer_indices_to_bitset active_layers,
-              mask = layer_indices_to_bitset mask_layers,
-            }
-            in
-            { SetActiveLayers = modifier_bitset },
+          { layer_modifier = lm, modifiers = m } =>
+            lm
+            |> match {
+              { hold = hold_layer } =>
+                let km = keyboard_modifiers.to_json_value m in
+                { Hold = [hold_layer, km] },
+              _ =>
+                'Error {
+                  message = "expected { layer_modifier = { hold }, modifiers }",
+                },
+            },
+          { layer_modifier = lm } =>
+            lm
+            |> match {
+              { default_ = default_layer } =>
+                { Default = default_layer },
+              { hold = hold_layer } =>
+                { Hold = [hold_layer, 0] },
+              { toggle = toggle_layer } =>
+                { Toggle = toggle_layer },
+              { sticky = sticky_layer } =>
+                { Sticky = sticky_layer },
+              { lock = true } =>
+                { Lock = "HighestActive" },
+              { lock = lock_layer } =>
+                { Lock = { Layer = lock_layer } },
+              { set_active_layers_to = active_layers, affected_layers = mask_layers } =>
+                let modifier_bitset = {
+                  layers = layer_indices_to_bitset active_layers,
+                  mask = layer_indices_to_bitset mask_layers,
+                }
+                in
+                { SetActiveLayers = modifier_bitset },
+              { set_active_layers_to = active_layers } =>
+                let modifier_bitset = { layers = layer_indices_to_bitset active_layers } in
+                { SetActiveLayers = modifier_bitset },
+              _ =>
+                'Error {
+                  message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
+                },
+            },
           _ =>
             'Error {
               message = "expected { layer_modifier = { default_ } }, { hold }, { sticky }, { toggle }, { lock }, { set_active_layers_to }, or { set_active_layers_to, affected_layers }",
