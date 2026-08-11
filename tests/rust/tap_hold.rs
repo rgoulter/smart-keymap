@@ -5,6 +5,7 @@ mod interrupt_ignore;
 mod layered;
 mod no_timeout;
 mod profiles;
+mod quick_tap;
 mod required_idle_time;
 
 use smart_keymap::input;
