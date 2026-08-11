@@ -25,7 +25,7 @@ pub const MAX_EXTRA_PROFILES: usize = 7;
 ///  not a dense mask of every key on the board.
 pub const MAX_HOLD_TRIGGER_POSITIONS: usize = 16;
 
-/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers).
+/// One tap-hold behavior profile (timeout, interrupt flavor, idle gate, hold triggers, quick-tap).
 ///
 /// Profile 0 is [`Config::default_profile`];
 ///  extra profiles live in [`Config::profiles`]
@@ -60,6 +60,17 @@ pub struct Profile {
     /// Length is bounded by [`MAX_HOLD_TRIGGER_POSITIONS`].
     #[serde(default, rename = "hold_trigger_key_positions")]
     pub hold_trigger_positions: Option<Slice<u16, MAX_HOLD_TRIGGER_POSITIONS>>,
+
+    /// If this tap-hold key is pressed again within this many milliseconds of its
+    /// previous press (ZMK `quick-tap-ms`), immediately resolve as tap.
+    ///
+    /// Useful for hold-to-repeat on the tap letter (e.g. backspace) without
+    /// waiting for the hold timeout. `None` disables (default).
+    ///
+    /// Unlike [`Self::required_idle_time`] (any recent activity), this is
+    /// scoped to re-presses of the same keymap index.
+    #[serde(default)]
+    pub quick_tap_ms: Option<u16>,
 }
 
 impl Profile {
@@ -193,6 +204,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
     interrupt_response: DEFAULT_INTERRUPT_RESPONSE,
     required_idle_time: None,
     hold_trigger_positions: None,
+    quick_tap_ms: None,
 };
 
 /// Default tap hold config.
@@ -239,6 +251,9 @@ impl Default for Config {
 pub struct Context {
     config: Config,
     idle_time_ms: u32,
+    time_ms: u32,
+    recent_presses: [(u16, u32); keymap::MAX_RECENT_PRESSES],
+    recent_press_count: u8,
 }
 
 impl Context {
@@ -247,6 +262,9 @@ impl Context {
         Context {
             config,
             idle_time_ms: 0,
+            time_ms: 0,
+            recent_presses: [(0, 0); keymap::MAX_RECENT_PRESSES],
+            recent_press_count: 0,
         }
     }
 
@@ -258,14 +276,41 @@ impl Context {
     /// Updates the context with the given keymap context.
     pub fn update_keymap_context(
         &mut self,
-        keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
+        keymap::KeymapContext {
+            idle_time_ms,
+            time_ms,
+            recent_presses,
+            recent_press_count,
+            ..
+        }: &keymap::KeymapContext,
     ) {
         self.idle_time_ms = *idle_time_ms;
+        self.time_ms = *time_ms;
+        self.recent_presses = *recent_presses;
+        self.recent_press_count = *recent_press_count;
     }
 
     /// Returns the resolved [Profile] for `profile_id`.
     pub const fn profile(&self, profile_id: u8) -> Profile {
         self.config.profile(profile_id)
+    }
+
+    fn last_press_time_ms(&self, keymap_index: u16) -> Option<u32> {
+        self.recent_presses[..self.recent_press_count as usize]
+            .iter()
+            .rev()
+            .find(|(ki, _)| *ki == keymap_index)
+            .map(|(_, t)| *t)
+    }
+
+    /// Whether a re-press of `keymap_index` falls within the profile's `quick_tap_ms`.
+    fn is_quick_tap(&self, profile: &Profile, keymap_index: u16) -> bool {
+        profile
+            .quick_tap_ms
+            .zip(self.last_press_time_ms(keymap_index))
+            .is_some_and(|(quick_tap_ms, last_t)| {
+                self.time_ms.saturating_sub(last_t) < quick_tap_ms as u32
+            })
     }
 }
 
@@ -434,6 +479,25 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         });
         (pending, scheduled)
     }
+
+    fn resolve_as_tap(
+        &self,
+        key_index: u8,
+    ) -> (
+        key::PressedKeyResult<R, PendingKeyState, KeyState>,
+        key::KeyEvents<Event>,
+    )
+    where
+        R: Copy,
+    {
+        let Key {
+            tap: tap_key_ref, ..
+        } = self.keys[key_index as usize];
+        (
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
+            key::KeyEvents::no_events(),
+        )
+    }
 }
 
 impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R>
@@ -457,6 +521,11 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
         let key_def = &self.keys[key_index as usize];
         let profile = context.profile(key_def.profile);
 
+        // ZMK quick-tap: re-press within window of prior press → force tap.
+        if context.is_quick_tap(&profile, keymap_index) {
+            return self.resolve_as_tap(key_index);
+        }
+
         match profile.required_idle_time {
             Some(required_idle_time) => {
                 if context.idle_time_ms >= required_idle_time as u32 {
@@ -473,13 +542,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
                 } else {
                     // Keymap has not been idle for long enough;
                     // immediately resolve as tap.
-                    let Key {
-                        tap: tap_key_ref, ..
-                    } = *key_def;
-                    (
-                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(tap_key_ref)),
-                        key::KeyEvents::no_events(),
-                    )
+                    self.resolve_as_tap(key_index)
                 }
             }
             None => {
@@ -573,6 +636,7 @@ mod tests {
                 interrupt_response,
                 required_idle_time,
                 hold_trigger_positions: None,
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         }
@@ -1144,6 +1208,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: Some(10),
                 hold_trigger_positions: None,
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1166,6 +1231,7 @@ mod tests {
             interrupt_response: InterruptResponse::HoldOnKeyTap,
             required_idle_time: None,
             hold_trigger_positions: None,
+            quick_tap_ms: None,
         };
         let config = Config {
             default_profile: Profile {
@@ -1173,6 +1239,7 @@ mod tests {
                 interrupt_response: InterruptResponse::Ignore,
                 required_idle_time: None,
                 hold_trigger_positions: None,
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[extra]),
         };
@@ -1190,6 +1257,7 @@ mod tests {
                 interrupt_response: InterruptResponse::Ignore,
                 required_idle_time: None,
                 hold_trigger_positions: None,
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1263,6 +1331,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1284,6 +1353,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1305,6 +1375,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyTap,
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1328,6 +1399,7 @@ mod tests {
                 interrupt_response: InterruptResponse::HoldOnKeyPress,
                 required_idle_time: None,
                 hold_trigger_positions: Some(triggers),
+                quick_tap_ms: None,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1348,6 +1420,7 @@ mod tests {
             interrupt_response: InterruptResponse::HoldOnKeyTap,
             required_idle_time: None,
             hold_trigger_positions: Some(triggers),
+            quick_tap_ms: None,
         };
         let config = Config {
             default_profile: Profile::new(),
@@ -1356,5 +1429,153 @@ mod tests {
 
         // Act / Assert
         assert_eq!(config.profile(1).hold_trigger_positions, Some(triggers));
+    }
+
+    // --- quick_tap_ms ---
+
+    #[test]
+    fn is_quick_tap_when_repress_within_window() {
+        // Assemble: profile with quick_tap_ms; prior press of same index recorded.
+        let mut ctx = context_with(Config {
+            default_profile: Profile {
+                quick_tap_ms: Some(175),
+                ..Profile::new()
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        ctx.update_keymap_context(&KeymapContext {
+            time_ms: 100,
+            idle_time_ms: 50,
+            pressed_modifiers: key::KeyboardModifiers::NONE,
+            recent_presses: {
+                let mut presses = [(0, 0); keymap::MAX_RECENT_PRESSES];
+                presses[0] = (KEYMAP_INDEX, 50);
+                presses
+            },
+            recent_press_count: 1,
+        });
+
+        // Act / Assert: 50ms since last press of KEYMAP_INDEX < 175.
+        assert!(ctx.is_quick_tap(&ctx.profile(0), KEYMAP_INDEX));
+    }
+
+    #[test]
+    fn is_quick_tap_false_after_window() {
+        // Assemble: prior press outside quick_tap_ms window.
+        let mut ctx = context_with(Config {
+            default_profile: Profile {
+                quick_tap_ms: Some(100),
+                ..Profile::new()
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        ctx.update_keymap_context(&KeymapContext {
+            time_ms: 200,
+            idle_time_ms: 150,
+            pressed_modifiers: key::KeyboardModifiers::NONE,
+            recent_presses: {
+                let mut presses = [(0, 0); keymap::MAX_RECENT_PRESSES];
+                presses[0] = (KEYMAP_INDEX, 50);
+                presses
+            },
+            recent_press_count: 1,
+        });
+
+        // Act / Assert: 150ms since last press >= 100.
+        assert!(!ctx.is_quick_tap(&ctx.profile(0), KEYMAP_INDEX));
+    }
+
+    #[test]
+    fn is_quick_tap_false_for_other_keymap_index() {
+        // Assemble: recent press is a different index.
+        let mut ctx = context_with(Config {
+            default_profile: Profile {
+                quick_tap_ms: Some(175),
+                ..Profile::new()
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        ctx.update_keymap_context(&KeymapContext {
+            time_ms: 100,
+            idle_time_ms: 50,
+            pressed_modifiers: key::KeyboardModifiers::NONE,
+            recent_presses: {
+                let mut presses = [(0, 0); keymap::MAX_RECENT_PRESSES];
+                presses[0] = (OTHER_INDEX, 50);
+                presses
+            },
+            recent_press_count: 1,
+        });
+
+        // Act / Assert: no prior press of KEYMAP_INDEX in the ring.
+        assert!(!ctx.is_quick_tap(&ctx.profile(0), KEYMAP_INDEX));
+    }
+
+    #[test]
+    fn is_quick_tap_disabled_when_unset() {
+        // Assemble: default profile has quick_tap_ms = None.
+        let mut ctx = default_context();
+        ctx.update_keymap_context(&KeymapContext {
+            time_ms: 100,
+            idle_time_ms: 50,
+            pressed_modifiers: key::KeyboardModifiers::NONE,
+            recent_presses: {
+                let mut presses = [(0, 0); keymap::MAX_RECENT_PRESSES];
+                presses[0] = (KEYMAP_INDEX, 50);
+                presses
+            },
+            recent_press_count: 1,
+        });
+
+        // Act / Assert
+        assert!(!ctx.is_quick_tap(&ctx.profile(0), KEYMAP_INDEX));
+    }
+
+    #[test]
+    fn new_pressed_key_quick_tap_resolves_as_tap() {
+        // Assemble: quick_tap_ms set; same index pressed recently.
+        let mut ctx = context_with(Config {
+            default_profile: Profile {
+                quick_tap_ms: Some(175),
+                ..Profile::new()
+            },
+            profiles: Slice::from_slice(&[]),
+        });
+        ctx.update_keymap_context(&KeymapContext {
+            time_ms: 100,
+            idle_time_ms: 999,
+            pressed_modifiers: key::KeyboardModifiers::NONE,
+            recent_presses: {
+                let mut presses = [(0, 0); keymap::MAX_RECENT_PRESSES];
+                presses[0] = (KEYMAP_INDEX, 50);
+                presses
+            },
+            recent_press_count: 1,
+        });
+        let sys = system();
+
+        // Act
+        let (pkr, _) = sys.new_pressed_key(KEYMAP_INDEX, &ctx, Ref(0));
+
+        // Assert: immediate tap (not pending), even though idle is long.
+        assert!(matches!(
+            pkr,
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(TAP))
+        ));
+    }
+
+    #[test]
+    fn profile_zero_includes_quick_tap_ms() {
+        // Assemble
+        let config = Config {
+            default_profile: Profile {
+                quick_tap_ms: Some(175),
+                ..Profile::new()
+            },
+            profiles: Slice::from_slice(&[]),
+        };
+
+        // Act / Assert
+        assert_eq!(config.profile(0).quick_tap_ms, Some(175));
     }
 }

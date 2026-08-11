@@ -167,6 +167,9 @@ pub enum KeymapCallback {
     Custom(u8, u8),
 }
 
+/// Max recent physical presses tracked in [KeymapContext] (for quick-tap, etc.).
+pub const MAX_RECENT_PRESSES: usize = 8;
+
 /// Context provided from the keymap to the smart keys.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct KeymapContext {
@@ -181,6 +184,14 @@ pub struct KeymapContext {
     /// Updated by the keymap before press handling and on tick
     ///  so families can branch without maintaining their own mod-tracking.
     pub pressed_modifiers: key::KeyboardModifiers,
+
+    /// Recent physical presses as `(keymap_index, time_ms)`, oldest first.
+    ///
+    /// Used by features such as tap-hold `quick_tap_ms` (ZMK-style re-tap).
+    pub recent_presses: [(u16, u32); MAX_RECENT_PRESSES],
+
+    /// Number of valid entries in [Self::recent_presses].
+    pub recent_press_count: u8,
 }
 
 impl KeymapContext {
@@ -190,7 +201,18 @@ impl KeymapContext {
             time_ms: 0,
             idle_time_ms: 0,
             pressed_modifiers: key::KeyboardModifiers::NONE,
+            recent_presses: [(0, 0); MAX_RECENT_PRESSES],
+            recent_press_count: 0,
         }
+    }
+
+    /// Most recent press time for `keymap_index`, if still in the ring.
+    pub fn last_press_time_ms(&self, keymap_index: u16) -> Option<u32> {
+        self.recent_presses[..self.recent_press_count as usize]
+            .iter()
+            .rev()
+            .find(|(ki, _)| *ki == keymap_index)
+            .map(|(_, t)| *t)
     }
 }
 
@@ -243,6 +265,9 @@ pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
     event_scheduler: EventScheduler<Ev>,
     ms_per_tick: u8,
     idle_time: u32,
+    /// Ring of recent physical presses for [KeymapContext::recent_presses].
+    recent_presses: [(u16, u32); MAX_RECENT_PRESSES],
+    recent_press_count: u8,
     hid_reporter: HIDKeyboardReporter,
     pending_state: Option<pending::PendingState<R, Ev, PKS>>,
     input_queue: InputEventQueue<{ MAX_QUEUED_INPUT_EVENTS }>,
@@ -293,6 +318,8 @@ impl<
             event_scheduler: EventScheduler::new(),
             ms_per_tick: 1,
             idle_time: 0,
+            recent_presses: [(0, 0); MAX_RECENT_PRESSES],
+            recent_press_count: 0,
             hid_reporter: HIDKeyboardReporter::new(),
             pending_state: None,
             input_queue: InputEventQueue::new(),
@@ -314,6 +341,31 @@ impl<
         self.input_queue.clear();
         self.ms_per_tick = 1;
         self.idle_time = 0;
+        self.recent_presses = [(0, 0); MAX_RECENT_PRESSES];
+        self.recent_press_count = 0;
+    }
+
+    /// Record a physical press in the recent-press ring (for quick-tap, etc.).
+    fn record_recent_press(&mut self, keymap_index: u16) {
+        let time_ms = self.event_scheduler.schedule_counter;
+        // Drop any prior entry for this index so a re-press updates the time.
+        let mut write = 0usize;
+        let count = self.recent_press_count as usize;
+        for read in 0..count {
+            if self.recent_presses[read].0 != keymap_index {
+                self.recent_presses[write] = self.recent_presses[read];
+                write += 1;
+            }
+        }
+        if write == MAX_RECENT_PRESSES {
+            // Evict oldest.
+            for i in 0..(MAX_RECENT_PRESSES - 1) {
+                self.recent_presses[i] = self.recent_presses[i + 1];
+            }
+            write = MAX_RECENT_PRESSES - 1;
+        }
+        self.recent_presses[write] = (keymap_index, time_ms);
+        self.recent_press_count = (write + 1) as u8;
     }
 
     /// Clears all registered callbacks.
@@ -425,7 +477,7 @@ impl<
         if let Some(ie) = ready {
             // Process before clearing idle_time
             //  so families that snapshot KeymapContext
-            //  (required_idle_time, pressed_modifiers)
+            //  (required_idle_time, pressed_modifiers, recent presses)
             //  still see idle accumulated since the previous input.
             self.process_input(ie);
             self.set_active_input_delay();
@@ -554,7 +606,7 @@ impl<
                 input::Event::Press { keymap_index }
                     if !self.has_pressed_input_with_keymap_index(keymap_index) =>
                 {
-                    // Snapshot held mods (incl. sticky/caps_word VKs) before branching.
+                    // Snapshot held mods / recent presses before branching.
                     self.push_keymap_context();
 
                     let mut maybe_key_ref = Some(self.key_refs[keymap_index as usize]);
@@ -618,6 +670,9 @@ impl<
                             }
                         }
                     }
+
+                    // Record after press handling so quick-tap sees the *prior* press.
+                    self.record_recent_press(keymap_index);
                 }
                 input::Event::Release { keymap_index } => {
                     self.pressed_inputs
@@ -737,6 +792,8 @@ impl<
             time_ms: self.event_scheduler.schedule_counter,
             idle_time_ms: self.idle_time,
             pressed_modifiers: self.aggregate_pressed_modifiers(),
+            recent_presses: self.recent_presses,
+            recent_press_count: self.recent_press_count,
         };
         self.context.set_keymap_context(km_context);
     }
