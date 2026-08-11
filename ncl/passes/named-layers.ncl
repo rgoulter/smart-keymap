@@ -245,39 +245,51 @@
     std.array.map (resolve_layer_index name_to_idx) arr,
 
   # Rewrite layer_modifier fields that use named-layer strings into numeric indices.
+  # Broad outer arm + flat match on `lm`: nested `{ layer_modifier = { … } }` multi-arms
+  # tax Nickel match compilation heavily when this variant family grows (e.g. lock).
   resolve_layer_modifier_names = fun name_to_idx k =>
     k
     |> match {
-      { layer_modifier = { default_ = d } } =>
-        { layer_modifier = { default_ = resolve_layer_index name_to_idx d } },
-      { layer_modifier = { hold = h }, modifiers = m } =>
-        {
-          layer_modifier = { hold = resolve_layer_index name_to_idx h },
-          modifiers = m,
+      { layer_modifier = lm, modifiers = m } =>
+        lm
+        |> match {
+          { hold = h } =>
+            {
+              layer_modifier = { hold = resolve_layer_index name_to_idx h },
+              modifiers = m,
+            },
+          _ => k,
         },
-      { layer_modifier = { hold = h } } =>
-        { layer_modifier = { hold = resolve_layer_index name_to_idx h } },
-      { layer_modifier = { sticky = s } } =>
-        { layer_modifier = { sticky = resolve_layer_index name_to_idx s } },
-      { layer_modifier = { toggle = t } } =>
-        { layer_modifier = { toggle = resolve_layer_index name_to_idx t } },
-      # true = highest active (no named-layer resolution); number/string = specific layer.
-      { layer_modifier = { lock = true } } =>
-        { layer_modifier = { lock = true } },
-      { layer_modifier = { lock = lock_layer } } =>
-        { layer_modifier = { lock = resolve_layer_index name_to_idx lock_layer } },
-      { layer_modifier = { set_active_layers_to = active, affected_layers = mask } } =>
-        {
-          layer_modifier = {
-            set_active_layers_to = resolve_layer_indices name_to_idx active,
-            affected_layers = resolve_layer_indices name_to_idx mask,
-          },
-        },
-      { layer_modifier = { set_active_layers_to = active } } =>
-        {
-          layer_modifier = {
-            set_active_layers_to = resolve_layer_indices name_to_idx active,
-          },
+      { layer_modifier = lm } =>
+        lm
+        |> match {
+          { default_ = d } =>
+            { layer_modifier = { default_ = resolve_layer_index name_to_idx d } },
+          { hold = h } =>
+            { layer_modifier = { hold = resolve_layer_index name_to_idx h } },
+          { sticky = s } =>
+            { layer_modifier = { sticky = resolve_layer_index name_to_idx s } },
+          { toggle = t } =>
+            { layer_modifier = { toggle = resolve_layer_index name_to_idx t } },
+          # true = highest active (no named-layer resolution); number/string = specific layer.
+          { lock = true } =>
+            { layer_modifier = { lock = true } },
+          { lock = lock_layer } =>
+            { layer_modifier = { lock = resolve_layer_index name_to_idx lock_layer } },
+          { set_active_layers_to = active, affected_layers = mask } =>
+            {
+              layer_modifier = {
+                set_active_layers_to = resolve_layer_indices name_to_idx active,
+                affected_layers = resolve_layer_indices name_to_idx mask,
+              },
+            },
+          { set_active_layers_to = active } =>
+            {
+              layer_modifier = {
+                set_active_layers_to = resolve_layer_indices name_to_idx active,
+              },
+            },
+          _ => k,
         },
       _ => k,
     },
