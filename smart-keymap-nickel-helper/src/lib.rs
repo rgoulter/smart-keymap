@@ -518,6 +518,10 @@ pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
 }
 
 /// Generates the code for the given module.
+///
+/// Cargo invalidation edges are:
+/// - the env value path itself (`SMART_KEYMAP_CUSTOM_KEYMAP` / board env)
+/// - for `.ncl` inputs, the Nickel import tree used by codegen
 pub fn codegen_rust_module(
     CodegenInputs {
         env_var,
@@ -533,13 +537,19 @@ pub fn codegen_rust_module(
     if let Some(custom_module_path) = env::var(env_var).ok().filter(|s| !s.is_empty()) {
         let out_dir = env::var("OUT_DIR").unwrap();
         let dest_path = Path::new(&out_dir).join(module_basename);
-        println!("cargo:rerun-if-changed={}", dest_path.to_str().unwrap());
+
+        // Input edges — source path (and ncl tree for Nickel eval), not OUT_DIR.
+        println!("cargo:rerun-if-changed={}", custom_module_path);
+        if custom_module_path.ends_with(".ncl") {
+            // Coarse: codegen pulls keymap-codegen.ncl, smart_keys, etc.
+            println!("cargo:rerun-if-changed={}", ncl_import_path);
+        }
 
         if custom_module_path.ends_with(".rs") {
             println!("cargo:rustc-cfg={}", cfg_name);
 
             // Copy the custom module file to the output directory
-            fs::copy(custom_module_path, &dest_path).unwrap();
+            fs::copy(&custom_module_path, &dest_path).unwrap();
         } else if custom_module_path.ends_with(".ncl") {
             println!("cargo:rustc-cfg={}", cfg_name);
 
