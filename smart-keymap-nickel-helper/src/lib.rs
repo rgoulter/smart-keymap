@@ -1,8 +1,8 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::env;
 use std::fs;
 use std::io::{self, Read, Write};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::process::{Child, Command, Output, Stdio};
 use std::sync::{Mutex, OnceLock};
 use std::thread;
@@ -517,11 +517,97 @@ pub fn nickel_composite_full_vec_rs(ncl_import_path: &str) -> NickelResult {
     )
 }
 
+/// Quoted paths from static `import "…"` / `import '…'` forms in Nickel source.
+///
+/// Dynamic or computed import expressions are ignored. Identifier-adjacent
+/// matches (`imported`, `reimport`) are skipped.
+pub fn ncl_static_import_paths(src: &str) -> Vec<&str> {
+    let mut out = Vec::new();
+    let mut search_from = 0;
+    while let Some(rel) = src[search_from..].find("import") {
+        let start = search_from + rel;
+        let after_kw = start + "import".len();
+        let after = &src[after_kw..];
+        let ident_cont = |c: char| c.is_ascii_alphanumeric() || c == '_';
+        let preceded_by_ident = src[..start].chars().next_back().is_some_and(ident_cont);
+        if preceded_by_ident || after.chars().next().is_some_and(ident_cont) {
+            search_from = after_kw;
+            continue;
+        }
+        let ws = after.len() - after.trim_start().len();
+        let trimmed_at = after_kw + ws;
+        let trimmed = &src[trimmed_at..];
+        let Some(quote) = trimmed.chars().next().filter(|c| *c == '"' || *c == '\'') else {
+            search_from = after_kw;
+            continue;
+        };
+        let inner_at = trimmed_at + quote.len_utf8();
+        let inner = &src[inner_at..];
+        match inner.find(quote) {
+            Some(end) => {
+                out.push(&src[inner_at..inner_at + end]);
+                search_from = inner_at + end + quote.len_utf8();
+            }
+            None => break,
+        }
+    }
+    out
+}
+
+fn resolve_relative_ncl_import(importer_dir: &Path, import: &str) -> Option<PathBuf> {
+    let candidate = importer_dir.join(import);
+    if candidate.is_file() {
+        return Some(candidate);
+    }
+    if !import.ends_with(".ncl") {
+        let with_ext = importer_dir.join(format!("{import}.ncl"));
+        if with_ext.is_file() {
+            return Some(with_ext);
+        }
+    }
+    None
+}
+
+/// Files reachable from `root` via relative Nickel `import`s that exist on disk.
+///
+/// Includes `root` itself when it can be canonicalized. Paths that do not
+/// resolve next to the importer (e.g. `keys.ncl` from `--import-path`) are
+/// skipped; those live in the codegen ncl tree, which is watched separately.
+pub fn collect_relative_ncl_imports(root: &Path) -> Vec<PathBuf> {
+    let mut out = Vec::new();
+    let mut seen = HashSet::new();
+    let mut stack = vec![root.to_path_buf()];
+
+    while let Some(path) = stack.pop() {
+        let Ok(canon) = path.canonicalize() else {
+            continue;
+        };
+        if !seen.insert(canon.clone()) {
+            continue;
+        }
+        out.push(canon.clone());
+        let Ok(src) = fs::read_to_string(&canon) else {
+            continue;
+        };
+        let Some(dir) = canon.parent() else {
+            continue;
+        };
+        for import in ncl_static_import_paths(&src) {
+            if let Some(next) = resolve_relative_ncl_import(dir, import) {
+                stack.push(next);
+            }
+        }
+    }
+    out
+}
+
 /// Generates the code for the given module.
 ///
 /// Cargo invalidation edges are:
 /// - the env value path itself (`SMART_KEYMAP_CUSTOM_KEYMAP` / board env)
 /// - for `.ncl` inputs, the Nickel import tree used by codegen
+/// - for `.ncl` inputs, relative `import`s that resolve on disk (config-repo
+///   keymaps that re-export another layout, e.g. `../split_3x5+3/keymap.ncl`)
 pub fn codegen_rust_module(
     CodegenInputs {
         env_var,
@@ -543,6 +629,10 @@ pub fn codegen_rust_module(
         if custom_module_path.ends_with(".ncl") {
             // Coarse: codegen pulls keymap-codegen.ncl, smart_keys, etc.
             println!("cargo:rerun-if-changed={}", ncl_import_path);
+            // Relative imports outside the ncl tree (config-repo remaps).
+            for path in collect_relative_ncl_imports(Path::new(&custom_module_path)) {
+                println!("cargo:rerun-if-changed={}", path.display());
+            }
         }
 
         if custom_module_path.ends_with(".rs") {
@@ -586,13 +676,69 @@ pub fn codegen_rust_module(
 #[cfg(test)]
 mod tests {
     use super::{
-        clear_nickel_eval_cache, disk_cache, eval_cache, get_or_eval_json, nickel_timeout,
-        wait_with_optional_timeout, NickelError, NickelJsonExport, DEFAULT_NICKEL_TIMEOUT_SECS,
-        NICKEL_TIMEOUT_ENV,
+        clear_nickel_eval_cache, collect_relative_ncl_imports, disk_cache, eval_cache,
+        get_or_eval_json, ncl_static_import_paths, nickel_timeout, wait_with_optional_timeout,
+        NickelError, NickelJsonExport, DEFAULT_NICKEL_TIMEOUT_SECS, NICKEL_TIMEOUT_ENV,
     };
     use std::process::{Command, Stdio};
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::time::{Duration, Instant};
+
+    #[test]
+    fn ncl_static_import_paths_extracts_quoted() {
+        let src = r#"
+            let K = import "keys.ncl" in
+            (import "../split_3x5+3/keymap.ncl")
+            let x = import 'other.ncl' in
+            let imported = 1 in
+            let y = reimport "nope.ncl" in
+        "#;
+        assert_eq!(
+            ncl_static_import_paths(src),
+            vec!["keys.ncl", "../split_3x5+3/keymap.ncl", "other.ncl"]
+        );
+    }
+
+    #[test]
+    fn collect_relative_ncl_imports_follows_existing_files() {
+        let dir = std::env::temp_dir().join(format!(
+            "sk-ncl-imports-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let ortho = dir.join("ortho-4x12");
+        let split = dir.join("split_3x5+3");
+        std::fs::create_dir_all(&ortho).unwrap();
+        std::fs::create_dir_all(&split).unwrap();
+        std::fs::write(
+            split.join("keymap.ncl"),
+            r#"let K = import "keys.ncl" in { keys = [] }"#,
+        )
+        .unwrap();
+        let root = ortho.join("keymap.ncl");
+        std::fs::write(&root, r#"(import "../split_3x5+3/keymap.ncl")"#).unwrap();
+
+        // Both keymap files; keys.ncl is not next to the importer so it is skipped.
+        let paths = collect_relative_ncl_imports(&root);
+        assert_eq!(paths.len(), 2);
+        let as_str: Vec<String> = paths
+            .iter()
+            .map(|p| p.to_string_lossy().into_owned())
+            .collect();
+        assert!(
+            as_str.iter().any(|p| p.ends_with("ortho-4x12/keymap.ncl")),
+            "{as_str:?}"
+        );
+        assert!(
+            as_str.iter().any(|p| p.ends_with("split_3x5+3/keymap.ncl")),
+            "{as_str:?}"
+        );
+
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn nickel_json_export_distinguishes_eval_kinds() {
