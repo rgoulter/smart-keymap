@@ -8,6 +8,7 @@
 #   - numbered `layers` (and `keys` via layers default in consumers)
 #   - KM-level `named_layers` rows (same geometry as layers)
 #   - chord `indices`
+#   - sequence `indices`
 let into_layout_impl = fun source_key_count from_layout source_keymap =>
   let remapped_indices # Array { target_index : Number, source_index : Number }
   =
@@ -33,6 +34,13 @@ let into_layout_impl = fun source_key_count from_layout source_keymap =>
     in
     chords |> std.array.map remap_chord
   in
+  let remap_sequences = fun sequences =>
+    let remap_sequence = fun { indices = source_indices, ..sequence } =>
+      let target_indices = source_indices |> std.array.map remap_index in
+      { indices = target_indices, } & sequence
+    in
+    sequences |> std.array.map remap_sequence
+  in
   let km_aug = import "keymap-ncl-to-json.ncl" in
   let as_keys = (source_keymap & km_aug).layer_as_array_of_keys in
   let NO_KEY =
@@ -55,6 +63,11 @@ let into_layout_impl = fun source_key_count from_layout source_keymap =>
     source_keymap
     |> (match {
       { chords = source_chords, ..km } => { chords = remap_chords source_chords } & km,
+      km => km,
+    }
+    )
+    |> (match {
+      { sequences = source_sequences, ..km } => { sequences = remap_sequences source_sequences } & km,
       km => km,
     }
     )
@@ -102,6 +115,9 @@ in
           chords = [
             { indices = [0, 1], key = K.F },
           ],
+          sequences = [
+            { indices = [1], key = K.G },
+          ],
         }
     in
     {
@@ -124,6 +140,13 @@ in
         actual = remapped.chords,
         expected = [
           { indices = [0, 2], key = K.F },
+        ],
+      },
+
+      check_sequences = {
+        actual = remapped.sequences,
+        expected = [
+          { indices = [2], key = K.G },
         ],
       },
 
