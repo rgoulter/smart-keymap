@@ -3,6 +3,7 @@ mod overlapping;
 mod overlapping_aux;
 mod overlapping_simultaneous;
 mod required_idle_time;
+mod sequence_start;
 mod tap_hold;
 mod tap_hold_over_tap_hold;
 
@@ -277,13 +278,12 @@ fn release_and_repress_chorded_after_hold_chord_acts_as_passthrough() {
 
     keymap.tick_until_no_scheduled_events();
 
-    // Assert
+    // Assert: completing press (1) holds C; releasing 0 does not drop it.
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, KC_C, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, KC_A, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -314,12 +314,13 @@ fn release_and_repress_aux_after_hold_chord_acts_as_passthrough() {
 
     keymap.tick_until_no_scheduled_events();
 
-    // Assert
+    // Assert: completing press (1) holds C; releasing it drops C. Repress is passthrough B.
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, KC_C, 0, 0, 0, 0, 0],
-        [0, 0, KC_C, KC_B, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
