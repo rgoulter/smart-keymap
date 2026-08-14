@@ -3,7 +3,6 @@ mod overlapping;
 mod overlapping_aux;
 mod overlapping_simultaneous;
 mod required_idle_time;
-mod sequence_start;
 mod tap_hold;
 mod tap_hold_over_tap_hold;
 
