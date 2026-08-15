@@ -216,6 +216,71 @@ impl KeymapContext {
     }
 }
 
+/// Context for `new_pressed_key` when replacing a pending key at `keymap_index`.
+///
+/// Drops the newest ring entry for `keymap_index` and uses that entry's time
+///  as `time_ms`.
+/// The omitted entry is this still-held press, already recorded
+///  when the pending key was created.
+fn keymap_context_without_current_press(
+    recent_presses: [(u16, u32); MAX_RECENT_PRESSES],
+    recent_press_count: u8,
+    idle_time_ms: u32,
+    fallback_time_ms: u32,
+    pressed_modifiers: key::KeyboardModifiers,
+    keymap_index: u16,
+) -> KeymapContext {
+    let count = recent_press_count as usize;
+    let occupied = &recent_presses[..count];
+
+    let time_ms = occupied
+        .iter()
+        .rfind(|(ki, _)| *ki == keymap_index)
+        .map(|&(_, t)| t)
+        .unwrap_or(fallback_time_ms);
+
+    let (recent_presses, recent_press_count) =
+        if let Some(idx) = occupied.iter().rposition(|(ki, _)| *ki == keymap_index) {
+            let mut shifted = [(0, 0); MAX_RECENT_PRESSES];
+            shifted[..idx].copy_from_slice(&recent_presses[..idx]);
+            shifted[idx..count - 1].copy_from_slice(&recent_presses[idx + 1..count]);
+            (shifted, recent_press_count - 1)
+        } else {
+            (recent_presses, recent_press_count)
+        };
+
+    KeymapContext {
+        time_ms,
+        idle_time_ms,
+        pressed_modifiers,
+        recent_presses,
+        recent_press_count,
+    }
+}
+
+/// Append a physical press to the recent-press ring.
+///
+/// Same-index entries are appended, not replaced.
+/// The ring evicts the oldest entry when full.
+fn push_recent_press(
+    recent_presses: [(u16, u32); MAX_RECENT_PRESSES],
+    recent_press_count: u8,
+    keymap_index: u16,
+    time_ms: u32,
+) -> ([(u16, u32); MAX_RECENT_PRESSES], u8) {
+    let count = recent_press_count as usize;
+    if count == MAX_RECENT_PRESSES {
+        let mut shifted = [(0, 0); MAX_RECENT_PRESSES];
+        shifted[..MAX_RECENT_PRESSES - 1].copy_from_slice(&recent_presses[1..]);
+        shifted[MAX_RECENT_PRESSES - 1] = (keymap_index, time_ms);
+        (shifted, recent_press_count)
+    } else {
+        let mut recent_presses = recent_presses;
+        recent_presses[count] = (keymap_index, time_ms);
+        (recent_presses, recent_press_count + 1)
+    }
+}
+
 /// Trait for setting the keymap context.
 pub trait SetKeymapContext {
     /// Sets the keymap context.
@@ -345,27 +410,17 @@ impl<
         self.recent_press_count = 0;
     }
 
-    /// Record a physical press in the recent-press ring (for quick-tap, etc.).
+    /// Record a physical press in the recent-press ring.
+    ///
+    /// Same-index entries are appended, not replaced.
+    /// The ring evicts the oldest entry when full.
     fn record_recent_press(&mut self, keymap_index: u16) {
-        let time_ms = self.event_scheduler.schedule_counter;
-        // Drop any prior entry for this index so a re-press updates the time.
-        let mut write = 0usize;
-        let count = self.recent_press_count as usize;
-        for read in 0..count {
-            if self.recent_presses[read].0 != keymap_index {
-                self.recent_presses[write] = self.recent_presses[read];
-                write += 1;
-            }
-        }
-        if write == MAX_RECENT_PRESSES {
-            // Evict oldest.
-            for i in 0..(MAX_RECENT_PRESSES - 1) {
-                self.recent_presses[i] = self.recent_presses[i + 1];
-            }
-            write = MAX_RECENT_PRESSES - 1;
-        }
-        self.recent_presses[write] = (keymap_index, time_ms);
-        self.recent_press_count = (write + 1) as u8;
+        (self.recent_presses, self.recent_press_count) = push_recent_press(
+            self.recent_presses,
+            self.recent_press_count,
+            keymap_index,
+            self.event_scheduler.schedule_counter,
+        );
     }
 
     /// Clears all registered callbacks.
@@ -508,8 +563,12 @@ impl<
     }
 
     fn update_pending_state(&mut self, ev: key::Event<Ev>) {
+        let Some(keymap_index) = self.pending_state.as_ref().map(|p| p.keymap_index) else {
+            return;
+        };
+        let pressed_modifiers = self.aggregate_pressed_modifiers();
+
         if let Some(pending::PendingState {
-            keymap_index,
             key_ref,
             pending_key_state,
             queued_events,
@@ -519,7 +578,7 @@ impl<
         {
             let (mut maybe_npk, pke) = self.key_system.update_pending_state(
                 pending_key_state,
-                *keymap_index,
+                keymap_index,
                 &self.context,
                 *key_ref,
                 ev,
@@ -532,8 +591,20 @@ impl<
                 let pkr = match npk {
                     key::NewPressedKey::Key(new_key_ref) => {
                         *key_ref = new_key_ref;
+                        // This press is already in the ring (recorded on the
+                        //  original input).
+                        // Exclude it before constructing the replacement key.
+                        let nested_press_ctx = keymap_context_without_current_press(
+                            self.recent_presses,
+                            self.recent_press_count,
+                            self.idle_time,
+                            self.event_scheduler.schedule_counter,
+                            pressed_modifiers,
+                            keymap_index,
+                        );
+                        self.context.set_keymap_context(nested_press_ctx);
                         let (pkr, pke) = self.key_system.new_pressed_key(
-                            *keymap_index,
+                            keymap_index,
                             &self.context,
                             new_key_ref,
                         );
@@ -1074,5 +1145,122 @@ mod tests {
         let context = KeymapContext::new();
         assert_eq!(0, context.time_ms);
         assert_eq!(0, context.idle_time_ms);
+    }
+
+    fn recent_presses_from(entries: &[(u16, u32)]) -> ([(u16, u32); MAX_RECENT_PRESSES], u8) {
+        let mut presses = [(0, 0); MAX_RECENT_PRESSES];
+        presses[..entries.len()].copy_from_slice(entries);
+        (presses, entries.len() as u8)
+    }
+
+    #[test]
+    fn test_push_recent_press_appends_same_index() {
+        // Assemble
+        let presses = [(0, 0); MAX_RECENT_PRESSES];
+
+        // Act
+        let (presses, count) = push_recent_press(presses, 0, 2, 0);
+        let (presses, count) = push_recent_press(presses, count, 2, 50);
+
+        // Assert: both times remain so excluding the current press can still see the prior one.
+        assert_eq!(2, count);
+        assert_eq!([(2, 0), (2, 50)], &presses[..2]);
+    }
+
+    #[test]
+    fn test_push_recent_press_appends_distinct_indices() {
+        // Assemble
+        let presses = [(0, 0); MAX_RECENT_PRESSES];
+
+        // Act
+        let (presses, count) = push_recent_press(presses, 0, 1, 10);
+        let (presses, count) = push_recent_press(presses, count, 2, 20);
+
+        // Assert
+        assert_eq!(2, count);
+        assert_eq!([(1, 10), (2, 20)], &presses[..2]);
+    }
+
+    #[test]
+    fn test_push_recent_press_evicts_oldest_when_full() {
+        // Assemble: ring filled with distinct indices.
+        let (presses, count) = (0..MAX_RECENT_PRESSES).fold(
+            ([(0, 0); MAX_RECENT_PRESSES], 0u8),
+            |(presses, count), i| push_recent_press(presses, count, i as u16, i as u32 * 10),
+        );
+
+        // Act
+        let (presses, count) = push_recent_press(presses, count, 99, 1000);
+
+        // Assert
+        assert_eq!(MAX_RECENT_PRESSES as u8, count);
+        assert_eq!((1, 10), presses[0]);
+        assert_eq!((99, 1000), presses[MAX_RECENT_PRESSES - 1]);
+    }
+
+    #[test]
+    fn test_without_current_press_keeps_prior_same_index() {
+        // Assemble: two presses of the same index, as after a re-press.
+        let (presses, count) = recent_presses_from(&[(2, 0), (2, 50)]);
+
+        // Act
+        let ctx = keymap_context_without_current_press(
+            presses,
+            count,
+            0,
+            50,
+            key::KeyboardModifiers::NONE,
+            2,
+        );
+
+        // Assert: current press dropped; prior press remains for quick_tap_ms.
+        assert_eq!(50, ctx.time_ms);
+        assert_eq!(1, ctx.recent_press_count);
+        assert_eq!(Some(0), ctx.last_press_time_ms(2));
+    }
+
+    #[test]
+    fn test_without_current_press_uses_fallback_when_index_absent() {
+        // Assemble
+        let (presses, count) = recent_presses_from(&[(1, 10)]);
+
+        // Act
+        let ctx = keymap_context_without_current_press(
+            presses,
+            count,
+            7,
+            99,
+            key::KeyboardModifiers::NONE,
+            2,
+        );
+
+        // Assert
+        assert_eq!(99, ctx.time_ms);
+        assert_eq!(7, ctx.idle_time_ms);
+        assert_eq!(1, ctx.recent_press_count);
+        assert_eq!(Some(10), ctx.last_press_time_ms(1));
+        assert_eq!(None, ctx.last_press_time_ms(2));
+    }
+
+    #[test]
+    fn test_without_current_press_compacts_after_dropped_index() {
+        // Assemble
+        let (presses, count) = recent_presses_from(&[(1, 10), (2, 20), (3, 30)]);
+
+        // Act
+        let ctx = keymap_context_without_current_press(
+            presses,
+            count,
+            0,
+            99,
+            key::KeyboardModifiers::NONE,
+            2,
+        );
+
+        // Assert
+        assert_eq!(20, ctx.time_ms);
+        assert_eq!(2, ctx.recent_press_count);
+        assert_eq!([(1, 10), (3, 30)], &ctx.recent_presses[..2]);
+        assert_eq!((0, 0), ctx.recent_presses[2]);
     }
 }

@@ -1,7 +1,7 @@
 //! Tap-hold under a chorded key, with `quick_tap_ms` set.
 //!
-//! After idle the chord waits, then passthroughs to tap-hold. That
-//! replacement `new_pressed_key` must still be able to resolve as hold.
+//! After idle the chord waits, then passthroughs to tap-hold.
+//! That replacement `new_pressed_key` must still be able to resolve as hold.
 
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
@@ -67,8 +67,8 @@ fn first_press_timeout_hold_activates_layer() {
     assert_eq!(expected_reports, keymap.distinct_reports().reports());
 }
 
-/// After 2000 ms idle the chord waits, then passthroughs. Timeout-hold
-/// of the inner tap-hold must activate the layer.
+/// After 2000 ms idle the chord waits, then passthroughs.
+/// Timeout-hold of the inner tap-hold must activate the layer.
 #[test]
 fn after_idle_timeout_hold_activates_layer() {
     let mut keymap = keymap_under_test!();
