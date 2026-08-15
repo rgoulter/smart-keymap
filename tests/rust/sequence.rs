@@ -152,3 +152,47 @@ fn sequence_timeout_aborts_incomplete() {
         reports
     );
 }
+
+#[test]
+fn sequence_indices_layout_string_reverse_of_scan_order() {
+    // Assemble
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let Seq = import "sequence.ncl" in
+            {
+                sequences = [
+                    { indices = "1 0 _" |> Seq.indices, key = K.C },
+                ],
+                config.sequence.timeout = 500,
+                keys = [
+                    K.A,
+                    K.B,
+                    K.sequence_start,
+                ],
+            }
+        "#
+    ));
+
+    // Act
+    // start, then B (marker 0), then A (marker 1)
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
