@@ -1,5 +1,5 @@
 CEEDLING = ceedling
-CEEDLING_KEYMAP_SUITES = consumer callback keyboard layered conditional_layers mouse sticky tap_hold remap_named_layers
+CEEDLING_KEYMAP_SUITES = consumer callback keyboard layered conditional_layers mouse sticky tap_hold remap_named_layers thumbs
 CEEDLING_CARGO_TARGET = tests/ceedling/cargo-target
 
 # Rebuild copied libs when smart_keymap crate inputs change (not only keymap.ncl).
