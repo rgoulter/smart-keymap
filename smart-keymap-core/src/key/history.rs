@@ -6,9 +6,13 @@
 //!   output in a Nickel-defined table ([Config::alt_repeat](crate::key::history::Config::alt_repeat))
 //!   and emits the mapped alternate while held (QMK-style alternate repeat for
 //!   single keys).
+//! - [Key::Adaptive](crate::key::history::Key::Adaptive) looks up that last
+//!   output in a per-key rule table (Hands Down / ZMK adaptive-key style).
+//!   On a miss, the key emits its default output.
 
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use core::ops::Index;
 
 use serde::Deserialize;
 
@@ -28,6 +32,12 @@ pub enum Key {
     ///
     /// If the last output is unmapped (or history is empty), contributes no output.
     AltRepeat,
+    /// Per-site adaptive key.
+    ///
+    /// Looks up the last remembered output in this key's rule table.
+    /// If no rule matches, emits [AdaptiveKey::default].
+    /// The `u8` indexes the [System] adaptive-key array.
+    Adaptive(u8),
 }
 
 impl Key {
@@ -40,7 +50,17 @@ impl Key {
     pub const fn new_alt_repeat() -> Self {
         Key::AltRepeat
     }
+
+    /// Constructs a [Key::Adaptive] referencing the given system index.
+    pub const fn new_adaptive(index: u8) -> Self {
+        Key::Adaptive(index)
+    }
 }
+
+/// Maximum number of `{ prev, emit }` rules stored on one [AdaptiveKey].
+///
+/// Unused slots are [AltRepeatRule::EMPTY].
+pub const MAX_ADAPTIVE_RULES: usize = 8;
 
 /// One alternate-repeat mapping: when the last remembered output equals [Self::prev],
 /// [Key::AltRepeat] emits [Self::emit].
@@ -62,6 +82,83 @@ impl AltRepeatRule {
     /// Constructs a rule.
     pub const fn new(prev: key::KeyOutput, emit: key::KeyOutput) -> Self {
         Self { prev, emit }
+    }
+}
+
+/// Per-site adaptive key.
+///
+/// Holds a default output and a table of last-output → emit rules.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct AdaptiveKey {
+    /// Output when no rule matches (or history is empty).
+    pub default: key::KeyOutput,
+    /// Sparse last-output → emit mappings for this key site.
+    #[serde(deserialize_with = "deserialize_adaptive_rules")]
+    pub rules: [AltRepeatRule; MAX_ADAPTIVE_RULES],
+}
+
+impl AdaptiveKey {
+    /// Empty adaptive key (no-op default, no rules).
+    pub const EMPTY: Self = Self {
+        default: key::KeyOutput::NO_OUTPUT,
+        rules: [AltRepeatRule::EMPTY; MAX_ADAPTIVE_RULES],
+    };
+
+    /// Constructs an adaptive key from a default and a padded rule array.
+    pub const fn new(default: key::KeyOutput, rules: [AltRepeatRule; MAX_ADAPTIVE_RULES]) -> Self {
+        Self { default, rules }
+    }
+
+    /// Looks up `prev` in this key's rule table.
+    pub fn lookup(&self, prev: &key::KeyOutput) -> Option<key::KeyOutput> {
+        self.rules
+            .iter()
+            .find(|r| r.prev == *prev && **r != AltRepeatRule::EMPTY)
+            .map(|r| r.emit)
+    }
+}
+
+/// Builds a fixed-size adaptive rule array from a shorter const list (codegen helper).
+pub const fn adaptive_rules<const N: usize>(
+    rules: [AltRepeatRule; N],
+) -> [AltRepeatRule; MAX_ADAPTIVE_RULES] {
+    let mut out: [AltRepeatRule; MAX_ADAPTIVE_RULES] = [AltRepeatRule::EMPTY; MAX_ADAPTIVE_RULES];
+
+    if N > MAX_ADAPTIVE_RULES {
+        panic!("Too many adaptive rules for AdaptiveKey");
+    }
+
+    let mut i = 0;
+    while i < N {
+        out[i] = rules[i];
+        i += 1;
+    }
+    out
+}
+
+fn deserialize_adaptive_rules<'de, D>(
+    deserializer: D,
+) -> Result<[AltRepeatRule; MAX_ADAPTIVE_RULES], D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let rules_vec: heapless::Vec<AltRepeatRule, MAX_ADAPTIVE_RULES> =
+        Deserialize::deserialize(deserializer)?;
+
+    let mut rules_array: [AltRepeatRule; MAX_ADAPTIVE_RULES] =
+        [AltRepeatRule::EMPTY; MAX_ADAPTIVE_RULES];
+    for (i, rule) in rules_vec.iter().enumerate() {
+        rules_array[i] = *rule;
+    }
+
+    Ok(rules_array)
+}
+
+fn output_or_none(output: key::KeyOutput) -> Option<key::KeyOutput> {
+    if is_rememberable(&output) {
+        Some(output)
+    } else {
+        None
     }
 }
 
@@ -261,23 +358,34 @@ impl KeyState {
 
 /// The [key::System] implementation for history keys.
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct System<R, const ALT_REPEAT_RULE_COUNT: usize = 0>(PhantomData<R>);
+pub struct System<R, Keys = [AdaptiveKey; 0], const ALT_REPEAT_RULE_COUNT: usize = 0> {
+    keys: Keys,
+    _r: PhantomData<R>,
+}
 
-impl<R, const ALT_REPEAT_RULE_COUNT: usize> System<R, ALT_REPEAT_RULE_COUNT> {
-    /// Constructs a new [System].
-    pub const fn new() -> Self {
-        Self(PhantomData)
+impl<R, Keys, const ALT_REPEAT_RULE_COUNT: usize> System<R, Keys, ALT_REPEAT_RULE_COUNT> {
+    /// Constructs a new [System] with the given adaptive-key data.
+    pub const fn new(keys: Keys) -> Self {
+        Self {
+            keys,
+            _r: PhantomData,
+        }
     }
 }
 
-impl<R, const ALT_REPEAT_RULE_COUNT: usize> Default for System<R, ALT_REPEAT_RULE_COUNT> {
+impl<R, Keys: Default, const ALT_REPEAT_RULE_COUNT: usize> Default
+    for System<R, Keys, ALT_REPEAT_RULE_COUNT>
+{
     fn default() -> Self {
-        Self::new()
+        Self::new(Keys::default())
     }
 }
 
-impl<R: Debug, const ALT_REPEAT_RULE_COUNT: usize> key::System<R>
-    for System<R, ALT_REPEAT_RULE_COUNT>
+impl<
+        R: Debug,
+        Keys: Debug + Index<usize, Output = AdaptiveKey>,
+        const ALT_REPEAT_RULE_COUNT: usize,
+    > key::System<R> for System<R, Keys, ALT_REPEAT_RULE_COUNT>
 {
     type Ref = Ref;
     type Context = Context<ALT_REPEAT_RULE_COUNT>;
@@ -299,6 +407,14 @@ impl<R: Debug, const ALT_REPEAT_RULE_COUNT: usize> key::System<R>
             Key::AltRepeat => context
                 .last()
                 .and_then(|last| context.config.lookup_alt(&last)),
+            Key::Adaptive(index) => {
+                let spec = &self.keys[index as usize];
+                let raw = context
+                    .last()
+                    .and_then(|last| spec.lookup(&last))
+                    .unwrap_or(spec.default);
+                output_or_none(raw)
+            }
         };
         (
             key::PressedKeyResult::Resolved(KeyState::new(output)),
@@ -333,8 +449,8 @@ mod tests {
 
     #[test]
     fn test_sizeof_ref() {
-        // Two unit variants → one-byte discriminant.
-        assert_eq!(1, core::mem::size_of::<Ref>());
+        // Repeat / AltRepeat / Adaptive(u8) → discriminant + index.
+        assert_eq!(2, core::mem::size_of::<Ref>());
     }
 
     #[test]
@@ -378,7 +494,7 @@ mod tests {
 
     #[test]
     fn repeat_pressed_key_uses_context_last() {
-        let system = System::<(), 0>::new();
+        let system = System::<()>::new([]);
         let mut ctx = Context::<0>::new();
         let key_output = key::KeyOutput::from_key_code(0x05);
         ctx.last = Some(key_output);
@@ -398,7 +514,7 @@ mod tests {
         let mut ctx = Context::from_config(config);
         ctx.last = Some(left);
 
-        let system = System::<(), 1>::new();
+        let system = System::<(), [AdaptiveKey; 0], 1>::new([]);
         let (pkr, _) = system.new_pressed_key(0, &ctx, Ref(Key::AltRepeat));
         let ks = pkr.unwrap_resolved();
         assert_eq!(Some(right), system.key_output(&Ref(Key::AltRepeat), &ks));
@@ -406,12 +522,87 @@ mod tests {
 
     #[test]
     fn alt_repeat_unmapped_is_none() {
-        let system = System::<(), 0>::new();
+        let system = System::<()>::new([]);
         let mut ctx = Context::<0>::new();
         ctx.last = Some(key::KeyOutput::from_key_code(0x04));
 
         let (pkr, _) = system.new_pressed_key(0, &ctx, Ref(Key::AltRepeat));
         let ks = pkr.unwrap_resolved();
         assert_eq!(None, system.key_output(&Ref(Key::AltRepeat), &ks));
+    }
+
+    #[test]
+    fn adaptive_uses_matching_rule() {
+        // Assemble: H with A → U, last output is A
+        let a = key::KeyOutput::from_key_code(0x04);
+        let h = key::KeyOutput::from_key_code(0x0B);
+        let u = key::KeyOutput::from_key_code(0x18);
+        let keys = [AdaptiveKey::new(
+            h,
+            adaptive_rules([AltRepeatRule::new(a, u)]),
+        )];
+        let system = System::<(), _>::new(keys);
+        let mut ctx = Context::<0>::new();
+        ctx.last = Some(a);
+
+        // Act: press adaptive H
+        let (pkr, _) = system.new_pressed_key(0, &ctx, Ref(Key::Adaptive(0)));
+        let ks = pkr.unwrap_resolved();
+
+        // Assert: emits U
+        assert_eq!(Some(u), system.key_output(&Ref(Key::Adaptive(0)), &ks));
+    }
+
+    #[test]
+    fn adaptive_falls_back_to_default() {
+        // Assemble: H with A → U, last output is B
+        let a = key::KeyOutput::from_key_code(0x04);
+        let b = key::KeyOutput::from_key_code(0x05);
+        let h = key::KeyOutput::from_key_code(0x0B);
+        let u = key::KeyOutput::from_key_code(0x18);
+        let keys = [AdaptiveKey::new(
+            h,
+            adaptive_rules([AltRepeatRule::new(a, u)]),
+        )];
+        let system = System::<(), _>::new(keys);
+        let mut ctx = Context::<0>::new();
+        ctx.last = Some(b);
+
+        // Act: press adaptive H
+        let (pkr, _) = system.new_pressed_key(0, &ctx, Ref(Key::Adaptive(0)));
+        let ks = pkr.unwrap_resolved();
+
+        // Assert: emits default H
+        assert_eq!(Some(h), system.key_output(&Ref(Key::Adaptive(0)), &ks));
+    }
+
+    #[test]
+    fn adaptive_empty_history_uses_default() {
+        // Assemble: H with no rules and empty history
+        let h = key::KeyOutput::from_key_code(0x0B);
+        let keys = [AdaptiveKey::new(h, adaptive_rules([]))];
+        let system = System::<(), _>::new(keys);
+        let ctx = Context::<0>::new();
+
+        // Act: press adaptive H
+        let (pkr, _) = system.new_pressed_key(0, &ctx, Ref(Key::Adaptive(0)));
+        let ks = pkr.unwrap_resolved();
+
+        // Assert: emits default H
+        assert_eq!(Some(h), system.key_output(&Ref(Key::Adaptive(0)), &ks));
+    }
+
+    #[test]
+    fn adaptive_noop_default_is_none() {
+        // Assemble: empty adaptive key and empty history
+        let system = System::<(), _>::new([AdaptiveKey::EMPTY]);
+        let ctx = Context::<0>::new();
+
+        // Act: press adaptive key
+        let (pkr, _) = system.new_pressed_key(0, &ctx, Ref(Key::Adaptive(0)));
+        let ks = pkr.unwrap_resolved();
+
+        // Assert: no output
+        assert_eq!(None, system.key_output(&Ref(Key::Adaptive(0)), &ks));
     }
 }
