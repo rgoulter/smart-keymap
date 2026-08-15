@@ -338,3 +338,282 @@ fn hold_alt_repeat_holds_mapped_output() {
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
+
+#[test]
+fn adaptive_h_after_a_types_u() {
+    // Assemble: adaptive H with A → U, E → O
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let H = K.history.adaptive {
+                default = K.H,
+                rules = [
+                    { prev = K.A, emit = K.U },
+                    { prev = K.E, emit = K.O },
+                ],
+            } in
+            {
+                keys = [
+                    K.A,
+                    K.E,
+                    K.B,
+                    H,
+                ],
+            }
+        "#
+    ));
+
+    // Act: tap A, then adaptive H
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+    keymap.handle_input(input::Event::Release { keymap_index: 3 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert: A then U
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_U, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn adaptive_h_after_e_types_o() {
+    // Assemble: adaptive H with A → U, E → O
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let H = K.history.adaptive {
+                default = K.H,
+                rules = [
+                    { prev = K.A, emit = K.U },
+                    { prev = K.E, emit = K.O },
+                ],
+            } in
+            {
+                keys = [
+                    K.A,
+                    K.E,
+                    K.B,
+                    H,
+                ],
+            }
+        "#
+    ));
+
+    // Act: tap E, then adaptive H
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+    keymap.handle_input(input::Event::Release { keymap_index: 3 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert: E then O
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_E, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn adaptive_h_after_unmapped_types_h() {
+    // Assemble: adaptive H with A → U, E → O
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let H = K.history.adaptive {
+                default = K.H,
+                rules = [
+                    { prev = K.A, emit = K.U },
+                    { prev = K.E, emit = K.O },
+                ],
+            } in
+            {
+                keys = [
+                    K.A,
+                    K.E,
+                    K.B,
+                    H,
+                ],
+            }
+        "#
+    ));
+
+    // Act: tap B (unmapped), then adaptive H
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+    keymap.handle_input(input::Event::Release { keymap_index: 3 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert: B then default H
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_H, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn adaptive_h_with_no_prior_key_types_h() {
+    // Assemble: adaptive H with A → U, E → O
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let H = K.history.adaptive {
+                default = K.H,
+                rules = [
+                    { prev = K.A, emit = K.U },
+                    { prev = K.E, emit = K.O },
+                ],
+            } in
+            {
+                keys = [
+                    K.A,
+                    K.E,
+                    K.B,
+                    H,
+                ],
+            }
+        "#
+    ));
+
+    // Act: tap adaptive H with empty history, then A
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+    keymap.handle_input(input::Event::Release { keymap_index: 3 });
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert: default H, then A
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_H, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn hold_adaptive_after_a_holds_u() {
+    // Assemble: adaptive H with A → U, E → O
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let H = K.history.adaptive {
+                default = K.H,
+                rules = [
+                    { prev = K.A, emit = K.U },
+                    { prev = K.E, emit = K.O },
+                ],
+            } in
+            {
+                keys = [
+                    K.A,
+                    K.E,
+                    K.B,
+                    H,
+                ],
+            }
+        "#
+    ));
+
+    // Act: tap A, then press and hold adaptive H
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert: A, then U held
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_U, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
+
+#[test]
+fn two_adaptive_keys_keep_independent_defaults_and_rules() {
+    // Assemble: adaptive H (A → U) and adaptive M (G → L)
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            let H = K.history.adaptive {
+                default = K.H,
+                rules = [
+                    { prev = K.A, emit = K.U },
+                ],
+            } in
+            let M = K.history.adaptive {
+                default = K.M,
+                rules = [
+                    { prev = K.G, emit = K.L },
+                ],
+            } in
+            {
+                keys = [
+                    K.A,
+                    K.G,
+                    H,
+                    M,
+                ],
+            }
+        "#
+    ));
+
+    // Act: A then H (U), G then M (L), then H (default H)
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+    keymap.handle_input(input::Event::Press { keymap_index: 3 });
+    keymap.handle_input(input::Event::Release { keymap_index: 3 });
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    keymap.handle_input(input::Event::Release { keymap_index: 2 });
+
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert: A U, G L, then default H
+    let expected_reports: &[[u8; 8]] = &[
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_U, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_G, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_L, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_H, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+    ];
+    let actual_reports = keymap.distinct_reports();
+    assert_eq!(expected_reports, actual_reports.reports());
+}
