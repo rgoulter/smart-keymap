@@ -345,12 +345,19 @@
               rust_expr = smart_keymap.history.config.rust_expr,
             },
           system =
-            'System {
-              ty = m%"%{module}::System<
+            'SystemWithData {
+              data_lengths = [{ const_name = "HISTORY", data_field = "history" }],
+              rust_expr = smart_keymap.history.system.rust_expr,
+              ty.array = m%"%{module}::System<
             Ref,
+            [%{module}::AdaptiveKey; super::HISTORY],
             { super::HISTORY_ALT_REPEAT_RULE_COUNT }
           >"%,
-              expr = "%{module}::System::new()",
+              ty.vec = m%"%{module}::System<
+            Ref,
+            Vec<%{module}::AdaptiveKey>,
+            { super::HISTORY_ALT_REPEAT_RULE_COUNT }
+          >"%,
             },
           context = {
             ty = m%"%{module}::Context<
