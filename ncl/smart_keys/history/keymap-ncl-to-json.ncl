@@ -21,17 +21,53 @@
 
       Key = std.contract.from_validator key_validator,
 
+      adaptive_validator =
+        validators.record.validator {
+          fields_validator =
+            validators.all_of [
+              validators.record.has_all_fields ["default"],
+              validators.record.has_only_fields ["default", "rules"],
+            ],
+          field_validators = {
+            default = keymap_ncl.keyboard.key_validator,
+            rules =
+              validators.array.validator (
+                validators.record.validator {
+                  fields_validator = validators.record.has_exact_fields ["prev", "emit"],
+                  field_validators = {
+                    prev = keymap_ncl.keyboard.key_validator,
+                    emit = keymap_ncl.keyboard.key_validator,
+                  },
+                }
+              ),
+          },
+        },
+
       key_validator = fun k =>
         k
         |> match {
           "Repeat" => 'Ok,
           "AltRepeat" => 'Ok,
-          _ => 'Error { message = "Expected \"Repeat\" or \"AltRepeat\"" },
+          k if std.is_record k => adaptive_validator k,
+          _ => 'Error { message = "Expected \"Repeat\", \"AltRepeat\", or adaptive { default, rules }" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_value = fun key => key,
+      to_json_value = fun key =>
+        if key == "Repeat" then
+          "Repeat"
+        else if key == "AltRepeat" then
+          "AltRepeat"
+        else
+          {
+            default = keyboard_key_to_key_output key."default",
+            rules =
+              if std.record.has_field "rules" key then
+                key.rules |> std.array.map alt_repeat_rule_to_json
+              else
+                [],
+          },
 
       # Leaves have no nested keys; map_accum maps children only.
       map_accum = fun f acc k => { include acc, include k },
@@ -94,6 +130,33 @@
         expected = {
           prev = { key_code = { Keyboard = 80 } },
           emit = { key_code = { Keyboard = 79 } },
+        },
+      },
+
+      check_adaptive_ok =
+        keymap_ncl.history.key_validator (
+          K.history.adaptive {
+            default = K.H,
+            rules = [{ prev = K.A, emit = K.U }],
+          }
+        ) == 'Ok,
+
+      check_adaptive_json = {
+        actual =
+          keymap_ncl.history.to_json_value (
+            K.history.adaptive {
+              default = K.H,
+              rules = [{ prev = K.A, emit = K.U }],
+            }
+          ),
+        expected = {
+          default = { key_code = { Keyboard = 11 } },
+          rules = [
+            {
+              prev = { key_code = { Keyboard = 4 } },
+              emit = { key_code = { Keyboard = 24 } },
+            }
+          ],
         },
       },
     },

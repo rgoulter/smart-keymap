@@ -155,6 +155,8 @@ struct KeyVecs {
     #[serde(default)]
     consumer: Vec<key::consumer::Key>,
     #[serde(default)]
+    history: Vec<key::history::AdaptiveKey>,
+    #[serde(default)]
     keyboard: Vec<key::keyboard::Key>,
     #[serde(default)]
     layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
@@ -190,6 +192,7 @@ fn system_from_key_data(keys: KeyVecs) -> System {
         smart_keymap::key::callback::System::new(keys.callback),
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
         smart_keymap::key::consumer::System::new(keys.consumer),
+        smart_keymap::key::history::System::new(keys.history),
         smart_keymap::key::keyboard::System::new(keys.keyboard),
         smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
         smart_keymap::key::mod_conditioned::System::new(keys.mod_conditioned),
