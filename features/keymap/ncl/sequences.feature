@@ -9,6 +9,16 @@ Feature: Sequences
 
   This is a similar idea to Vim's "leader key sequences".
 
+  Sequence `indices` may be a raw array (`[1, 2]`), or a layout string
+  via `sequence.ncl`. Non-`_` markers are sorted so tap order can
+  differ from scan order (unlike chord `X` marks):
+
+      let Seq = import "sequence.ncl" in
+      { indices = "1 0 _" |> Seq.indices, key = K.C }
+
+  `"1 0 _"` is keys 0 then 1 in scan order, but the sequence is
+  key 1 then key 0.
+
   For examples of this feature in other smart keyboard firmware, see e.g.:
 
   - [QMK's Leader Key](https://docs.qmk.fm/features/leader_key)
@@ -18,9 +28,10 @@ Feature: Sequences
     Given a keymap.ncl:
       """
       let K = import "keys.ncl" in
+      let Seq = import "sequence.ncl" in
       {
         sequences = [
-          { indices = [1, 2], key = K.C },
+          { indices = "_ 0 1 _" |> Seq.indices, key = K.C },
         ],
         config.sequence.timeout = 500,
         keys = [
