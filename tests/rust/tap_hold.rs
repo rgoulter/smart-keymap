@@ -1,3 +1,4 @@
+mod chorded_quick_tap;
 mod hold_on_interrupt_press;
 mod hold_on_interrupt_tap;
 mod hold_trigger_positions;
@@ -6,7 +7,6 @@ mod layered;
 mod no_timeout;
 mod profiles;
 mod quick_tap;
-mod chorded_quick_tap;
 mod required_idle_time;
 
 use smart_keymap::input;
