@@ -16,7 +16,7 @@ pub mod chorded;
 pub mod consumer;
 /// Custom keys.
 pub mod custom;
-/// History keys (Repeat / Alt-Repeat of last output).
+/// History keys (Repeat / Alt-Repeat / Adaptive of last output).
 pub mod history;
 /// Key Lock (hold the next key until pressed again).
 pub mod key_lock;
