@@ -4,6 +4,7 @@ let K = import "keys.ncl" in
 let HoldLayerMod = fun name => K.hold (K.layer_mod.hold name) in
 {
   config.tap_hold.interrupt_response = "HoldOnKeyTap",
+  config.tap_hold.quick_tap_ms = 200,
   config.tap_hold.timeout = 200,
   config.chorded.required_idle_time = 125,
   chords = [
