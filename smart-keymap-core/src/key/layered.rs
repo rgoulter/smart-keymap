@@ -924,9 +924,19 @@ pub struct LayeredKey<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> {
     /// The base key, used when no layers are active.
     pub base: R,
     /// The layered keys, used when the corresponding layer is active.
+    ///
+    /// `None` is full transparency for that layer (`K.TTTT` / `null` in JSON).
     #[serde(deserialize_with = "deserialize_layered")]
     #[serde(bound(deserialize = "R: Deserialize<'de>"))]
     pub layered: [Option<R>; LAYER_COUNT],
+    /// Layers that exit when their cell is a hole (`None`) and is skipped.
+    ///
+    /// Bit `i` is layer index `i` (same layout as [LayerBitset] / `SetActiveLayers`).
+    /// Used for FAK-style transparent layer exit (`K.tlex`): skip the hole, schedule
+    ///  [LayerEvent::Deactivated] for a non-persistent activation, and continue the walk.
+    /// Ordinary transparency leaves this empty.
+    #[serde(default)]
+    pub exit_on_skip: LayerBitset,
 }
 
 /// Deserialize a [Layers].
@@ -941,25 +951,103 @@ where
 }
 
 impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
-    /// Constructs a new [LayeredKey].
+    /// Constructs a new [LayeredKey] with no exit-on-skip holes.
     pub const fn new<const L: usize>(base: R, layered: [Option<R>; L]) -> Self {
         let layered = layered_keys(layered);
-        Self { base, layered }
+        Self {
+            base,
+            layered,
+            exit_on_skip: LayerBitset::EMPTY,
+        }
+    }
+
+    /// Sets layers that deactivate when a transparent cell is skipped on that layer.
+    pub const fn with_exit_on_skip(self, exit_on_skip: LayerBitset) -> Self {
+        Self {
+            exit_on_skip,
+            ..self
+        }
     }
 }
 
+/// Whether exit-on-skip should schedule [LayerEvent::Deactivated] for `layer`.
+///
+/// Only non-persistent activations (regular hold/toggle and sticky).
+/// A layer that is only the default (not Regular/Sticky-active) is not cleared.
+///
+/// `layer` is a 1-based [LayerIndex] (same as [LayerState::activate]): array
+///  slots and `exit_on_skip` cells use `layer - 1` / bit `layer`.
+fn is_exit_deactivatable<const LAYER_COUNT: usize, const CONDITIONAL_LAYER_COUNT: usize>(
+    context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
+    layer: LayerIndex,
+) -> bool {
+    let layer_index = layer as usize;
+    (1..=LAYER_COUNT).contains(&layer_index)
+        && matches!(
+            context.active_layers[layer_index - 1],
+            Activity::Active(ActivationStyle::Regular | ActivationStyle::Sticky)
+        )
+}
+
 impl<R: Copy + Debug + PartialEq, const LAYER_COUNT: usize> LayeredKey<R, LAYER_COUNT> {
-    /// Presses the key, using the highest active key, if any.
+    /// Presses the key: highest defined active binding, with exit-on-skip side effects.
     fn new_pressed_key<const CONDITIONAL_LAYER_COUNT: usize>(
         &self,
         context: &Context<LAYER_COUNT, CONDITIONAL_LAYER_COUNT>,
-    ) -> key::NewPressedKey<R> {
-        let (_layer, passthrough_ref) = self
-            .layered
-            .highest_active_key(context.layer_state(), context.default_layer)
-            .unwrap_or((0, self.base));
+        keymap_index: u16,
+    ) -> (key::NewPressedKey<R>, key::KeyEvents<LayerEvent>) {
+        // Active layers high → low, in range for this key's layered array.
+        // `layer_index` stays 1-based; array access is always `layer_index - 1`.
+        let active_in_range = || {
+            context
+                .layer_state()
+                .active_layers()
+                .filter(|&layer_index| {
+                    let layer_index = layer_index as usize;
+                    (1..=LAYER_COUNT).contains(&layer_index)
+                })
+        };
 
-        key::NewPressedKey::key(passthrough_ref)
+        // First defined cell among active layers (and its 1-based layer index).
+        let picked = active_in_range().find_map(|layer_index| {
+            self.layered[layer_index as usize - 1].map(|r| (layer_index, r))
+        });
+
+        // Exit holes strictly above the pick (or all active holes if none defined).
+        // `exit_on_skip` bits are 1-based layer indices (same as [LayerBitset]).
+        let events = active_in_range()
+            .take_while(|&layer_index| {
+                picked
+                    .map(|(picked_layer, _)| layer_index != picked_layer)
+                    .unwrap_or(true)
+            })
+            .filter(|&layer_index| {
+                self.layered[layer_index as usize - 1].is_none()
+                    && self.exit_on_skip.contains(layer_index as usize)
+                    && is_exit_deactivatable(context, layer_index)
+            })
+            .fold(key::KeyEvents::no_events(), |mut events, layer_index| {
+                events.add_event(key::Event::key_event(
+                    keymap_index,
+                    LayerEvent::Deactivated(layer_index),
+                ));
+                events
+            });
+
+        let passthrough_ref = picked
+            .map(|(_, r)| r)
+            .or_else(|| {
+                context.default_layer.and_then(|layer_index| {
+                    let layer_index = layer_index as usize;
+                    (1..=LAYER_COUNT)
+                        .contains(&layer_index)
+                        .then(|| self.layered[layer_index - 1])
+                        .flatten()
+                })
+            })
+            .unwrap_or(self.base);
+
+        (key::NewPressedKey::key(passthrough_ref), events)
     }
 }
 
@@ -1161,11 +1249,8 @@ impl<
             }
             Ref::Layered(i) => {
                 let key = &self.layered_keys[i as usize];
-                let npk = key.new_pressed_key(context);
-                (
-                    key::PressedKeyResult::NewPressedKey(npk),
-                    key::KeyEvents::no_events(),
-                )
+                let (npk, pke) = key.new_pressed_key(context, keymap_index);
+                (key::PressedKeyResult::NewPressedKey(npk), pke)
             }
         }
     }
@@ -1649,6 +1734,75 @@ mod tests {
             Some(LayerEvent::LockInvert(LayerLockTarget::Layer(2))),
             layer_event
         );
+    }
+
+    #[test]
+    fn test_exit_on_skip_emits_deactivated_and_resolves_to_base() {
+        // Assemble: layer 1 cell is a tlex hole over base A
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let layered_key = LayeredKey::new(base, [None]).with_exit_on_skip(LayerBitset::from_bits(
+            // bit 1 = layer 1
+            1 << 1,
+        ));
+        let system = System::new([], [layered_key]);
+
+        // Act: activate layer 1, press the layered key
+        context.handle_layer_event(LayerEvent::Activated(1));
+        let keymap_index = 3;
+        let (pkr, pke) = system.new_pressed_key(keymap_index, &context, Ref::Layered(0));
+
+        // Assert: this press is base; Deactivated(1) is scheduled
+        assert_eq!(
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(base)),
+            pkr,
+        );
+        let events: Vec<_> = pke.into_iter().collect();
+        assert_eq!(1, events.len());
+        assert_eq!(
+            key::ScheduledEvent::immediate(key::Event::key_event(
+                keymap_index,
+                LayerEvent::Deactivated(1)
+            )),
+            events[0],
+        );
+    }
+
+    #[test]
+    fn test_exit_on_skip_does_not_exit_default_only_layer() {
+        // Assemble: layer 1 is only the default, not Regular/Sticky
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let layered_key =
+            LayeredKey::new(base, [None]).with_exit_on_skip(LayerBitset::from_bits(1 << 1));
+        let system = System::new([], [layered_key]);
+
+        // Act: set default layer 1 (not Regular activation)
+        context.handle_layer_event(LayerEvent::SetDefault(1));
+        let (pkr, pke) = system.new_pressed_key(0, &context, Ref::Layered(0));
+
+        // Assert: resolves via default path without Deactivated
+        assert_eq!(
+            key::PressedKeyResult::NewPressedKey(key::NewPressedKey::Key(base)),
+            pkr,
+        );
+        assert_eq!(0, pke.into_iter().count());
+    }
+
+    #[test]
+    fn test_tttt_without_exit_bit_does_not_emit_deactivated() {
+        // Assemble: ordinary transparency (no exit_on_skip)
+        let mut context = Context::default();
+        let base = keyboard::Ref::KeyCode(0x04);
+        let layered_key = LayeredKey::new(base, [None]);
+        let system = System::new([], [layered_key]);
+
+        // Act
+        context.handle_layer_event(LayerEvent::Activated(1));
+        let (_pkr, pke) = system.new_pressed_key(0, &context, Ref::Layered(0));
+
+        // Assert
+        assert_eq!(0, pke.into_iter().count());
     }
 
     #[test]
