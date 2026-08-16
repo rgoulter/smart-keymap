@@ -13,6 +13,7 @@ mod sequence;
 mod sticky;
 mod tap_dance;
 mod tap_hold;
+mod tri_state;
 
 mod ms_per_tick;
 
