@@ -73,6 +73,37 @@ fn tlex_differs_from_full_transparency() {
 }
 
 #[test]
+fn exit_on_transparent_maps_null_cells_to_tlex() {
+    // Assemble -- layer row piped through K.exit_on_transparent
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            let K = import "keys.ncl" in
+            {
+                layers = [
+                    [K.layer_mod.toggle 1, K.A, K.C],
+                    [K.TTTT, K.TTTT, K.B] |> K.exit_on_transparent,
+                ],
+            }
+        "#
+    ));
+
+    // Act -- enable layer 1, press a hole that was only TTTT
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 1 });
+
+    // Assert -- base A and layer exits
+    let expected_a: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
+    assert_eq!(expected_a, keymap.boot_keyboard_report());
+    keymap.handle_input(input::Event::Release { keymap_index: 1 });
+
+    // Layer-1 key B would have been on layer; after hole-exit, base C
+    keymap.handle_input(input::Event::Press { keymap_index: 2 });
+    let expected_c: [u8; 8] = [0, 0, KC_C, 0, 0, 0, 0, 0];
+    assert_eq!(expected_c, keymap.boot_keyboard_report());
+}
+
+#[test]
 fn tlex_under_hold_layer_still_active_resolves_base_for_this_press() {
     // Assemble -- hold-layer still held; tlex continue-evals for this press
     let mut keymap = ObservedKeymap::new(keymap!(
