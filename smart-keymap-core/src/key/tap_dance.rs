@@ -14,6 +14,9 @@ pub struct Ref(pub u8);
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub struct Config {
     /// The timeout (in number of milliseconds) for the next press of the tap-dance.
+    ///
+    /// The first timeout is from the physical press of this keymap index.
+    /// Later timeouts are from the re-press that scheduled them.
     #[serde(default = "default_timeout")]
     pub timeout: u16,
 }

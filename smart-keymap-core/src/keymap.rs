@@ -591,6 +591,12 @@ impl<
                 let pkr = match npk {
                     key::NewPressedKey::Key(new_key_ref) => {
                         *key_ref = new_key_ref;
+                        // Drop the previous pending key's delayed events
+                        //  (e.g. the chord timeout after passthrough or
+                        //  chord resolve) so they do not steal a tick from
+                        //  the replacement key's timeout.
+                        self.event_scheduler
+                            .cancel_events_for_keymap_index(keymap_index);
                         // This press is already in the ring (recorded on the
                         //  original input).
                         // Exclude it before constructing the replacement key.
@@ -608,6 +614,19 @@ impl<
                             &self.context,
                             new_key_ref,
                         );
+                        // Decision timeouts are from this physical press.
+                        // Fold time already spent waiting (e.g. chorded
+                        //  timeout before passthrough) into After delays.
+                        // Remaining 0 is Immediate so an expired inner
+                        //  timeout resolves in this turn.
+                        let elapsed_ms = self
+                            .event_scheduler
+                            .schedule_counter
+                            .saturating_sub(nested_press_ctx.time_ms);
+                        let pke = match &pkr {
+                            key::PressedKeyResult::Pending(_) => pke.backdate(elapsed_ms),
+                            _ => pke,
+                        };
                         pke.into_iter()
                             .for_each(|sch_ev| self.event_scheduler.schedule_event(sch_ev));
                         pkr

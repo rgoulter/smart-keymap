@@ -66,6 +66,10 @@ pub struct Config<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> {
     /// The timeout (in number of milliseconds) for a chorded key to resolve.
     ///
     /// (Resolves as passthrough key if no chord is satisfied).
+    ///
+    /// This is the outer decision clock for a chorded position.
+    /// An inner pending key (e.g. tap-hold) then uses time remaining
+    ///  from this same physical press; the two timeouts do not add.
     #[serde(default = "default_timeout")]
     pub timeout: u16,
 

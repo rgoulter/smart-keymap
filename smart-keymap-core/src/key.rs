@@ -114,6 +114,21 @@ impl<E: Copy + Debug> KeyEvents<E> {
     }
 }
 
+impl<E, const M: usize> KeyEvents<E, M> {
+    /// Subtract `elapsed` tick/ms units from each delayed event.
+    ///
+    /// [`Schedule::Immediate`] is unchanged.
+    /// A remaining delay of 0 becomes Immediate so it runs this turn.
+    pub fn backdate(self, elapsed: u32) -> Self {
+        KeyEvents(
+            self.0
+                .into_iter()
+                .map(|sch_ev| sch_ev.backdate(elapsed))
+                .collect(),
+        )
+    }
+}
+
 impl<E: Debug, const M: usize> IntoIterator for KeyEvents<E, M> {
     type Item = ScheduledEvent<E>;
     type IntoIter = <heapless::Vec<ScheduledEvent<E>, M> as IntoIterator>::IntoIter;
@@ -232,6 +247,11 @@ pub trait System<R>: Debug {
     /// (e.g. [tap_hold::Key] may schedule a [tap_hold::Event::TapHoldTimeout]
     ///  so that holding the key resolves as a hold,
     ///  when a timeout is configured).
+    ///
+    /// Delays are from this call.
+    /// When the keymap replaces a pending key with another pending key
+    ///  (e.g. chorded passthrough to tap-hold),
+    ///  it backdates those `After` delays by time already spent on this press.
     fn new_pressed_key(
         &self,
         keymap_index: u16,
@@ -868,6 +888,23 @@ pub enum Schedule {
     After(u16),
 }
 
+impl Schedule {
+    /// Subtract `elapsed` tick/ms units from an [`Schedule::After`] delay.
+    ///
+    /// [`Schedule::Immediate`] is unchanged.
+    /// If the remaining delay is 0, becomes Immediate so it runs this turn
+    ///  (not [`Schedule::After`] 0, which still waits for a tick).
+    pub fn backdate(self, elapsed: u32) -> Self {
+        match self {
+            Schedule::Immediate => Schedule::Immediate,
+            Schedule::After(delay) => match (delay as u32).saturating_sub(elapsed) {
+                0 => Schedule::Immediate,
+                remaining => Schedule::After(remaining as u16),
+            },
+        }
+    }
+}
+
 /// An [Event] with a [Schedule] for the keymap event scheduler.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ScheduledEvent<T> {
@@ -875,6 +912,18 @@ pub struct ScheduledEvent<T> {
     pub schedule: Schedule,
     /// The event.
     pub event: Event<T>,
+}
+
+impl<T> ScheduledEvent<T> {
+    /// Subtract `elapsed` from this event's [`Schedule`].
+    ///
+    /// See [`Schedule::backdate`].
+    pub fn backdate(self, elapsed: u32) -> Self {
+        ScheduledEvent {
+            schedule: self.schedule.backdate(elapsed),
+            event: self.event,
+        }
+    }
 }
 
 impl<T: Copy> ScheduledEvent<T> {
@@ -952,5 +1001,39 @@ mod tests {
         assert_eq!(2, result.len());
         assert_eq!(Event::from(input::Event::press(1)), result[0]);
         assert_eq!(Event::from(input::Event::release(0)), result[1]);
+    }
+
+    #[test]
+    fn schedule_backdate_leaves_immediate_unchanged() {
+        assert_eq!(Schedule::Immediate, Schedule::Immediate.backdate(50));
+    }
+
+    #[test]
+    fn schedule_backdate_zero_elapsed_keeps_after_delay() {
+        assert_eq!(Schedule::After(200), Schedule::After(200).backdate(0));
+    }
+
+    #[test]
+    fn schedule_backdate_shortens_after_delay() {
+        assert_eq!(Schedule::After(150), Schedule::After(200).backdate(50));
+    }
+
+    #[test]
+    fn schedule_backdate_expired_after_becomes_immediate() {
+        assert_eq!(Schedule::Immediate, Schedule::After(200).backdate(200));
+        assert_eq!(Schedule::Immediate, Schedule::After(50).backdate(200));
+    }
+
+    #[test]
+    fn key_events_backdate_only_rewrites_after() {
+        let ev: Event<()> = Event::from(input::Event::press(0));
+        let mut events = KeyEvents::event(ev);
+        events.schedule_event(200, ev);
+
+        let mut backdated = events.backdate(50).into_iter();
+
+        assert_eq!(Schedule::Immediate, backdated.next().unwrap().schedule);
+        assert_eq!(Schedule::After(150), backdated.next().unwrap().schedule);
+        assert!(backdated.next().is_none());
     }
 }
