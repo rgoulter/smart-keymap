@@ -68,7 +68,8 @@ fn first_press_timeout_hold_activates_layer() {
 }
 
 /// After 2000 ms idle the chord waits, then passthroughs.
-/// Timeout-hold of the inner tap-hold must activate the layer.
+/// Timeout-hold of the inner tap-hold is from the physical press
+///  (not chord timeout plus tap-hold timeout).
 #[test]
 fn after_idle_timeout_hold_activates_layer() {
     let mut keymap = keymap_under_test!();
@@ -77,7 +78,7 @@ fn after_idle_timeout_hold_activates_layer() {
         keymap.tick();
     }
     keymap.handle_input(input::Event::Press { keymap_index: 2 });
-    for _ in 0..401 {
+    for _ in 0..201 {
         keymap.tick();
     }
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
