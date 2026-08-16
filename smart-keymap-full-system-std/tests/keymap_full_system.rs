@@ -50,6 +50,7 @@ fn tap_hold_interrupt_keymap(
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0xE0)),
                 profile: 0,
             }]),
+            smart_keymap::key::tri_state::System::new(Vec::new()),
         ),
     )
 }
@@ -83,6 +84,7 @@ macro_rules! simple_keyboard_keymap {
                 smart_keymap::key::sticky::System::new(Vec::new()),
                 smart_keymap::key::tap_dance::System::new(Vec::new()),
                 smart_keymap::key::tap_hold::System::new(Vec::new()),
+                smart_keymap::key::tri_state::System::new(Vec::new()),
             ),
         )
     }};
@@ -598,6 +600,7 @@ fn test_keymap_many_input_events_without_tick_or_report() {
                 smart_keymap::key::sticky::System::new(Vec::new()),
                 smart_keymap::key::tap_dance::System::new(Vec::new()),
                 smart_keymap::key::tap_hold::System::new(Vec::new()),
+                smart_keymap::key::tri_state::System::new(Vec::new()),
             ),
         )
     };

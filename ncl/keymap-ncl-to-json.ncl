@@ -80,6 +80,7 @@
 & (import "smart_keys/sticky/keymap-ncl-to-json.ncl")
 & (import "smart_keys/tap_dance/keymap-ncl-to-json.ncl")
 & (import "smart_keys/tap_hold/keymap-ncl-to-json.ncl")
+& (import "smart_keys/tri_state/keymap-ncl-to-json.ncl")
 & (import "passes/fold-layers.ncl")
 & (import "passes/attach-chords.ncl")
 & (import "passes/attach-sequences.ncl")
@@ -330,6 +331,7 @@
       keymap_ncl.tap_dance,
       keymap_ncl.layered,
       keymap_ncl.tap_hold,
+      keymap_ncl.tri_state,
       keymap_ncl.layer_modifier,
       keymap_ncl.transparent_layer_exit,
       keymap_ncl.keyboard,

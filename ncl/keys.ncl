@@ -24,4 +24,5 @@ std.array.fold_left
     key_extensions.sequence,
     key_extensions.sticky,
     key_extensions.tap_hold,
+    key_extensions.tri_state,
   ]
