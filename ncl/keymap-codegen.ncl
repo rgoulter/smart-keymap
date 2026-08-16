@@ -14,6 +14,7 @@
 & (import "smart_keys/sticky/keymap-codegen.ncl")
 & (import "smart_keys/tap_dance/keymap-codegen.ncl")
 & (import "smart_keys/tap_hold/keymap-codegen.ncl")
+& (import "smart_keys/tri_state/keymap-codegen.ncl")
 & (import "key_system/families.ncl")
 & (import "key_system/keymap-codegen.ncl")
 & {
@@ -235,6 +236,7 @@
       smart_keymap.sticky.key,
       smart_keymap.tap_dance.key,
       smart_keymap.tap_hold.key,
+      smart_keymap.tri_state.key,
     ],
 
     json_validator =

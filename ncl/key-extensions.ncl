@@ -12,6 +12,7 @@
 & (import "smart_keys/sequence/key-extensions.ncl")
 & (import "smart_keys/sticky/key-extensions.ncl")
 & (import "smart_keys/tap_hold/key-extensions.ncl")
+& (import "smart_keys/tri_state/key-extensions.ncl")
 & {
   extend_keys = fun K key_extension =>
     std.typeof key_extension

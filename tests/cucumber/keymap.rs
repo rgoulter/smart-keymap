@@ -176,6 +176,8 @@ struct KeyVecs {
     tap_dance: Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEFS>>,
     #[serde(default)]
     tap_hold: Vec<key::tap_hold::Key<Ref>>,
+    #[serde(default)]
+    tri_state: Vec<key::tri_state::Key>,
 }
 
 #[derive(Deserialize)]
@@ -201,6 +203,7 @@ fn system_from_key_data(keys: KeyVecs) -> System {
         smart_keymap::key::sticky::System::new(keys.sticky),
         smart_keymap::key::tap_dance::System::new(keys.tap_dance),
         smart_keymap::key::tap_hold::System::new(keys.tap_hold),
+        smart_keymap::key::tri_state::System::new(keys.tri_state),
     )
 }
 

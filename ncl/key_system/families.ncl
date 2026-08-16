@@ -755,6 +755,27 @@
             expr = "%{module}::Context::from_config(config.tap_hold)",
           },
         },
+        tri_state = {
+          module = "smart_keymap::key::tri_state",
+          context_events = 'ContextEvents,
+          system =
+            'SystemWithData {
+              data_lengths = [{ const_name = "TRI_STATE", data_field = "tri_state" }],
+              rust_expr = smart_keymap.tri_state.system.rust_expr,
+              ty.array = m%"%{module}::System<
+            Ref,
+            [%{module}::Key; super::TRI_STATE]
+          >"%,
+              ty.vec = m%"%{module}::System<
+            Ref,
+            Vec<%{module}::Key>
+          >"%,
+            },
+          context = {
+            ty = "%{module}::Context",
+            expr = "%{module}::Context::new()",
+          },
+        },
       },
     },
 }

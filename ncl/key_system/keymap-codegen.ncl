@@ -1064,6 +1064,7 @@ pub mod key_system {
             "Sticky",
             "TapDance",
             "TapHold",
+            "TriState",
           ],
         },
         check_pending = {
@@ -1114,6 +1115,7 @@ pub mod key_system {
             "Sticky",
             "TapDance",
             "TapHold",
+            "TriState",
           ]
           |> std.array.all (fun needle => std.string.is_match needle rust_mod),
         expected = true,
