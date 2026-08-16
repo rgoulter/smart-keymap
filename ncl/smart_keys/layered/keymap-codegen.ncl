@@ -266,10 +266,14 @@
         #     "layered": [5, null, 7]
         #   }
         # ```
-        # JSON serialization of key::layered::Layered has fields: { base, layered }
+        # JSON serialization of key::layered::LayeredKey: { base, layered, exit_on_skip? }
         json_validator =
           validators.record.validator {
-            fields_validator = validators.record.has_exact_fields ["base", "layered"],
+            fields_validator =
+              validators.all_of [
+                validators.record.has_all_fields ["base", "layered"],
+                validators.record.has_only_fields ["base", "layered", "exit_on_skip"],
+              ],
             field_validators = {
               base = smart_key.json_validator,
               layered =
@@ -279,19 +283,19 @@
                     smart_key.json_validator,
                   ]
                 ),
+              exit_on_skip = validators.is_number,
             },
           },
 
         is_json = fun json => 'Ok == json_validator json,
 
-        codegen_values = fun json @ { base, layered } =>
+        codegen_values = fun json @ { base, layered, .. } =>
           let base_cv = base |> smart_key.codegen_values in
-          let non_null_layered = std.array.filter ((!=) null) layered in
           let layered_cvs =
             std.array.map (fun json => if json != null then json |> smart_key.codegen_values else null) layered
           in
-          let nn_layered_cvs =
-            std.array.filter ((!=) null) layered_cvs
+          let exit_on_skip =
+            if std.record.has_field "exit_on_skip" json then json.exit_on_skip else 0
           in
 
           {
@@ -302,6 +306,7 @@
             include json,
             include module,
             include key_type,
+            include exit_on_skip,
             rust_expr =
               let base_expr = nested.base.rust_expr in
               let layered_exprs =
@@ -309,7 +314,13 @@
                 |> std.array.map (fun cv => if cv == null then "None" else "Some(%{cv.rust_expr})")
                 |> std.string.join ","
               in
-              "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+              let new_expr = "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])"
+              in
+              if exit_on_skip == 0 then
+                new_expr
+              else
+                let bits = "%{module}::LayerBitset::from_bits(%{std.to_string exit_on_skip})" in
+                "(%{new_expr}).with_exit_on_skip(%{bits})",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -334,7 +345,7 @@
             acc
             nn_layered_cvs,
 
-        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
+        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, exit_on_skip, .. } =>
           let { key_data, ref = base_ref } = smart_key.data_and_ref key_data base_cv in
           let base_ref = base_ref |> composite.ref.wrap in
           let { key_data, layered_refs } =
@@ -352,21 +363,40 @@
           in
           let { layered = layered_, ..other_data } = key_data & { layered | default = [] } in
           let new_index = std.array.length layered_ in
-          let new_key = {
-            json = {
-              base = base_ref.json,
-              layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
-            },
-            rust_expr = m%"
-            %{module}::LayeredKey::new(
-              %{base_ref.rust_expr},
-              [%{
-                layered_refs
-                |> std.array.map (fun layer_ref => if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})")
-                |> std.string.join ", "
-              }],
+          let layered_json =
+            layered_refs
+            |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json)
+          in
+          let layered_rust =
+            layered_refs
+            |> std.array.map (fun layer_ref =>
+              if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})"
             )
-          "%,
+            |> std.string.join ", "
+          in
+          let new_expr = "%{module}::LayeredKey::new(%{base_ref.rust_expr}, [%{layered_rust}])"
+          in
+          let rust_expr =
+            if exit_on_skip == 0 then
+              new_expr
+            else
+              let bits = "%{module}::LayerBitset::from_bits(%{std.to_string exit_on_skip})" in
+              "(%{new_expr}).with_exit_on_skip(%{bits})"
+          in
+          let exit_bits = exit_on_skip in
+          let new_key = {
+            json =
+              {
+                base = base_ref.json,
+                layered = layered_json,
+              }
+              & (
+                if exit_bits == 0 then
+                  {}
+                else
+                  { exit_on_skip = exit_bits }
+              ),
+            include rust_expr,
           }
           in
           {

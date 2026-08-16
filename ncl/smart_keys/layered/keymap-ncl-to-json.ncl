@@ -384,7 +384,16 @@
 
       Key = std.contract.from_validator key_validator,
 
-      # Element of a layered / named_layers slot: Key or transparent null.
+      # Transparent layer exit authoring cell (lowered to null + exit_on_skip).
+      is_tlex_key = fun k =>
+        k
+        |> match {
+          { transparent_layer_exit = true } => true,
+          { transparent_layer_exit = {} } => true,
+          _ => false,
+        },
+
+      # Element of a layered / named_layers slot: Key, tlex, or transparent null.
       layer_element_validator =
         validators.any_of [validators.is_null, keymap_ncl.key.key_validator],
 
@@ -432,19 +441,44 @@
 
       # JSON projection expects dense array form only (`layered` array, no `named_layers`).
       # Named layers must be lowered first (see keymap-ncl-to-json named layer transform).
+      # `K.tlex` cells become null and contribute bit i+1 to `exit_on_skip`.
       to_json_value = fun k =>
         k
         |> match {
           { named_layers = _, .. } =>
             std.fail_with "named_layers must be lowered to array form before to_json_value",
           { layered = layered_keys, ..base_key } =>
+            let exit_indices =
+              layered_keys
+              |> std.array.map_with_index (fun i cell =>
+                if is_tlex_key cell then i + 1 else null
+              )
+              |> std.array.filter ((!=) null)
+            in
+            let exit_bits =
+              if exit_indices == [] then
+                null
+              else
+                layer_indices_to_bitset exit_indices
+            in
             {
               base = keymap_ncl.key.to_json_value base_key,
               layered =
                 std.array.map
-                  (fun k => if k != null then keymap_ncl.key.to_json_value k else null)
+                  (fun cell =>
+                    if cell == null || is_tlex_key cell then
+                      null
+                    else
+                      keymap_ncl.key.to_json_value cell
+                  )
                   layered_keys,
-            },
+            }
+            & (
+              if exit_bits == null then
+                {}
+              else
+                { exit_on_skip = exit_bits }
+            ),
         },
 
       # Visit children under `layered` (array) and/or `named_layers` (record), then base.
