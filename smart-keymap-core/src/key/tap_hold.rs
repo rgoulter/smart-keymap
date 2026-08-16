@@ -34,6 +34,11 @@ pub const MAX_HOLD_TRIGGER_POSITIONS: usize = 16;
 pub struct Profile {
     /// The timeout (in number of milliseconds) for a tap-hold key to resolve as hold.
     ///
+    /// Counted from the physical press of this keymap index.
+    /// When this tap-hold is nested under another pending key
+    ///  (e.g. chorded passthrough), the keymap folds already-elapsed
+    ///  time into the scheduled delay so the configured timeout is not additive.
+    ///
     /// When `None`, the tap/hold decision does not timeout;
     ///  the key resolves only on release (as tap) or interruption
     ///  (depending on [InterruptResponse]).
