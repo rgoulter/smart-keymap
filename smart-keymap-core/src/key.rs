@@ -36,6 +36,8 @@ pub mod sticky;
 pub mod tap_dance;
 /// Tap-Hold keys.
 pub mod tap_hold;
+/// Tri-state keys (start / continue / interrupt; e.g. Alt-Tab swapper).
+pub mod tri_state;
 
 /// The maximum number of key events that are emitted by [crate::key::System] implementations.
 pub const MAX_KEY_EVENTS: usize = 4;
