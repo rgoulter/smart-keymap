@@ -307,6 +307,25 @@
     map_accum = fun f acc k => { include acc, include k },
   },
 
+  # Portion transparency leaf (FAK tap.trans / hold.trans). Must be rewritten by
+  # lower_th_portions before to_json_value; not a runtime key by itself.
+  keymap_ncl.portion_transparent = {
+    key_validator = fun k =>
+      k
+      |> match {
+        { transparent = true } => 'Ok,
+        { transparent = {} } => 'Ok,
+        _ => 'Error { message = "expected { transparent = true }" },
+      },
+
+    is_key = fun k => 'Ok == key_validator k,
+
+    to_json_value = fun _k =>
+      std.fail_with "K.trans must be lowered (use as tap/hold of a layered column)",
+
+    map_accum = fun f acc k => { include acc, include k },
+  },
+
   keymap_ncl.key = {
     # Dispatch order = outermost wrapper wins when several modules' is_key match
     # the same record (Nickel record "abuse"). Used by key_validator and
@@ -332,6 +351,7 @@
       keymap_ncl.tap_hold,
       keymap_ncl.layer_modifier,
       keymap_ncl.transparent_layer_exit,
+      keymap_ncl.portion_transparent,
       keymap_ncl.keyboard,
     ],
 
@@ -651,6 +671,8 @@
       # Named order: `named_layer_order` if set, else alphabetical. Skipped if unused.
       # Layer_mod fields may use those names as strings; resolve to 1-based indices.
       let keys = prepare_keys_named_layers keys in
+      # TH portion transparency / hold.tlex: project from column below.
+      let keys = keymap_ncl.layered.apply_lower_th_portions keys in
       # Tap-hold profiles: lower name map → array; resolve key name selectors → indices.
       let { tap_hold = th_config, ..km_config_after_th } = config & { tap_hold = {} } in
       let th_profile_names = tap_hold_profile_names th_config in
