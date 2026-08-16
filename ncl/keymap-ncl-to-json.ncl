@@ -287,6 +287,26 @@
     map_accum = fun f acc k => { include acc, include k },
   },
 
+  # Transparent layer exit leaf (FAK tap.tlex). Layer-cell only in practice;
+  # registered so `K.tlex` validates as a Key. Projected to a hole + exit bit
+  # on the parent LayeredKey (not a nested key JSON value).
+  keymap_ncl.transparent_layer_exit = {
+    key_validator = fun k =>
+      k
+      |> match {
+        { transparent_layer_exit = true } => 'Ok,
+        { transparent_layer_exit = {} } => 'Ok,
+        _ => 'Error { message = "expected { transparent_layer_exit = true }" },
+      },
+
+    is_key = fun k => 'Ok == key_validator k,
+
+    # Should not appear as a nested JSON key; layered to_json lowers tlex cells.
+    to_json_value = fun _k => null,
+
+    map_accum = fun f acc k => { include acc, include k },
+  },
+
   keymap_ncl.key = {
     # Dispatch order = outermost wrapper wins when several modules' is_key match
     # the same record (Nickel record "abuse"). Used by key_validator and
@@ -311,6 +331,7 @@
       keymap_ncl.layered,
       keymap_ncl.tap_hold,
       keymap_ncl.layer_modifier,
+      keymap_ncl.transparent_layer_exit,
       keymap_ncl.keyboard,
     ],
 

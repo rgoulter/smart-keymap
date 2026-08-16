@@ -50,6 +50,10 @@
     # Layer Transparency
     TTTT = null,
 
+    # Transparent layer exit (FAK tap.tlex): hole that also deactivates
+    # the defining layer. Lowered to null + exit_on_skip bit for runtime.
+    tlex = { transparent_layer_exit = true },
+
     # Semantic / variant key sugar: `named_layers` form of LayeredKey.
     # Unit `{}` base (keyboard noop) so callers can use `K.semantic {..}` without
     # `K.NO &`. Indices for names are assigned globally when compiling the keymap.
