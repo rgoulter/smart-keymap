@@ -4,6 +4,7 @@ mod hold_on_interrupt_tap;
 mod hold_trigger_positions;
 mod interrupt_ignore;
 mod layered;
+mod nested_hold;
 mod no_timeout;
 mod profiles;
 mod quick_tap;
