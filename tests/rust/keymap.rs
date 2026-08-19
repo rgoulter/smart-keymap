@@ -1,4 +1,5 @@
 mod automation;
+mod autoshift_layer;
 mod caps_word;
 mod chorded;
 mod consumer;
