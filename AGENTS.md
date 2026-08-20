@@ -102,7 +102,7 @@ Prefer `just check-quick` when you mainly need to avoid the format/clippy/doc fo
 
 ### Git and PRs
 
-- **Organised, atomic commits** — one logical change each.
+- **Organised, atomic commits** - one logical change each.
   Not one commit of everything, and not a new commit per tweak or review comment.
 - **Amend or squash** `"fix"`, `"address review"`, `"typo"`, and `"oops"`
   into the commit they belong to.
@@ -113,6 +113,14 @@ Prefer `just check-quick` when you mainly need to avoid the format/clippy/doc fo
   over one large PR when the work naturally splits.
 - Clear scope and title; no unrelated drive-by changes.
   Don't expand an approved PR - open a follow-up.
+- **Attribute agent-assisted commits with trailers** -
+  use `git commit --trailer` / `git interpret-trailers`
+   to add trailers attributing both the model and the agent harness
+   (e.g. `Model: <model-name>` and `Agent: <harness-name>`).
+  In addition to `Model`/`Agent` trailers,
+   also add `Co-Authored-By:` for each, since GitHub surfaces `Co-Authored-By` in the UI
+  (e.g. `Co-Authored-By: Muse Code powered by Meta Muse Spark <muse-code@meta.com>`
+   and `Co-Authored-By: muse-spark-1.2 <muse-spark@meta.com>`).
 
 ### Comment style
 
