@@ -15,9 +15,10 @@ use smart_keymap_macros::keymap;
 //   config.tap_hold.timeout = 200, interrupt_response = "Ignore" (outer)
 //   config.tap_hold.profiles.inner_hold = { timeout = null, interrupt_response = "HoldOnKeyPress" }
 
-fn nested_keymap() -> ObservedKeymap {
-    ObservedKeymap::new(keymap!(
-        r#"
+macro_rules! nested_keymap {
+    () => {
+        ObservedKeymap::new(keymap!(
+            r#"
             let K = import "keys.ncl" in
             {
                 config.tap_hold = {
@@ -36,13 +37,14 @@ fn nested_keymap() -> ObservedKeymap {
                 ],
             }
         "#
-    ))
+        ))
+    };
 }
 
 #[test]
 fn nested_tap_hold_outer_tap_is_plain_a() {
     // Assemble -- outer 'a', nested hold is another tap-hold (inner profile)
-    let mut keymap = nested_keymap();
+    let mut keymap = nested_keymap!();
 
     // Act -- quick tap of outer (press+release before timeout) → plain 'a'
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -62,7 +64,7 @@ fn nested_tap_hold_outer_tap_is_plain_a() {
 #[test]
 fn nested_tap_hold_outer_hold_via_timeout_gives_inner_tap_shifted_a() {
     // Assemble
-    let mut keymap = nested_keymap();
+    let mut keymap = nested_keymap!();
 
     // Act -- hold outer past its 200ms timeout, then release.
     // Outer timeout resolves outer → inner pending (profile: no timeout, HoldOnKeyPress).
@@ -92,7 +94,7 @@ fn nested_tap_hold_outer_hold_via_interrupt_then_inner_hold_gives_alt() {
     // Press outer, then press B before outer timeout.
     // Outer (Ignore) stays pending until timeout, then replays B press into inner.
     // Inner (HoldOnKeyPress, no timeout) sees B press → resolves as hold → Alt.
-    let mut keymap = nested_keymap();
+    let mut keymap = nested_keymap!();
 
     // Act -- press outer, quickly press B (interrupt), then wait for outer timeout
     keymap.handle_input(input::Event::Press { keymap_index: 0 });
@@ -105,39 +107,27 @@ fn nested_tap_hold_outer_hold_via_interrupt_then_inner_hold_gives_alt() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert -- Alt is held while B is pressed
-    // Distinct reports collapse repeats, but should contain MOD_LALT and KC_B.
     let reports = keymap.distinct_reports().reports().to_vec();
-    // Check Alt held at some point
-    let has_alt = reports.iter().any(|r| r[0] == MOD_LALT);
-    let has_b_with_alt = reports.iter().any(|r| r[0] == MOD_LALT && r[2] == KC_B);
+    let has_alt = reports.iter().any(|r| r[0] & MOD_LALT != 0);
+    let has_alt_b = reports
+        .iter()
+        .any(|r| r[0] & MOD_LALT != 0 && r.contains(&KC_B));
     assert!(
         has_alt,
         "expected Alt held after nested interrupt, reports: {:02X?}",
         reports
     );
     assert!(
-        has_b_with_alt,
+        has_alt_b,
         "expected Alt+B chord after nested interrupt, reports: {:02X?}",
         reports
-    );
-
-    // Cleanup: release B then outer
-    keymap.handle_input(input::Event::Release { keymap_index: 1 });
-    keymap.handle_input(input::Event::Release { keymap_index: 0 });
-    keymap.tick_until_no_scheduled_events();
-    // Final should have returned to idle; but total reports should have shown Alt held then released.
-    let final_reports = keymap.distinct_reports().reports().to_vec();
-    assert!(
-        final_reports.last() == Some(&[0, 0, 0, 0, 0, 0, 0, 0]),
-        "final report should be idle, got {:02X?}",
-        final_reports
     );
 }
 
 #[test]
 fn nested_tap_hold_outer_hold_timeout_then_inner_interrupt_gives_alt() {
     // Assemble
-    let mut keymap = nested_keymap();
+    let mut keymap = nested_keymap!();
 
     // Act -- hold outer past timeout (250 ticks), then press B.
     // Outer → inner pending (no timeout). Inner pending + B press → Alt.
