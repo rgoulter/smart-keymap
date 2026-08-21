@@ -335,6 +335,12 @@ pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
     recent_press_count: u8,
     hid_reporter: HIDKeyboardReporter,
     pending_state: Option<pending::PendingState<R, Ev, PKS>>,
+    /// Snapshot of `KeymapContext` at the physical press that created
+    ///  `pending_state`.
+    /// Used for nested replacements (e.g. chorded passthrough to
+    ///  tap-hold) so `required_idle_time` and `quick_tap_ms` are
+    ///  checked against the press, not the outer timeout.
+    pending_press_context: Option<KeymapContext>,
     input_queue: InputEventQueue<{ MAX_QUEUED_INPUT_EVENTS }>,
     callbacks: heapless::LinearMap<KeymapCallback, CallbackFunction, 2>,
 }
@@ -387,6 +393,7 @@ impl<
             recent_press_count: 0,
             hid_reporter: HIDKeyboardReporter::new(),
             pending_state: None,
+            pending_press_context: None,
             input_queue: InputEventQueue::new(),
             callbacks: heapless::LinearMap::new(),
         }
@@ -403,6 +410,7 @@ impl<
         self.event_scheduler.init();
         self.hid_reporter.init();
         self.pending_state = None;
+        self.pending_press_context = None;
         self.input_queue.clear();
         self.ms_per_tick = 1;
         self.idle_time = 0;
@@ -473,6 +481,7 @@ impl<
             ..
         }) = self.pending_state.take()
         {
+            self.pending_press_context = None;
             // Cancel events which were scheduled for the (pending) key.
             self.event_scheduler
                 .cancel_events_for_keymap_index(keymap_index);
@@ -599,15 +608,28 @@ impl<
                             .cancel_events_for_keymap_index(keymap_index);
                         // This press is already in the ring (recorded on the
                         //  original input).
-                        // Exclude it before constructing the replacement key.
-                        let nested_press_ctx = keymap_context_without_current_press(
-                            self.recent_presses,
-                            self.recent_press_count,
-                            self.idle_time,
-                            self.event_scheduler.schedule_counter,
-                            pressed_modifiers,
-                            keymap_index,
-                        );
+                        // Use the snapshot at the physical press so
+                        //  `required_idle_time` and `quick_tap_ms` are not
+                        //  inflated by the outer timeout.
+                        // `pending_press_context` holds that snapshot;
+                        //  fall back to backdating current values if absent
+                        //  (e.g. for presses that never created pending).
+                        let nested_press_ctx = if let Some(ctx) = self.pending_press_context {
+                            // Stored snapshot already excludes the current
+                            //  press from the ring; use it directly.
+                            ctx
+                        } else {
+                            // Fallback: exclude the current press and backdate
+                            //  idle to the press time.
+                            keymap_context_without_current_press(
+                                self.recent_presses,
+                                self.recent_press_count,
+                                self.idle_time,
+                                self.event_scheduler.schedule_counter,
+                                pressed_modifiers,
+                                keymap_index,
+                            )
+                        };
                         self.context.set_keymap_context(nested_press_ctx);
                         let (pkr, pke) = self.key_system.new_pressed_key(
                             keymap_index,
@@ -756,6 +778,17 @@ impl<
                                 );
                                 let mut remaining = self.input_queue.take_all();
                                 pending_state.ingest_queue.append_all(&mut remaining);
+                                // Snapshot the press context for nested checks
+                                //  (idle, time, recent presses) so the outer
+                                //  timeout is not added to the inner decision.
+                                let pending_press_context = KeymapContext {
+                                    time_ms: self.event_scheduler.schedule_counter,
+                                    idle_time_ms: self.idle_time,
+                                    pressed_modifiers: self.aggregate_pressed_modifiers(),
+                                    recent_presses: self.recent_presses,
+                                    recent_press_count: self.recent_press_count,
+                                };
+                                self.pending_press_context = Some(pending_press_context);
                                 self.pending_state = Some(pending_state);
                             }
                         }
