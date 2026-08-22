@@ -42,6 +42,12 @@ pub(crate) struct PendingState<R, Ev, PKS> {
     pub keymap_index: u16,
     pub key_ref: R,
     pub pending_key_state: PKS,
+    /// Idle time at the physical press that created this pending session.
+    ///
+    /// Used for nested `new_pressed_key` (e.g. chorded passthrough to
+    ///  tap-hold) so `required_idle_time` is checked against the press,
+    ///  not the outer timeout.
+    pub press_idle_time_ms: u32,
     /// Inputs already paced and applied during this pending session; replayed on resolve.
     pub queued_events: heapless::Vec<key::Event<Ev>, { super::MAX_PRESSED_KEYS }>,
     /// Physical inputs waiting to be paced while this key is pending.
@@ -51,13 +57,19 @@ pub(crate) struct PendingState<R, Ev, PKS> {
 impl<R, Ev, PKS> PendingState<R, Ev, PKS> {
     /// Construct a pending session with the delay line already armed
     ///  so the next physical input is deferred by one tick.
-    pub fn new(keymap_index: u16, key_ref: R, pending_key_state: PKS) -> Self {
+    pub fn new(
+        keymap_index: u16,
+        key_ref: R,
+        pending_key_state: PKS,
+        press_idle_time_ms: u32,
+    ) -> Self {
         let mut ingest_queue = InputEventQueue::new();
         ingest_queue.set_delay();
         Self {
             keymap_index,
             key_ref,
             pending_key_state,
+            press_idle_time_ms,
             queued_events: heapless::Vec::new(),
             ingest_queue,
         }
