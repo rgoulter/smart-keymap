@@ -699,6 +699,12 @@
             else
               {}
           )
+          & (
+            if std.record.has_field "pending_output" th_config then
+              { pending_output = th_config.pending_output }
+            else
+              {}
+          )
         in
         let profiles_array =
           th_profile_names
@@ -725,6 +731,43 @@
         keys
         |> std.array.map (pad_key_layered_arrays layer_count)
         |> std.array.map keymap_ncl.key.to_json_value
+      in
+      let _tap_hold_pending_output_keyboard_check =
+        if th_config_json == {} then
+          null
+        else
+          keys
+          |> std.array.filter (fun k => keymap_ncl.tap_hold.is_key k)
+          |> std.array.fold_left
+            (fun _acc k =>
+              let profile_id =
+                if std.record.has_field "tap_hold_profile" k then
+                  if std.is_number k.tap_hold_profile then k.tap_hold_profile else 0
+                else
+                  0
+              in
+              let pending_output =
+                if profile_id == 0 then
+                  if std.record.has_field "default_profile" th_config_json
+                  && std.record.has_field "pending_output" th_config_json.default_profile then
+                    th_config_json.default_profile.pending_output
+                  else
+                    "NoOutput"
+                else
+                  let idx = profile_id - 1 in
+                  let profiles = if std.record.has_field "profiles" th_config_json then th_config_json.profiles else [] in
+                  if idx < std.array.length profiles then
+                    let p = std.array.at idx profiles in
+                    if std.record.has_field "pending_output" p then p.pending_output else "NoOutput"
+                  else
+                    "NoOutput"
+              in
+              if pending_output == "Hold" && !(keymap_ncl.keyboard.is_key k.hold) then
+                std.fail_with "tap_hold pending_output Hold requires hold to be a keyboard key (keyboard modifier or key_code)"
+              else
+                null
+            )
+            null
       in
       let { chorded = km_config_chorded, ..km_config } = km_config_after_th & { chorded = {} } in
       let chord_indices = chords |> std.array.map (fun { key, indices, .. } => indices) in

@@ -734,7 +734,7 @@
             },
           pending =
             'PendingKeyState {
-              ty = "%{module}::PendingKeyState",
+              ty = "%{module}::PendingKeyState<Ref>",
             },
           keymap_context = 'UpdatesKeymapContext,
           system =

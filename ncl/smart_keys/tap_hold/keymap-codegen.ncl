@@ -102,6 +102,15 @@
           ]
         ),
 
+      TapHoldPendingOutputJson =
+        std.contract.from_validator (
+          validators.is_elem_of [
+            "NoOutput",
+            "Hold",
+            "None",
+          ]
+        ),
+
       module = "smart_keymap::key::tap_hold",
 
       hold_trigger_positions_expr = fun positions =>
@@ -153,6 +162,18 @@
           if std.record.has_field "quick_tap_ms" c then
             {
               quick_tap_ms = "Some(%{std.to_string c.quick_tap_ms})",
+            }
+          else
+            {}
+        )
+        & (
+          if std.record.has_field "pending_output" c then
+            {
+              pending_output =
+                if c.pending_output == "None" then
+                  "%{module}::PendingOutput::NoOutput"
+                else
+                  "%{module}::PendingOutput::%{c.pending_output}",
             }
           else
             {}
@@ -297,6 +318,7 @@
           required_idle_time | optional | Number,
           hold_trigger_key_positions | optional | Array Number,
           quick_tap_ms | optional | Number,
+          pending_output | optional | TapHoldPendingOutputJson,
         },
 
         # Lowered JSON form: nested default_profile + profiles array.

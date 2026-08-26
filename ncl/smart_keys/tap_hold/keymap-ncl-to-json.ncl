@@ -63,6 +63,15 @@
           ]
         ),
 
+      TapHoldPendingOutput =
+        std.contract.from_validator (
+          validators.is_elem_of [
+            "NoOutput",
+            "Hold",
+            "None",
+          ]
+        ),
+
       # One behavior profile. Profile 0 is Config's default (flat on config.tap_hold);
       # extras live under config.tap_hold.profiles.
       Profile = {
@@ -80,6 +89,7 @@
         hold_trigger_key_positions | optional | Array Number,
         # Re-press of same key within this many ms forces tap (ZMK quick-tap-ms).
         quick_tap_ms | optional | Number,
+        pending_output | optional | TapHoldPendingOutput,
       },
 
       # Authoring keeps default-profile knobs flat on config.tap_hold;
@@ -99,6 +109,7 @@
         hold_trigger_key_positions | optional | Array Number,
         # Re-press of same key within this many ms forces tap (ZMK quick-tap-ms).
         quick_tap_ms | optional | Number,
+        pending_output | optional | TapHoldPendingOutput,
         # Authoring: name → profile record. Lowered to a JSON array (indices 1..).
         profiles | optional | { _ | Profile },
       },
