@@ -869,8 +869,12 @@ impl<
     }
 
     /// Aggregate keyboard modifiers from already-pressed inputs (no suppress).
+    ///
+    /// Includes speculative [`key::System::pending_output`] while a pending
+    ///  session is live so the next key sees the mod (Ctrl+mouse / roll).
     fn aggregate_pressed_modifiers(&self) -> key::KeyboardModifiers {
-        self.pressed_inputs
+        let base = self
+            .pressed_inputs
             .iter()
             .filter_map(|pi| match pi {
                 input::PressedInput::Key(input::PressedKey {
@@ -880,7 +884,13 @@ impl<
             })
             .fold(key::KeyboardModifiers::NONE, |acc, ko| {
                 acc.union(&ko.key_modifiers())
-            })
+            });
+        let pending_mod = self
+            .pending_state
+            .as_ref()
+            .and_then(|pending| self.key_system.pending_output(&pending.pending_key_state))
+            .map_or(key::KeyboardModifiers::NONE, |ko| ko.key_modifiers());
+        base.union(&pending_mod)
     }
 
     fn push_keymap_context(&mut self) {
@@ -926,23 +936,30 @@ impl<
     /// Returns the the pressed key outputs.
     pub fn pressed_keys(&self) -> heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> {
         let suppress = self.context.suppressed_modifiers();
-        let pressed_key_codes = self.pressed_inputs.iter().filter_map(|pi| {
-            let ko = match pi {
-                input::PressedInput::Key(input::PressedKey {
-                    key_ref, key_state, ..
-                }) => self.key_system.key_output(key_ref, key_state)?,
-                &input::PressedInput::Virtual(key_output) => key_output,
-            };
-            let ko = ko.without_modifiers(suppress);
-            // Drop pure-mod outputs that are fully suppressed.
-            if ko == key::KeyOutput::NO_OUTPUT {
-                None
-            } else {
-                Some(ko)
-            }
-        });
-
-        pressed_key_codes.collect()
+        let mut outputs: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = self
+            .pressed_inputs
+            .iter()
+            .filter_map(|pi| {
+                let ko = match pi {
+                    input::PressedInput::Key(input::PressedKey {
+                        key_ref, key_state, ..
+                    }) => self.key_system.key_output(key_ref, key_state)?,
+                    &input::PressedInput::Virtual(key_output) => key_output,
+                };
+                let ko = ko.without_modifiers(suppress);
+                (ko != key::KeyOutput::NO_OUTPUT).then_some(ko)
+            })
+            .collect();
+        if let Some(ko) = self
+            .pending_state
+            .as_ref()
+            .and_then(|pending| self.key_system.pending_output(&pending.pending_key_state))
+            .map(|ko| ko.without_modifiers(suppress))
+            .filter(|ko| *ko != key::KeyOutput::NO_OUTPUT)
+        {
+            let _ = outputs.push(ko);
+        }
+        outputs
     }
 
     fn tick_by(&mut self, delta_ms: u32) {

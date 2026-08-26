@@ -287,6 +287,13 @@ pub trait System<R>: Debug {
     fn key_output(&self, _ref: &Self::Ref, _key_state: &Self::KeyState) -> Option<KeyOutput> {
         None
     }
+
+    /// Speculative HID while a pending session is live.
+    ///
+    /// Default: `NoOutput` (no output while pending).
+    fn pending_output(&self, _pending_key_state: &Self::PendingKeyState) -> Option<KeyOutput> {
+        None
+    }
 }
 
 /// Used to provide state that may affect behaviour when pressing the key.
