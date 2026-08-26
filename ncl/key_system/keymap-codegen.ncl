@@ -712,6 +712,9 @@ pub mod key_system {
 %{enum_variants (fun f => f.ref_ty)}
     }
 
+%{from_impls "Ref" (fun f => f.ref_ty)}
+%{try_from_impls "Ref" (fun f => f.ref_ty)}
+
 %{config_struct}
 
     /// Aggregate context.

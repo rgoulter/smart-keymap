@@ -3,6 +3,8 @@ use core::ops::Index;
 
 use serde::Deserialize;
 
+use core::convert::TryInto;
+
 use crate::input;
 use crate::key;
 use crate::keymap;
@@ -76,6 +78,15 @@ pub struct Profile {
     /// scoped to re-presses of the same keymap index.
     #[serde(default)]
     pub quick_tap_ms: Option<u16>,
+
+    /// Speculative output while this tap-hold is pending.
+    ///
+    /// - `NoOutput` (default): silent until tap vs hold settles.
+    /// - `Hold`: emit the hold binding's HID while still pending
+    ///   (ZMK `hold-while-undecided` / QMK Speculative Hold /
+    ///   FAK `eager_decision = 'hold`).
+    #[serde(default = "default_pending_output")]
+    pub pending_output: PendingOutput,
 }
 
 impl Profile {
@@ -152,6 +163,16 @@ impl<R: Default> Default for Key<R> {
     }
 }
 
+/// Speculative output while tap-hold is pending.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum PendingOutput {
+    /// No speculative output (default).
+    #[serde(alias = "None")]
+    NoOutput,
+    /// Emit hold binding while still pending.
+    Hold,
+}
+
 /// How the tap hold key should respond to interruptions (input events from other keys).
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
 pub enum InterruptResponse {
@@ -191,12 +212,19 @@ pub const DEFAULT_TIMEOUT: u16 = 200;
 /// The default interrupt response.
 pub const DEFAULT_INTERRUPT_RESPONSE: InterruptResponse = InterruptResponse::Ignore;
 
+/// The default pending output.
+pub const DEFAULT_PENDING_OUTPUT: PendingOutput = PendingOutput::NoOutput;
+
 fn default_timeout() -> Option<u16> {
     Some(DEFAULT_TIMEOUT)
 }
 
 fn default_interrupt_response() -> InterruptResponse {
     DEFAULT_INTERRUPT_RESPONSE
+}
+
+fn default_pending_output() -> PendingOutput {
+    DEFAULT_PENDING_OUTPUT
 }
 
 fn default_profile_value() -> Profile {
@@ -210,6 +238,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
     required_idle_time: None,
     hold_trigger_positions: None,
     quick_tap_ms: None,
+    pending_output: DEFAULT_PENDING_OUTPUT,
 };
 
 /// Default tap hold config.
@@ -337,16 +366,70 @@ pub enum Event {
 
 /// The state of a pressed tap-hold key.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PendingKeyState {
+pub struct PendingKeyState<R> {
     // For tracking 'tap' interruptions
     other_pressed_keymap_index: Option<u16>,
+    /// Speculative hold ref while undecided (`pending_output = Hold`).
+    pub speculative: Option<R>,
 }
 
-impl PendingKeyState {
+impl<R> PendingKeyState<R> {
     /// Constructs the initial pressed key state
-    fn new() -> PendingKeyState {
+    #[allow(dead_code)]
+    fn new() -> PendingKeyState<R> {
         PendingKeyState {
             other_pressed_keymap_index: None,
+            speculative: None,
+        }
+    }
+
+    /// Constructs with a speculative hold ref.
+    fn new_with_speculative(speculative: Option<R>) -> Self {
+        Self {
+            other_pressed_keymap_index: None,
+            speculative,
+        }
+    }
+
+    /// Returns speculative hold output for keyboard, filtered for GUI.
+    ///
+    /// Only keyboard holds are speculated; non-keyboard holds return `None`.
+    /// Nickel validation ensures `Hold` is only used with keyboard holds,
+    ///  so this is the common path.
+    pub fn speculative_keyboard_output<F>(&self, f: F) -> Option<key::KeyOutput>
+    where
+        F: Fn(&crate::key::keyboard::Ref) -> Option<key::KeyOutput>,
+        R: Copy + TryInto<crate::key::keyboard::Ref>,
+    {
+        let spec = self.speculative?;
+        let kb_ref: crate::key::keyboard::Ref = spec.try_into().ok()?;
+        let ko = f(&kb_ref)?;
+        let mods = ko.key_modifiers();
+        if mods.has_modifiers(&key::KeyboardModifiers::LEFT_GUI)
+            || mods.has_modifiers(&key::KeyboardModifiers::RIGHT_GUI)
+        {
+            None
+        } else {
+            Some(ko)
+        }
+    }
+
+    /// Returns speculative hold output, filtered to avoid GUI host effects.
+    ///
+    /// Resolves the speculative `R` via `resolve` and suppresses GUI modifiers.
+    pub fn speculative_output(
+        &self,
+        resolve: impl Fn(&R) -> Option<key::KeyOutput>,
+    ) -> Option<key::KeyOutput> {
+        let spec = self.speculative.as_ref()?;
+        let ko = resolve(spec)?;
+        let mods = ko.key_modifiers();
+        if mods.has_modifiers(&key::KeyboardModifiers::LEFT_GUI)
+            || mods.has_modifiers(&key::KeyboardModifiers::RIGHT_GUI)
+        {
+            None
+        } else {
+            Some(ko)
         }
     }
 
@@ -474,8 +557,16 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         &self,
         profile: &Profile,
         keymap_index: u16,
-    ) -> (PendingKeyState, Option<key::ScheduledEvent<Event>>) {
-        let pending = PendingKeyState::new();
+        hold: R,
+    ) -> (PendingKeyState<R>, Option<key::ScheduledEvent<Event>>)
+    where
+        R: Copy,
+    {
+        let speculative = match profile.pending_output {
+            PendingOutput::Hold => Some(hold),
+            PendingOutput::NoOutput => None,
+        };
+        let pending = PendingKeyState::new_with_speculative(speculative);
         let scheduled = profile.timeout.map(|timeout| {
             key::ScheduledEvent::after(
                 timeout,
@@ -489,7 +580,7 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         &self,
         key_index: u8,
     ) -> (
-        key::PressedKeyResult<R, PendingKeyState, KeyState>,
+        key::PressedKeyResult<R, PendingKeyState<R>, KeyState>,
         key::KeyEvents<Event>,
     )
     where
@@ -511,7 +602,7 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
     type Ref = Ref;
     type Context = Context;
     type Event = Event;
-    type PendingKeyState = PendingKeyState;
+    type PendingKeyState = PendingKeyState<R>;
     type KeyState = KeyState;
 
     fn new_pressed_key(
@@ -535,7 +626,8 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             Some(required_idle_time) => {
                 if context.idle_time_ms >= required_idle_time as u32 {
                     // Keymap has been idle long enough; use pending tap-hold key state.
-                    let (th_pks, maybe_sch_ev) = self.new_pending_key(&profile, keymap_index);
+                    let (th_pks, maybe_sch_ev) =
+                        self.new_pending_key(&profile, keymap_index, key_def.hold);
                     let pk = key::PressedKeyResult::Pending(th_pks);
                     let pke = match maybe_sch_ev {
                         Some(sch_ev) => {
@@ -552,7 +644,8 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             }
             None => {
                 // Idle time not considered. Use pending tap-hold key state.
-                let (th_pks, maybe_sch_ev) = self.new_pending_key(&profile, keymap_index);
+                let (th_pks, maybe_sch_ev) =
+                    self.new_pending_key(&profile, keymap_index, key_def.hold);
                 let pk = key::PressedKeyResult::Pending(th_pks);
                 let pke = match maybe_sch_ev {
                     Some(sch_ev) => key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event()),
@@ -642,6 +735,7 @@ mod tests {
                 required_idle_time,
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         }
@@ -685,7 +779,7 @@ mod tests {
             InterruptResponse::Ignore,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
@@ -702,7 +796,7 @@ mod tests {
             InterruptResponse::Ignore,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution =
@@ -720,7 +814,7 @@ mod tests {
             InterruptResponse::Ignore,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
@@ -737,7 +831,7 @@ mod tests {
             InterruptResponse::Ignore,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
@@ -756,7 +850,7 @@ mod tests {
             InterruptResponse::HoldOnKeyPress,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
@@ -773,7 +867,7 @@ mod tests {
             InterruptResponse::HoldOnKeyPress,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
@@ -790,7 +884,7 @@ mod tests {
             InterruptResponse::HoldOnKeyPress,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution =
@@ -808,7 +902,7 @@ mod tests {
             InterruptResponse::HoldOnKeyPress,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
@@ -827,7 +921,7 @@ mod tests {
             InterruptResponse::HoldOnKeyTap,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(KEYMAP_INDEX));
@@ -844,7 +938,7 @@ mod tests {
             InterruptResponse::HoldOnKeyTap,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution =
@@ -862,7 +956,7 @@ mod tests {
             InterruptResponse::HoldOnKeyTap,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
@@ -879,7 +973,7 @@ mod tests {
             InterruptResponse::HoldOnKeyTap,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
         let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Act
@@ -897,7 +991,7 @@ mod tests {
             InterruptResponse::HoldOnKeyTap,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, release(OTHER_INDEX));
@@ -914,7 +1008,7 @@ mod tests {
             InterruptResponse::HoldOnKeyTap,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
         let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Act
@@ -1068,7 +1162,7 @@ mod tests {
         // Assemble
         let system = system();
         let ctx = default_context();
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let (resolved, _) = system.update_pending_state(
@@ -1088,7 +1182,7 @@ mod tests {
         // Assemble
         let system = system();
         let ctx = default_context();
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let (resolved, _) = system.update_pending_state(
@@ -1112,7 +1206,7 @@ mod tests {
             InterruptResponse::HoldOnKeyPress,
             None,
         ));
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let (resolved, _) =
@@ -1127,7 +1221,7 @@ mod tests {
         // Assemble
         let system = system();
         let ctx = default_context();
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let (resolved, _) =
@@ -1142,7 +1236,7 @@ mod tests {
         // Assemble
         let system = system();
         let ctx = default_context();
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act
         let (_, events) = system.update_pending_state(
@@ -1214,6 +1308,7 @@ mod tests {
                 required_idle_time: Some(10),
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1237,6 +1332,7 @@ mod tests {
             required_idle_time: None,
             hold_trigger_positions: None,
             quick_tap_ms: None,
+            pending_output: PendingOutput::NoOutput,
         };
         let config = Config {
             default_profile: Profile {
@@ -1245,6 +1341,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[extra]),
         };
@@ -1263,6 +1360,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1337,10 +1435,11 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         });
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act: interrupt from a non-trigger position (OTHER_INDEX = 1).
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
@@ -1359,10 +1458,11 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         });
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
 
         // Act: interrupt from trigger position 2.
         let resolution = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(2));
@@ -1381,10 +1481,11 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         });
-        let mut pks = PendingKeyState::new();
+        let mut pks = PendingKeyState::<u8>::new();
         let _ = pks.handle_event(&ctx.profile(0), KEYMAP_INDEX, press(OTHER_INDEX));
 
         // Act: complete the non-trigger key's tap (release).
@@ -1405,6 +1506,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(triggers),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1426,6 +1528,7 @@ mod tests {
             required_idle_time: None,
             hold_trigger_positions: Some(triggers),
             quick_tap_ms: None,
+            pending_output: PendingOutput::NoOutput,
         };
         let config = Config {
             default_profile: Profile::new(),
