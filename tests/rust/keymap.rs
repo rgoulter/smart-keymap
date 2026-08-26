@@ -10,6 +10,7 @@ mod key_lock;
 mod layered;
 mod mod_conditioned;
 mod mouse;
+mod pending_output;
 mod sequence;
 mod sticky;
 mod tap_dance;
