@@ -48,6 +48,22 @@ pub mod init {
             Automation(smart_keymap::key::automation::Ref),
         }
 
+        impl From<smart_keymap::key::automation::Ref> for Ref {
+            fn from(v: smart_keymap::key::automation::Ref) -> Self {
+                Ref::Automation(v)
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::automation::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::Automation(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+
         /// Aggregate config for families used by this keymap.
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
         pub struct Config {
@@ -288,6 +304,15 @@ pub mod init {
             ) -> Option<key::KeyOutput> {
                 match (key_ref, key_state) {
                     (_, _) => None,
+                }
+            }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    _ => None,
                 }
             }
         }

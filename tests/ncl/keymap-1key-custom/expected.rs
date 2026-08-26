@@ -46,6 +46,22 @@ pub mod init {
             Custom(smart_keymap::key::custom::Ref),
         }
 
+        impl From<smart_keymap::key::custom::Ref> for Ref {
+            fn from(v: smart_keymap::key::custom::Ref) -> Self {
+                Ref::Custom(v)
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::custom::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::Custom(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+
         /// Aggregate config (no configurable families in this keymap).
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
         pub struct Config {}
@@ -251,6 +267,15 @@ pub mod init {
                 match (key_ref, key_state) {
                     (Ref::Custom(r), KeyState::Custom(ks)) => self.custom.key_output(r, ks),
                     (_, _) => None,
+                }
+            }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    _ => None,
                 }
             }
         }

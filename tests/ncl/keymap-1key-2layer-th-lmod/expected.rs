@@ -55,6 +55,52 @@ pub mod init {
             TapHold(smart_keymap::key::tap_hold::Ref),
         }
 
+        impl From<smart_keymap::key::keyboard::Ref> for Ref {
+            fn from(v: smart_keymap::key::keyboard::Ref) -> Self {
+                Ref::Keyboard(v)
+            }
+        }
+        impl From<smart_keymap::key::layered::Ref> for Ref {
+            fn from(v: smart_keymap::key::layered::Ref) -> Self {
+                Ref::Layered(v)
+            }
+        }
+        impl From<smart_keymap::key::tap_hold::Ref> for Ref {
+            fn from(v: smart_keymap::key::tap_hold::Ref) -> Self {
+                Ref::TapHold(v)
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::keyboard::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::Keyboard(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::layered::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::Layered(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::tap_hold::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::TapHold(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+
         /// Aggregate config for families used by this keymap.
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
         pub struct Config {
@@ -211,7 +257,7 @@ pub mod init {
             /// [smart_keymap::key::layered] variant.
             Layered(smart_keymap::key::layered::PendingKeyState),
             /// [smart_keymap::key::tap_hold] variant.
-            TapHold(smart_keymap::key::tap_hold::PendingKeyState),
+            TapHold(smart_keymap::key::tap_hold::PendingKeyState<Ref>),
         }
 
         impl From<smart_keymap::key::keyboard::PendingKeyState> for PendingKeyState {
@@ -224,14 +270,14 @@ pub mod init {
                 PendingKeyState::Layered(pks)
             }
         }
-        impl From<smart_keymap::key::tap_hold::PendingKeyState> for PendingKeyState {
-            fn from(pks: smart_keymap::key::tap_hold::PendingKeyState) -> Self {
+        impl From<smart_keymap::key::tap_hold::PendingKeyState<Ref>> for PendingKeyState {
+            fn from(pks: smart_keymap::key::tap_hold::PendingKeyState<Ref>) -> Self {
                 PendingKeyState::TapHold(pks)
             }
         }
         #[allow(unreachable_patterns)]
         impl<'pks> TryFrom<&'pks mut PendingKeyState>
-            for &'pks mut smart_keymap::key::tap_hold::PendingKeyState
+            for &'pks mut smart_keymap::key::tap_hold::PendingKeyState<Ref>
         {
             type Error = ();
             fn try_from(pks: &'pks mut PendingKeyState) -> Result<Self, Self::Error> {
@@ -447,6 +493,19 @@ pub mod init {
                         self.layered.key_output(r, ks)
                     }
                     (_, _) => None,
+                }
+            }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    PendingKeyState::TapHold(pks) => pks.speculative_keyboard_output(|kb_ref| {
+                        self.keyboard
+                            .key_output(kb_ref, &smart_keymap::key::keyboard::KeyState)
+                    }),
+                    _ => None,
                 }
             }
         }

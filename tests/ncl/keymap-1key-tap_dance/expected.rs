@@ -51,6 +51,37 @@ pub mod init {
             TapDance(smart_keymap::key::tap_dance::Ref),
         }
 
+        impl From<smart_keymap::key::keyboard::Ref> for Ref {
+            fn from(v: smart_keymap::key::keyboard::Ref) -> Self {
+                Ref::Keyboard(v)
+            }
+        }
+        impl From<smart_keymap::key::tap_dance::Ref> for Ref {
+            fn from(v: smart_keymap::key::tap_dance::Ref) -> Self {
+                Ref::TapDance(v)
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::keyboard::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::Keyboard(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+        #[allow(unreachable_patterns)]
+        impl TryFrom<Ref> for smart_keymap::key::tap_dance::Ref {
+            type Error = smart_keymap::key::EventError;
+            fn try_from(v: Ref) -> Result<Self, Self::Error> {
+                match v {
+                    Ref::TapDance(v) => Ok(v),
+                    _ => Err(smart_keymap::key::EventError::UnmappableEvent),
+                }
+            }
+        }
+
         /// Aggregate config for families used by this keymap.
         #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
         pub struct Config {
@@ -365,6 +396,16 @@ pub mod init {
                 match (key_ref, key_state) {
                     (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
                     (_, _) => None,
+                }
+            }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    PendingKeyState::TapDance(_) => None,
+                    _ => None,
                 }
             }
         }
