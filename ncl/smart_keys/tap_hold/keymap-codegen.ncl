@@ -15,7 +15,7 @@
     # Use a json value to check the "is" predicate.
     check_json_tap_keyboard_hold_keyboard_is =
       let json = {
-        hold = { key_code = 224 },
+        hold = { key_code = 0xE0 }, # LeftCtrl
         tap = { key_code = 4 },
       }
       in
@@ -25,7 +25,7 @@
       # Nested keys are validated/codegen'd via smart_key (keyboard, etc.).
       check_taphold_keyboard =
         let json = {
-          hold = { key_code = 224 },
+          hold = { key_code = 0xE0 }, # LeftCtrl
           tap = { key_code = 4 },
         }
         in
@@ -39,7 +39,7 @@
 
       check_taphold_with_profile =
         let json = {
-          hold = { key_code = 224 },
+          hold = { key_code = 0xE0 }, # LeftCtrl
           tap = { key_code = 4 },
           profile = 1,
         }
@@ -120,9 +120,8 @@
 
         check_left_ctrl_keycode =
           let cv =
-            smart_keymap.keyboard.key.codegen_values { key_code = 224 }
-          in
-          {
+            smart_keymap.keyboard.key.codegen_values { key_code = 0xE0 } # LeftCtrl
+          in {
             actual = smart_keymap.tap_hold.speculative_hold_output cv,
             expected =
               'Some {
@@ -133,21 +132,19 @@
 
         check_left_gui_modifiers_refused =
           let cv =
-            smart_keymap.keyboard.key.codegen_values { modifiers = 8 }
-          in
-          smart_keymap.tap_hold.speculative_hold_output cv == 'None,
+            smart_keymap.keyboard.key.codegen_values { modifiers = 8 } # LeftGUI bit
+          in smart_keymap.tap_hold.speculative_hold_output cv == 'None,
 
         check_left_gui_keycode_refused =
           let cv =
-            smart_keymap.keyboard.key.codegen_values { key_code = 227 }
-          in
-          smart_keymap.tap_hold.speculative_hold_output cv == 'None,
+            smart_keymap.keyboard.key.codegen_values { key_code = 0xE3 } # LeftGUI 0xE3
+          in smart_keymap.tap_hold.speculative_hold_output cv == 'None,
 
         check_non_keyboard_refused =
           let cv =
             smart_keymap.tap_hold.key.codegen_values {
               tap = { key_code = 4 },
-              hold = { key_code = 224 },
+              hold = { key_code = 0xE0 }, # LeftCtrl
             }
           in
           smart_keymap.tap_hold.speculative_hold_output cv == 'None,
@@ -209,19 +206,24 @@
               0
               [0, 1, 2, 3, 4, 5, 6, 7]
           in
+          let hid = import "hid-usage-keyboard.ncl" in
+          let key_code_to_mod_byte = {
+            "%{std.to_string hid.LeftCtrl}" = 1, # 0xE0 LeftCtrl -> 0x01
+            "%{std.to_string hid.LeftShift}" = 2, # 0xE1 LeftShift -> 0x02
+            "%{std.to_string hid.LeftAlt}" = 4, # 0xE2 LeftAlt -> 0x04
+            "%{std.to_string hid.LeftGUI}" = 8, # 0xE3 LeftGUI -> 0x08
+            "%{std.to_string hid.RightCtrl}" = 16, # 0xE4 RightCtrl -> 0x10
+            "%{std.to_string hid.RightShift}" = 32, # 0xE5 RightShift -> 0x20
+            "%{std.to_string hid.RightAlt}" = 64, # 0xE6 RightAlt -> 0x40
+            "%{std.to_string hid.RightGUI}" = 128, # 0xE7 RightGUI -> 0x80
+          }
+          in
+          let kc_str = std.to_string key_code in
           let kc_mod =
-            key_code
-            |> match {
-              224 => 1,
-              225 => 2,
-              226 => 4,
-              227 => 8,
-              228 => 16,
-              229 => 32,
-              230 => 64,
-              231 => 128,
-              _ => 0,
-            }
+            if std.record.has_field kc_str key_code_to_mod_byte then
+              std.record.get kc_str key_code_to_mod_byte
+            else
+              0
           in
           let remaining_kc = if kc_mod != 0 then 0 else key_code in
           let merged = bit_or8 modifiers kc_mod in

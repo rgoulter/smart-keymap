@@ -1,28 +1,25 @@
 {
   key_extensions = {
     keyboard =
-      (import "hid-usage-keyboard.ncl")
+      let hid = import "hid-usage-keyboard.ncl" in
+      let modifier_by_key_code = {
+        "%{std.to_string hid.LeftCtrl}" = { left_ctrl = true }, # 0xE0 LeftCtrl -> left_ctrl
+        "%{std.to_string hid.LeftShift}" = { left_shift = true }, # 0xE1 LeftShift -> left_shift
+        "%{std.to_string hid.LeftAlt}" = { left_alt = true }, # 0xE2 LeftAlt -> left_alt
+        "%{std.to_string hid.LeftGUI}" = { left_gui = true }, # 0xE3 LeftGUI -> left_gui
+        "%{std.to_string hid.RightCtrl}" = { right_ctrl = true }, # 0xE4 RightCtrl -> right_ctrl
+        "%{std.to_string hid.RightShift}" = { right_shift = true }, # 0xE5 RightShift -> right_shift
+        "%{std.to_string hid.RightAlt}" = { right_alt = true }, # 0xE6 RightAlt -> right_alt
+        "%{std.to_string hid.RightGUI}" = { right_gui = true }, # 0xE7 RightGUI -> right_gui
+      }
+      in
+      hid
       |> std.record.map_values (fun kc =>
-        kc
-        |> match {
-          # 0xE0 .. 0xE7
-          _ if 224 <= kc && kc <= 231 =>
-            {
-              modifiers =
-                kc
-                |> match {
-                  224 => { left_ctrl = true },
-                  225 => { left_shift = true },
-                  226 => { left_alt = true },
-                  227 => { left_gui = true },
-                  228 => { right_ctrl = true },
-                  229 => { right_shift = true },
-                  230 => { right_alt = true },
-                  231 => { right_gui = true },
-                },
-            },
-          kc => { key_code = kc },
-        }
+        let kc_str = std.to_string kc in
+        if std.record.has_field kc_str modifier_by_key_code then
+          { modifiers = std.record.get kc_str modifier_by_key_code }
+        else
+          { key_code = kc }
       ),
 
     keyboard_abbreviations = fun keys =>

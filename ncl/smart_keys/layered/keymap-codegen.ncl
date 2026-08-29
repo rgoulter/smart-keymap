@@ -47,7 +47,7 @@
       check_layered_composite_taphold_keyboard =
         let json = {
           base = {
-            hold = { key_code = 224 },
+            hold = { key_code = 0xE0 }, # LeftCtrl
             tap = { key_code = 4 },
           },
           layered = [

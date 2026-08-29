@@ -1016,7 +1016,7 @@ pub mod key_system {
       let profile =
         composite.profile_from_keys [
           {
-            hold = { key_code = 224 },
+            hold = { key_code = 0xE0 }, # LeftCtrl
             tap = { key_code = 4 },
           }
         ]
