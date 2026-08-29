@@ -377,6 +377,23 @@ impl KeyboardModifiers {
     /// Byte value for right gui.
     pub const RIGHT_GUI_U8: u8 = 0x80;
 
+    /// HID usage for LeftCtrl (0xE0).
+    pub const HID_LEFT_CTRL: u8 = 0xE0;
+    /// HID usage for LeftShift (0xE1).
+    pub const HID_LEFT_SHIFT: u8 = 0xE1;
+    /// HID usage for LeftAlt (0xE2).
+    pub const HID_LEFT_ALT: u8 = 0xE2;
+    /// HID usage for LeftGUI (0xE3).
+    pub const HID_LEFT_GUI: u8 = 0xE3;
+    /// HID usage for RightCtrl (0xE4).
+    pub const HID_RIGHT_CTRL: u8 = 0xE4;
+    /// HID usage for RightShift (0xE5).
+    pub const HID_RIGHT_SHIFT: u8 = 0xE5;
+    /// HID usage for RightAlt (0xE6).
+    pub const HID_RIGHT_ALT: u8 = 0xE6;
+    /// HID usage for RightGUI (0xE7).
+    pub const HID_RIGHT_GUI: u8 = 0xE7;
+
     /// Constructs with modifiers defaulting to false.
     pub const fn new() -> Self {
         KeyboardModifiers(0x00)
@@ -390,16 +407,17 @@ impl KeyboardModifiers {
     /// Constructs with the given key_code.
     ///
     /// Returns None if the key_code is not a modifier key code.
+    /// Uses HID usages 0xE0..0xE7 (LeftCtrl..RightGUI).
     pub const fn from_key_code(key_code: u8) -> Option<Self> {
         match key_code {
-            0xE0 => Some(Self::LEFT_CTRL),
-            0xE1 => Some(Self::LEFT_SHIFT),
-            0xE2 => Some(Self::LEFT_ALT),
-            0xE3 => Some(Self::LEFT_GUI),
-            0xE4 => Some(Self::RIGHT_CTRL),
-            0xE5 => Some(Self::RIGHT_SHIFT),
-            0xE6 => Some(Self::RIGHT_ALT),
-            0xE7 => Some(Self::RIGHT_GUI),
+            Self::HID_LEFT_CTRL => Some(Self::LEFT_CTRL),
+            Self::HID_LEFT_SHIFT => Some(Self::LEFT_SHIFT),
+            Self::HID_LEFT_ALT => Some(Self::LEFT_ALT),
+            Self::HID_LEFT_GUI => Some(Self::LEFT_GUI),
+            Self::HID_RIGHT_CTRL => Some(Self::RIGHT_CTRL),
+            Self::HID_RIGHT_SHIFT => Some(Self::RIGHT_SHIFT),
+            Self::HID_RIGHT_ALT => Some(Self::RIGHT_ALT),
+            Self::HID_RIGHT_GUI => Some(Self::RIGHT_GUI),
             _ => None,
         }
     }
@@ -434,47 +452,50 @@ impl KeyboardModifiers {
     pub const RIGHT_GUI: KeyboardModifiers = KeyboardModifiers(Self::RIGHT_GUI_U8);
 
     /// Predicate for whether the key code is a modifier key code.
+    /// HID modifier range is 0xE0..0xE7 (LeftCtrl..RightGUI).
     pub const fn is_modifier_key_code(key_code: u8) -> bool {
-        matches!(key_code, 0xE0..=0xE7)
+        matches!(key_code, Self::HID_LEFT_CTRL..=Self::HID_RIGHT_GUI)
     }
 
     /// Constructs a Vec of key codes from the modifiers.
+    /// Each set bit maps to its HID usage 0xE0..0xE7.
     pub fn as_key_codes(&self) -> heapless::Vec<u8, 8> {
         let mut key_codes = heapless::Vec::new();
 
         if self.0 & Self::LEFT_CTRL_U8 != 0 {
-            let _ = key_codes.push(0xE0);
+            let _ = key_codes.push(Self::HID_LEFT_CTRL);
         }
         if self.0 & Self::LEFT_SHIFT_U8 != 0 {
-            let _ = key_codes.push(0xE1);
+            let _ = key_codes.push(Self::HID_LEFT_SHIFT);
         }
         if self.0 & Self::LEFT_ALT_U8 != 0 {
-            let _ = key_codes.push(0xE2);
+            let _ = key_codes.push(Self::HID_LEFT_ALT);
         }
         if self.0 & Self::LEFT_GUI_U8 != 0 {
-            let _ = key_codes.push(0xE3);
+            let _ = key_codes.push(Self::HID_LEFT_GUI);
         }
         if self.0 & Self::RIGHT_CTRL_U8 != 0 {
-            let _ = key_codes.push(0xE4);
+            let _ = key_codes.push(Self::HID_RIGHT_CTRL);
         }
         if self.0 & Self::RIGHT_SHIFT_U8 != 0 {
-            let _ = key_codes.push(0xE5);
+            let _ = key_codes.push(Self::HID_RIGHT_SHIFT);
         }
         if self.0 & Self::RIGHT_ALT_U8 != 0 {
-            let _ = key_codes.push(0xE6);
+            let _ = key_codes.push(Self::HID_RIGHT_ALT);
         }
         if self.0 & Self::RIGHT_GUI_U8 != 0 {
-            let _ = key_codes.push(0xE7);
+            let _ = key_codes.push(Self::HID_RIGHT_GUI);
         }
 
         key_codes
     }
 
     /// Constructs the byte for the modifiers of an HID keyboard report.
+    /// HID usages 0xE0..0xE7 map to bits 0..7.
     pub fn as_byte(&self) -> u8 {
         self.as_key_codes()
             .iter()
-            .fold(0u8, |acc, &kc| acc | (1 << (kc - 0xE0)))
+            .fold(0u8, |acc, &kc| acc | (1 << (kc - Self::HID_LEFT_CTRL)))
     }
 
     /// Union of two KeyboardModifiers, taking "or" of each modifier.

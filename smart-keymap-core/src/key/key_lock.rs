@@ -313,7 +313,9 @@ mod tests {
 
     #[test]
     fn is_lockable_accepts_modifier() {
-        assert!(is_lockable(&key::KeyOutput::from_key_code(0xE1)));
+        assert!(is_lockable(&key::KeyOutput::from_key_code(
+            key::KeyboardModifiers::HID_LEFT_SHIFT,
+        )));
     }
 
     #[test]

@@ -1108,31 +1108,39 @@ mod tests {
 
     #[test]
     fn test_keymap_output_pressed_key_codes_includes_modifier_key_code() {
-        // Assemble - include modifier key left ctrl
+        // Assemble - include modifier key left ctrl (HID 0xE0)
         let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
         input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
-        input.push(key::KeyOutput::from_key_code(0xE0)).unwrap();
+        input
+            .push(key::KeyOutput::from_key_code(
+                key::KeyboardModifiers::HID_LEFT_CTRL,
+            ))
+            .unwrap();
 
         // Act - construct the output
         let keymap_output = KeymapOutput::new(input);
         let pressed_key_codes = keymap_output.pressed_key_codes();
 
-        // Assert - check the 0xE0 gets included as a key code.
-        assert!(pressed_key_codes.contains(&0xE0))
+        // Assert - check the HID_LEFT_CTRL gets included as a key code.
+        assert!(pressed_key_codes.contains(&key::KeyboardModifiers::HID_LEFT_CTRL))
     }
 
     #[test]
     fn test_keymap_output_as_hid_boot_keyboard_report_gathers_modifiers() {
-        // Assemble - include modifier key left ctrl
+        // Assemble - include modifier key left ctrl (HID 0xE0)
         let mut input: heapless::Vec<key::KeyOutput, { MAX_PRESSED_KEYS }> = heapless::Vec::new();
         input.push(key::KeyOutput::from_key_code(0x04)).unwrap();
-        input.push(key::KeyOutput::from_key_code(0xE0)).unwrap();
+        input
+            .push(key::KeyOutput::from_key_code(
+                key::KeyboardModifiers::HID_LEFT_CTRL,
+            ))
+            .unwrap();
 
         // Act - construct the output
         let keymap_output = KeymapOutput::new(input);
         let actual_report: [u8; 8] = keymap_output.as_hid_boot_keyboard_report();
 
-        // Assert - check the 0xE0 gets considered as a "modifier".
+        // Assert - check the HID_LEFT_CTRL gets considered as a "modifier".
         let expected_report: [u8; 8] = [0x01, 0, 0x04, 0, 0, 0, 0, 0];
         assert_eq!(expected_report, actual_report);
     }

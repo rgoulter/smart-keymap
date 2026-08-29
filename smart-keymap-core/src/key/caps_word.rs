@@ -59,16 +59,16 @@ impl Context {
                     0x2A => false,                       // Backspace
                     0x2D => false,                       // `-` minus
                     0x4C => false,                       // Delete
-                    0xE1 => false,                       // Left Shift
-                    0xE5 => false,                       // Right Shift
-                    0x00 => false,                       // No key code (modifier)
+                    key::KeyboardModifiers::HID_LEFT_SHIFT => false,
+                    key::KeyboardModifiers::HID_RIGHT_SHIFT => false,
+                    0x00 => false, // No key code (modifier)
                     _ => true,
                 };
 
                 if exit_caps_word {
                     self.is_active = false;
 
-                    let key_code = 0xE1;
+                    let key_code = key::KeyboardModifiers::HID_LEFT_SHIFT;
                     let vk_ev = input::Event::VirtualKeyRelease {
                         key_output: key::KeyOutput::from_key_code(key_code),
                     };
@@ -81,7 +81,7 @@ impl Context {
                 Event::EnableCapsWord => {
                     self.is_active = true;
 
-                    let key_code = 0xE1;
+                    let key_code = key::KeyboardModifiers::HID_LEFT_SHIFT;
                     let vk_ev = input::Event::VirtualKeyPress {
                         key_output: key::KeyOutput::from_key_code(key_code),
                     };
@@ -90,7 +90,7 @@ impl Context {
                 Event::DisableCapsWord => {
                     self.is_active = false;
 
-                    let key_code = 0xE1;
+                    let key_code = key::KeyboardModifiers::HID_LEFT_SHIFT;
                     let vk_ev = input::Event::VirtualKeyRelease {
                         key_output: key::KeyOutput::from_key_code(key_code),
                     };

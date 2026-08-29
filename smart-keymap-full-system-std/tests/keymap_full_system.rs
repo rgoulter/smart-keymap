@@ -47,7 +47,9 @@ fn tap_hold_interrupt_keymap(
             smart_keymap::key::tap_dance::System::new(Vec::new()),
             smart_keymap::key::tap_hold::System::new(vec![smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0x04)),
-                hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0xE0)),
+                hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(
+                    smart_keymap::key::KeyboardModifiers::HID_LEFT_CTRL,
+                )),
                 profile: 0,
                 hold_output: None,
             }]),
@@ -149,7 +151,7 @@ fn scheduled_input_during_pending_does_not_reprocess_as_physical_press() {
     }));
 
     // Assert -- hold only; interrupt key not pressed (#578).
-    let hold = key::KeyOutput::from_key_code(0xE0);
+    let hold = key::KeyOutput::from_key_code(key::KeyboardModifiers::HID_LEFT_CTRL);
     let interrupt_key = key::KeyOutput::from_key_code(0x05);
     assert_eq!(
         heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[hold]).unwrap(),
@@ -314,7 +316,7 @@ fn resolve_by_timeout_leaves_delay_line_inputs_queued() {
     // Assert -- hold; delay-line Press(1) still queued, not applied as a press.
     assert!(!keymap.test_is_pending());
     assert_eq!(1, keymap.test_input_queue_len());
-    let hold = key::KeyOutput::from_key_code(0xE0);
+    let hold = key::KeyOutput::from_key_code(key::KeyboardModifiers::HID_LEFT_CTRL);
     assert_eq!(
         heapless::Vec::<key::KeyOutput, { MAX_PRESSED_KEYS }>::from_slice(&[hold]).unwrap(),
         keymap.pressed_keys()

@@ -288,7 +288,7 @@ mod tests {
     #[test]
     fn start_arms_session() {
         let mut ctx = Context::new();
-        let hold = key::KeyOutput::from_key_code(0xE2);
+        let hold = key::KeyOutput::from_key_code(key::KeyboardModifiers::HID_LEFT_ALT);
         let tap = key::KeyOutput::from_key_code(0x2B);
         let _ = key::Context::handle_event(
             &mut ctx,
@@ -301,7 +301,7 @@ mod tests {
     #[test]
     fn other_resolved_output_ends_session() {
         let mut ctx = Context::new();
-        let hold = key::KeyOutput::from_key_code(0xE2);
+        let hold = key::KeyOutput::from_key_code(key::KeyboardModifiers::HID_LEFT_ALT);
         let tap = key::KeyOutput::from_key_code(0x2B);
         let _ = key::Context::handle_event(
             &mut ctx,
@@ -320,7 +320,7 @@ mod tests {
     #[test]
     fn own_resolved_output_does_not_end_session() {
         let mut ctx = Context::new();
-        let hold = key::KeyOutput::from_key_code(0xE2);
+        let hold = key::KeyOutput::from_key_code(key::KeyboardModifiers::HID_LEFT_ALT);
         let tap = key::KeyOutput::from_key_code(0x2B);
         let _ = key::Context::handle_event(
             &mut ctx,
