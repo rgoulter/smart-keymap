@@ -359,6 +359,16 @@ pub mod init {
                     (_, _) => None,
                 }
             }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    PendingKeyState::TapHold(pks) => self.tap_hold.pending_output(pks),
+                    _ => None,
+                }
+            }
         }
     }
 
@@ -454,41 +464,61 @@ pub mod init {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(4)),
                 profile: 0,
+                hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                    smart_keymap::key::KeyboardModifiers::from_byte(4),
+                )),
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(18)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(8)),
                 profile: 0,
+                hold_output: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(8)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(1)),
                 profile: 0,
+                hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                    smart_keymap::key::KeyboardModifiers::from_byte(1),
+                )),
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(24)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(2)),
                 profile: 0,
+                hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                    smart_keymap::key::KeyboardModifiers::from_byte(2),
+                )),
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(11)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(32)),
                 profile: 0,
+                hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                    smart_keymap::key::KeyboardModifiers::from_byte(32),
+                )),
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(23)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(16)),
                 profile: 0,
+                hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                    smart_keymap::key::KeyboardModifiers::from_byte(16),
+                )),
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(17)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(128)),
                 profile: 0,
+                hold_output: None,
             },
             smart_keymap::key::tap_hold::Key {
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(22)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::Modifiers(64)),
                 profile: 0,
+                hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                    smart_keymap::key::KeyboardModifiers::from_byte(64),
+                )),
             },
         ]),
     );

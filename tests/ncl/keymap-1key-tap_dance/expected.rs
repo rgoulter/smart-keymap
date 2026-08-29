@@ -367,6 +367,16 @@ pub mod init {
                     (_, _) => None,
                 }
             }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    PendingKeyState::TapDance(pks) => self.tap_dance.pending_output(pks),
+                    _ => None,
+                }
+            }
         }
     }
 

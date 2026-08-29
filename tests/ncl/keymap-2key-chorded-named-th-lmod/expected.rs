@@ -600,6 +600,17 @@ pub mod init {
                     (_, _) => None,
                 }
             }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    PendingKeyState::Chorded(pks) => self.chorded.pending_output(pks),
+                    PendingKeyState::TapHold(pks) => self.tap_hold.pending_output(pks),
+                    _ => None,
+                }
+            }
         }
     }
 
@@ -677,6 +688,7 @@ pub mod init {
             tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(41)),
             hold: key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(0)),
             profile: 0,
+            hold_output: None,
         }]),
     );
 
