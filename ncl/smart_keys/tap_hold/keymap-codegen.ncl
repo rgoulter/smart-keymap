@@ -87,6 +87,71 @@
           }"%,
           },
         },
+
+      check_profile_with_pending_output =
+        let rust_expr =
+          smart_keymap.tap_hold.profile_rust_expr {
+            pending_output = "Hold",
+          }
+        in
+        {
+          check_rust_expr = {
+            actual = rust_expr,
+            expected = m%"smart_keymap::key::tap_hold::Profile {
+            pending_output: smart_keymap::key::tap_hold::PendingOutput::Hold,
+            ..smart_keymap::key::tap_hold::Profile::new()
+          }"%,
+          },
+        },
+
+      check_speculative_hold_output = {
+        check_left_ctrl_modifiers =
+          let cv =
+            smart_keymap.keyboard.key.codegen_values { modifiers = 1 }
+          in
+          {
+            actual = smart_keymap.tap_hold.speculative_hold_output cv,
+            expected =
+              'Some {
+                json = { key_modifiers = 1 },
+                rust_expr = "smart_keymap::key::KeyOutput::from_key_modifiers(smart_keymap::key::KeyboardModifiers::from_byte(1))",
+              },
+          },
+
+        check_left_ctrl_keycode =
+          let cv =
+            smart_keymap.keyboard.key.codegen_values { key_code = 224 }
+          in
+          {
+            actual = smart_keymap.tap_hold.speculative_hold_output cv,
+            expected =
+              'Some {
+                json = { key_modifiers = 1 },
+                rust_expr = "smart_keymap::key::KeyOutput::from_key_modifiers(smart_keymap::key::KeyboardModifiers::from_byte(1))",
+              },
+          },
+
+        check_left_gui_modifiers_refused =
+          let cv =
+            smart_keymap.keyboard.key.codegen_values { modifiers = 8 }
+          in
+          smart_keymap.tap_hold.speculative_hold_output cv == 'None,
+
+        check_left_gui_keycode_refused =
+          let cv =
+            smart_keymap.keyboard.key.codegen_values { key_code = 227 }
+          in
+          smart_keymap.tap_hold.speculative_hold_output cv == 'None,
+
+        check_non_keyboard_refused =
+          let cv =
+            smart_keymap.tap_hold.key.codegen_values {
+              tap = { key_code = 4 },
+              hold = { key_code = 224 },
+            }
+          in
+          smart_keymap.tap_hold.speculative_hold_output cv == 'None,
+      },
     },
   },
 
@@ -102,7 +167,96 @@
           ]
         ),
 
+      TapHoldPendingOutputJson =
+        std.contract.from_validator (
+          validators.is_elem_of [
+            "NoOutput",
+            "Hold",
+          ]
+        ),
+
       module = "smart_keymap::key::tap_hold",
+
+      # HID of a keyboard hold leaf, or 'None if it must not be speculated
+      #  (non-keyboard, or LeftGUI / RightGUI).
+      speculative_hold_output = fun hold_cv =>
+        if std.record.has_field "module" hold_cv
+        && hold_cv.module == "smart_keymap::key::keyboard" then
+          let json = hold_cv.json in
+          let key_code =
+            if std.record.has_field "key_code" json then
+              json.key_code
+            else
+              0
+          in
+          let modifiers =
+            if std.record.has_field "modifiers" json then
+              json.modifiers
+            else
+              0
+          in
+          let is_odd = fun n => n - 2 * std.number.floor (n / 2) == 1 in
+          let bit_set = fun value bit => is_odd (std.number.floor (value / bit)) in
+          let bit_or8 = fun a b =>
+            std.array.fold_left
+              (fun acc i =>
+                let bit = std.number.pow 2 i in
+                if bit_set a bit || bit_set b bit then
+                  acc + bit
+                else
+                  acc
+              )
+              0
+              [0, 1, 2, 3, 4, 5, 6, 7]
+          in
+          let kc_mod =
+            key_code
+            |> match {
+              224 => 1,
+              225 => 2,
+              226 => 4,
+              227 => 8,
+              228 => 16,
+              229 => 32,
+              230 => 64,
+              231 => 128,
+              _ => 0,
+            }
+          in
+          let remaining_kc = if kc_mod != 0 then 0 else key_code in
+          let merged = bit_or8 modifiers kc_mod in
+          let has_gui = bit_set merged 8 || bit_set merged 128 in
+          if has_gui || (remaining_kc == 0 && merged == 0) then
+            'None
+          else
+            let rust_expr =
+              if remaining_kc == 0 then
+                "smart_keymap::key::KeyOutput::from_key_modifiers(smart_keymap::key::KeyboardModifiers::from_byte(%{std.to_string merged}))"
+              else if merged == 0 then
+                "smart_keymap::key::KeyOutput::from_key_code(%{std.to_string remaining_kc})"
+              else
+                "smart_keymap::key::KeyOutput::from_key_code_with_modifiers(%{std.to_string remaining_kc}, smart_keymap::key::KeyboardModifiers::from_byte(%{std.to_string merged}))"
+            in
+            let json =
+              (
+                if remaining_kc == 0 then
+                  {}
+                else
+                  { key_code = { Keyboard = remaining_kc } }
+              )
+              & (
+                if merged == 0 then
+                  {}
+                else
+                  { key_modifiers = merged }
+              )
+            in
+            'Some {
+              include json,
+              include rust_expr,
+            }
+        else
+          'None,
 
       hold_trigger_positions_expr = fun positions =>
         let idxs =
@@ -153,6 +307,14 @@
           if std.record.has_field "quick_tap_ms" c then
             {
               quick_tap_ms = "Some(%{std.to_string c.quick_tap_ms})",
+            }
+          else
+            {}
+        )
+        & (
+          if std.record.has_field "pending_output" c then
+            {
+              pending_output = "%{module}::PendingOutput::%{c.pending_output}",
             }
           else
             {}
@@ -257,18 +419,35 @@
             else
               { profile = profile_id }
           in
+          let hold_output = smart_keymap.tap_hold.speculative_hold_output hold_cv in
+          let hold_output_json =
+            hold_output
+            |> match {
+              'None => {},
+              'Some { json, .. } => { hold_output = json },
+            }
+          in
+          let hold_output_rust =
+            hold_output
+            |> match {
+              'None => "None",
+              'Some { rust_expr, .. } => "Some(%{rust_expr})",
+            }
+          in
           let new_key = {
             json =
               {
                 tap = tap_ref.json,
                 hold = hold_ref.json,
               }
-              & profile_json,
+              & profile_json
+              & hold_output_json,
             rust_expr = m%"
             %{module}::Key {
               tap: %{tap_ref.rust_expr},
               hold: %{hold_ref.rust_expr},
               profile: %{std.to_string profile_id},
+              hold_output: %{hold_output_rust},
             }
           "%,
           }
@@ -297,6 +476,7 @@
           required_idle_time | optional | Number,
           hold_trigger_key_positions | optional | Array Number,
           quick_tap_ms | optional | Number,
+          pending_output | optional | TapHoldPendingOutputJson,
         },
 
         # Lowered JSON form: nested default_profile + profiles array.

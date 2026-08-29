@@ -699,6 +699,12 @@
             else
               {}
           )
+          & (
+            if std.record.has_field "pending_output" th_config then
+              { pending_output = th_config.pending_output }
+            else
+              {}
+          )
         in
         let profiles_array =
           th_profile_names
