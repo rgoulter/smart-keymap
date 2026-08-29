@@ -359,6 +359,16 @@ pub mod init {
                     (_, _) => None,
                 }
             }
+
+            fn pending_output(
+                &self,
+                pending_key_state: &Self::PendingKeyState,
+            ) -> Option<key::KeyOutput> {
+                match pending_key_state {
+                    PendingKeyState::TapHold(pks) => self.tap_hold.pending_output(pks),
+                    _ => None,
+                }
+            }
         }
     }
 
@@ -394,6 +404,9 @@ pub mod init {
             tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(4)),
             hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(224)),
             profile: 0,
+            hold_output: Some(smart_keymap::key::KeyOutput::from_key_modifiers(
+                smart_keymap::key::KeyboardModifiers::from_byte(1),
+            )),
         }]),
     );
 
