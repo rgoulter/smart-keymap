@@ -6,6 +6,7 @@ mod interrupt_ignore;
 mod layered;
 mod nested_hold;
 mod no_timeout;
+mod pending_output;
 mod profiles;
 mod quick_tap;
 mod required_idle_time;
