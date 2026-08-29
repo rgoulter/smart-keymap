@@ -346,7 +346,7 @@ pub unsafe extern "C" fn keymap_register_input_after_ms(
             debug_assert!(next_ms > 0);
         }
 
-        next_ev.map_or(0, |t| t)
+        next_ev.unwrap_or(0)
     }
 }
 
@@ -371,7 +371,7 @@ pub unsafe extern "C" fn keymap_next_event_timeout(report: &mut KeymapHidReport)
             debug_assert!(next_ms > 0);
         }
 
-        next_ev.map_or(0, |t| t)
+        next_ev.unwrap_or(0)
     }
 }
 
