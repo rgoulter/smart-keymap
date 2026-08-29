@@ -49,6 +49,7 @@ fn tap_hold_interrupt_keymap(
                 tap: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0x04)),
                 hold: key_system::Ref::Keyboard(smart_keymap::key::keyboard::Ref::KeyCode(0xE0)),
                 profile: 0,
+                hold_output: None,
             }]),
             smart_keymap::key::tri_state::System::new(Vec::new()),
         ),
