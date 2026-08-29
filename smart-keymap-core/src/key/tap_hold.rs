@@ -76,6 +76,15 @@ pub struct Profile {
     /// scoped to re-presses of the same keymap index.
     #[serde(default)]
     pub quick_tap_ms: Option<u16>,
+
+    /// Speculative HID while this tap-hold is pending.
+    ///
+    /// - [`PendingOutput::NoOutput`] (default): no HID until tap vs hold settles.
+    /// - [`PendingOutput::Hold`]: emit the hold binding's HID while still pending
+    ///   (ZMK `hold-while-undecided` / QMK Speculative Hold /
+    ///   FAK `eager_decision = 'hold`).
+    #[serde(default = "default_pending_output")]
+    pub pending_output: PendingOutput,
 }
 
 impl Profile {
@@ -123,6 +132,16 @@ pub struct Key<R> {
     /// Behavior profile index: `0` = [`Config::default_profile`]; `1..` = [`Config::profiles`].
     #[serde(default)]
     pub profile: u8,
+    /// HID of the hold binding when it is a keyboard key that is safe to emit
+    ///  while pending.
+    ///
+    /// Nickel fills this in keymap codegen
+    ///  (`ncl/smart_keys/tap_hold/keymap-codegen.ncl`)
+    ///  from the hold leaf.
+    /// LeftGUI / RightGUI and non-keyboard holds are `None`.
+    /// Used when [`Profile::pending_output`] is [`PendingOutput::Hold`].
+    #[serde(default)]
+    pub hold_output: Option<key::KeyOutput>,
 }
 
 impl<R> Key<R> {
@@ -132,12 +151,18 @@ impl<R> Key<R> {
             tap,
             hold,
             profile: 0,
+            hold_output: None,
         }
     }
 
     /// Constructs a tap-hold key that uses the given behavior profile index.
     pub const fn with_profile(tap: R, hold: R, profile: u8) -> Key<R> {
-        Key { tap, hold, profile }
+        Key {
+            tap,
+            hold,
+            profile,
+            hold_output: None,
+        }
     }
 }
 
@@ -148,8 +173,18 @@ impl<R: Default> Default for Key<R> {
             tap: R::default(),
             hold: R::default(),
             profile: 0,
+            hold_output: None,
         }
     }
+}
+
+/// Speculative output while tap-hold is pending.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum PendingOutput {
+    /// No speculative output (default).
+    NoOutput,
+    /// Emit hold binding while still pending.
+    Hold,
 }
 
 /// How the tap hold key should respond to interruptions (input events from other keys).
@@ -199,6 +234,13 @@ fn default_interrupt_response() -> InterruptResponse {
     DEFAULT_INTERRUPT_RESPONSE
 }
 
+/// The default pending output.
+pub const DEFAULT_PENDING_OUTPUT: PendingOutput = PendingOutput::NoOutput;
+
+fn default_pending_output() -> PendingOutput {
+    DEFAULT_PENDING_OUTPUT
+}
+
 fn default_profile_value() -> Profile {
     DEFAULT_PROFILE
 }
@@ -210,6 +252,7 @@ pub const DEFAULT_PROFILE: Profile = Profile {
     required_idle_time: None,
     hold_trigger_positions: None,
     quick_tap_ms: None,
+    pending_output: DEFAULT_PENDING_OUTPUT,
 };
 
 /// Default tap hold config.
@@ -340,6 +383,8 @@ pub enum Event {
 pub struct PendingKeyState {
     // For tracking 'tap' interruptions
     other_pressed_keymap_index: Option<u16>,
+    /// Speculative HID while undecided ([`PendingOutput::Hold`]).
+    output: Option<key::KeyOutput>,
 }
 
 impl PendingKeyState {
@@ -347,6 +392,15 @@ impl PendingKeyState {
     fn new() -> PendingKeyState {
         PendingKeyState {
             other_pressed_keymap_index: None,
+            output: None,
+        }
+    }
+
+    /// Constructs with speculative HID.
+    fn new_with_output(output: Option<key::KeyOutput>) -> Self {
+        Self {
+            other_pressed_keymap_index: None,
+            output,
         }
     }
 
@@ -474,8 +528,12 @@ impl<R, Keys: Index<usize, Output = Key<R>>> System<R, Keys> {
         &self,
         profile: &Profile,
         keymap_index: u16,
+        hold_output: Option<key::KeyOutput>,
     ) -> (PendingKeyState, Option<key::ScheduledEvent<Event>>) {
-        let pending = PendingKeyState::new();
+        let pending = match profile.pending_output {
+            PendingOutput::Hold => PendingKeyState::new_with_output(hold_output),
+            PendingOutput::NoOutput => PendingKeyState::new(),
+        };
         let scheduled = profile.timeout.map(|timeout| {
             key::ScheduledEvent::after(
                 timeout,
@@ -535,7 +593,8 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             Some(required_idle_time) => {
                 if context.idle_time_ms >= required_idle_time as u32 {
                     // Keymap has been idle long enough; use pending tap-hold key state.
-                    let (th_pks, maybe_sch_ev) = self.new_pending_key(&profile, keymap_index);
+                    let (th_pks, maybe_sch_ev) =
+                        self.new_pending_key(&profile, keymap_index, key_def.hold_output);
                     let pk = key::PressedKeyResult::Pending(th_pks);
                     let pke = match maybe_sch_ev {
                         Some(sch_ev) => {
@@ -552,7 +611,8 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
             }
             None => {
                 // Idle time not considered. Use pending tap-hold key state.
-                let (th_pks, maybe_sch_ev) = self.new_pending_key(&profile, keymap_index);
+                let (th_pks, maybe_sch_ev) =
+                    self.new_pending_key(&profile, keymap_index, key_def.hold_output);
                 let pk = key::PressedKeyResult::Pending(th_pks);
                 let pke = match maybe_sch_ev {
                     Some(sch_ev) => key::KeyEvents::scheduled_event(sch_ev.into_scheduled_event()),
@@ -608,6 +668,10 @@ impl<R: Copy + Debug, Keys: Debug + Index<usize, Output = Key<R>>> key::System<R
     ) -> Option<key::KeyOutput> {
         panic!() // tap_hold has no key state
     }
+
+    fn pending_output(&self, pending_key_state: &Self::PendingKeyState) -> Option<key::KeyOutput> {
+        pending_key_state.output
+    }
 }
 
 #[cfg(test)]
@@ -642,6 +706,7 @@ mod tests {
                 required_idle_time,
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         }
@@ -1214,6 +1279,7 @@ mod tests {
                 required_idle_time: Some(10),
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1237,6 +1303,7 @@ mod tests {
             required_idle_time: None,
             hold_trigger_positions: None,
             quick_tap_ms: None,
+            pending_output: PendingOutput::NoOutput,
         };
         let config = Config {
             default_profile: Profile {
@@ -1245,6 +1312,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[extra]),
         };
@@ -1263,6 +1331,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: None,
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1337,6 +1406,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1359,6 +1429,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1381,6 +1452,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(Slice::from_slice(&[2])),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         });
@@ -1405,6 +1477,7 @@ mod tests {
                 required_idle_time: None,
                 hold_trigger_positions: Some(triggers),
                 quick_tap_ms: None,
+                pending_output: PendingOutput::NoOutput,
             },
             profiles: Slice::from_slice(&[]),
         };
@@ -1426,6 +1499,7 @@ mod tests {
             required_idle_time: None,
             hold_trigger_positions: Some(triggers),
             quick_tap_ms: None,
+            pending_output: PendingOutput::NoOutput,
         };
         let config = Config {
             default_profile: Profile::new(),
