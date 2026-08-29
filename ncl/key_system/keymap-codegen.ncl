@@ -575,6 +575,19 @@ Ref::%{f.variant}(key_ref) => {
         )
         ++ "\n(_, _) => None,",
 
+      pending_output_arms =
+        if pending_systems == [] then
+          "_ => None,"
+        else
+          (
+            pending_systems
+            |> std.array.map (fun f =>
+              "PendingKeyState::%{f.variant}(pks) => self.%{f.field}.pending_output(pks),"
+            )
+            |> join
+          )
+          ++ "\n_ => None,",
+
       key_state_from_family =
         systems
         |> std.array.map (fun f =>
@@ -859,6 +872,15 @@ pub mod key_system {
         ) -> Option<key::KeyOutput> {
             match (key_ref, key_state) {
 %{key_output_arms}
+            }
+        }
+
+        fn pending_output(
+            &self,
+            pending_key_state: &Self::PendingKeyState,
+        ) -> Option<key::KeyOutput> {
+            match pending_key_state {
+%{pending_output_arms}
             }
         }
     }
