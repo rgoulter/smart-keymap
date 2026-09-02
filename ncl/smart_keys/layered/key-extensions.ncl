@@ -61,6 +61,11 @@
       layer
       |> std.array.map (fun cell => if cell == null then tlex else cell),
 
+    # Portion transparency (FAK tap.trans / hold.trans): not a whole-cell hole.
+    # Use as TH child, e.g. `K.J & K.hold K.trans` or `K.trans & K.hold K.LeftShift`.
+    # Lowered by column projection before JSON (see lower_th_portions).
+    trans = { transparent = true },
+
     # Semantic / variant key sugar: `named_layers` form of LayeredKey.
     # Unit `{}` base (keyboard noop) so callers can use `K.semantic {..}` without
     # `K.NO &`. Indices for names are assigned globally when compiling the keymap.
