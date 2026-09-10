@@ -32,6 +32,8 @@ tests/ceedling/ncl/
 firmware/ch32x035-usb-device-compositekm-c/ncl/boards/weact-ch32x-core-board.ncl
 firmware/ch32x035-usb-device-compositekm-c/ncl/test-actual-ch32x-48.ncl
 firmware/ch32x035-usb-device-compositekm-c/ncl/test-expected-ch32x-48.ncl
+firmware/ch32x035-usb-device-compositekm-c/ncl/test-actual-ch32x-60-improved.ncl
+firmware/ch32x035-usb-device-compositekm-c/ncl/test-expected-ch32x-60-improved.ncl
 firmware/ch32x035-usb-device-compositekm-c/keyboard/ncl/
 firmware/ch58x-ble-hid-keyboard-c/ncl/test-actual-wabble-60.ncl
 firmware/ch58x-ble-hid-keyboard-c/ncl/test-expected-wabble-60.ncl

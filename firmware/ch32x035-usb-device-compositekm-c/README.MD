@@ -11,6 +11,8 @@ is generated:
 
 - CH32X-48.
 
+- CH32X-60-improved.
+
 The firmware has been modified to use `libsmart_keymap`.
 
 ## Building

@@ -16,6 +16,13 @@ test:
 	  ncl/boards/ch32x-48.ncl \
 	  ncl/test-expected-ch32x-48.ncl \
 	  ncl/test-actual-ch32x-48.ncl
+	nickel \
+	  eval \
+	  --import-path=keyboard/ncl \
+	  --field=keymap_indices \
+	  ncl/boards/ch32x-60-improved.ncl \
+	  ncl/test-expected-ch32x-60-improved.ncl \
+	  ncl/test-actual-ch32x-60-improved.ncl
 
 .PHONY: format
 format:
