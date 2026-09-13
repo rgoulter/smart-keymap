@@ -51,34 +51,42 @@ let P = import "viz/points.ncl" in
     let th = kt.h in
     let tcx = tx + tw / 2 in
     let tcy = ty + th / 2 in
-    let lip_y = ty + th + (oy + oh - (ty + th)) * 0.55 in
+    let lip_y = ty + th + (oy + oh - (ty + th)) * 0.82 in
     let rx_side = canv.rx in
     let rx_top = 3 in
-    let side = {
-      kind = 'KeySide,
-      look = em,
-      x = ox,
-      y = oy,
-      w = ow,
-      h = oh,
-      rx = rx_side,
-      cx = ocx,
-      cy = ocy,
-      rot = pk.svg_rot,
-    }
+    let with_wash = fun node =>
+      if std.record.has_field "wash" cell then
+        node & { wash = cell.wash }
+      else
+        node
     in
-    let top = {
-      kind = 'KeyTop,
-      look = em,
-      x = tx,
-      y = ty,
-      w = tw,
-      h = th,
-      rx = rx_top,
-      cx = ocx,
-      cy = ocy,
-      rot = pk.svg_rot,
-    }
+    let side =
+      with_wash {
+        kind = 'KeySide,
+        look = em,
+        x = ox,
+        y = oy,
+        w = ow,
+        h = oh,
+        rx = rx_side,
+        cx = ocx,
+        cy = ocy,
+        rot = pk.svg_rot,
+      }
+    in
+    let top =
+      with_wash {
+        kind = 'KeyTop,
+        look = em,
+        x = tx,
+        y = ty,
+        w = tw,
+        h = th,
+        rx = rx_top,
+        cx = ocx,
+        cy = ocy,
+        rot = pk.svg_rot,
+      }
     in
     let texts =
       if !show_text em then
@@ -163,6 +171,7 @@ let P = import "viz/points.ncl" in
     let title = P.get_or args "title" "" in
     let canv = P.get_or args "canvas" P.default_canvas in
     let y_shift = P.get_or args "y_off" 0 in
+    let wash_i = P.get_or args "wash" null in
     let title_nodes =
       if title == "" then
         []
@@ -173,6 +182,29 @@ let P = import "viz/points.ncl" in
             x = 16,
             y = y_shift + 20,
             text = title,
+          }
+        ]
+    in
+    let board_wash =
+      if wash_i == null || placed == [] then
+        []
+      else
+        let min_x = placed |> std.array.map (fun p => p.x) |> P.min_of in
+        let min_y = placed |> std.array.map (fun p => p.y) |> P.min_of in
+        let max_x = placed |> std.array.map (fun p => p.x + p.w) |> P.max_of in
+        let max_y = placed |> std.array.map (fun p => p.y + p.h) |> P.max_of in
+        [
+          {
+            kind = 'Wash,
+            wash = wash_i,
+            x = min_x - 10,
+            y = min_y + y_shift - 10,
+            w = max_x - min_x + 20,
+            h = max_y - min_y + 20,
+            rx = 12,
+            rot = 0,
+            cx = 0,
+            cy = 0,
           }
         ]
     in
@@ -188,7 +220,7 @@ let P = import "viz/points.ncl" in
       )
       |> std.array.flatten
     in
-    title_nodes @ key_nodes,
+    title_nodes @ board_wash @ key_nodes,
 
   of_panes = fun args =>
     let src_points = args.points in
@@ -232,6 +264,7 @@ let P = import "viz/points.ncl" in
               title = pane.title,
               canvas = canv,
               y_off = acc.height,
+              wash = P.get_or pane "wash" null,
             }
             @ (
               if has_guide then
@@ -254,11 +287,35 @@ let P = import "viz/points.ncl" in
             )
             @ (
               if has_footer then
-                draw_keycap {
+                let cap = P.get_or pane "caption" "resolves as chord" in
+                let panel_w = u_px + 88 in
+                let panel_h = u_px + 36 in
+                let panel_x = sz.width / 2 - panel_w / 2 in
+                let panel_y = acc.height + sz.height - canv.pad + 6 in
+                [
+                  {
+                    kind = 'Panel,
+                    x = panel_x,
+                    y = panel_y,
+                    w = panel_w,
+                    h = panel_h,
+                    rx = 10,
+                    rot = 0,
+                    cx = 0,
+                    cy = 0,
+                  },
+                  {
+                    kind = 'Caption,
+                    x = sz.width / 2,
+                    y = panel_y + 14,
+                    text = cap,
+                  }
+                ]
+                @ draw_keycap {
                   placed =
                     virtual_placed {
                       cx = sz.width / 2,
-                      cy = acc.height + sz.height - canv.pad + 10 + u_px / 2,
+                      cy = panel_y + 22 + u_px / 2,
                       size = u_px,
                     },
                   cell = {
@@ -278,7 +335,7 @@ let P = import "viz/points.ncl" in
               acc.height
               + sz.height
               + canv.pane_gap
-              + (if has_footer then u_px + 14 else 0),
+              + (if has_footer then u_px + 44 else 0),
           }
         )
         { nodes = [], height = 0 }

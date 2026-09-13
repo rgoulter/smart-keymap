@@ -39,7 +39,18 @@ let L = import "viz/legends.ncl" in
                 "layer %{i}",
             cells =
               layer
-              |> std.array.map (fun k => cell (L.of_layer_key k) (L.emphasis_of k)),
+              |> std.array.map (fun k =>
+                let em = L.emphasis_of k in
+                let dest = L.layer_hold_index k in
+                let c = cell (L.of_layer_key k) em in
+                if dest != null then
+                  c & { wash = dest }
+                else if em == 'Normal && i > 0 then
+                  c & { wash = i }
+                else
+                  c
+              ),
+            wash = i,
           }
         )
       in
@@ -123,6 +134,7 @@ let L = import "viz/legends.ncl" in
             title = heading,
             cells = pane_cells,
             footer = L.of_key ch.key,
+            caption = "resolves as chord",
           }
         )
       in

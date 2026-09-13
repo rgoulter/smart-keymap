@@ -352,6 +352,18 @@ let usage = import "hid-usage-keyboard.ncl" in
     else
       'Normal,
 
+  # Destination layer index for a hold-layer-mod key (tap or hold half).
+  layer_hold_index = fun k =>
+    if !std.is_record k then
+      null
+    else if std.record.has_field "layer_modifier" k
+    && std.record.has_field "hold" k.layer_modifier then
+      k.layer_modifier.hold
+    else if std.record.has_field "hold" k then
+      layer_hold_index k.hold
+    else
+      null,
+
   checks =
     let K = import "keys.ncl" in
     {
@@ -402,6 +414,14 @@ let usage = import "hid-usage-keyboard.ncl" in
       check_xxxx = {
         actual = { blank = label K.NO, unused = is_xxxx K.NO, live = is_xxxx K.A },
         expected = { blank = "", unused = true, live = false },
+      },
+      check_layer_hold_index = {
+        actual = {
+          hold = layer_hold_index (K.layer_mod.hold 2),
+          tap_hold = layer_hold_index (K.Tab & K.hold (K.layer_mod.hold 8)),
+          letter = layer_hold_index K.A,
+        },
+        expected = { hold = 2, tap_hold = 8, letter = null },
       },
     },
 }

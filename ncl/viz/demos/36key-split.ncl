@@ -1,3 +1,6 @@
+# Logical 3x5+3 (column stagger, mirrored RHS). Not CH32X-36 PCB
+# geometry: that board's thumb splay/rotation comes from KiCad, which
+# this demo does not import.
 let viz = import "viz.ncl" in
 let km =
   (import "../../../tests/ncl/keymap-36key-rgoulter/keymap.ncl")
