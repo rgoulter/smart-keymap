@@ -1,0 +1,189 @@
+name: Build CH32X Firmware (Reusable)
+
+# Reusable workflow that builds CH32X firmware from a keymap.ncl and a
+# board.ncl, and uploads the resulting .elf/.hex/.bin as an artifact.
+#
+# Start here: ch32x0 bring-up.
+# Future targets (ch58x, rp2040, stm32f4) can follow the same pattern.
+#
+# Two consumption modes:
+#
+# 1. From this repo (smart-keymap itself):
+#   uses: ./.github/workflows/build-ch32x-firmware.yaml
+#   with: { keymap: tests/ncl/keymap-48key-rgoulter/keymap.ncl, board: ch32x-48 }
+#
+# 2. From an external keyboard repo (provides "give me firmware .hex/.bin
+#    given board and keymap" without local toolchain):
+#   # in your keyboard repo's workflow:
+#   jobs:
+#     build:
+#       uses: rgoulter/smart-keymap/.github/workflows/build-ch32x-firmware.yaml@master
+#       with:
+#         keymap: keymap.ncl
+#         board: keyboard.ncl   # or a built-in name like ch32x-48
+#
+# Inputs `keymap` and `board` are resolved relative to the *caller's*
+# workspace. When `board` is a path ending in `.ncl` it is treated as a
+# custom board file; otherwise it is treated as a built-in board name
+# (see action's `board` input docs). The workflow checks out both the caller
+# and smart-keymap, so `board: keyboard.ncl` can live solely in the caller.
+
+on:
+  workflow_call:
+    inputs:
+      keymap:
+        description: |
+          Path to keymap.ncl relative to the caller's repository root.
+          Example: `keymap.ncl` or `keyboards/my-board/keymap.ncl`.
+          Also accepts `tests/ncl/.../keymap.ncl` when called from this repo.
+        required: true
+        type: string
+      board:
+        description: |
+          Board definition. Either a built-in board name
+          (`ch32x-48`, `ch32x-48/rev2025_2`, `ch32x-75`, `ch32x-36-lhs`,
+          `ch32x-36-rhs`, `weact-ch32x-core-board`) or a path to a custom
+          board.ncl file relative to the caller's repository root
+          (e.g. `keyboard.ncl`, `boards/my-board.ncl`).
+        required: true
+        type: string
+      artifact-name:
+        description: Name for the uploaded artifact
+        required: false
+        default: firmware-ch32x
+        type: string
+      nickel-version:
+        description: Nickel version
+        required: false
+        default: "1.16.0"
+        type: string
+      gcc-version:
+        description: xPack riscv-none-elf-gcc version
+        required: false
+        default: "14.2.0-3"
+        type: string
+      build-dir:
+        description: CMake build directory (relative to firmware dir)
+        required: false
+        default: build
+        type: string
+
+  # Optional: manual dispatch for testing the reusable workflow in isolation.
+  # Allows triggering from the Actions tab with a keymap/board in this repo.
+  workflow_dispatch:
+    inputs:
+      keymap:
+        description: Path to keymap.ncl
+        required: true
+        default: tests/ncl/keymap-4key-simple/keymap.ncl
+        type: string
+      board:
+        description: Board name or path to board.ncl
+        required: true
+        default: ch32x-48
+        type: string
+      artifact-name:
+        description: Artifact name
+        required: false
+        default: firmware-ch32x
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # When invoked as workflow_call from an external repo, github.repository
+      # is the caller, not smart-keymap. Checkout caller first.
+      - name: Checkout caller repository
+        uses: actions/checkout@v4
+        with:
+          # For workflow_dispatch running in smart-keymap itself, this is
+          # already smart-keymap. Deduplicate via path.
+          path: caller
+          # Fetch caller at the triggering ref when called externally.
+          # actions/checkout defaults to the caller repo when used in a
+          # reusable workflow, so no repository: override needed for the
+          # caller's checkout. We checkout to `caller/` to keep smart-keymap
+          # checkout separate.
+
+      - name: Determine smart-keymap ref
+        id: sm-ref
+        shell: bash
+        run: |
+          WF_REF="${{ github.workflow_ref }}"
+          REF="${WF_REF##*@}"
+          if [[ "$REF" == "$WF_REF" ]] || [[ -z "$REF" ]]; then
+            REF="${{ github.ref }}"
+          fi
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "Determined smart-keymap ref: $REF (workflow_ref=$WF_REF, github.ref=${{ github.ref }})"
+
+      - name: Checkout smart-keymap
+        uses: actions/checkout@v4
+        with:
+          repository: rgoulter/smart-keymap
+          ref: ${{ steps.sm-ref.outputs.ref }}
+          path: smart-keymap
+
+      - name: Resolve caller paths
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          # Prefer inputs from workflow_call; fall back to workflow_dispatch.
+          KEYMAP_INPUT="${{ inputs.keymap }}"
+          BOARD_INPUT="${{ inputs.board }}"
+
+          # Caller checkout is at caller/. Smart-keymap is at smart-keymap/.
+          # The action will run with cwd = smart-keymap/, so we need absolute
+          # paths or paths relative to smart-keymap/ for keymap/board.
+
+          # If caller is smart-keymap itself, `caller/` and `smart-keymap/`
+          # are two checkouts of the same repo. Resolve against caller/ first.
+          KEYMAP_CANDIDATE="caller/$KEYMAP_INPUT"
+          if [[ -f "$KEYMAP_CANDIDATE" ]]; then
+            KEYMAP_ABS="$(realpath "$KEYMAP_CANDIDATE")"
+          elif [[ -f "smart-keymap/$KEYMAP_INPUT" ]]; then
+            KEYMAP_ABS="$(realpath "smart-keymap/$KEYMAP_INPUT")"
+          else
+            echo "::error::keymap not found: $KEYMAP_INPUT (looked in caller/$KEYMAP_INPUT and smart-keymap/$KEYMAP_INPUT)"
+            ls -R caller 2>/dev/null | head -n 40 || true
+            exit 1
+          fi
+
+          if [[ "$BOARD_INPUT" == *.ncl ]]; then
+            BOARD_CANDIDATE="caller/$BOARD_INPUT"
+            if [[ -f "$BOARD_CANDIDATE" ]]; then
+              BOARD_ABS="$(realpath "$BOARD_CANDIDATE")"
+            elif [[ -f "smart-keymap/$BOARD_INPUT" ]]; then
+              BOARD_ABS="$(realpath "smart-keymap/$BOARD_INPUT")"
+            else
+              echo "::error::board file not found: $BOARD_INPUT"
+              ls -R caller 2>/dev/null | head -n 40 || true
+              exit 1
+            fi
+          else
+            # Built-in board name — pass through, action will resolve it
+            BOARD_ABS="$BOARD_INPUT"
+          fi
+
+          echo "keymap-abs=$KEYMAP_ABS" >> "$GITHUB_OUTPUT"
+          echo "board-abs=$BOARD_ABS" >> "$GITHUB_OUTPUT"
+          echo "Resolved keymap: $KEYMAP_ABS"
+          echo "Resolved board: $BOARD_ABS"
+
+      - name: Build firmware
+        uses: ./smart-keymap/.github/actions/build-ch32x-firmware
+        with:
+          keymap: ${{ steps.resolve.outputs.keymap-abs }}
+          board: ${{ steps.resolve.outputs.board-abs }}
+          smart-keymap-dir: smart-keymap
+          build-dir: ${{ inputs.build-dir }}
+          nickel-version: ${{ inputs.nickel-version }}
+          gcc-version: ${{ inputs.gcc-version }}
+          artifact-name: ${{ inputs.artifact-name }}
+          upload-artifact: "true"
