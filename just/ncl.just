@@ -55,6 +55,11 @@ save-pick:
     test -n "${fixture}"
     just ncl::save "${fixture}"
 
+# Write keymap-viz demo SVGs (Nickel core). Usage: just ncl::viz /tmp/keymap-viz
+[group('ncl')]
+viz outdir="." demo="all":
+    ncl/scripts/keymap-viz.sh "{{ outdir }}" "{{ demo }}"
+
 # Format Nickel sources (make ncl-format)
 [group('ncl')]
 format:
