@@ -27,3 +27,4 @@ nickel_eval_checks \
   layouts/remap.ncl
 
 nickel_eval_checks sequence.ncl
+nickel_eval_checks viz.ncl

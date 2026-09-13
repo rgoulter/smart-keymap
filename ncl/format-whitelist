@@ -27,6 +27,8 @@ ncl/keymap-ncl-to-json.ncl
 ncl/keymap-codegen.ncl
 ncl/keys.ncl
 ncl/validators.ncl
+ncl/viz.ncl
+ncl/viz/
 tests/ceedling/keymaps/
 tests/ceedling/ncl/
 firmware/ch32x035-usb-device-compositekm-c/ncl/boards/weact-ch32x-core-board.ncl
