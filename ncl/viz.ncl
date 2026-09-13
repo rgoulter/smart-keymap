@@ -70,6 +70,7 @@ let recipes_m = import "viz/recipes.ncl" in
     & bind_m.checks
     & legends_m.checks
     & recipes_m.checks
+    & scene_m.checks
     & {
       check_48key_dense_is_panes =
         let km =
@@ -99,15 +100,15 @@ let recipes_m = import "viz/recipes.ncl" in
         let pts = combinators_m.grid { rows = 4, cols = 12 } in
         let r = recipes_m.legends { points = pts, keys = std.array.at 0 km.layers_of_keys } in
         let sc = scene_m.of_panes { points = pts, panes = r.panes } in
-        let rect_count =
+        let top_count =
           sc.nodes
-          |> std.array.filter (fun n => n.kind == 'Rect)
+          |> std.array.filter (fun n => n.kind == 'KeyTop)
           |> std.array.length
         in
         let saw_tab = std.array.any (fun n => n.kind == 'Text && n.text == "Tab") sc.nodes in
         {
-          actual = { n_rect = rect_count, has_tab = saw_tab },
-          expected = { n_rect = 48, has_tab = true },
+          actual = { n_top = top_count, has_tab = saw_tab },
+          expected = { n_top = 48, has_tab = true },
         },
     },
 }

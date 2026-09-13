@@ -37,7 +37,9 @@ let L = import "viz/legends.ncl" in
                 "%{heading} · layer %{i}"
               else
                 "layer %{i}",
-            cells = layer |> std.array.map (fun k => cell (L.of_layer_key k) 'Normal),
+            cells =
+              layer
+              |> std.array.map (fun k => cell (L.of_layer_key k) (L.emphasis_of k)),
           }
         )
       in
@@ -76,7 +78,21 @@ let L = import "viz/legends.ncl" in
           )
           n
       in
-      'Panes { panes = [{ title = heading, cells = pane_cells }] },
+      'Panes {
+        panes = [
+          {
+            title = heading,
+            cells = pane_cells,
+            guide = {
+              center = "Df",
+              hold = "Held",
+              tl = "L1",
+              tr = "L2",
+              bl = "L3",
+            },
+          }
+        ]
+      },
 
   # One pane per chord: non-members muted, members pressed, output at centroid.
   chords = fun args =>
@@ -106,7 +122,7 @@ let L = import "viz/legends.ncl" in
           {
             title = heading,
             cells = pane_cells,
-            output = { text = L.label ch.key, indices = ch.indices },
+            footer = L.of_key ch.key,
           }
         )
       in

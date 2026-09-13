@@ -155,19 +155,77 @@ let usage = import "hid-usage-keyboard.ncl" in
 
   layer_mod_label = fun lm =>
     if std.record.has_field "hold" lm then
-      "L%{lm.hold}"
+      "H(L%{lm.hold})"
     else if std.record.has_field "toggle" lm then
-      "TG"
+      "Tg(L%{lm.toggle})"
     else if std.record.has_field "sticky" lm then
-      "ST"
+      "St(L%{lm.sticky})"
     else if std.record.has_field "lock" lm then
-      "Lk"
+      if std.is_number lm.lock then
+        "Lk(L%{lm.lock})"
+      else
+        "Lk"
     else if std.record.has_field "default_" lm then
-      "DF"
+      "Df(L%{lm.default_})"
     else if std.record.has_field "set_active_layers_to" lm then
       "LY"
     else
       "LM",
+
+  # C/S/A/G prefix for extra modifiers. Shift used to pick a glyph is omitted.
+  mod_letters = fun m skip_shift =>
+    [
+      {
+        on =
+          (std.record.has_field "left_ctrl" m && m.left_ctrl)
+          || (std.record.has_field "right_ctrl" m && m.right_ctrl),
+        s = "C",
+      },
+      {
+        on =
+          !skip_shift
+          && (
+            (std.record.has_field "left_shift" m && m.left_shift)
+            || (std.record.has_field "right_shift" m && m.right_shift)
+          ),
+        s = "S",
+      },
+      {
+        on =
+          (std.record.has_field "left_alt" m && m.left_alt)
+          || (std.record.has_field "right_alt" m && m.right_alt),
+        s = "A",
+      },
+      {
+        on =
+          (std.record.has_field "left_gui" m && m.left_gui)
+          || (std.record.has_field "right_gui" m && m.right_gui),
+        s = "G",
+      },
+    ]
+    |> std.array.filter (fun f => f.on)
+    |> std.array.map (fun f => f.s)
+    |> std.string.join "",
+
+  wrap_mods = fun letters core =>
+    if letters == "" then
+      core
+    else
+      "%{letters}(%{core})",
+
+  # XXXX / keys.NO: a no-output key, used as "this is the held layer-mod key".
+  is_xxxx = fun k =>
+    std.is_record k
+    && (
+      k == {}
+      || (
+        std.record.has_field "key_code" k
+        && k.key_code == 0
+        && std.array.length (std.record.fields k) == 1
+      )
+    ),
+
+  is_transparent = fun k => k == null,
 
   # Label a key with wrappers already stripped (no hold / layered).
   label = fun k =>
@@ -175,6 +233,8 @@ let usage = import "hid-usage-keyboard.ncl" in
       ""
     else if !std.is_record k then
       "?"
+    else if is_xxxx k then
+      ""
     else if std.record.has_field "key_code" k then
       let shifted =
         std.record.has_field "modifiers" k
@@ -182,10 +242,21 @@ let usage = import "hid-usage-keyboard.ncl" in
         && k.modifiers.left_shift
       in
       let gk = "%{k.key_code}" in
-      if shifted && std.record.has_field gk shifted_glyphs then
-        std.record.get gk shifted_glyphs
+      let used_glyph = shifted && std.record.has_field gk shifted_glyphs in
+      let core =
+        if used_glyph then
+          std.record.get gk shifted_glyphs
+        else if k.key_code == 0 then
+          ""
+        else
+          usage_label k.key_code
+      in
+      if core == "" then
+        ""
+      else if std.record.has_field "modifiers" k then
+        wrap_mods (mod_letters k.modifiers used_glyph) core
       else
-        usage_label k.key_code
+        core
     else if std.record.has_field "consumer_code" k then
       consumer_label k.consumer_code
     else if std.record.has_field "mouse" k then
@@ -273,6 +344,14 @@ let usage = import "hid-usage-keyboard.ncl" in
         bl = "",
       },
 
+  emphasis_of = fun k =>
+    if is_transparent k then
+      'Transparent
+    else if is_xxxx k then
+      'Unused
+    else
+      'Normal,
+
   checks =
     let K = import "keys.ncl" in
     {
@@ -314,7 +393,15 @@ let usage = import "hid-usage-keyboard.ncl" in
         },
       check_layer_mod = {
         actual = label (K.layer_mod.hold 2),
-        expected = "L2",
+        expected = "H(L2)",
+      },
+      check_gui_pgup = {
+        actual = label (K.LeftGUI & K.PageUp),
+        expected = "G(PgUp)",
+      },
+      check_xxxx = {
+        actual = { blank = label K.NO, unused = is_xxxx K.NO, live = is_xxxx K.A },
+        expected = { blank = "", unused = true, live = false },
       },
     },
 }
