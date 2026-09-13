@@ -1002,18 +1002,26 @@ pub mod init {
                         Some(key_system::Ref::Layered(
                             smart_keymap::key::layered::Ref::Modifier(1),
                         )),
-                        None,
-                        None,
+                        Some(key_system::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
+                        Some(key_system::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
                     key_system::Ref::Layered(smart_keymap::key::layered::Ref::Modifier(2)),
                     [
-                        None,
+                        Some(key_system::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                         Some(key_system::Ref::Layered(
                             smart_keymap::key::layered::Ref::Modifier(3),
                         )),
-                        None,
+                        Some(key_system::Ref::Keyboard(
+                            smart_keymap::key::keyboard::Ref::KeyCode(0),
+                        )),
                     ],
                 ),
                 smart_keymap::key::layered::LayeredKey::new(
