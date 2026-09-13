@@ -44,7 +44,7 @@
   Canvas = {
     scale | Number | default = 2.8,
     pad | Number | default = 16,
-    inset | Number | default = 1.2,
+    inset | Number | default = 0,
     title_h | Number | default = 28,
     pane_gap | Number | default = 24,
     rx | Number | default = 6,
@@ -53,7 +53,7 @@
   default_canvas = {
     scale = 2.8,
     pad = 16,
-    inset = 1.2,
+    inset = 0,
     title_h = 28,
     pane_gap = 24,
     rx = 6,
@@ -130,6 +130,29 @@
           down_high_is_bottom = (std.array.at 1 down.placed).cy > (std.array.at 0 down.placed).cy,
         },
         expected = { up_high_is_top = true, down_high_is_bottom = true },
+      },
+
+    check_packed_neighbours =
+      let keys = [
+        { x = 5, y = 5, w = 10, h = 10, rot = 0 },
+        { x = 15, y = 5, w = 10, h = 10, rot = 0 },
+      ]
+      in
+      let test_canvas = {
+        scale = 1,
+        pad = 0,
+        inset = 0,
+        title_h = 0,
+        pane_gap = 24,
+        rx = 6,
+      }
+      in
+      let pl = place { points = keys, y_up = false, canvas = test_canvas, title = false } in
+      let left = std.array.at 0 pl.placed in
+      let right = std.array.at 1 pl.placed in
+      {
+        actual = left.x + left.w,
+        expected = right.x,
       },
 
     check_bbox_grid_cell =
