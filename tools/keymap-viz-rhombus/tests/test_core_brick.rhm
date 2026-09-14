@@ -1,0 +1,66 @@
+#lang rhombus
+//// XXXX / blocked slots as pressed bricks on a stacked 48-key-like layout
+//// (hand-built cells — no checked-in LegendIR dumps)
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def pts = grid(4, 12)
+fun layer_cells(xxxx_idxs :: List, wash_map :: List) :: List.of(Cell):
+  // wash_map: list of {i, w} pairs as 2-lists [i, w]
+  for List (i in 0 .. 48):
+    def is_xxxx = for values (hit = #false):
+                    each j in xxxx_idxs
+                    if j == i | #true | hit
+    def wash = for values (w = #false):
+                 each pair in wash_map
+                 if pair[0] == i | pair[1] | w
+    if is_xxxx
+    | blank(~emphasis: "pressed")
+    | if wash
+      | key("H(L" ++ to_string(wash) ++ ")", ~wash: wash)
+      | key("A")
+
+def L0 = layer_cells([], [[40, 2], [43, 1]])
+def L1 = layer_cells([43], [])
+def L2 = layer_cells([40], [])
+def L3 = layer_cells([40, 43], [])
+def layers = [L0, L1, L2, L3]
+def panes = recipe_stacked("48t", pts, layers)
+def sc = scene_of_panes(panes)
+def tops = for List:
+             each n in sc.nodes
+             keep_when n["kind"] == "KeyTop"
+             n
+def sides = for List:
+              each n in sc.nodes
+              keep_when n["kind"] == "KeySide"
+              n
+
+//// --- act / assert ---
+assert_eq("Raise XXXX pressed", L1[43].emphasis, "pressed")
+assert_eq("Lower XXXX pressed", L2[40].emphasis, "pressed")
+assert_eq("Adjust XXXX a pressed", L3[40].emphasis, "pressed")
+assert_eq("Adjust XXXX b pressed", L3[43].emphasis, "pressed")
+assert_eq("LOWER wash", L0[40].wash, 2)
+assert_eq("RAISE wash", L0[43].wash, 1)
+assert_eq("stacked KeyTop omits XXXX", tops.length(), 48 * 4 - 4)
+assert_eq("stacked KeySide keeps XXXX", sides.length(), 48 * 4)
+assert_eq("Raise XXXX KeySide pressed fill",
+          sides[48 + 43]["fill"], theme["side_pressed"])
+assert_eq("no KeyTop uses pressed fill",
+          for values (n_top = 0):
+            each n in sc.nodes
+            if n["kind"] == "KeyTop" && n["fill"] == theme["side_pressed"]
+            | n_top + 1
+            | n_top,
+          0)
+assert_eq("base RAISE KeyTop = L1 wash",
+          tops[43]["fill"], LAYER_PALETTE[1]["top"])
+assert_eq("base LOWER KeyTop = L2 wash",
+          tops[40]["fill"], LAYER_PALETTE[2]["top"])
+
+println("OK test_core_brick")

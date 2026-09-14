@@ -1,0 +1,51 @@
+#lang rhombus
+//// Cell wash (layer-mod dest) overrides pane layer_index; pressed ignores wash
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def pts1 = grid(1, 1)
+def c_wash = key("Tab", ~hold: "H(L8)", ~wash: 8)
+def sc_cw = scene_of_pane(pane("base", pts1, [c_wash], ~layer_index: 0))
+def c_wash_pr = key("", ~emphasis: "pressed", ~wash: 8)
+def sc_cwp = scene_of_pane(pane("prw", pts1, [c_wash_pr], ~layer_index: 0))
+
+//// --- act / assert ---
+def top_cw = for values (found = #false):
+               each n in sc_cw.nodes
+               if n["kind"] == "KeyTop" && n["fill"] == LAYER_PALETTE[8]["top"]
+               | #true
+               | found
+assert_true("cell wash beats pane layer_index", top_cw)
+def pr_wash_ok = for values (found = #false):
+                   each n in sc_cwp.nodes
+                   if n["kind"] == "KeySide" && n["fill"] == theme["side_pressed"]
+                   | #true
+                   | found
+assert_true("pressed ignores cell wash", pr_wash_ok)
+assert_eq("pressed wash omits KeyTop", count_kind(sc_cwp, "KeyTop"), 0)
+
+//// Synthetic 36-key-like thumbs: wash on indices 30/32 without LegendIR dumps
+def pts36 = split_3x5_3()
+def cells36 = for List (i in 0 .. 36):
+                    match i
+                    | 30: key("Tab", ~hold: "H(L8)", ~wash: 8)
+                    | 32: key("Spc", ~hold: "H(L7)", ~wash: 7)
+                    | ~else: key("A")
+def panes36 = recipe_stacked("36t", pts36, [cells36, cells36])
+def sc36 = scene_of_panes(panes36)
+def tops36 = for List:
+               each n in sc36.nodes
+               keep_when n["kind"] == "KeyTop"
+               n
+assert_eq("synth base Tab KeyTop = L8 wash",
+          tops36[30]["fill"], LAYER_PALETTE[8]["top"])
+assert_eq("synth base Spc KeyTop = L7 wash",
+          tops36[32]["fill"], LAYER_PALETTE[7]["top"])
+assert_eq("synth base letter keeps L0 wash",
+          tops36[0]["fill"], LAYER_PALETTE[0]["top"])
+
+println("OK test_core_cell_wash")

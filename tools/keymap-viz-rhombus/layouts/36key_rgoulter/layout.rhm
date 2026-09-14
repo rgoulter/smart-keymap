@@ -1,0 +1,25 @@
+#lang rhombus
+//// 36key-rgoulter: split_3x5_3 + Nickel LegendIR from keymap-36key-rgoulter
+
+import:
+  "../../src/keyboard_layout.rhm" open
+  "../../src/svg.rhm" open
+  "../../src/io.rhm" open
+
+def bundle = "out/.cache/36key-rgoulter-bundle.json"
+def pts = split_3x5_3()
+def layers = load_bundle_layers(bundle)
+def dense = load_bundle_dense(bundle)
+def names = ["Base (Dvorak)", "Tap (Dvorak)", "Extra (QWERTY)", "Xtap (QWERTY)",
+             "NUM", "SYM", "FUN", "NAV", "MOU", "MED"]
+
+ensure_dir("out")
+emit_points("out/points-36key-split.json", pts)
+emit_svg("out/36key-rgoulter-dense.svg",
+         recipe_dense("36key-rgoulter dense", pts, dense))
+emit_svg("out/36key-rgoulter-stacked.svg",
+         recipe_stacked("36key-rgoulter", pts, layers, ~layer_names: names))
+emit_svg("out/36key-rgoulter-stacked-dark.svg",
+         recipe_stacked("36key-rgoulter", pts, layers, ~layer_names: names),
+         ~theme: theme_dark)
+println("DONE 36key_rgoulter")

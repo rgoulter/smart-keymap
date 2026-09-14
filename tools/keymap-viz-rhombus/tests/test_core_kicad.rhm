@@ -1,0 +1,35 @@
+#lang rhombus
+//// KiCad switch weave → PointsIR; scene negates rot; y-down thumbs
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+  "../src/io.rhm" open
+
+//// --- assemble ---
+def lhs = load_switches("fixtures/points/ch32x-36-lhs-switches.json")
+def rhs = load_switches("fixtures/points/ch32x-36-rhs-switches.json")
+def kicad = weave_kicad_3x5_3(lhs, rhs)
+def cells36 = for List (i in 0 .. 36): key("x")
+def pk = pane("kicad", kicad, cells36)
+def sk = scene_of_pane(pk)
+def thumb = kicad[32]
+
+//// --- act / assert ---
+assert_eq("kicad weave count", kicad.length(), 36)
+assert_true("thumb has nonzero kicad rot", thumb.rot != 0.0 && thumb.rot != 0)
+def found = for values (ok = #false):
+              each n in sk.nodes
+              if n["kind"] == "KeySide" && n["rot"] == -thumb.rot
+              | #true
+              | ok
+assert_true("scene negates KiCad rot", found)
+def row0_y = kicad[0].y
+def thumb_y = kicad[30].y
+assert_true("kicad thumbs below alphas (y-down source)", thumb_y > row0_y)
+assert_true("kicad RHS row0 x increases", kicad[5].x < kicad[9].x)
+assert_true("kicad RHS thumbs x increases", kicad[33].x < kicad[35].x)
+assert_eq("kicad RHS inner thumb rot", kicad[33].rot, 20.0)
+
+println("OK test_core_kicad")

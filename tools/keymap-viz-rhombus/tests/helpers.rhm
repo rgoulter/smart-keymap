@@ -1,0 +1,23 @@
+#lang rhombus
+//// Shared assert helpers for test_core_*.rhm
+
+export:
+  all_defined
+
+fun assert_eq(label :: String, actual, expected):
+  if actual == expected
+  | println("PASS " ++ label)
+  | error("FAIL " ++ label
+            ++ ": actual=" ++ to_string(actual)
+            ++ " expected=" ++ to_string(expected))
+
+fun assert_true(label :: String, v :: Boolean):
+  assert_eq(label, v, #true)
+
+fun assert_close(label :: String, actual, expected, ~eps = 1e-9):
+  def d = if actual >= expected | actual - expected | expected - actual
+  if d <= eps
+  | println("PASS " ++ label)
+  | error("FAIL " ++ label
+            ++ ": actual=" ++ to_string(actual)
+            ++ " expected=" ++ to_string(expected))

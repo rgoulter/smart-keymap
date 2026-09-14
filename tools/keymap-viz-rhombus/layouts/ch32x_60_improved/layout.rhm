@@ -1,0 +1,20 @@
+#lang rhombus
+//// ch32x-60-improved board: ansi_66 PointsIR + keymap-66key-ansi-fn LegendIR
+
+import:
+  "../../src/keyboard_layout.rhm" open
+  "../../src/svg.rhm" open
+  "../../src/io.rhm" open
+
+def bundle = "out/.cache/66key-ansi-fn-bundle.json"
+def pts = ansi_66()
+def layers = load_bundle_layers(bundle)
+def dense = load_bundle_dense(bundle)
+
+ensure_dir("out")
+emit_points("out/points-ch32x-60-improved.json", pts)
+emit_svg("out/ch32x-60-improved-dense.svg",
+         recipe_dense("ch32x-60-improved dense", pts, dense))
+emit_svg("out/ch32x-60-improved-stacked.svg",
+         recipe_stacked("ch32x-60-improved", pts, layers))
+println("DONE ch32x_60_improved")

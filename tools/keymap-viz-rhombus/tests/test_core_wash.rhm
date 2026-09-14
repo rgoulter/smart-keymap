@@ -1,0 +1,59 @@
+#lang rhombus
+//// Per-layer pane wash (LAYER_PALETTE) on stacked recipes; dark palette
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def g = grid(4, 12)
+def cells_w = for List (i in 0 .. 48): key("A")
+def panes_w = recipe_stacked("wash", g, [cells_w, cells_w])
+def sc_w = scene_of_panes(panes_w)
+def tops = for List:
+             each n in sc_w.nodes
+             keep_when n["kind"] == "KeyTop"
+             n
+
+//// --- act / assert ---
+assert_true("LAYER_PALETTE has 2+ entries", LAYER_PALETTE.length() > 1)
+assert_eq("wash L0 layer_index", panes_w[0].layer_index, 0)
+assert_eq("wash L1 layer_index", panes_w[1].layer_index, 1)
+def fill_l0 = LAYER_PALETTE[0]["top"]
+def fill_l1 = LAYER_PALETTE[1]["top"]
+assert_true("palette L0 != L1 top", fill_l0 != fill_l1)
+assert_eq("wash stacked KeyTop count", tops.length(), 96)
+assert_eq("L0 KeyTop uses palette[0]", tops[0]["fill"], fill_l0)
+assert_eq("L1 KeyTop uses palette[1]", tops[48]["fill"], fill_l1)
+
+def cells_pr = for List (i in 0 .. 48): blank(~emphasis: "pressed")
+def panes_pr = [pane("pr0", g, cells_pr, ~layer_index: 1)]
+def sc_pr_w = scene_of_panes(panes_pr)
+def pr_ok = for values (found = #false):
+              each n in sc_pr_w.nodes
+              if n["kind"] == "KeySide" && n["fill"] == theme["side_pressed"]
+              | #true
+              | found
+assert_true("washed pane pressed keeps global side", pr_ok)
+
+def sc_plain = scene_of_pane(pane("plain", g, cells_w))
+def plain_ok = for values (found = #false):
+                 each n in sc_plain.nodes
+                 if n["kind"] == "KeyTop" && n["fill"] == theme["top"]
+                 | #true
+                 | found
+assert_true("untinted pane uses theme top", plain_ok)
+
+def panes_wd = recipe_stacked("washd", g, [cells_w, cells_w])
+def sc_wd = scene_of_panes(panes_wd, ~theme: theme_dark)
+def tops_d = for List:
+               each n in sc_wd.nodes
+               keep_when n["kind"] == "KeyTop"
+               n
+assert_eq("dark L0 KeyTop uses dark palette[0]",
+          tops_d[0]["fill"], LAYER_PALETTE_DARK[0]["top"])
+assert_eq("dark L1 KeyTop uses dark palette[1]",
+          tops_d[48]["fill"], LAYER_PALETTE_DARK[1]["top"])
+
+println("OK test_core_wash")
