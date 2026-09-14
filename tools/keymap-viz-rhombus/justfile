@@ -1,0 +1,16 @@
+export PATH := "/workspace/racket-install/racket/bin:" + env("PATH")
+
+test:
+    ./run.sh test
+
+# just viz layout=48key-basic
+viz layout:
+    ./run.sh viz {{layout}}
+
+artifacts:
+    ./run.sh artifacts
+
+png:
+    ./run.sh png
+
+all: test artifacts
