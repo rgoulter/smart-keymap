@@ -1,0 +1,18 @@
+#lang rhombus
+//// LegendIR JSON parse (tiny snapshot: see tests/snapshots/README.md)
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/io.rhm" open
+
+//// --- assemble ---
+def cells = load_legend_cells("tests/snapshots/legend_smoke.json")
+
+//// --- act / assert ---
+assert_eq("smoke cell count", cells.length(), 2)
+assert_eq("smoke Tab center", cells[0].legends.center, "Tab")
+assert_eq("smoke Tab wash", cells[0].wash, 8)
+assert_eq("smoke XXXX pressed", cells[1].emphasis, "pressed")
+
+println("OK test_core_legend_parse")
