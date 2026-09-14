@@ -1,0 +1,31 @@
+#lang rhombus
+//// Emphasis: transparent: ghost fill, full stroke + darker outline
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def c_tr = blank(~emphasis: "transparent")
+def pts1 = grid(1, 1)
+def sc_tr = scene_of_pane(pane("tr", pts1, [c_tr]))
+def svg_tr = svg_of_scene(sc_tr)
+
+//// --- act / assert ---
+def side_tr = for values (found = #false):
+  each n in sc_tr.nodes
+  if n["kind"] == "KeySide"
+     && Map.has_key(n, "fill_opacity")
+     && n["fill_opacity"] < 0.2
+     && Map.has_key(n, "stroke_opacity")
+     && n["stroke_opacity"] == 1.0
+     && n["stroke"] == "#9a958e"
+  | #true
+  | found
+assert_true("transparent fill ghosted stroke full", side_tr)
+assert_true("svg fill-opacity present", String.contains(svg_tr, "fill-opacity"))
+def no_unified_opacity = !String.contains(svg_tr, " opacity=\"0.12\"")
+assert_true("svg uses fill-opacity not unified opacity", no_unified_opacity)
+
+println("OK test_core_transparent")
