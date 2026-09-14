@@ -34,6 +34,16 @@ default:
 choose:
     @just --choose
 
+# Rhombus keymap visualiser (tools/keymap-viz-rhombus)
+[group('viz')]
+viz-rhombus-test:
+    just --justfile tools/keymap-viz-rhombus/justfile --working-directory tools/keymap-viz-rhombus test
+
+# just viz-rhombus layout=48key-basic
+[group('viz')]
+viz-rhombus layout:
+    just --justfile tools/keymap-viz-rhombus/justfile --working-directory tools/keymap-viz-rhombus viz {{layout}}
+
 # ── test aggregates ──────────────────────────────────────────────────
 
 # Full local test matrix via Make (NCL + Rust + Ceedling + lint + cross builds)
