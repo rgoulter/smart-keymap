@@ -1,0 +1,26 @@
+{
+  "schema": "legend/v0",
+  "cells": [
+    {
+      "emphasis": "normal",
+      "legends": {
+        "center": "Tab",
+        "hold": "H(L8)",
+        "tl": "",
+        "tr": "",
+        "bl": ""
+      },
+      "wash": 8
+    },
+    {
+      "emphasis": "pressed",
+      "legends": {
+        "center": "",
+        "hold": "",
+        "tl": "",
+        "tr": "",
+        "bl": ""
+      }
+    }
+  ]
+}

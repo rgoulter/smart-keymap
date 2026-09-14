@@ -1,0 +1,37 @@
+#lang rhombus
+//// Dark theme: pressed brick distinct from bg; title colour
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def c_pr = blank(~emphasis: "pressed")
+def pts1 = grid(1, 1)
+def sc_pr_d = scene_of_pane(pane("prd", pts1, [c_pr]), ~theme: theme_dark)
+def svg_d = svg_of_scene(sc_pr_d, ~theme: theme_dark)
+
+//// --- act / assert ---
+assert_true("dark svg has dark bg", String.contains(svg_d, "#1a1a1a"))
+def side_d = for values (found = ""):
+               each n in sc_pr_d.nodes
+               if n["kind"] == "KeySide" | n["fill"] | found
+def stroke_d = for values (found = ""):
+                 each n in sc_pr_d.nodes
+                 if n["kind"] == "KeySide" | n["stroke"] | found
+assert_eq("dark pressed KeySide", side_d, theme_dark["side_pressed"])
+assert_true("dark pressed KeySide fill != bg", side_d != theme_dark["bg"])
+assert_true("dark pressed KeySide fill != #1a1a1a", side_d != "#1a1a1a")
+assert_eq("dark pressed stroke", stroke_d, theme_dark["stroke_pressed_side"])
+assert_true("dark pressed stroke lighter than fill", stroke_d != side_d)
+def pr_d_has_top = for values (found = #false):
+                     each n in sc_pr_d.nodes
+                     if n["kind"] == "KeyTop" | #true | found
+assert_true("pressed dark has no KeyTop", !pr_d_has_top)
+def title_d = for values (found = ""):
+                each n in sc_pr_d.nodes
+                if n["kind"] == "Title" | n["fill"] | found
+assert_eq("dark title fill", title_d, theme_dark["title"])
+
+println("OK test_core_dark")
