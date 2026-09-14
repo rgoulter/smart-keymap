@@ -1,0 +1,778 @@
+#lang rhombus
+//// Functional core: Points / Legend / Pane / Scene ADTs + builders (v0).
+//// Pure: no I/O. Units: mm for PointsIR centres; SVG projector uses SCALE px/mm.
+
+export:
+  all_defined
+
+import:
+  json
+
+//// ---------------------------------------------------------------------------
+//// Constants
+//// ---------------------------------------------------------------------------
+
+def UNIT_MM = 19.05
+def SCALE = 2.8
+def PAD = 16.0
+def TITLE_H = 28.0
+def KEY_SHRINK = 1.0
+def PANE_GAP = 24.0
+
+//// ---------------------------------------------------------------------------
+//// ADTs
+//// ---------------------------------------------------------------------------
+
+class Point(x, y, w, h, rot, i = #false):
+  // x,y = centre mm; rot = KiCad CCW degrees (SVG projector negates)
+  nonfinal
+
+class Legends(center = "", hold = "", tl = "", tr = "", bl = ""):
+  nonfinal
+
+class Cell(legends :: Legends, emphasis = "normal", wash = #false):
+  // emphasis: normal | pressed | muted | unused | transparent
+  // XXXX / blocked slots use pressed (solid KeySide brick only; no KeyTop)
+  // wash: Int dest layer (LAYER_PALETTE) for layer-mod hold keys, or #false
+  nonfinal
+
+class Pane(title :: String, points :: List.of(Point), cells :: List.of(Cell), layer_index = #false):
+  // layer_index: Int (washed by LAYER_PALETTE[i % n]) or #false (default theme)
+  nonfinal
+
+class Scene(width, height, nodes :: List):
+  nonfinal
+
+//// ---------------------------------------------------------------------------
+//// Themes (light + dark). Scene builder + svg_of_scene take ~theme.
+//// Pressed (XXXX/NO) is a solid KeySide brick only (KeyTop omitted).
+//// ---------------------------------------------------------------------------
+
+def LAYER_PALETTE = [
+  {"side": "#cccccc", "top": "#fcfcfc"},  // L0 neutral
+  {"side": "#b4c7de", "top": "#d9e6f5"},  // L1 blue
+  {"side": "#b5d0b8", "top": "#dcefdc"},  // L2 green
+  {"side": "#e0c89a", "top": "#f6e6c8"},  // L3 amber
+  {"side": "#cbb5d8", "top": "#eadcf3"},  // L4 purple
+  {"side": "#d8b4b4", "top": "#f3dcdc"},  // L5 rose
+  {"side": "#b4d0d0", "top": "#dcf0f0"},  // L6 teal
+  {"side": "#d0c4b4", "top": "#f0e8dc"},  // L7 taupe
+  {"side": "#c4d0b4", "top": "#e8f0dc"},  // L8 sage
+  {"side": "#d0b4c4", "top": "#f0dce8"}   // L9 mauve
+]
+
+// Darkened equivalents of LAYER_PALETTE (plus sage/mauve for L8–L9)
+def LAYER_PALETTE_DARK = [
+  {"side": "#3a3a3a", "top": "#4a4a4a"},  // L0
+  {"side": "#2a4460", "top": "#3d648a"},  // L1 blue
+  {"side": "#2a4a32", "top": "#3d6b48"},  // L2 green
+  {"side": "#5a4420", "top": "#7a6030"},  // L3 amber
+  {"side": "#4a3060", "top": "#684878"},  // L4 purple
+  {"side": "#5a3030", "top": "#784848"},  // L5 rose
+  {"side": "#2a4a48", "top": "#3d6864"},  // L6 teal
+  {"side": "#4a4030", "top": "#685848"},  // L7 taupe
+  {"side": "#3a4a30", "top": "#546848"},  // L8 sage
+  {"side": "#4a3040", "top": "#684858"}   // L9 mauve
+]
+
+def theme_light = {
+  "bg": "#f4f1ec",
+  "side": "#c9c4bc",
+  "top": "#e8e4df",
+  // Blocked brick: solid dark KeySide only (KeyTop omitted)
+  "side_pressed": "#5a5a5a",
+  "top_pressed": "#5a5a5a",  // unused: pressed omits KeyTop
+  "side_muted": "#ddd9d3",
+  "top_muted": "#ebe7e1",
+  "legend": "#2a2a2a",
+  "hold": "#c44",
+  "overlay": "#6688aa",
+  "title": "#222222",
+  "unused_op": 0.28,
+  "muted_op": 0.50,
+  "transparent_op": 0.12,
+  "stroke_side": "#b0aaa2",
+  "stroke_top": "#d4cfc8",
+  "stroke_ghost": "#9a958e",
+  "stroke_pressed_side": "#3a3a3a",
+  "stroke_pressed_top": "#c4bfb8",
+  "layers": LAYER_PALETTE
+}
+
+def theme_dark = {
+  "bg": "#1a1a1a",
+  "side": "#3a3a3a",
+  "top": "#4a4a4a",
+  // Blocked: medium muted fill + bright stroke (not darker-on-#1a1a1a)
+  "side_pressed": "#5c5c5c",
+  "top_pressed": "#5c5c5c",  // unused: pressed omits KeyTop
+  "side_muted": "#2a2a2a",
+  "top_muted": "#333333",
+  "legend": "#f2f2f2",
+  "hold": "#ff6b6b",
+  "overlay": "#74c0fc",
+  "title": "#eeeeee",
+  "unused_op": 0.28,
+  "muted_op": 0.50,
+  "transparent_op": 0.12,
+  "stroke_side": "#666666",
+  "stroke_top": "#555555",
+  "stroke_ghost": "#666666",
+  "stroke_pressed_side": "#aaaaaa",
+  "stroke_pressed_top": "#aaaaaa",
+  "layers": LAYER_PALETTE_DARK
+}
+
+def theme = theme_light
+
+fun layer_wash(i :: Int, ~theme = theme_light):
+  def pal = theme["layers"]
+  pal[i mod pal.length()]
+
+//// ---------------------------------------------------------------------------
+//// DSL
+//// ---------------------------------------------------------------------------
+
+fun key(
+  center :: String,
+  ~hold = "",
+  ~tl = "",
+  ~tr = "",
+  ~bl = "",
+  ~emphasis = "normal",
+  ~wash = #false
+) :: Cell:
+  Cell(Legends(center, hold, tl, tr, bl), emphasis, wash)
+
+fun blank(~emphasis = "unused") :: Cell:
+  key("", ~emphasis: emphasis)
+
+fun pane(
+  title :: String,
+  points :: List.of(Point),
+  cells :: List.of(Cell),
+  ~layer_index = #false
+) :: Pane:
+  if points.length() == cells.length()
+  | Pane(title, points, cells, layer_index)
+  | block:
+      def msg = "pane: points/cells length mismatch: "
+        ++ to_string(points.length())
+        ++ " vs "
+        ++ to_string(cells.length())
+      error(msg)
+
+fun cells_of_rows(rows :: List) :: List.of(Cell):
+  for List:
+    each row in rows
+    each cell in row
+    cell
+
+//// ---------------------------------------------------------------------------
+//// PointsIR factories
+//// ---------------------------------------------------------------------------
+
+fun grid(rows :: Int, cols :: Int, ~pitch = UNIT_MM) :: List.of(Point):
+  for List:
+    each r in 0 .. rows
+    each c in 0 .. cols
+    def i = r * cols + c
+    Point(
+      (c + 0.5) * pitch,
+      (r + 0.5) * pitch,
+      pitch,
+      pitch,
+      0.0,
+      i
+    )
+
+fun ansi_rows(row_widths :: List, ~pitch = UNIT_MM) :: List.of(Point):
+  // row_widths: List of List of widths in u
+  def flat = for List:
+    each r in 0 .. row_widths.length()
+    def widths = row_widths[r]
+    def acc:
+      for values (state = {"x": 0.0, "keys": []}):
+        each w in widths
+        def ww = w * pitch
+        def pt = Point(
+          state["x"] + ww / 2.0,
+          (r + 0.5) * pitch,
+          ww,
+          pitch,
+          0.0,
+          #false
+        )
+        {
+          "x": state["x"] + ww,
+          "keys": state["keys"] ++ [pt]
+        }
+    each pt in acc["keys"]
+    pt
+  for List:
+    each i in 0 .. flat.length()
+    def p = flat[i]
+    Point(p.x, p.y, p.w, p.h, p.rot, i)
+
+fun columns(row_count :: Int, stagger :: List, ~pitch = UNIT_MM) :: List.of(Point):
+  def col_count = stagger.length()
+  for List:
+    each r in 0 .. row_count
+    each c in 0 .. col_count
+    Point(
+      (c + 0.5) * pitch,
+      (r + 0.5) * pitch + stagger[c],
+      pitch,
+      pitch,
+      0.0,
+      #false
+    )
+
+fun shift_x(dx, points :: List.of(Point)) :: List.of(Point):
+  for List (p in points):
+    Point(p.x + dx, p.y, p.w, p.h, p.rot, p.i)
+
+fun bbox_of(points :: List.of(Point)):
+  def min_x = list_min(for List (p in points): p.x - p.w / 2.0)
+  def max_x = list_max(for List (p in points): p.x + p.w / 2.0)
+  def min_y = list_min(for List (p in points): p.y - p.h / 2.0)
+  def max_y = list_max(for List (p in points): p.y + p.h / 2.0)
+  {"min_x": min_x, "max_x": max_x, "min_y": min_y, "max_y": max_y}
+
+fun split_halves(
+  ~gap = 28.0,
+  left :: List.of(Point),
+  right :: List.of(Point)
+) :: List.of(Point):
+  def lb = bbox_of(left)
+  def rb = bbox_of(right)
+  def dx = (lb["max_x"] + gap) - rb["min_x"]
+  left ++ shift_x(dx, right)
+
+fun mirror_x(pts :: List.of(Point)) :: List.of(Point):
+  def bb = bbox_of(pts)
+  def axis = bb["min_x"] + bb["max_x"]
+  for List (p in pts):
+    Point(axis - p.x, p.y, p.w, p.h, 0.0 - p.rot, p.i)
+
+fun reverse_rows(width :: Int, pts :: List.of(Point)) :: List.of(Point):
+  def rows = pts.length() / width
+  def chunks:
+    for List:
+      each r in 0 .. rows
+      def slice:
+        for List:
+          each i in (r * width) .. (r * width + width)
+          pts[i]
+      list_reverse(slice)
+  for List:
+    each chunk in chunks
+    each p in chunk
+    p
+
+fun list_reverse(xs :: List) :: List:
+  for values (acc = []):
+    each x in xs
+    [x] ++ acc
+
+fun split_3x5_3(
+  ~gap = 28.0,
+  ~pitch = UNIT_MM,
+  ~stagger = [0.0, -2.5, -5.0, -2.5, 0.0],
+  ~thumb_extra = 2.0
+) :: List.of(Point):
+  def matrix_pts = columns(3, stagger, ~pitch: pitch)
+  def thumb_pts = for List:
+    each i in 0 .. 3
+    def c = i + 2
+    Point(
+      (c + 0.5) * pitch,
+      (3 + 0.5) * pitch + thumb_extra,
+      pitch,
+      pitch,
+      0.0,
+      #false
+    )
+  def left_all = matrix_pts ++ thumb_pts
+  def mirrored = mirror_x(left_all)
+  def right_matrix = reverse_rows(5, list_slice(mirrored, 0, 15))
+  def right_thumbs = list_reverse(list_slice(mirrored, 15, 18))
+  def placed = split_halves(~gap: gap, left_all, right_matrix ++ right_thumbs)
+  def R_matrix = list_slice(placed, 18, 33)
+  def R_thumbs = list_slice(placed, 33, 36)
+  def woven = for List:
+    each r in 0 .. 3
+    def left = list_slice(matrix_pts, r * 5, r * 5 + 5)
+    def right = list_slice(R_matrix, r * 5, r * 5 + 5)
+    each p in left ++ right
+    p
+  def result = woven ++ thumb_pts ++ R_thumbs
+  for List:
+    each i in 0 .. result.length()
+    def p = result[i]
+    Point(p.x, p.y, p.w, p.h, p.rot, i)
+
+fun list_slice(xs :: List, start :: Int, stop :: Int) :: List:
+  for List:
+    each i in start .. stop
+    xs[i]
+
+//// ANSI 66-key widths for ch32x-60-improved (GH60-ish)
+def ANSI_66_WIDTHS = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2],
+  [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5],
+  [1.75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.25],
+  [2.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.75],
+  [1.25, 1.25, 1.25, 1.25, 1, 1, 1, 1, 1, 1.25, 1.25, 1.25, 1.25]
+]
+
+fun ansi_66() :: List.of(Point):
+  ansi_rows(ANSI_66_WIDTHS)
+
+//// ---------------------------------------------------------------------------
+//// KiCad switch fixtures → PointsIR
+//// ---------------------------------------------------------------------------
+
+fun point_from_switch(sw, i :: Int, ~unit = UNIT_MM) :: Point:
+  Point(
+    sw["x"] * 1.0,
+    sw["y"] * 1.0,
+    unit,
+    unit,
+    sw["rot"] * 1.0,
+    i
+  )
+
+fun points_from_switches(switches :: List, ~unit = UNIT_MM) :: List.of(Point):
+  for List:
+    each i in 0 .. switches.length()
+    point_from_switch(switches[i], i, ~unit: unit)
+
+//// Weave LHS+RHS KiCad switches into keymap split_3x5_3 order:
+//// (L5+R5)×3 rows, then L thumbs, R thumbs.
+//// RHS fixtures are SW_* col-asc (outer→inner); reverse each row (+ thumbs)
+//// so woven L→R matches keymap (inner→outer on the right half). KiCad° kept.
+fun weave_kicad_3x5_3(lhs :: List, rhs :: List, ~gap = 28.0, ~unit = UNIT_MM) :: List.of(Point):
+  def L = points_from_switches(lhs, ~unit: unit)
+  def R0 = points_from_switches(rhs, ~unit: unit)
+  def lb = bbox_of(L)
+  def rb = bbox_of(R0)
+  def dx = (lb["max_x"] + gap) - rb["min_x"]
+  def R = shift_x(dx, R0)
+  def L_mat = list_slice(L, 0, 15)
+  def L_th = list_slice(L, 15, 18)
+  def R_mat = reverse_rows(5, list_slice(R, 0, 15))
+  def R_th = list_reverse(list_slice(R, 15, 18))
+  def woven = for List:
+    each r in 0 .. 3
+    def left = list_slice(L_mat, r * 5, r * 5 + 5)
+    def right = list_slice(R_mat, r * 5, r * 5 + 5)
+    each p in left ++ right
+    p
+  def result = woven ++ L_th ++ R_th
+  for List:
+    each i in 0 .. result.length()
+    def p = result[i]
+    Point(p.x, p.y, p.w, p.h, p.rot, i)
+
+//// Side-by-side without weave (LHS then RHS): useful for PCB inspection
+fun combine_kicad_halves(lhs :: List, rhs :: List, ~gap = 28.0, ~unit = UNIT_MM) :: List.of(Point):
+  def L = points_from_switches(lhs, ~unit: unit)
+  def R0 = points_from_switches(rhs, ~unit: unit)
+  split_halves(~gap: gap, L, R0)
+
+//// ---------------------------------------------------------------------------
+//// JSON IR converters
+//// ---------------------------------------------------------------------------
+
+fun point_to_json(p :: Point):
+  def base = {"x": p.x, "y": p.y, "w": p.w, "h": p.h, "rot": p.rot}
+  if p.i
+  | Map.append(base, {"i": p.i})
+  | base
+
+fun legends_to_json(L :: Legends):
+  {
+    "center": L.center,
+    "hold": L.hold,
+    "tl": L.tl,
+    "tr": L.tr,
+    "bl": L.bl
+  }
+
+fun cell_to_json(c :: Cell):
+  def base = {
+    "legends": legends_to_json(c.legends),
+    "emphasis": c.emphasis
+  }
+  if c.wash
+  | Map.append(base, {"wash": c.wash})
+  | base
+
+fun points_ir(points :: List.of(Point)):
+  {
+    "schema": "points/v0",
+    "unit": UNIT_MM,
+    "points": for List (p in points): point_to_json(p)
+  }
+
+fun legend_ir(cells :: List.of(Cell)):
+  {
+    "schema": "legend/v0",
+    "cells": for List (c in cells): cell_to_json(c)
+  }
+
+fun scene_ir(sc :: Scene):
+  {
+    "schema": "scene/v0",
+    "width": sc.width,
+    "height": sc.height,
+    "nodes": sc.nodes
+  }
+
+fun ir_to_string(v) :: String:
+  json.to_string(v)
+
+//// ---------------------------------------------------------------------------
+//// Parse LegendIR / PointsIR JSON maps → ADTs
+//// ---------------------------------------------------------------------------
+
+fun str_field(m, k :: String, ~default = "") :: String:
+  if Map.has_key(m, k)
+  | to_string(m[k])
+  | default
+
+fun legends_from_json(m) :: Legends:
+  Legends(
+    str_field(m, "center"),
+    str_field(m, "hold"),
+    str_field(m, "tl"),
+    str_field(m, "tr"),
+    str_field(m, "bl")
+  )
+
+fun wash_from_json(v):
+  // LAYER_PALETTE index must be Int; named-layer ids (e.g. "fn") are ignored
+  if v == #false
+  | #false
+  | match v
+    | n :: Int: n
+    | ~else: #false
+
+fun cell_from_json(m) :: Cell:
+  def raw = if Map.has_key(m, "wash") | m["wash"] | #false
+  Cell(
+    legends_from_json(m["legends"]),
+    str_field(m, "emphasis", ~default: "normal"),
+    wash_from_json(raw)
+  )
+
+fun cells_from_legend_ir(ir) :: List.of(Cell):
+  for List (c in ir["cells"]): cell_from_json(c)
+
+fun point_from_json(m, i :: Int) :: Point:
+  def idx = if Map.has_key(m, "i") | m["i"] | i
+  Point(
+    m["x"] * 1.0,
+    m["y"] * 1.0,
+    (if Map.has_key(m, "w") | m["w"] | UNIT_MM) * 1.0,
+    (if Map.has_key(m, "h") | m["h"] | UNIT_MM) * 1.0,
+    (if Map.has_key(m, "rot") | m["rot"] | 0.0) * 1.0,
+    idx
+  )
+
+fun points_from_points_ir(ir) :: List.of(Point):
+  def pts = ir["points"]
+  for List:
+    each i in 0 .. pts.length()
+    point_from_json(pts[i], i)
+
+//// ---------------------------------------------------------------------------
+//// Scene builder
+//// ---------------------------------------------------------------------------
+
+fun default_side_top(layer_index, ~theme = theme_light):
+  // Washed pane → palette side/top; else theme defaults
+  if layer_index
+  | layer_wash(layer_index, ~theme: theme)
+  | {"side": theme["side"], "top": theme["top"]}
+
+fun emphasis_style(emphasis :: String, ~layer_index = #false, ~theme = theme_light):
+  // fill_op ghosted for transparent; stroke_op stays full so outlines remain visible
+  // pressed stays global brick (no wash); normal/transparent use wash when set
+  // layer_index here is effective wash (cell.wash preferred over pane layer_index)
+  def dt = default_side_top(layer_index, ~theme: theme)
+  match emphasis
+  | "pressed":
+      {"side": theme["side_pressed"], "top": theme["top_pressed"],
+       "fill_op": 1.0, "stroke_op": 1.0,
+       "stroke_side": theme["stroke_pressed_side"], "stroke_top": theme["stroke_pressed_top"]}
+  | "muted":
+      {"side": theme["side_muted"], "top": theme["top_muted"],
+       "fill_op": theme["muted_op"], "stroke_op": theme["muted_op"],
+       "stroke_side": theme["stroke_side"], "stroke_top": theme["stroke_top"]}
+  | "unused":
+      {"side": theme["side_muted"], "top": theme["top_muted"],
+       "fill_op": theme["unused_op"], "stroke_op": theme["unused_op"],
+       "stroke_side": theme["stroke_side"], "stroke_top": theme["stroke_top"]}
+  | "transparent":
+      {"side": dt["side"], "top": dt["top"],
+       "fill_op": theme["transparent_op"], "stroke_op": 1.0,
+       "stroke_side": theme["stroke_ghost"], "stroke_top": theme["stroke_ghost"]}
+  | ~else:
+      {"side": dt["side"], "top": dt["top"],
+       "fill_op": 1.0, "stroke_op": 1.0,
+       "stroke_side": theme["stroke_side"], "stroke_top": theme["stroke_top"]}
+
+fun content_bbox(pts :: List.of(Point)):
+  def min_x = list_min(for List (pt in pts): pt.x - pt.w / 2.0)
+  def max_x = list_max(for List (pt in pts): pt.x + pt.w / 2.0)
+  def min_y = list_min(for List (pt in pts): pt.y - pt.h / 2.0)
+  def max_y = list_max(for List (pt in pts): pt.y + pt.h / 2.0)
+  {
+    "min_x": min_x,
+    "max_x": max_x,
+    "min_y": min_y,
+    "max_y": max_y
+  }
+
+fun pane_size(pts :: List.of(Point)):
+  def bb = content_bbox(pts)
+  def content_w = (bb["max_x"] - bb["min_x"]) * SCALE
+  def content_h = (bb["max_y"] - bb["min_y"]) * SCALE
+  {
+    "width": PAD * 2.0 + content_w,
+    "height": PAD * 2.0 + TITLE_H + content_h,
+    "min_x": bb["min_x"],
+    "min_y": bb["min_y"]
+  }
+
+fun legend_font_size(s :: String):
+  // Two-word ("St Alt") or long labels need a smaller centre font
+  if String.contains(s, " ") || String.length(s) > 4
+  | 7.5
+  | 11.0
+
+fun key_nodes_at(
+  pt :: Point,
+  cell :: Cell,
+  origin_x,
+  origin_y,
+  y_off,
+  ~layer_index = #false,
+  ~theme = theme_light
+) :: List:
+  // Cell wash (layer-mod dest) wins over pane layer_index when both set
+  def wash_idx = if cell.wash | cell.wash | layer_index
+  def st = emphasis_style(cell.emphasis, ~layer_index: wash_idx, ~theme: theme)
+  def fill_op = st["fill_op"]
+  def stroke_op = st["stroke_op"]
+  def cx = PAD + (pt.x - origin_x) * SCALE
+  def cy = PAD + TITLE_H + (pt.y - origin_y) * SCALE + y_off
+  def sw = pt.w * SCALE * KEY_SHRINK
+  def sh = pt.h * SCALE * KEY_SHRINK
+  def rot_svg = -pt.rot
+  def inset_x = sw * 0.08
+  def inset_top = sh * 0.08
+  def inset_bot = sh * 0.22
+  def side = {
+    "kind": "KeySide",
+    "x": cx - sw / 2.0,
+    "y": cy - sh / 2.0,
+    "w": sw,
+    "h": sh,
+    "rx": 5.0,
+    "fill": st["side"],
+    "stroke": st["stroke_side"],
+    "fill_opacity": fill_op,
+    "stroke_opacity": stroke_op,
+    "rot": rot_svg,
+    "cx": cx,
+    "cy": cy
+  }
+  def top = {
+    "kind": "KeyTop",
+    "x": cx - sw / 2.0 + inset_x,
+    "y": cy - sh / 2.0 + inset_top,
+    "w": sw - 2.0 * inset_x,
+    "h": sh - inset_top - inset_bot,
+    "rx": 3.5,
+    "fill": st["top"],
+    "stroke": st["stroke_top"],
+    "fill_opacity": fill_op,
+    "stroke_opacity": stroke_op,
+    "rot": rot_svg,
+    "cx": cx,
+    "cy": cy
+  }
+  // Pressed/XXXX: solid KeySide brick only: no KeyTop overlay, no legends
+  if cell.emphasis == "pressed"
+  | [side]
+  | block:
+      def L = cell.legends
+      def texts = [
+        text_node(
+          L.center, cx, cy - sh * 0.06, "legend", "middle",
+          legend_font_size(L.center),
+          theme["legend"], fill_op, rot_svg, cx, cy
+        ),
+        text_node(
+          L.hold, cx, cy + sh / 2.0 - inset_bot * 0.45, "hold", "middle", 8.0,
+          theme["hold"], fill_op, rot_svg, cx, cy
+        ),
+        text_node(
+          L.tl, cx - sw / 2.0 + inset_x + 3.0,
+          cy - sh / 2.0 + inset_top + 10.0,
+          "overlay", "start", 7.5, theme["overlay"], fill_op, rot_svg, cx, cy
+        ),
+        text_node(
+          L.tr, cx + sw / 2.0 - inset_x - 3.0,
+          cy - sh / 2.0 + inset_top + 10.0,
+          "overlay", "end", 7.5, theme["overlay"], fill_op, rot_svg, cx, cy
+        ),
+        text_node(
+          L.bl, cx - sw / 2.0 + inset_x + 3.0,
+          cy + sh / 2.0 - inset_bot - 2.0,
+          "overlay", "start", 7.5, theme["overlay"], fill_op, rot_svg, cx, cy
+        )
+      ]
+      def kept = for List:
+        each t in texts
+        keep_when !is_empty_text(t)
+        t
+      [side, top] ++ kept
+
+fun is_empty_text(t) :: Boolean:
+  t["text"] == ""
+
+fun text_node(
+  text :: String,
+  x,
+  y,
+  role :: String,
+  anchor :: String,
+  size,
+  fill :: String,
+  opacity,
+  rot,
+  cx,
+  cy
+):
+  {
+    "kind": "Text",
+    "x": x,
+    "y": y,
+    "text": text,
+    "role": role,
+    "anchor": anchor,
+    "size": size,
+    "fill": fill,
+    "opacity": opacity,
+    "rot": rot,
+    "cx": cx,
+    "cy": cy
+  }
+
+fun scene_of_pane(p :: Pane, ~theme = theme_light) :: Scene:
+  scene_of_panes([p], ~theme: theme)
+
+fun scene_of_panes(panes :: List.of(Pane), ~theme = theme_light) :: Scene:
+  if panes.length() == 0
+  | error("scene_of_panes: empty")
+  | scene_of_panes_nonempty(panes, ~theme: theme)
+
+fun pane_key_nodes(p :: Pane, sz, y_off, ~theme = theme_light) :: List:
+  for List:
+    each j in 0 .. p.points.length()
+    each node in key_nodes_at(
+      p.points[j],
+      p.cells[j],
+      sz["min_x"],
+      sz["min_y"],
+      y_off,
+      ~layer_index: p.layer_index,
+      ~theme: theme
+    )
+    node
+
+fun scene_of_panes_nonempty(panes :: List.of(Pane), ~theme = theme_light) :: Scene:
+  def sizes = for List (p in panes): pane_size(p.points)
+  def width = list_max(for List (s in sizes): s["width"])
+  def stacked = for values (acc = {"height": 0.0, "nodes": []}):
+    each i in 0 .. panes.length()
+    def p = panes[i]
+    def sz = sizes[i]
+    def y_off = acc["height"]
+    def title_node = {
+      "kind": "Title",
+      "x": PAD,
+      "y": y_off + 20.0,
+      "text": p.title,
+      "size": 14.0,
+      "fill": theme["title"]
+    }
+    def key_nodes = pane_key_nodes(p, sz, y_off, ~theme: theme)
+    def gap = if i + 1 < panes.length() | PANE_GAP | 0.0
+    {
+      "height": y_off + sz["height"] + gap,
+      "nodes": acc["nodes"] ++ [title_node] ++ key_nodes
+    }
+  Scene(width, stacked["height"], stacked["nodes"])
+
+//// ---------------------------------------------------------------------------
+//// Recipes: legends / dense / stacked
+//// ---------------------------------------------------------------------------
+
+fun recipe_legends(
+  title :: String,
+  points :: List.of(Point),
+  cells :: List.of(Cell)
+) :: List.of(Pane):
+  [pane(title, points, cells)]
+
+fun recipe_dense(
+  title :: String,
+  points :: List.of(Point),
+  cells :: List.of(Cell)
+) :: List.of(Pane):
+  [pane(title, points, cells)]
+
+fun stacked_pane_title(heading :: String, i :: Int, ~names = []) :: String:
+  def layer_label:
+    if names.length() > i
+    | names[i]
+    | "layer " ++ to_string(i)
+  if i == 0
+  | heading ++ " · " ++ layer_label
+  | layer_label
+
+fun recipe_stacked(
+  heading :: String,
+  points :: List.of(Point),
+  layer_cells :: List,
+  ~layer_names = []
+) :: List.of(Pane):
+  // layer_cells: List of List.of(Cell)
+  // optional layer_names: List of String titles (e.g. Base (Dvorak), NUM, SYM)
+  if layer_cells.length() <= 1
+  | error("recipe_stacked: need 2+ layers")
+  | for List:
+      each i in 0 .. layer_cells.length()
+      pane(
+        stacked_pane_title(heading, i, ~names: layer_names),
+        points,
+        layer_cells[i],
+        ~layer_index: i
+      )
+
+fun list_min(xs :: List):
+  def init = xs[0]
+  for values (m = init):
+    each x in xs
+    if x < m | x | m
+
+fun list_max(xs :: List):
+  def init = xs[0]
+  for values (m = init):
+    each x in xs
+    if x > m | x | m
