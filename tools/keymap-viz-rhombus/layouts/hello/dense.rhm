@@ -1,0 +1,26 @@
+#lang rhombus
+//// Dense hello: same 2×2, corner legends on the key (tl / tr / bl).
+
+import:
+  "../../src/keyboard_layout.rhm" open
+  "../../src/svg.rhm" open
+  "../../src/io.rhm" open
+  "cells.rhm" open
+
+def panes = recipe_dense(
+  "hello dense",
+  points,
+  dense_cells
+)
+
+ensure_dir("out")
+emit_svg(
+  "out/hello-dense.svg",
+  panes
+)
+emit_svg(
+  "out/hello-dense-dark.svg",
+  panes,
+  ~theme: theme_dark
+)
+println("DONE hello-dense")
