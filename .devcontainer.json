@@ -1,12 +1,14 @@
 {
+  "name": "smart-keymap",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "."
+  },
+  "overrideCommand": false,
   "customizations": {
     "vscode": {
-      "extensions": [
-        "mkhl.direnv"
-      ]
+      "extensions": []
     }
   },
-  "image": "ghcr.io/cachix/devenv/devcontainer:latest",
-  "overrideCommand": false,
-  "updateContentCommand": "sudo setfacl -k /tmp"
+  "postCreateCommand": "just --version && rustc --version && riscv-none-elf-gcc --version | head -1 && nickel --version"
 }
