@@ -18,10 +18,7 @@ keymap + board".
 | `smart-keymap-dir` | no | `.` | Path to smart-keymap checkout (contains `Cargo.toml`). |
 | `firmware-dir` | no | `<smart-keymap-dir>/firmware/ch32x035-usb-device-compositekm-c` | Firmware CMake dir. |
 | `build-dir` | no | `build` | CMake build directory (relative to `firmware-dir`). |
-| `nickel-version` | no | `1.16.0` | Nickel version. |
-| `cbindgen-version` | no | `0.28.0` | cbindgen version. |
-| `gcc-version` | no | `14.2.0-3` | xPack `riscv-none-elf-gcc` version. |
-| `rust-target` | no | `riscv32imac-unknown-none-elf` | Rust target. |
+| `rust-target` | no | `riscv32imac-unknown-none-elf` | Rust target. The firmware-core image ships this target only. |
 | `artifact-name` | no | `firmware-ch32x` | Artifact name when uploading. |
 | `upload-artifact` | no | `true` | Whether to upload. |
 
@@ -29,17 +26,30 @@ keymap + board".
 
 - `firmware-elf`, `firmware-hex`, `firmware-bin`, `build-dir`
 
+## Prerequisites
+
+The action requires Nickel, cbindgen, xPack `riscv-none-elf-gcc`,
+ the Rust target, and Node.js.
+Run it in the [`firmware-core` container image](../../workflows/build-ch32x-firmware.yaml)
+ (`ghcr.io/rgoulter/smart-keymap-firmware-core:latest`),
+ or an equivalent environment with the same tools.
+The image ships the `riscv32imac-unknown-none-elf` Rust target only.
+A missing tool or a Rust target that is not installed
+ fails the `Verify toolchain` step.
+
 ## Usage — inside this repo
 
 ```yaml
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/rgoulter/smart-keymap-firmware-core:latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/build-ch32x-firmware
         with:
-          keymap: tests/ncl/keymap-4key-simple/keymap.ncl
+          keymap: tests/ncl/keymap-48key-basic/keymap.ncl
           board: ch32x-48
 ```
 
@@ -65,6 +75,7 @@ jobs:
     with:
       keymap: keymap.ncl
       board: keyboard.ncl
+      # smart-keymap-ref: master  # pin the smart-keymap sources + action code
 ```
 
 Or use the composite action directly for more control:
@@ -73,11 +84,14 @@ Or use the composite action directly for more control:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/rgoulter/smart-keymap-firmware-core:latest
     steps:
       - uses: actions/checkout@v4  # your keyboard repo
       - uses: actions/checkout@v4  # smart-keymap
         with:
           repository: rgoulter/smart-keymap
+          ref: master  # pin the sources + action code you build with
           path: smart-keymap
       - uses: ./smart-keymap/.github/actions/build-ch32x-firmware
         with:
