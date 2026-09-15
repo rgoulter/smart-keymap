@@ -21,6 +21,7 @@ name: Build CH32X Firmware (Reusable)
 #       with:
 #         keymap: keymap.ncl
 #         board: keyboard.ncl   # or a built-in name like ch32x-48
+#         smart-keymap-ref: master  # pin the smart-keymap sources + action code
 #
 # Inputs `keymap` and `board` are resolved relative to the *caller's*
 # workspace. When `board` is a path ending in `.ncl` it is treated as a
@@ -52,20 +53,27 @@ on:
         required: false
         default: firmware-ch32x
         type: string
-      nickel-version:
-        description: Nickel version
-        required: false
-        default: "1.16.0"
-        type: string
-      gcc-version:
-        description: xPack riscv-none-elf-gcc version
-        required: false
-        default: "14.2.0-3"
-        type: string
       build-dir:
         description: CMake build directory (relative to firmware dir)
         required: false
         default: build
+        type: string
+      smart-keymap-ref:
+        description: |
+          Ref of rgoulter/smart-keymap to check out and build from.
+          Pins both the checked-out sources and the composite action code.
+          The default tracks master, matching `@master` in the `uses:` line.
+        required: false
+        default: master
+        type: string
+      container-image:
+        description: |
+          Container image providing the firmware toolchain
+          (Nickel, cbindgen, xPack RISC-V GCC, Rust target).
+          Pin to a digest or a `firmware-core-sha-<sha>` tag
+          for immutable builds.
+        required: false
+        default: ghcr.io/rgoulter/smart-keymap-firmware-core:latest
         type: string
 
   # Optional: manual dispatch for testing the reusable workflow in isolation.
@@ -87,6 +95,21 @@ on:
         required: false
         default: firmware-ch32x
         type: string
+      build-dir:
+        description: CMake build directory (relative to firmware dir)
+        required: false
+        default: build
+        type: string
+      smart-keymap-ref:
+        description: Ref of rgoulter/smart-keymap to check out and build from
+        required: false
+        default: master
+        type: string
+      container-image:
+        description: Container image providing the firmware toolchain
+        required: false
+        default: ghcr.io/rgoulter/smart-keymap-firmware-core:latest
+        type: string
 
 permissions:
   contents: read
@@ -94,6 +117,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ${{ inputs.container-image }}
     steps:
       # When invoked as workflow_call from an external repo, github.repository
       # is the caller, not smart-keymap. Checkout caller first.
@@ -109,34 +134,25 @@ jobs:
           # caller's checkout. We checkout to `caller/` to keep smart-keymap
           # checkout separate.
 
-      - name: Determine smart-keymap ref
-        id: sm-ref
-        shell: bash
-        run: |
-          WF_REF="${{ github.workflow_ref }}"
-          REF="${WF_REF##*@}"
-          if [[ "$REF" == "$WF_REF" ]] || [[ -z "$REF" ]]; then
-            REF="${{ github.ref }}"
-          fi
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          echo "Determined smart-keymap ref: $REF (workflow_ref=$WF_REF, github.ref=${{ github.ref }})"
-
+      # The smart-keymap ref is an explicit input so callers pin exactly
+      # which sources and action code the build runs.
       - name: Checkout smart-keymap
         uses: actions/checkout@v4
         with:
           repository: rgoulter/smart-keymap
-          ref: ${{ steps.sm-ref.outputs.ref }}
+          ref: ${{ inputs.smart-keymap-ref }}
           path: smart-keymap
 
       - name: Resolve caller paths
         id: resolve
         shell: bash
+        env:
+          # Inputs arrive via env: so their values never expand
+          # inside the script text (script injection).
+          KEYMAP_INPUT: ${{ inputs.keymap }}
+          BOARD_INPUT: ${{ inputs.board }}
         run: |
           set -euo pipefail
-
-          # Prefer inputs from workflow_call; fall back to workflow_dispatch.
-          KEYMAP_INPUT="${{ inputs.keymap }}"
-          BOARD_INPUT="${{ inputs.board }}"
 
           # Caller checkout is at caller/. Smart-keymap is at smart-keymap/.
           # The action will run with cwd = smart-keymap/, so we need absolute
@@ -183,7 +199,5 @@ jobs:
           board: ${{ steps.resolve.outputs.board-abs }}
           smart-keymap-dir: smart-keymap
           build-dir: ${{ inputs.build-dir }}
-          nickel-version: ${{ inputs.nickel-version }}
-          gcc-version: ${{ inputs.gcc-version }}
           artifact-name: ${{ inputs.artifact-name }}
           upload-artifact: "true"

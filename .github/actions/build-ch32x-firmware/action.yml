@@ -47,18 +47,6 @@ inputs:
     description: Build directory (relative to firmware-dir, or absolute)
     required: false
     default: build
-  nickel-version:
-    description: Nickel release version
-    required: false
-    default: "1.16.0"
-  cbindgen-version:
-    description: cbindgen release version
-    required: false
-    default: "0.28.0"
-  gcc-version:
-    description: xPack riscv-none-elf-gcc version
-    required: false
-    default: "14.2.0-3"
   rust-target:
     description: Rust target triple for CH32X
     required: false
@@ -92,13 +80,16 @@ runs:
     - name: Resolve inputs
       id: resolve
       shell: bash
+      env:
+        # Inputs arrive via env: so their values never expand
+        # inside the script text (script injection).
+        KEYMAP_INPUT: ${{ inputs.keymap }}
+        BOARD_INPUT: ${{ inputs.board }}
+        SMART_KEYMAP_DIR: ${{ inputs.smart-keymap-dir }}
+        FIRMWARE_DIR_INPUT: ${{ inputs.firmware-dir }}
+        BUILD_DIR_INPUT: ${{ inputs.build-dir }}
       run: |
         set -euo pipefail
-
-        KEYMAP_INPUT="${{ inputs.keymap }}"
-        BOARD_INPUT="${{ inputs.board }}"
-        SMART_KEYMAP_DIR="${{ inputs.smart-keymap-dir }}"
-        FIRMWARE_DIR_INPUT="${{ inputs.firmware-dir }}"
         if [[ -z "$FIRMWARE_DIR_INPUT" ]]; then
           if [[ "$SMART_KEYMAP_DIR" == "." ]]; then
             FIRMWARE_DIR="firmware/ch32x035-usb-device-compositekm-c"
@@ -113,6 +104,13 @@ runs:
         SMART_KEYMAP_DIR="$(realpath -m "$SMART_KEYMAP_DIR")"
         echo "firmware-dir=$FIRMWARE_DIR" >> "$GITHUB_OUTPUT"
         echo "smart-keymap-dir=$SMART_KEYMAP_DIR" >> "$GITHUB_OUTPUT"
+        # Workspace path for the Rust cache, relative to the runner workspace.
+        # The reusable workflow checks out caller/ and smart-keymap/ side by
+        # side, so the step cwd itself holds no Cargo.toml; the cache must
+        # point at the resolved smart-keymap checkout.
+        WORKSPACE_BASE="${GITHUB_WORKSPACE:-$PWD}"
+        SMART_KEYMAP_WORKSPACE="$(realpath --relative-to="$WORKSPACE_BASE" "$SMART_KEYMAP_DIR")"
+        echo "smart-keymap-workspace=$SMART_KEYMAP_WORKSPACE" >> "$GITHUB_OUTPUT"
 
         if [[ ! -f "$KEYMAP_INPUT" ]]; then
           echo "::error::keymap not found: $KEYMAP_INPUT (cwd=$(pwd), ls=$(ls -1 | head -n 20))"
@@ -152,7 +150,7 @@ runs:
         fi
 
         # Resolve build dir (absolute)
-        BUILD_DIR_INPUT="${{ inputs.build-dir }}"
+        # BUILD_DIR_INPUT arrives via env: (see the env: block above).
         if [[ "$BUILD_DIR_INPUT" = /* ]]; then
           BUILD_DIR_ABS="$BUILD_DIR_INPUT"
         else
@@ -160,96 +158,65 @@ runs:
         fi
         echo "build-dir-abs=$BUILD_DIR_ABS" >> "$GITHUB_OUTPUT"
 
-    - name: Setup Nickel
+    - name: Verify toolchain (container provides nickel, cbindgen, xPack, rust target)
       shell: bash
+      env:
+        RUST_TARGET: ${{ inputs.rust-target }}
       run: |
         set -euo pipefail
-        VERSION="${{ inputs.nickel-version }}"
-        if command -v nickel >/dev/null 2>&1; then
-          echo "nickel already installed: $(nickel --version || true)"
-        else
-          echo "Installing nickel $VERSION"
-          wget -q "https://github.com/tweag/nickel/releases/download/${VERSION}/nickel-x86_64-linux"
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
-          nickel --version
-        fi
-
-    - name: Setup cbindgen
-      shell: bash
-      run: |
-        set -euo pipefail
-        VERSION="${{ inputs.cbindgen-version }}"
-        if command -v cbindgen >/dev/null 2>&1; then
-          echo "cbindgen already installed: $(cbindgen --version || true)"
-        else
-          echo "Installing cbindgen $VERSION"
-          wget -q "https://github.com/mozilla/cbindgen/releases/download/${VERSION}/cbindgen"
-          chmod +x ./cbindgen
-          sudo cp ./cbindgen /usr/bin/cbindgen
-          cbindgen --version
-        fi
-
-    - name: Install xPack RISC-V toolchain
-      shell: bash
-      run: |
-        set -euo pipefail
-        GCC_VERSION="${{ inputs.gcc-version }}"
-        if [[ -x "/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin/riscv-none-elf-gcc" ]]; then
-          echo "xPack gcc $GCC_VERSION already installed"
-        else
-          echo "Installing xPack riscv-none-elf-gcc $GCC_VERSION"
-          wget --quiet "https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v${GCC_VERSION}/xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz"
-          sudo tar -xvf "./xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz" --directory=/opt
-        fi
-        echo "/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin" >> "$GITHUB_PATH"
-        /opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin/riscv-none-elf-gcc --version
-
-    - name: Rust add target
-      shell: bash
-      run: rustup target add "${{ inputs.rust-target }}"
+        echo "Container image ghcr.io/rgoulter/smart-keymap-firmware-core provides toolchain"
+        nickel --version
+        cbindgen --version
+        riscv-none-elf-gcc --version | head -n1
+        echo "Checking Rust target $RUST_TARGET ..."
+        rustc --print target-list | grep -q "$RUST_TARGET" || { echo "::error::target $RUST_TARGET not in rustc --print target-list"; exit 1; }
 
     - name: Rust cache
       uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
       with:
         shared-key: firmware-ch32x
-        cache-targets: ${{ inputs.rust-target }}
+        # The Cargo workspace holding Cargo.toml (see the resolve step);
+        # the step cwd itself has none in the reusable-workflow layout.
+        workspaces: ${{ steps.resolve.outputs.smart-keymap-workspace }}
+        # Boolean input: whether workspace target dirs are cached.
+        cache-targets: "true"
 
     - name: Build libsmart_keymap
       shell: bash
       env:
         SMART_KEYMAP_CUSTOM_KEYMAP: ${{ steps.resolve.outputs.keymap-abs }}
+        SMART_KEYMAP_DIR: ${{ steps.resolve.outputs.smart-keymap-dir }}
+        FIRMWARE_DIR: ${{ steps.resolve.outputs.firmware-dir }}
+        RUST_TARGET: ${{ inputs.rust-target }}
       run: |
         set -euo pipefail
-        SMART_KEYMAP_DIR="${{ steps.resolve.outputs.smart-keymap-dir }}"
-        FIRMWARE_DIR="${{ steps.resolve.outputs.firmware-dir }}"
         echo "Building libsmart_keymap with keymap: $SMART_KEYMAP_CUSTOM_KEYMAP (smart-keymap-dir=$SMART_KEYMAP_DIR)"
         pushd "$SMART_KEYMAP_DIR" >/dev/null
         cargo build \
           --release \
           --package "smart_keymap" \
-          --target "${{ inputs.rust-target }}" \
+          --target "$RUST_TARGET" \
           --no-default-features
         make include/smart_keymap.h
         # FIRMWARE_DIR is now absolute, so use directly
         mkdir -p "$FIRMWARE_DIR/libsmartkeymap"
         cp include/smart_keymap.h "$FIRMWARE_DIR/libsmartkeymap/"
-        cp "target/${{ inputs.rust-target }}/release/libsmart_keymap.a" "$FIRMWARE_DIR/libsmartkeymap/"
+        cp "target/$RUST_TARGET/release/libsmart_keymap.a" "$FIRMWARE_DIR/libsmartkeymap/"
         popd >/dev/null
         echo "Installed smart_keymap.h and libsmart_keymap.a to $FIRMWARE_DIR/libsmartkeymap/"
 
     - name: Build firmware
       id: build-firmware
       shell: bash
+      env:
+        SMART_KEYMAP_DIR: ${{ steps.resolve.outputs.smart-keymap-dir }}
+        FIRMWARE_DIR: ${{ steps.resolve.outputs.firmware-dir }}
+        BOARD_ABS: ${{ steps.resolve.outputs.board-abs }}
+        BUILD_DIR_ABS: ${{ steps.resolve.outputs.build-dir-abs }}
       run: |
         set -euo pipefail
-        SMART_KEYMAP_DIR="${{ steps.resolve.outputs.smart-keymap-dir }}"
-        FIRMWARE_DIR="${{ steps.resolve.outputs.firmware-dir }}"
-        BOARD_ABS="${{ steps.resolve.outputs.board-abs }}"
-        BUILD_DIR_ABS="${{ steps.resolve.outputs.build-dir-abs }}"
-        GCC_VERSION="${{ inputs.gcc-version }}"
-
-        export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
+        # The container image provides the xPack RISC-V toolchain on PATH,
+        # so no versioned toolchain prefix is needed here.
 
         echo "DEBUG: pwd=$(pwd) SMART_KEYMAP_DIR=$SMART_KEYMAP_DIR FIRMWARE_DIR=$FIRMWARE_DIR"
         ls -la "$SMART_KEYMAP_DIR" 2>&1 | head -n 30 || true
@@ -286,13 +253,24 @@ runs:
 
         cmake --build "$BUILD_DIR_ABS" | tee "$BUILD_DIR_ABS/make.log"
 
-        ELF="$BUILD_DIR_ABS/usb-device-compositekm"
+        # CMake names the linked ELF without a suffix; copy it to a
+        # `.elf`-suffixed file so the advertised `.elf` artifact exists.
+        ELF_BUILD="$BUILD_DIR_ABS/usb-device-compositekm"
+        ELF="$BUILD_DIR_ABS/usb-device-compositekm.elf"
         HEX="$BUILD_DIR_ABS/usb-device-compositekm.hex"
         BIN="$BUILD_DIR_ABS/usb-device-compositekm.bin"
 
+        if [[ -f "$ELF_BUILD" ]]; then
+          cp "$ELF_BUILD" "$ELF"
+        fi
+
         # Generate .bin alongside .hex (CMake only generates .hex)
         if [[ -f "$ELF" ]]; then
-          OBJCOPY="$(command -v riscv-none-elf-objcopy || echo /opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin/riscv-none-elf-objcopy)"
+          OBJCOPY="$(command -v riscv-none-elf-objcopy || true)"
+          if [[ -z "$OBJCOPY" ]]; then
+            echo "::error::riscv-none-elf-objcopy not found in PATH (container toolchain missing?)"
+            exit 1
+          fi
           "$OBJCOPY" -Obinary "$ELF" "$BIN"
           echo "Generated $BIN ($(stat -c%s "$BIN" 2>/dev/null || stat -f%z "$BIN" 2>/dev/null || echo unknown) bytes)"
         fi
