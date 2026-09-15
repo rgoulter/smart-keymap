@@ -1,0 +1,18 @@
+# Example caller workflow — copy this to your keyboard repo's .github/workflows/build.yaml
+name: Build CH32X Firmware
+
+on:
+  push:
+    paths:
+      - 'keymap.ncl'
+      - 'keyboard.ncl'
+      - '.github/workflows/build.yaml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    uses: rgoulter/smart-keymap/.github/workflows/build-ch32x-firmware.yaml@master
+    with:
+      keymap: keymap.ncl
+      board: keyboard.ncl
+      # artifact-name: my-keyboard-firmware

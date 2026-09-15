@@ -1,0 +1,277 @@
+name: Build CH32X Firmware
+description: |
+  Build CH32X firmware (ch32x035-usb-device-compositekm) from a Nickel
+  keymap.ncl and a board.ncl.
+
+  Produces firmware .elf / .hex / .bin for the smart-keymap CH32X target.
+  Intended as the reusable building block behind
+  `.github/workflows/build-ch32x-firmware.yaml`.
+
+  The board is the keyboard hardware definition
+  (e.g. `firmware/ch32x035-usb-device-compositekm-c/ncl/boards/ch32x-48.ncl`);
+  some callers name this file `keyboard.ncl`. This action takes a board
+  input that can be either a built-in board name (e.g. `ch32x-48`,
+  `ch32x-48/rev2025_2`, `ch32x-75`, `ch32x-36-lhs`, `ch32x-36-rhs`,
+  `weact-ch32x-core-board`) or a path to a custom board.ncl.
+
+inputs:
+  keymap:
+    description: |
+      Path to keymap.ncl relative to the repository root (caller's workspace).
+      Example: `keymap.ncl` or `tests/ncl/keymap-48key-rgoulter/keymap.ncl`
+    required: true
+  board:
+    description: |
+      Board definition. Either a built-in board name
+      (`ch32x-48`, `ch32x-48/rev2025_2`, `ch32x-75`, `ch32x-36-lhs`,
+      `ch32x-36-rhs`, `weact-ch32x-core-board`) or a path to a custom
+      board.ncl file.
+    required: true
+  smart-keymap-dir:
+    description: |
+      Path to the smart-keymap repository root (contains Cargo.toml).
+      Defaults to the current working directory. When the action is used
+      from an external repo via the reusable workflow, this should point to
+      `smart-keymap` (the checkout of rgoulter/smart-keymap).
+    required: false
+    default: "."
+  firmware-dir:
+    description: |
+      Path to the CH32X firmware directory (contains CMakeLists.txt).
+      Defaults to the in-tree CH32X firmware, relative to smart-keymap-dir.
+      If smart-keymap-dir is not ".", this defaults to
+      `<smart-keymap-dir>/firmware/ch32x035-usb-device-compositekm-c`.
+    required: false
+    default: ""
+  build-dir:
+    description: Build directory (relative to firmware-dir, or absolute)
+    required: false
+    default: build
+  rust-target:
+    description: Rust target triple for CH32X
+    required: false
+    default: riscv32imac-unknown-none-elf
+  artifact-name:
+    description: Name for the uploaded artifact (if upload is enabled)
+    required: false
+    default: firmware-ch32x
+  upload-artifact:
+    description: Whether to upload the firmware artifact
+    required: false
+    default: "true"
+
+outputs:
+  firmware-elf:
+    description: Path to the built .elf
+    value: ${{ steps.build-firmware.outputs.firmware-elf }}
+  firmware-hex:
+    description: Path to the built .hex
+    value: ${{ steps.build-firmware.outputs.firmware-hex }}
+  firmware-bin:
+    description: Path to the built .bin
+    value: ${{ steps.build-firmware.outputs.firmware-bin }}
+  build-dir:
+    description: Absolute path to the CMake build directory
+    value: ${{ steps.build-firmware.outputs.build-dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Resolve inputs
+      id: resolve
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        KEYMAP_INPUT="${{ inputs.keymap }}"
+        BOARD_INPUT="${{ inputs.board }}"
+        SMART_KEYMAP_DIR="${{ inputs.smart-keymap-dir }}"
+        FIRMWARE_DIR_INPUT="${{ inputs.firmware-dir }}"
+        if [[ -z "$FIRMWARE_DIR_INPUT" ]]; then
+          if [[ "$SMART_KEYMAP_DIR" == "." ]]; then
+            FIRMWARE_DIR="firmware/ch32x035-usb-device-compositekm-c"
+          else
+            FIRMWARE_DIR="${SMART_KEYMAP_DIR}/firmware/ch32x035-usb-device-compositekm-c"
+          fi
+        else
+          FIRMWARE_DIR="$FIRMWARE_DIR_INPUT"
+        fi
+        # Normalize to absolute for downstream steps (handles caller/ smart-keymap/ prefix correctly)
+        FIRMWARE_DIR="$(realpath -m "$FIRMWARE_DIR")"
+        SMART_KEYMAP_DIR="$(realpath -m "$SMART_KEYMAP_DIR")"
+        echo "firmware-dir=$FIRMWARE_DIR" >> "$GITHUB_OUTPUT"
+        echo "smart-keymap-dir=$SMART_KEYMAP_DIR" >> "$GITHUB_OUTPUT"
+
+        if [[ ! -f "$KEYMAP_INPUT" ]]; then
+          echo "::error::keymap not found: $KEYMAP_INPUT (cwd=$(pwd), ls=$(ls -1 | head -n 20))"
+          exit 1
+        fi
+        KEYMAP_ABS="$(realpath "$KEYMAP_INPUT")"
+        echo "keymap-abs=$KEYMAP_ABS" >> "$GITHUB_OUTPUT"
+
+        # Board: either a path to .ncl or a built-in name.
+        if [[ "$BOARD_INPUT" == *.ncl ]]; then
+          if [[ ! -f "$BOARD_INPUT" ]]; then
+            echo "::error::board file not found: $BOARD_INPUT"
+            exit 1
+          fi
+          BOARD_ABS="$(realpath "$BOARD_INPUT")"
+        else
+          CANDIDATE="$FIRMWARE_DIR/ncl/boards/${BOARD_INPUT}.ncl"
+          if [[ -f "$CANDIDATE" ]]; then
+            BOARD_ABS="$(realpath "$CANDIDATE")"
+          else
+            echo "::error::unknown board '$BOARD_INPUT' (tried $CANDIDATE). Use a built-in name (ch32x-48, ch32x-48/rev2025_2, ch32x-75, ch32x-36-lhs, ch32x-36-rhs, weact-ch32x-core-board) or a path to a .ncl file."
+            exit 1
+          fi
+        fi
+        echo "board-abs=$BOARD_ABS" >> "$GITHUB_OUTPUT"
+        echo "Resolved keymap: $KEYMAP_ABS"
+        echo "Resolved board: $BOARD_ABS"
+        echo "Firmware dir: $FIRMWARE_DIR (smart-keymap-dir: $SMART_KEYMAP_DIR)"
+
+        if [[ ! -f "$FIRMWARE_DIR/CMakeLists.txt" ]]; then
+          echo "::error::firmware-dir not found or missing CMakeLists.txt: $FIRMWARE_DIR"
+          exit 1
+        fi
+        if [[ ! -f "$SMART_KEYMAP_DIR/Cargo.toml" ]]; then
+          echo "::error::smart-keymap-dir not found or missing Cargo.toml: $SMART_KEYMAP_DIR"
+          exit 1
+        fi
+
+        # Resolve build dir (absolute)
+        BUILD_DIR_INPUT="${{ inputs.build-dir }}"
+        if [[ "$BUILD_DIR_INPUT" = /* ]]; then
+          BUILD_DIR_ABS="$BUILD_DIR_INPUT"
+        else
+          BUILD_DIR_ABS="$(realpath -m "$FIRMWARE_DIR/$BUILD_DIR_INPUT")"
+        fi
+        echo "build-dir-abs=$BUILD_DIR_ABS" >> "$GITHUB_OUTPUT"
+
+    - name: Verify toolchain (container provides nickel, cbindgen, xPack, rust target)
+      shell: bash
+      run: |
+        set -euo pipefail
+        echo "Container image ghcr.io/rgoulter/smart-keymap-firmware-core provides toolchain"
+        nickel --version
+        cbindgen --version
+        riscv-none-elf-gcc --version | head -n1
+        echo "Checking Rust target ${{ inputs.rust-target }} ..."
+        rustc --print target-list | grep -q "${{ inputs.rust-target }}" || { echo "::error::target ${{ inputs.rust-target }} not in rustc --print target-list"; exit 1; }
+
+    - name: Rust cache
+      uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+      with:
+        shared-key: firmware-ch32x
+        cache-targets: ${{ inputs.rust-target }}
+
+    - name: Build libsmart_keymap
+      shell: bash
+      env:
+        SMART_KEYMAP_CUSTOM_KEYMAP: ${{ steps.resolve.outputs.keymap-abs }}
+      run: |
+        set -euo pipefail
+        SMART_KEYMAP_DIR="${{ steps.resolve.outputs.smart-keymap-dir }}"
+        FIRMWARE_DIR="${{ steps.resolve.outputs.firmware-dir }}"
+        echo "Building libsmart_keymap with keymap: $SMART_KEYMAP_CUSTOM_KEYMAP (smart-keymap-dir=$SMART_KEYMAP_DIR)"
+        pushd "$SMART_KEYMAP_DIR" >/dev/null
+        cargo build \
+          --release \
+          --package "smart_keymap" \
+          --target "${{ inputs.rust-target }}" \
+          --no-default-features
+        make include/smart_keymap.h
+        # FIRMWARE_DIR is now absolute, so use directly
+        mkdir -p "$FIRMWARE_DIR/libsmartkeymap"
+        cp include/smart_keymap.h "$FIRMWARE_DIR/libsmartkeymap/"
+        cp "target/${{ inputs.rust-target }}/release/libsmart_keymap.a" "$FIRMWARE_DIR/libsmartkeymap/"
+        popd >/dev/null
+        echo "Installed smart_keymap.h and libsmart_keymap.a to $FIRMWARE_DIR/libsmartkeymap/"
+
+    - name: Build firmware
+      id: build-firmware
+      shell: bash
+      run: |
+        set -euo pipefail
+        SMART_KEYMAP_DIR="${{ steps.resolve.outputs.smart-keymap-dir }}"
+        FIRMWARE_DIR="${{ steps.resolve.outputs.firmware-dir }}"
+        BOARD_ABS="${{ steps.resolve.outputs.board-abs }}"
+        BUILD_DIR_ABS="${{ steps.resolve.outputs.build-dir-abs }}"
+        GCC_VERSION="${{ inputs.gcc-version }}"
+
+        export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
+
+        echo "DEBUG: pwd=$(pwd) SMART_KEYMAP_DIR=$SMART_KEYMAP_DIR FIRMWARE_DIR=$FIRMWARE_DIR"
+        ls -la "$SMART_KEYMAP_DIR" 2>&1 | head -n 30 || true
+        ls -la "$SMART_KEYMAP_DIR/firmware/toolchains" 2>&1 | head -n 20 || echo "no $SMART_KEYMAP_DIR/firmware/toolchains"
+        ls -la firmware/toolchains 2>&1 | head -n 20 || echo "no firmware/toolchains"
+
+        # Toolchain is relative to smart-keymap root - resolve robustly
+        TOOLCHAIN=""
+        for cand in "$SMART_KEYMAP_DIR/firmware/toolchains/riscv-none-elf.cmake" "firmware/toolchains/riscv-none-elf.cmake" "toolchains/riscv-none-elf.cmake" "$(realpath -m "$SMART_KEYMAP_DIR/firmware/toolchains/riscv-none-elf.cmake" 2>/dev/null || true)" "$(realpath -m "firmware/toolchains/riscv-none-elf.cmake" 2>/dev/null || true)"; do
+          if [[ -f "$cand" ]]; then TOOLCHAIN="$cand"; break; fi
+        done
+        if [[ -z "$TOOLCHAIN" ]]; then
+          # Last resort: find any riscv-none-elf.cmake under smart-keymap dir
+          FOUND="$(find "${SMART_KEYMAP_DIR:-.}" -name "riscv-none-elf.cmake" -type f 2>/dev/null | head -n1 || true)"
+          if [[ -n "$FOUND" ]]; then TOOLCHAIN="$FOUND"; fi
+        fi
+        if [[ -z "$TOOLCHAIN" ]]; then
+          echo "::error::toolchain not found (looked for $SMART_KEYMAP_DIR/firmware/toolchains/riscv-none-elf.cmake, firmware/toolchains/riscv-none-elf.cmake, toolchains/riscv-none-elf.cmake)"
+          find . -name "*.cmake" 2>/dev/null | head -n 20 || true
+          exit 1
+        fi
+        # Ensure absolute for cmake
+        if [[ "$TOOLCHAIN" != /* ]]; then
+          TOOLCHAIN="$(realpath "$TOOLCHAIN" 2>/dev/null || echo "$TOOLCHAIN")"
+        fi
+
+        echo "Configuring cmake: firmware=$FIRMWARE_DIR board=$BOARD_ABS toolchain=$TOOLCHAIN build=$BUILD_DIR_ABS"
+        cmake \
+          -S "$FIRMWARE_DIR" \
+          -B "$BUILD_DIR_ABS" \
+          --toolchain="$TOOLCHAIN" \
+          -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
+          -D BOARD="$BOARD_ABS"
+
+        cmake --build "$BUILD_DIR_ABS" | tee "$BUILD_DIR_ABS/make.log"
+
+        ELF="$BUILD_DIR_ABS/usb-device-compositekm"
+        HEX="$BUILD_DIR_ABS/usb-device-compositekm.hex"
+        BIN="$BUILD_DIR_ABS/usb-device-compositekm.bin"
+
+        # Generate .bin alongside .hex (CMake only generates .hex)
+        if [[ -f "$ELF" ]]; then
+          OBJCOPY="$(command -v riscv-none-elf-objcopy || echo /opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin/riscv-none-elf-objcopy)"
+          "$OBJCOPY" -Obinary "$ELF" "$BIN"
+          echo "Generated $BIN ($(stat -c%s "$BIN" 2>/dev/null || stat -f%z "$BIN" 2>/dev/null || echo unknown) bytes)"
+        fi
+
+        # Memory usage summary to step summary (best-effort)
+        if grep -q "Memory region" "$BUILD_DIR_ABS/make.log" 2>/dev/null; then
+          {
+            echo "### Memory Usage Summary"
+            echo
+            echo "| Memory Region | Used Size | Region Size | Usage % |"
+            echo "|--------------|-----------|-------------|----------|"
+            grep -A2 "Memory region" "$BUILD_DIR_ABS/make.log" | tail -n2 | awk '{ printf "| %s | %s | %s | %s |\n", $1, $2" "$3, $4" "$5, $6 }'
+          } >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+        echo "firmware-elf=$ELF" >> "$GITHUB_OUTPUT"
+        echo "firmware-hex=$HEX" >> "$GITHUB_OUTPUT"
+        echo "firmware-bin=$BIN" >> "$GITHUB_OUTPUT"
+        echo "build-dir=$BUILD_DIR_ABS" >> "$GITHUB_OUTPUT"
+
+        ls -lh "$ELF" "$HEX" "$BIN" 2>/dev/null || true
+
+    - name: Upload firmware artifact
+      if: ${{ inputs.upload-artifact == 'true' }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: |
+          ${{ steps.build-firmware.outputs.firmware-elf }}
+          ${{ steps.build-firmware.outputs.firmware-hex }}
+          ${{ steps.build-firmware.outputs.firmware-bin }}
+        if-no-files-found: error
