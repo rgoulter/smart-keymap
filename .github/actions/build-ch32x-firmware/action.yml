@@ -47,18 +47,6 @@ inputs:
     description: Build directory (relative to firmware-dir, or absolute)
     required: false
     default: build
-  nickel-version:
-    description: Nickel release version
-    required: false
-    default: "1.16.0"
-  cbindgen-version:
-    description: cbindgen release version
-    required: false
-    default: "0.28.0"
-  gcc-version:
-    description: xPack riscv-none-elf-gcc version
-    required: false
-    default: "14.2.0-3"
   rust-target:
     description: Rust target triple for CH32X
     required: false
@@ -160,54 +148,16 @@ runs:
         fi
         echo "build-dir-abs=$BUILD_DIR_ABS" >> "$GITHUB_OUTPUT"
 
-    - name: Setup Nickel
+    - name: Verify toolchain (container provides nickel, cbindgen, xPack, rust target)
       shell: bash
       run: |
         set -euo pipefail
-        VERSION="${{ inputs.nickel-version }}"
-        if command -v nickel >/dev/null 2>&1; then
-          echo "nickel already installed: $(nickel --version || true)"
-        else
-          echo "Installing nickel $VERSION"
-          wget -q "https://github.com/tweag/nickel/releases/download/${VERSION}/nickel-x86_64-linux"
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
-          nickel --version
-        fi
-
-    - name: Setup cbindgen
-      shell: bash
-      run: |
-        set -euo pipefail
-        VERSION="${{ inputs.cbindgen-version }}"
-        if command -v cbindgen >/dev/null 2>&1; then
-          echo "cbindgen already installed: $(cbindgen --version || true)"
-        else
-          echo "Installing cbindgen $VERSION"
-          wget -q "https://github.com/mozilla/cbindgen/releases/download/${VERSION}/cbindgen"
-          chmod +x ./cbindgen
-          sudo cp ./cbindgen /usr/bin/cbindgen
-          cbindgen --version
-        fi
-
-    - name: Install xPack RISC-V toolchain
-      shell: bash
-      run: |
-        set -euo pipefail
-        GCC_VERSION="${{ inputs.gcc-version }}"
-        if [[ -x "/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin/riscv-none-elf-gcc" ]]; then
-          echo "xPack gcc $GCC_VERSION already installed"
-        else
-          echo "Installing xPack riscv-none-elf-gcc $GCC_VERSION"
-          wget --quiet "https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v${GCC_VERSION}/xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz"
-          sudo tar -xvf "./xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz" --directory=/opt
-        fi
-        echo "/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin" >> "$GITHUB_PATH"
-        /opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin/riscv-none-elf-gcc --version
-
-    - name: Rust add target
-      shell: bash
-      run: rustup target add "${{ inputs.rust-target }}"
+        echo "Container image ghcr.io/rgoulter/smart-keymap-firmware-core provides toolchain"
+        nickel --version
+        cbindgen --version
+        riscv-none-elf-gcc --version | head -n1
+        echo "Checking Rust target ${{ inputs.rust-target }} ..."
+        rustc --print target-list | grep -q "${{ inputs.rust-target }}" || { echo "::error::target ${{ inputs.rust-target }} not in rustc --print target-list"; exit 1; }
 
     - name: Rust cache
       uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1

@@ -52,16 +52,6 @@ on:
         required: false
         default: firmware-ch32x
         type: string
-      nickel-version:
-        description: Nickel version
-        required: false
-        default: "1.16.0"
-        type: string
-      gcc-version:
-        description: xPack riscv-none-elf-gcc version
-        required: false
-        default: "14.2.0-3"
-        type: string
       build-dir:
         description: CMake build directory (relative to firmware dir)
         required: false
@@ -94,6 +84,8 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/rgoulter/smart-keymap-firmware-core:latest
     steps:
       # When invoked as workflow_call from an external repo, github.repository
       # is the caller, not smart-keymap. Checkout caller first.
@@ -183,7 +175,5 @@ jobs:
           board: ${{ steps.resolve.outputs.board-abs }}
           smart-keymap-dir: smart-keymap
           build-dir: ${{ inputs.build-dir }}
-          nickel-version: ${{ inputs.nickel-version }}
-          gcc-version: ${{ inputs.gcc-version }}
           artifact-name: ${{ inputs.artifact-name }}
           upload-artifact: "true"
