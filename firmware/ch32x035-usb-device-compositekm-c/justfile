@@ -1,5 +1,74 @@
 board := "ncl/boards/ch32x-48.ncl"
 
+# Board id: ncl/boards/ prefix stripped, .ncl stripped,
+#  "/" -> "-".
+#  ch32x-60-improved.ncl -> ch32x-60-improved
+#  ch32x-48/rev2025_2.ncl -> ch32x-48-rev2025_2
+# Outside ncl/boards/ uses file stem.
+board_noprefix := replace(board, "ncl/boards/", "")
+board_noext := trim_end_match(board_noprefix, ".ncl")
+board_id_raw := replace(board_noext, "/", "-")
+board_id := if board_noprefix != board {
+  trim_start_match(board_id_raw, "-")
+} else {
+  file_stem(board)
+}
+
+# Keymap id from SMART_KEYMAP_CUSTOM_KEYMAP.
+#  keymap.ncl/json -> parent dir name
+#   (keymap-66key-extend/keymap.ncl -> keymap-66key-extend)
+#  else file stem (my-custom.ncl -> my-custom).
+# Empty -> "" (board-only build).
+keymap_path := env_var_or_default(
+  "SMART_KEYMAP_CUSTOM_KEYMAP",
+  "",
+)
+keymap_fn := if keymap_path == "" {
+  ""
+} else {
+  file_name(keymap_path)
+}
+keymap_parent := if keymap_path == "" {
+  ""
+} else {
+  parent_directory(keymap_path)
+}
+keymap_parent_name := if keymap_parent == "" {
+  ""
+} else {
+  file_name(keymap_parent)
+}
+keymap_stem := if keymap_path == "" {
+  ""
+} else {
+  file_stem(keymap_path)
+}
+keymap_id_raw := if keymap_fn == "keymap.ncl" {
+  keymap_parent_name
+} else if keymap_fn == "keymap.json" {
+  keymap_parent_name
+} else {
+  keymap_stem
+}
+keymap_id := if keymap_path == "" {
+  ""
+} else {
+  keymap_id_raw
+}
+
+# Build dir and hex include both ids,
+#  so `just flash` no longer collides on `build/`.
+build_dir := if keymap_id == "" {
+  "build-" + board_id
+} else {
+  "build-" + board_id + "-" + keymap_id
+}
+hex_name := if keymap_id == "" {
+  "usb-device-compositekm-" + board_id + ".hex"
+} else {
+  "usb-device-compositekm-" + board_id + "-" + keymap_id + ".hex"
+}
+
 default: build
 
 _libsmartkeymap:
@@ -8,16 +77,28 @@ _libsmartkeymap:
 cmake-generate: _libsmartkeymap
   cmake \
     -S . \
-    -B build \
+    -B {{build_dir}} \
     --toolchain=../../toolchains/riscv-none-elf.cmake \
     -D CMAKE_EXPORT_COMPILE_COMMANDS=1 \
     -D BOARD={{board}}
 
 build: cmake-generate
-  cmake --build build
+  cmake --build {{build_dir}}
+  test -f {{build_dir}}/usb-device-compositekm.hex && \
+    cp {{build_dir}}/usb-device-compositekm.hex \
+      {{build_dir}}/{{hex_name}} || true
 
 await-bootloader:
   timeout 30 ./scripts/wchisp-await-bootloader.sh
 
 flash: build await-bootloader
-  wchisp flash build/usb-device-compositekm.hex
+  wchisp flash {{build_dir}}/{{hex_name}}
+
+# Show derived ids and paths
+info:
+  @echo "board={{board}}"
+  @echo "board_id={{board_id}}"
+  @echo "keymap_path={{keymap_path}}"
+  @echo "keymap_id={{keymap_id}}"
+  @echo "build_dir={{build_dir}}"
+  @echo "hex={{build_dir}}/{{hex_name}}"
