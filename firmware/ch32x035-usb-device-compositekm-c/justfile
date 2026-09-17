@@ -91,8 +91,98 @@ build: cmake-generate
 await-bootloader:
   timeout 30 ./scripts/wchisp-await-bootloader.sh
 
-flash: build await-bootloader
-  wchisp flash {{build_dir}}/{{hex_name}}
+# Flash: with args flashes that board/keymap directly,
+#  without args builds current then picks hex.
+#  One hex -> auto, multiple -> fzf or numbered.
+#  `just flash ch32x-60-improved`
+#  `just flash ch32x-60-improved keymap-66key-extend`
+flash board_arg="" keymap_arg="":
+  #!/usr/bin/env bash
+  set -euo pipefail
+  board_arg="{{board_arg}}"
+  keymap_arg="{{keymap_arg}}"
+  if [ -n "$board_arg" ] || [ -n "$keymap_arg" ]; then
+    # Resolve board: bare id -> ncl/boards/<id>.ncl
+    #  else full path (ends with .ncl) as is
+    eff_board="{{board}}"
+    eff_keymap="{{keymap_path}}"
+    if [ -n "$board_arg" ]; then
+      case "$board_arg" in
+        *.ncl) eff_board="$board_arg" ;;
+        *) eff_board="ncl/boards/${board_arg}.ncl" ;;
+      esac
+    fi
+    if [ -n "$keymap_arg" ]; then
+      case "$keymap_arg" in
+        *.ncl|*.json) eff_keymap="$keymap_arg" ;;
+        */*) eff_keymap="$keymap_arg" ;;
+        *) eff_keymap="tests/ncl/${keymap_arg}/keymap.ncl" ;;
+      esac
+    fi
+    # Derive ids for effective board/keymap
+    eff_board_noprefix="${eff_board#ncl/boards/}"
+    if [ "$eff_board" != "$eff_board_noprefix" ]; then
+      eff_board_noext="${eff_board_noprefix%.ncl}"
+      eff_board_id=$(echo "$eff_board_noext" | tr '/' '-')
+    else
+      eff_board_id=$(basename "$eff_board" .ncl)
+    fi
+    if [ -z "$eff_keymap" ]; then
+      eff_keymap_id=""
+    else
+      eff_fn=$(basename "$eff_keymap")
+      if [ "$eff_fn" = "keymap.ncl" ] \
+        || [ "$eff_fn" = "keymap.json" ]; then
+        eff_keymap_id=$(basename "$(dirname "$eff_keymap")")
+      else
+        eff_keymap_id=$(basename "$eff_keymap" \
+          | sed 's/\.[^.]*$//')
+      fi
+    fi
+    if [ -z "$eff_keymap_id" ]; then
+      eff_build="build-${eff_board_id}"
+      eff_hex="usb-device-compositekm-${eff_board_id}.hex"
+    else
+      eff_build="build-${eff_board_id}-${eff_keymap_id}"
+      eff_hex="usb-device-compositekm-${eff_board_id}-${eff_keymap_id}.hex"
+    fi
+    echo "flash explicit: $eff_board + $eff_keymap"
+    echo "-> $eff_build/$eff_hex"
+    SMART_KEYMAP_CUSTOM_KEYMAP="$eff_keymap" \
+      just --set board "$eff_board" build
+    just --set board "$eff_board" await-bootloader
+    wchisp flash "$eff_build/$eff_hex"
+    exit 0
+  fi
+  # No explicit args: build current then pick
+  hexes=$(find . -maxdepth 2 \
+    -name "usb-device-compositekm-*.hex" \
+    | sort)
+  count=$(echo "$hexes" | grep -c . || true)
+  if [ "$count" -eq 0 ]; then
+    echo "no hex found" >&2
+    exit 1
+  fi
+  if [ "$count" -eq 1 ]; then
+    hex="$hexes"
+  else
+    if command -v fzf >/dev/null 2>&1; then
+      hex=$(echo "$hexes" | fzf --prompt="flash> ")
+    else
+      echo "multiple hexes:"
+      echo "$hexes" | cat -n
+      printf "pick number: "
+      read -r n || n=1
+      if [ -z "$n" ]; then n=1; fi
+      hex=$(echo "$hexes" | sed -n "${n}p")
+      if [ -z "$hex" ]; then
+        hex=$(echo "$hexes" | head -n1)
+      fi
+    fi
+  fi
+  test -n "$hex"
+  echo "flashing $hex"
+  wchisp flash "$hex"
 
 # Show derived ids and paths
 info:
