@@ -94,8 +94,8 @@ await-bootloader:
 # Flash: with args flashes that board/keymap directly,
 #  without args builds current then picks hex.
 #  One hex -> auto, multiple -> fzf or numbered.
-#  `just flash ch32x-60-improved`
-#  `just flash ch32x-60-improved keymap-66key-extend`
+#  `just flash wabble-60`
+#  `just flash wabble-60 keymap-60key-rgoulter`
 flash board_arg="" keymap_arg="":
   #!/usr/bin/env bash
   set -euo pipefail
