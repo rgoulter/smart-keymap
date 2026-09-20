@@ -86,14 +86,35 @@
       key_validator = fun k =>
         k
         |> match {
-          "SequenceStart" => 'Ok,
-          _ => 'Error { message = "Expected \"SequenceStart\"" },
+          { sequence = "SequenceStart" } => 'Ok,
+          _ => 'Error { message = "Expected { sequence = \"SequenceStart\" }" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
 
-      to_json_value = fun key => key,
+      to_json_value = fun key =>
+        key
+        |> match {
+          { sequence = json } => json,
+          _ => std.fail_with "Expected { sequence = \"SequenceStart\" }",
+        },
 
       map_accum = fun f acc k => { include acc, include k },
+    },
+
+  checks.check_sequence_start =
+    let K = import "keys.ncl" in
+    {
+      check_sequence_start_ok =
+        keymap_ncl.sequence_start.key_validator K.sequence_start == 'Ok,
+
+      check_sequence_start_json = {
+        actual = keymap_ncl.sequence_start.to_json_value K.sequence_start,
+        expected = "SequenceStart",
+      },
+
+      # Record form merges with layered authoring as a layered base.
+      check_sequence_start_layered_base_ok =
+        keymap_ncl.key.key_validator (K.sequence_start & { layered = [K.A] }) == 'Ok,
     },
 }

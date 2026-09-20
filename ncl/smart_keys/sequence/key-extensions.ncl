@@ -1,9 +1,11 @@
 {
   key_extensions.sequence = {
     sequence = {
-      start = "SequenceStart",
+      # Record (not a bare string) so the key can merge with
+      #  `{ layered = … }` / `{ named_layers = … }` as a layered base.
+      start = { sequence = "SequenceStart" },
     },
     # Short alias matching caps_word / history style.
-    sequence_start = "SequenceStart",
+    sequence_start = { sequence = "SequenceStart" },
   },
 }
