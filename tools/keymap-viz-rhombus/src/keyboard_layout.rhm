@@ -50,9 +50,9 @@ class Scene(width, height, nodes :: List):
 
 def LAYER_PALETTE = [
   {"side": "#cccccc", "top": "#fcfcfc"},  // L0 neutral
-  {"side": "#b4c7de", "top": "#d9e6f5"},  // L1 blue
-  {"side": "#b5d0b8", "top": "#dcefdc"},  // L2 green
-  {"side": "#e0c89a", "top": "#f6e6c8"},  // L3 amber
+  {"side": "#a3bde6", "top": "#d2e3f8"},  // L1 blue
+  {"side": "#d69b9b", "top": "#f2d7d7"},  // L2 red
+  {"side": "#bda6e0", "top": "#e4d4f7"},  // L3 purple
   {"side": "#cbb5d8", "top": "#eadcf3"},  // L4 purple
   {"side": "#d8b4b4", "top": "#f3dcdc"},  // L5 rose
   {"side": "#b4d0d0", "top": "#dcf0f0"},  // L6 teal
@@ -64,9 +64,9 @@ def LAYER_PALETTE = [
 // Darkened equivalents of LAYER_PALETTE (plus sage/mauve for L8–L9)
 def LAYER_PALETTE_DARK = [
   {"side": "#3a3a3a", "top": "#4a4a4a"},  // L0
-  {"side": "#2a4460", "top": "#3d648a"},  // L1 blue
-  {"side": "#2a4a32", "top": "#3d6b48"},  // L2 green
-  {"side": "#5a4420", "top": "#7a6030"},  // L3 amber
+  {"side": "#27496e", "top": "#3f74ad"},  // L1 blue
+  {"side": "#662b2b", "top": "#8a4040"},  // L2 red
+  {"side": "#472a63", "top": "#654382"},  // L3 purple
   {"side": "#4a3060", "top": "#684878"},  // L4 purple
   {"side": "#5a3030", "top": "#784848"},  // L5 rose
   {"side": "#2a4a48", "top": "#3d6864"},  // L6 teal
@@ -86,7 +86,11 @@ def theme_light = {
   "top_muted": "#ebe7e1",
   "legend": "#2a2a2a",
   "hold": "#c44",
-  "overlay": "#6688aa",
+  // Per-slot corner text: dark siblings of the L1/L2/L3 washes.
+  // Pastel fills are wrong for text; slots stay layer-agnostic roles.
+  "overlay_tl": "#2b5cab",
+  "overlay_tr": "#c03028",
+  "overlay_bl": "#7440b0",
   "title": "#222222",
   "unused_op": 0.28,
   "muted_op": 0.50,
@@ -110,7 +114,10 @@ def theme_dark = {
   "top_muted": "#333333",
   "legend": "#f2f2f2",
   "hold": "#ff6b6b",
-  "overlay": "#74c0fc",
+  // Per-slot corner text: light siblings of the dark L1/L2/L3 washes
+  "overlay_tl": "#8fb9ef",
+  "overlay_tr": "#f0756b",
+  "overlay_bl": "#b78df0",
   "title": "#eeeeee",
   "unused_op": 0.28,
   "muted_op": 0.50,
@@ -623,17 +630,17 @@ fun key_nodes_at(
         text_node(
           L.tl, cx - sw / 2.0 + inset_x + 3.0,
           cy - sh / 2.0 + inset_top + 10.0,
-          "overlay", "start", 7.5, theme["overlay"], fill_op, rot_svg, cx, cy
+          "overlay", "start", 7.5, theme["overlay_tl"], fill_op, rot_svg, cx, cy
         ),
         text_node(
           L.tr, cx + sw / 2.0 - inset_x - 3.0,
           cy - sh / 2.0 + inset_top + 10.0,
-          "overlay", "end", 7.5, theme["overlay"], fill_op, rot_svg, cx, cy
+          "overlay", "end", 7.5, theme["overlay_tr"], fill_op, rot_svg, cx, cy
         ),
         text_node(
           L.bl, cx - sw / 2.0 + inset_x + 3.0,
           cy + sh / 2.0 - inset_bot - 2.0,
-          "overlay", "start", 7.5, theme["overlay"], fill_op, rot_svg, cx, cy
+          "overlay", "start", 7.5, theme["overlay_bl"], fill_op, rot_svg, cx, cy
         )
       ]
       def kept = for List:
