@@ -64,6 +64,8 @@ Multi-pane `stack` offsets each pane by prior height + `PANE_GAP`.
 
 Per-layer wash (`theme["layers"]`, stacked): pastel side/top by `Pane.layer_index`.
 Cell optional `wash` overrides pane index. pressed/muted/unused stay global.
+Corner Text fills use `theme["overlay_tl"/"overlay_tr"/"overlay_bl"]`
+(dark/light siblings of the L1/L2/L3 washes; slots stay layer-agnostic).
 
 `scene_of_panes` / `svg_of_scene` take `~theme` (`theme_light` default, or `theme_dark`).
 
