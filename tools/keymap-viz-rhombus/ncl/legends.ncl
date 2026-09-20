@@ -374,7 +374,11 @@ let usage = import "hid-usage-keyboard.ncl" in
     else
       'Normal,
 
-  # Destination layer index for a hold-layer-mod key (tap or hold half).
+  # Raw hold-layer-mod destination for a hold-layer-mod key (tap or hold half).
+  #
+  # Numbered-layer holds yield a number; named-layer holds yield the layer
+  #  name string. Callers needing a wash index resolve names via
+  #  export-legend-lib resolve_wash (e.g. with named_layer_indices).
   layer_hold_index = fun k =>
     if !std.is_record k then
       null

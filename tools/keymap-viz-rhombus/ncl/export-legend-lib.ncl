@@ -23,29 +23,52 @@ let L = import "legends.ncl" in
       _ => "normal",
     },
 
-  # Optional wash dest layer when key is hold→layer N (layer_mod.hold)
-  maybe_wash = fun k =>
-    let idx = L.layer_hold_index k in
+  # Optional wash dest layer for a hold→layer key (layer_mod.hold).
+  #
+  # Numbers pass through; named-layer strings resolve against name_to_idx
+  # (e.g. the keymap's named_layer_indices). Unknown names drop the wash
+  # so the bundle keeps the legend/v0 wash-is-Int contract.
+  resolve_wash = fun name_to_idx idx =>
+    if idx == null then
+      null
+    else if std.is_number idx then
+      idx
+    else if std.is_string idx then
+      if std.record.has_field idx name_to_idx then
+        std.record.get idx name_to_idx
+      else
+        null
+    else
+      null,
+
+  maybe_wash_with = fun name_to_idx k =>
+    let idx = resolve_wash name_to_idx (L.layer_hold_index k) in
     if idx == null then
       {}
     else
       { wash = idx },
 
-  cell_of = fun k =>
+  maybe_wash = fun k => maybe_wash_with {} k,
+
+  cell_of_with = fun name_to_idx k =>
     {
       legends = L.of_layer_key k,
       emphasis = emphasis_str (L.emphasis_of k),
     }
-    & (maybe_wash k),
+    & (maybe_wash_with name_to_idx k),
 
-  cell_of_base = fun k =>
+  cell_of = fun k => cell_of_with {} k,
+
+  cell_of_base_with = fun name_to_idx k =>
     {
       legends = L.of_key k,
       emphasis = "normal",
     }
-    & (maybe_wash k),
+    & (maybe_wash_with name_to_idx k),
 
-  bundle_of = fun src layer_rows =>
+  cell_of_base = fun k => cell_of_base_with {} k,
+
+  bundle_of_with_index = fun src layer_rows name_to_idx =>
     let dense_cells =
       let n = std.array.length (std.array.at 0 layer_rows) in
       std.array.generate
@@ -68,7 +91,7 @@ let L = import "legends.ncl" in
             },
             emphasis = "normal",
           }
-          & (maybe_wash base_k)
+          & (maybe_wash_with name_to_idx base_k)
         )
         n
     in
@@ -77,7 +100,7 @@ let L = import "legends.ncl" in
       source = src,
       base = {
         schema = "legend/v0",
-        cells = (std.array.at 0 layer_rows) |> std.array.map cell_of_base,
+        cells = (std.array.at 0 layer_rows) |> std.array.map (cell_of_base_with name_to_idx),
       },
       layer_legends =
         layer_rows
@@ -85,7 +108,7 @@ let L = import "legends.ncl" in
           {
             schema = "legend/v0",
             name = "layer%{i}",
-            cells = layer |> std.array.map cell_of,
+            cells = layer |> std.array.map (cell_of_with name_to_idx),
           }
         ),
       dense = {
@@ -93,4 +116,7 @@ let L = import "legends.ncl" in
         cells = dense_cells,
       },
     },
+
+  bundle_of = fun src layer_rows =>
+    bundle_of_with_index src layer_rows {},
 }

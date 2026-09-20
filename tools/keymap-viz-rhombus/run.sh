@@ -6,8 +6,33 @@ fi
 RACKET="${RACKET_BIN:-${RACKET:-racket}}"
 cd "$(dirname "$0")"
 
+run_nickel_checks() {
+  local pkg root nickel
+  pkg="$(cd "$(dirname "$0")" && pwd)"
+  root="${SMART_KEYMAP_ROOT:-}"
+  if [[ -z "$root" ]]; then
+    if [[ -d /workspace/rgoulter-repos/smart-keymap/ncl ]]; then
+      root=/workspace/rgoulter-repos/smart-keymap
+    else
+      root="$(cd "$pkg/../.." && pwd)"
+    fi
+  fi
+  nickel="${NICKEL_BIN:-${NICKEL:-nickel}}"
+  if ! command -v "$nickel" >/dev/null 2>&1; then
+    echo "nickel not on PATH" >&2
+    return 1
+  fi
+  echo "== ncl/legend-checks.ncl =="
+  ( cd "$root" && "$nickel" eval \
+    --import-path="$pkg/ncl" \
+    --import-path="$root/ncl" \
+    --field evaluated_checks \
+    "$pkg/ncl/legend-checks.ncl" > /dev/null )
+}
+
 run_tests() {
   local f
+  run_nickel_checks
   for f in tests/test_core_*.rhm; do
     echo "== $f =="
     "$RACKET" "$f"
