@@ -46,28 +46,28 @@
       key_validator = fun k =>
         k
         |> match {
-          "Repeat" => 'Ok,
-          "AltRepeat" => 'Ok,
+          { history = "Repeat" } => 'Ok,
+          { history = "AltRepeat" } => 'Ok,
           k if std.is_record k => adaptive_validator k,
-          _ => 'Error { message = "Expected \"Repeat\", \"AltRepeat\", or adaptive { default, rules }" },
+          _ => 'Error { message = "Expected { history = \"Repeat\" }, { history = \"AltRepeat\" }, or adaptive { default, rules }" },
         },
 
       is_key = fun k => 'Ok == key_validator k,
 
       to_json_value = fun key =>
-        if key == "Repeat" then
-          "Repeat"
-        else if key == "AltRepeat" then
-          "AltRepeat"
-        else
-          {
-            default = keyboard_key_to_key_output key."default",
-            rules =
-              if std.record.has_field "rules" key then
-                key.rules |> std.array.map alt_repeat_rule_to_json
-              else
-                [],
-          },
+        key
+        |> match {
+          { history = json } => json,
+          _ =>
+            {
+              default = keyboard_key_to_key_output key."default",
+              rules =
+                if std.record.has_field "rules" key then
+                  key.rules |> std.array.map alt_repeat_rule_to_json
+                else
+                  [],
+            },
+        },
 
       # Leaves have no nested keys; map_accum maps children only.
       map_accum = fun f acc k => { include acc, include k },
@@ -111,10 +111,24 @@
     let K = import "keys.ncl" in
     {
       check_repeat_ok =
-        keymap_ncl.history.key_validator "Repeat" == 'Ok,
+        keymap_ncl.history.key_validator K.history.repeat == 'Ok,
+
+      check_repeat_json = {
+        actual = keymap_ncl.history.to_json_value K.history.repeat,
+        expected = "Repeat",
+      },
 
       check_alt_repeat_ok =
-        keymap_ncl.history.key_validator "AltRepeat" == 'Ok,
+        keymap_ncl.history.key_validator K.history.alt_repeat == 'Ok,
+
+      check_alt_repeat_json = {
+        actual = keymap_ncl.history.to_json_value K.history.alt_repeat,
+        expected = "AltRepeat",
+      },
+
+      # Record form merges with layered authoring as a layered base.
+      check_repeat_layered_base_ok =
+        keymap_ncl.key.key_validator (K.history.repeat & { layered = [K.A] }) == 'Ok,
 
       check_keyboard_to_key_output_left = {
         actual = keymap_ncl.history.keyboard_key_to_key_output K.Left,

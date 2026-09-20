@@ -13,7 +13,7 @@
     |> match {
       { sequences, .. } => keymap_ncl.sequence.key_validator k,
       { sequence_passthrough, .. } => keymap_ncl.sequence_aux.key_validator k,
-      "SequenceStart" => keymap_ncl.sequence_start.key_validator k,
+      { sequence = "SequenceStart" } => keymap_ncl.sequence_start.key_validator k,
       _ => keymap_ncl.nullable_key.key_validator k,
     },
 
@@ -29,7 +29,7 @@
           |> match {
             { chords = _, .. } => k,
             { passthrough = _, .. } => k,
-            "SequenceStart" => k,
+            { sequence = "SequenceStart" } => k,
             _ =>
               sequences
               |> std.array.map_with_index (fun idx ch => ch & { sequence_index = idx })
