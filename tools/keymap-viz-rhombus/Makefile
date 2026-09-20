@@ -1,4 +1,6 @@
+ifneq ($(wildcard /workspace/racket-install/racket/bin),)
 export PATH := /workspace/racket-install/racket/bin:$(PATH)
+endif
 
 .PHONY: test artifacts viz png all clean
 

@@ -1,4 +1,5 @@
-export PATH := "/workspace/racket-install/racket/bin:" + env("PATH")
+_ws_racket := "/workspace/racket-install/racket/bin"
+export PATH := (if path_exists(_ws_racket) == "true" { _ws_racket + ":" } else { "" }) + env("PATH")
 
 test:
     ./run.sh test
@@ -6,6 +7,10 @@ test:
 # just viz layout=48key-basic
 viz layout:
     ./run.sh viz {{layout}}
+
+# just viz-path layout=/path/to/layout.rhm exporter=/path/to/export-legend.ncl
+viz-path layout exporter="":
+    ./run.sh viz-path {{layout}} {{exporter}}
 
 artifacts:
     ./run.sh artifacts

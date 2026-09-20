@@ -2,7 +2,7 @@
 # Export legend-bundle/v0 JSON via Nickel.
 # Per-layout exporters live next to their Rhombus runners under layouts/<name>/.
 # Shared lib: ncl/export-legend-lib.ncl + ncl/legends.ncl
-# Usage: export-legend.sh <48|36|66|layout-name> [out.json]
+# Usage: export-legend.sh <48|36|66|layout-name|exporter.ncl> [out.json]
 set -euo pipefail
 
 LAYOUT="${1:?layout id: 48|36|66|48key-basic|36key-rgoulter|ch32x-60-improved|…}"
@@ -36,8 +36,15 @@ case "$LAYOUT" in
     DEFAULT_OUT=out/.cache/66key-ansi-fn-bundle.json
     ;;
   *)
-    echo "unknown layout: $LAYOUT (want 48|36|66 or a layout dir name)" >&2
-    return 1 2>/dev/null || exit 1
+    # Explicit exporter path (may live anywhere, e.g. a downstream repo):
+    # the keymap import resolves via --import-path below.
+    if [[ "$LAYOUT" == *.ncl && -f "$LAYOUT" ]]; then
+      SCRIPT="$LAYOUT"
+      DEFAULT_OUT="out/.cache/$(basename "$(dirname "$LAYOUT")")-bundle.json"
+    else
+      echo "unknown layout: $LAYOUT (want 48|36|66, a layout dir name, or an exporter .ncl path)" >&2
+      return 1 2>/dev/null || exit 1
+    fi
     ;;
 esac
 
@@ -48,7 +55,7 @@ if [[ "$OUT" != /* ]]; then
 fi
 mkdir -p "$(dirname "$OUT")"
 
-NICKEL="${NICKEL:-nickel}"
+NICKEL="${NICKEL_BIN:-${NICKEL:-nickel}}"
 if ! command -v "$NICKEL" >/dev/null 2>&1; then
   if [[ -x /workspace/nickel-install/bin/nickel ]]; then
     NICKEL=/workspace/nickel-install/bin/nickel

@@ -15,7 +15,9 @@ Rhombus does **not** author legends; Nickel does **not** draw SVG.
 ## Requirements
 
 - Racket 8+ with `rhombus` + `rhombus-json` (`raco pkg install rhombus rhombus-json`)
-- Nickel 1.14+ (for legend export)
+  (`RACKET_BIN` overrides the `racket` binary; a `/workspace` install dir is
+  prepended to `PATH` only when it exists)
+- Nickel 1.14+ (for legend export; `NICKEL_BIN` overrides the binary)
 - smart-keymap checkout (for keymap `.ncl` imports via `SMART_KEYMAP_ROOT`)
 
 Root `devenv.nix` already includes `pkgs.racket` and an `enterShell` hint for
@@ -64,9 +66,17 @@ under `ncl/`. `36key_kicad` symlinks `export-legend.ncl` to `36key_rgoulter`
 
 ## Your own keymap / points
 
-1. Export LegendIR with Nickel (`bundle_of` / `layouts/<name>/export-legend.ncl`), or write `legend/v0` JSON.
+Keep your layout dirs anywhere (e.g. a downstream repo) and run them with
+`viz-path`, which assembles a scratch tree (engine plus your layout dir) so
+the relative `../../src` imports keep working:
+
+1. Export LegendIR with Nickel (`bundle_of` / your `export-legend.ncl`), or write `legend/v0` JSON.
+   The keymap import resolves via `--import-path`, so the exporter may also live
+   anywhere: `./ncl/export-legend.sh /path/to/export-legend.ncl /abs/out/bundle.json`.
 2. Copy `layouts/48key_basic/`, change the PointsIR factory and `bundle` path in `layout.rhm`.
-3. `racket layouts/your_layout/layout.rhm`: no edits to a shared numbered artifact file.
+3. `./run.sh viz-path /path/to/your_layout/layout.rhm /path/to/export-legend.ncl`
+   (omit the exporter for Nickel-free layouts like `hello`).
+   Outputs land in the printed scratch `out/` dir; the caller collects and cleans them.
 
 ## Tests
 

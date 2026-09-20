@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 set -euo pipefail
-export PATH="/workspace/racket-install/racket/bin:${PATH:-}"
+if [ -d /workspace/racket-install/racket/bin ]; then
+  export PATH="/workspace/racket-install/racket/bin:${PATH:-}"
+fi
+RACKET="${RACKET_BIN:-${RACKET:-racket}}"
 cd "$(dirname "$0")"
 
 run_tests() {
   local f
   for f in tests/test_core_*.rhm; do
     echo "== $f =="
-    racket "$f"
+    "$RACKET" "$f"
   done
+  ./tests/test_out_of_tree.sh
   echo "ALL TESTS PASSED"
 }
 
@@ -33,6 +37,35 @@ export_for() {
   esac
 }
 
+# Run a layout file living anywhere (e.g. a downstream repo): assemble a
+# scratch tree with the engine (src, fixtures) plus the layout's own
+# directory, then run it there. Relative ../../src imports keep working;
+# outputs land in the scratch out/ dir, whose path is printed for the
+# caller to collect (caller owns scratch cleanup).
+# With an exporter, LegendIR is exported first: nickel resolves the keymap
+# via --import-path, so the exporter may also live anywhere. The bundle
+# path must match the one hardcoded in the layout runner.
+viz_path() {
+  local layout exporter bundle dir name scratch
+  layout="$(readlink -f "${1:?usage: $0 viz-path <layout.rhm> [exporter.ncl] [bundle.json]}")"
+  exporter="${2:-}"
+  bundle="${3:-}"
+  dir="$(dirname "$layout")"
+  name="$(basename "$dir")"
+  scratch="$(mktemp -d "${TMPDIR:-/tmp}/keymap-viz-XXXXXX")"
+  mkdir -p "$scratch/layouts/$name"
+  cp -r src fixtures "$scratch/"
+  cp -r "$dir"/. "$scratch/layouts/$name/"
+  if [ -n "$exporter" ]; then
+    if [ -z "$bundle" ]; then
+      bundle="$scratch/out/.cache/$name-bundle.json"
+    fi
+    ./ncl/export-legend.sh "$exporter" "$bundle"
+  fi
+  ( cd "$scratch" && "$RACKET" "layouts/$name/$(basename "$layout")" )
+  echo "scratch: $scratch"
+}
+
 case "${1:-all}" in
   test) run_tests ;;
   viz)
@@ -40,12 +73,15 @@ case "${1:-all}" in
     if [ "$LAYOUT" != "hello" ] && [ "$LAYOUT" != "hello-dense" ]; then
       export_for "$LAYOUT"
     fi
-    racket "$(layout_file "$LAYOUT")"
+    "$RACKET" "$(layout_file "$LAYOUT")"
+    ;;
+  viz-path)
+    viz_path "${2:?usage: $0 viz-path <layout.rhm> [exporter.ncl] [bundle.json]}" "${3:-}" "${4:-}"
     ;;
   artifacts|all-layouts)
     for L in 48key-basic 36key-rgoulter 36key-kicad ch32x-60-improved; do
       export_for "$L"
-      racket "$(layout_file "$L")"
+      "$RACKET" "$(layout_file "$L")"
     done
     ;;
   png)
@@ -61,11 +97,11 @@ case "${1:-all}" in
     run_tests
     for L in 48key-basic 36key-rgoulter 36key-kicad ch32x-60-improved; do
       export_for "$L"
-      racket "$(layout_file "$L")"
+      "$RACKET" "$(layout_file "$L")"
     done
     ;;
   *)
-    echo "usage: $0 [test|viz <layout>|artifacts|png|all]" >&2
+    echo "usage: $0 [test|viz <layout>|viz-path <layout.rhm> [exporter.ncl] [bundle.json]|artifacts|png|all]" >&2
     echo "layouts: hello | hello-dense | 48key-basic | 36key-rgoulter | 36key-kicad | ch32x-60-improved" >&2
     exit 1
     ;;
