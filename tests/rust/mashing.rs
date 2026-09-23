@@ -116,3 +116,30 @@ fn input_queue_overflow_is_ignored_not_panic() {
     let report = keymap.boot_keyboard_report();
     assert_eq!(8, report.len());
 }
+
+/// Out-of-range indices are ignored (C side also guards, but core should not abort if they slip through).
+/// This simulates a corrupted split byte deserializing to 500.
+#[test]
+fn out_of_range_keymap_index_is_ignored() {
+    // Assemble -- single key map.
+    let mut keymap = ObservedKeymap::new(keymap!(
+        r#"
+            {
+                keys = [
+                    { key_code = 4 },
+                ],
+            }
+        "#
+    ));
+
+    // Act -- press valid, then out-of-range.
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.handle_input(input::Event::Press { keymap_index: 500 });
+    keymap.handle_input(input::Event::Release { keymap_index: 500 });
+    keymap.tick_until_no_scheduled_events();
+
+    // Assert -- valid key still reports, no panic.
+    let reports = keymap.distinct_reports();
+    // Should have had at least one report with A.
+    assert!(reports.reports().iter().any(|r| r[2] == KC_A));
+}

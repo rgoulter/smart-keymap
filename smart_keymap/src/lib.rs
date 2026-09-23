@@ -268,9 +268,23 @@ pub extern "C" fn keymap_set_ms_per_tick(ms_per_tick: u8) {
 }
 
 /// Register an input event to the global keymap instance.
+///
+/// Silently ignores out-of-range keymap indices
+///  and events that would overflow the keymap's fixed capacity.
 #[allow(static_mut_refs)]
 #[no_mangle]
 pub extern "C" fn keymap_register_input_event(event: KeymapInputEvent) {
+    // Guard physical press/release indices against the compiled keymap size.
+    // Without this, a corrupted split byte or a mismatched board/keymap
+    //  could index `KEY_REFS` out of bounds and abort (HardFault on CH32X).
+    match event.event_type {
+        KeymapInputEventType::KeymapEventPress | KeymapInputEventType::KeymapEventRelease
+            if (event.value as usize) >= smart_keymap::init::KEY_COUNT =>
+        {
+            return;
+        }
+        _ => {}
+    }
     unsafe {
         KEYMAP.handle_input(event.into());
     }
