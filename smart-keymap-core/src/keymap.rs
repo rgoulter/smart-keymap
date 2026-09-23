@@ -954,7 +954,7 @@ impl<
             .and_then(|pending| self.key_system.pending_output(&pending.pending_key_state))
             .map(|ko| ko.without_modifiers(suppress))
             .filter(|ko| *ko != key::KeyOutput::NO_OUTPUT);
-        resolved.chain(pending).collect()
+        resolved.chain(pending).take(MAX_PRESSED_KEYS).collect()
     }
 
     fn tick_by(&mut self, delta_ms: u32) {
