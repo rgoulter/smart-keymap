@@ -17,13 +17,21 @@ pub const MAX_TICKS_UNTIL_NO_SCHEDULED_EVENTS: usize = 10_000;
 
 /// Wrapper around a [crate::keymap::Keymap] that also tracks distinct HID reports.
 #[derive(Debug)]
-pub struct ObservedKeymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
+pub struct ObservedKeymap<
+    I: Index<usize, Output = R> + keymap::KeySource<R>,
+    R,
+    Ctx,
+    Ev: Debug,
+    PKS,
+    KS,
+    S,
+> {
     keymap: Keymap<I, R, Ctx, Ev, PKS, KS, S>,
     distinct_reports: keymap::DistinctReports,
 }
 
 impl<
-        I: Debug + Index<usize, Output = R>,
+        I: Debug + Index<usize, Output = R> + keymap::KeySource<R>,
         R: Copy + Debug,
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
         Ev: Copy + Debug,

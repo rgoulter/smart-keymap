@@ -15,6 +15,46 @@ use core::fmt::Debug;
 use core::marker::Copy;
 use core::ops::Index;
 
+/// Source of key definitions indexed by `keymap_index`.
+///
+/// Firmware and tests index into this with a `u16` from the matrix or
+///  a deserialized split message. A corrupted byte should not abort the
+///  firmware (HardFault on CH32X); instead the event is ignored.
+pub trait KeySource<R> {
+    /// Number of keys in the map.
+    fn key_count(&self) -> usize;
+    /// `Some` copy of the ref at `index`, or `None` if out of bounds.
+    fn try_get(&self, index: usize) -> Option<R>
+    where
+        R: Copy;
+}
+
+impl<R: Copy, const N: usize> KeySource<R> for [R; N] {
+    fn key_count(&self) -> usize {
+        N
+    }
+    fn try_get(&self, index: usize) -> Option<R> {
+        if index < N {
+            Some(self[index])
+        } else {
+            None
+        }
+    }
+}
+
+impl<R: Copy> KeySource<R> for &[R] {
+    fn key_count(&self) -> usize {
+        self.len()
+    }
+    fn try_get(&self, index: usize) -> Option<R> {
+        if index < self.len() {
+            Some(self[index])
+        } else {
+            None
+        }
+    }
+}
+
 use serde::Deserialize;
 
 use crate::input;
@@ -322,7 +362,7 @@ enum CallbackFunction {
 }
 
 /// State for a keymap that handles input, and outputs HID keyboard reports.
-pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
+pub struct Keymap<I: Index<usize, Output = R> + KeySource<R>, R, Ctx, Ev: Debug, PKS, KS, S> {
     key_refs: I,
     key_system: S,
     context: Ctx,
@@ -340,7 +380,7 @@ pub struct Keymap<I: Index<usize, Output = R>, R, Ctx, Ev: Debug, PKS, KS, S> {
 }
 
 impl<
-        I: Debug + Index<usize, Output = R>,
+        I: Debug + Index<usize, Output = R> + KeySource<R>,
         R: Debug,
         Ctx: Debug,
         Ev: Debug,
@@ -364,7 +404,7 @@ impl<
 }
 
 impl<
-        I: Debug + Index<usize, Output = R>,
+        I: Debug + Index<usize, Output = R> + KeySource<R>,
         R: Copy + Debug,
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
         Ev: Copy + Debug,
@@ -521,6 +561,19 @@ impl<
     ///
     /// Silently discards the input event if the active input queue is full.
     pub fn handle_input(&mut self, ev: input::Event) {
+        // Ignore out-of-range physical indices (e.g. corrupted split transport
+        //  or mismatched board/keymap) rather than indexing `key_refs` OOB
+        //  and aborting (HardFault on CH32X). Releases for an unknown index
+        //  are also ignored – there is no pressed entry to remove.
+        match ev {
+            input::Event::Press { keymap_index } | input::Event::Release { keymap_index }
+                if self.key_refs.try_get(keymap_index as usize).is_none() =>
+            {
+                self.idle_time = 0;
+                return;
+            }
+            _ => {}
+        }
         let ready = if let Some(pending_state) = self.pending_state.as_mut() {
             pending_state.ingest_queue.push_back_or_ignore(ev);
             pending_state.ingest_queue.pop_front_if_ready()
@@ -704,7 +757,13 @@ impl<
                     // Snapshot held mods / recent presses before branching.
                     self.push_keymap_context();
 
-                    let mut maybe_key_ref = Some(self.key_refs[keymap_index as usize]);
+                    let Some(initial_key_ref) = self.key_refs.try_get(keymap_index as usize) else {
+                        // Out-of-range press (e.g. corrupted split byte or
+                        //  mismatched board/keymap) is ignored rather than
+                        //  aborting the firmware (HardFault on CH32X).
+                        return;
+                    };
+                    let mut maybe_key_ref = Some(initial_key_ref);
 
                     while let Some(key_ref) = maybe_key_ref.take() {
                         let (pkr, pke) =
@@ -1038,7 +1097,7 @@ impl<
 #[cfg(feature = "std")]
 #[doc(hidden)]
 impl<
-        I: Debug + Index<usize, Output = R>,
+        I: Debug + Index<usize, Output = R> + KeySource<R>,
         R: Copy + Debug,
         Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
         Ev: Copy + Debug,

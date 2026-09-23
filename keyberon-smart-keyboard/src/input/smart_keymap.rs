@@ -3,7 +3,7 @@ use core::ops::Index;
 
 use smart_keymap::input;
 use smart_keymap::key;
-use smart_keymap::keymap::{self, Keymap, KeymapOutput, ReportHints, SetKeymapContext};
+use smart_keymap::keymap::{self, KeySource, Keymap, KeymapOutput, ReportHints, SetKeymapContext};
 
 /// Callbacks for the keymap.
 pub struct KeymapCallbacks {
@@ -21,7 +21,8 @@ pub struct KeymapCallbacks {
 /// Type parameters match [Keymap].
 #[derive(Debug)]
 pub struct KeyboardBackend<
-    I: Index<usize, Output = R> = [smart_keymap::init::Ref; smart_keymap::init::KEY_COUNT],
+    I: Index<usize, Output = R> + KeySource<R> = [smart_keymap::init::Ref;
+                                                     smart_keymap::init::KEY_COUNT],
     R = smart_keymap::init::Ref,
     Ctx = smart_keymap::init::Context,
     Ev: Debug = smart_keymap::init::Event,
@@ -49,7 +50,7 @@ impl KeyboardBackend {
 
 impl<I, R, Ctx, Ev, PKS, KS, S> KeyboardBackend<I, R, Ctx, Ev, PKS, KS, S>
 where
-    I: Index<usize, Output = R>,
+    I: Index<usize, Output = R> + KeySource<R>,
     Ev: Debug,
 {
     /// Constructs a new keyboard backend with the given keymap.
@@ -63,7 +64,7 @@ where
 
 impl<I, R, Ctx, Ev, PKS, KS, S> KeyboardBackend<I, R, Ctx, Ev, PKS, KS, S>
 where
-    I: Debug + Index<usize, Output = R>,
+    I: Debug + Index<usize, Output = R> + KeySource<R>,
     R: Copy + Debug,
     Ctx: Debug + key::Context<Event = Ev> + SetKeymapContext + ReportHints,
     Ev: Copy + Debug,
