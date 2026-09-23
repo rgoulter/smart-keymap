@@ -117,20 +117,13 @@ void TIM3_IRQHandler(void) {
     keyboard_led_tick();
 #endif
 
-    if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0 &&
-        memcmp(Consumer_Data_Pack, PREV_Consumer_Data_Pack,
-               sizeof(Consumer_Data_Pack)) == 0 &&
-        memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack,
-               sizeof(Mouse_Data_Pack)) == 0) {
-      keymap_tick(&hid_report);
-      memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
-      memcpy(Consumer_Data_Pack, hid_report.consumer,
-             sizeof(Consumer_Data_Pack));
-      Mouse_Data_Pack[0] = hid_report.mouse.pressed_buttons;
-      Mouse_Data_Pack[1] = hid_report.mouse.x;
-      Mouse_Data_Pack[2] = hid_report.mouse.y;
-      Mouse_Data_Pack[3] = hid_report.mouse.vertical_scroll;
-    }
+    keymap_tick(&hid_report);
+    memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
+    memcpy(Consumer_Data_Pack, hid_report.consumer, sizeof(Consumer_Data_Pack));
+    Mouse_Data_Pack[0] = hid_report.mouse.pressed_buttons;
+    Mouse_Data_Pack[1] = hid_report.mouse.x;
+    Mouse_Data_Pack[2] = hid_report.mouse.y;
+    Mouse_Data_Pack[3] = hid_report.mouse.vertical_scroll;
 
     /* Clear interrupt flag */
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
