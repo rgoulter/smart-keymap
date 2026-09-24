@@ -367,6 +367,113 @@
           },
       },
 
+      # tlex authoring cell (same as K.tlex); used by TH continuation lowers.
+      tlex_cell = { transparent_layer_exit = true },
+
+      is_trans_key = fun k =>
+        k
+        |> match {
+          { transparent = true } => true,
+          { transparent = {} } => true,
+          _ => false,
+        },
+
+      is_th_key = fun k =>
+        std.is_record k && std.record.has_field "hold" k,
+
+      project_hold = fun k =>
+        if is_th_key k then k.hold else k,
+
+      project_tap = fun k =>
+        if is_th_key k then
+          let { hold = _, ..tap } = k in
+          tap
+        else
+          k,
+
+      # Highest non-null binding strictly below `layer_idx` (1-based) in the column.
+      # column[0] = base, column[i] = layered[i-1] for i >= 1.
+      binding_below = fun column layer_idx =>
+        let rec go = fun i =>
+          if i < 0 then
+            null
+          else
+            let cell = std.array.at i column in
+            if cell == null || is_tlex_key cell || is_trans_key cell then
+              go (i - 1)
+            else
+              cell
+        in
+        go (layer_idx - 1),
+
+      # Continuation LayeredKey: base binding + tlex hole on defining layer.
+      # Press while that layer is active → Deactivated + base.
+      continuation_with_exit = fun base_binding layer_idx =>
+        let cont_layered =
+          std.array.generate
+            (fun j => if j + 1 == layer_idx then tlex_cell else null)
+            layer_idx
+        in
+        base_binding & { layered = cont_layered },
+
+      # Rewrite TH portion transparency / hold.tlex using the column below.
+      # hold.trans → concrete hold from below.
+      # hold.tlex  → continuation_with_exit (projected hold) so hold resolve exits.
+      # tap.trans / tap-as-tlex analogous for the tap half of the TH record.
+      lower_th_portions_in_layered = fun k =>
+        k
+        |> match {
+          { layered = layered_arr, ..base_key } =>
+            let column = [base_key] @ layered_arr in
+            let new_layered =
+              std.array.map_with_index
+                (fun i cell =>
+                  let layer_idx = i + 1 in
+                  if !(is_th_key cell) then
+                    cell
+                  else
+                    let below = binding_below column layer_idx in
+                    let { hold = hold_child, ..tap_part } = cell in
+                    let new_hold =
+                      if is_trans_key hold_child then
+                        if below == null then
+                          std.fail_with "hold.trans: nothing below to project"
+                        else
+                          project_hold below
+                      else if is_tlex_key hold_child then
+                        if below == null then
+                          std.fail_with "hold.tlex: nothing below to project"
+                        else
+                          continuation_with_exit (project_hold below) layer_idx
+                      else
+                        hold_child
+                    in
+                    let new_tap =
+                      if is_trans_key tap_part then
+                        if below == null then
+                          std.fail_with "tap.trans: nothing below to project"
+                        else
+                          project_tap below
+                      else if is_tlex_key tap_part then
+                        if below == null then
+                          std.fail_with "tap.tlex as TH tap: nothing below to project"
+                        else
+                          continuation_with_exit (project_tap below) layer_idx
+                      else
+                        tap_part
+                    in
+                    new_tap & { hold = new_hold }
+                )
+                layered_arr
+            in
+            base_key & { layered = new_layered },
+          k => k,
+        },
+
+      apply_lower_th_portions = fun keys =>
+        keys
+        |> std.array.map lower_th_portions_in_layered,
+
       # Keymap.ncl authoring: if_layers as 1-based layer index list.
       ConditionalLayer = {
         then_layer | Number,
