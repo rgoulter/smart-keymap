@@ -115,18 +115,18 @@ static int report_queue_pop_front(ReportQueue *queue, uint8_t *report) {
 static void report_queue_send_next(uint8_t endp, ReportQueue *queue) {
   uint8_t report[KEYMAP_HID_REPORT_KEYBOARD_LEN] = {0};
 
+  // Pop and arm the endpoint in one critical section.
+  // USBFS_IRQHandler also writes these endpoint registers and the busy flag.
   __disable_irq();
   if (USBFS_Endp_Busy[endp] != 0 || !report_queue_pop_front(queue, report)) {
     __enable_irq();
     return;
   }
-  __enable_irq();
 
   if (USBFS_Endp_DataUp(endp, report, queue->len, DEF_UEP_CPY_LOAD) != 0) {
-    __disable_irq();
     report_queue_push_front(queue, report);
-    __enable_irq();
   }
+  __enable_irq();
 }
 
 void USB_ReportQueue_Reset(void) {
