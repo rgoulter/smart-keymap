@@ -25,6 +25,7 @@
 #include "ch32x035_misc.h"
 #include "ch32x035_rcc.h"
 #include "ch32x035_tim.h"
+#include "ch32x035_usart.h"
 
 #include "ch32x035_usbfs_device.h"
 #include "system_ch32x035.h"
@@ -187,14 +188,79 @@ void TIM3_Init(uint16_t arr, uint16_t psc) {
   TIM_Cmd(TIM3, ENABLE);
 }
 
-/*********************************************************************
- * @fn      TIM3_IRQHandler
- *
- * @brief   This function handles TIM3 global interrupt request.
- *
- * @return  none
- */
+static volatile uint8_t debug_probe_phase = (uint8_t)'t';
+
+static USART_TypeDef *debug_probe_usart(void) {
+#if (DEBUG == DEBUG_UART1)
+  return USART1;
+#elif (DEBUG == DEBUG_UART2)
+  return USART2;
+#elif (DEBUG == DEBUG_UART3)
+  return USART3;
+#elif (DEBUG == DEBUG_UART4)
+  return USART4;
+#else
+  return 0;
+#endif
+}
+
+void DebugProbe_Byte(uint8_t byte) {
+  USART_TypeDef *usart = debug_probe_usart();
+  if (usart == 0) {
+    return;
+  }
+  if (USART_GetFlagStatus(usart, USART_FLAG_TXE) != RESET) {
+    USART_SendData(usart, byte);
+  }
+}
+
+void DebugProbe_Phase(uint8_t phase) { debug_probe_phase = phase; }
+
+void DebugProbe_MainHeartbeat(void) {
+  static uint32_t loops = 0;
+  static uint8_t led_on = 0;
+
+  /* Approximate. The main loop is a tight poll, so this is a visible
+   * blink, not a measured interval. Timing must not come from TIM3:
+   * a timer-driven blink stays dark when the handler is what died.
+   */
+  loops++;
+  if (loops < 200000) {
+    return;
+  }
+  loops = 0;
+
+  led_on = !led_on;
+#ifdef KEYBOARD_LED_ENABLED
+  keyboard_led_set(led_on);
+#endif
+  /* '.' means main is still looping. The next byte is the timer phase:
+   * 'T' entered TIM3, 'k' inside keymap_tick, 't' handler returned.
+   * Routine phase bytes are not written from the ISR. A fast handler
+   * would drop 't' and look like a crash.
+   */
+  DebugProbe_Byte('.');
+  DebugProbe_Byte(debug_probe_phase);
+}
+
+void DebugProbe_Fault(uint8_t code) {
+#ifdef KEYBOARD_LED_ENABLED
+  keyboard_led_set(1);
+#endif
+  USART_TypeDef *usart = debug_probe_usart();
+  if (usart == 0) {
+    return;
+  }
+  for (uint32_t i = 0; i < 1000000; i++) {
+    if (USART_GetFlagStatus(usart, USART_FLAG_TXE) != RESET) {
+      USART_SendData(usart, code);
+      return;
+    }
+  }
+}
+
 void TIM3_IRQHandler(void) {
+  DebugProbe_Phase('T');
   if (TIM_GetITStatus(TIM3, TIM_IT_Update) != RESET) {
 
     /* Handle keyboard scan */
@@ -207,6 +273,7 @@ void TIM3_IRQHandler(void) {
     keyboard_led_tick();
 #endif
 
+    DebugProbe_Phase('k');
     keymap_tick(&hid_report);
     memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
     memcpy(Consumer_Data_Pack, hid_report.consumer, sizeof(Consumer_Data_Pack));
@@ -220,6 +287,7 @@ void TIM3_IRQHandler(void) {
     /* Clear interrupt flag */
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
   }
+  DebugProbe_Phase('t');
 }
 
 /*********************************************************************

@@ -10,6 +10,8 @@
 
 #include "ch32x035_it.h"
 
+#include "usbd_composite_km.h"
+
 void NMI_Handler(void) __attribute__((interrupt()));
 void HardFault_Handler(void) __attribute__((interrupt()));
 
@@ -33,6 +35,7 @@ void NMI_Handler(void) {
  * @return  none
  */
 void HardFault_Handler(void) {
+  DebugProbe_Fault('H');
   while (1) {
   }
 }

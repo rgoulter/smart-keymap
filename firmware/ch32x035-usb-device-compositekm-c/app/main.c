@@ -28,9 +28,14 @@
 #include "ch32x035_misc.h"
 
 #include "ch32x035_usbfs_device.h"
+#include "keyboard_led.h"
 #include "smart_keymap.h"
 #include "system_ch32x035.h"
 #include "usbd_composite_km.h"
+
+extern void keymap_set_panic_hook(void (*hook)(void));
+
+static void DebugProbe_OnPanic(void) { DebugProbe_Fault('P'); }
 
 /*********************************************************************
  * @fn      main
@@ -53,6 +58,16 @@ int main(void) {
   KB_Sleep_Wakeup_Cfg();
   printf("KB Scan Init OK!\r\n");
 
+#ifdef KEYBOARD_LED_ENABLED
+  /* TIM3 also toggles this pin. A blink from here means main is looping,
+   * including after the timer handler has stopped returning.
+   */
+  keyboard_led_claim();
+#endif
+  keymap_set_panic_hook(DebugProbe_OnPanic);
+  printf("probe: blink=main alive, solid=fault; UART .=main, phase T/k/t, "
+         "H/P\r\n");
+
   /* Initialize timer for Keyboard and mouse scan timing */
   TIM3_Init(47999, 0);
   printf("TIM3 Init OK!\r\n");
@@ -63,6 +78,7 @@ int main(void) {
   USB_Sleep_Wakeup_CFG();
   while (1) {
     USB_ReportQueue_Tick();
+    DebugProbe_MainHeartbeat();
 
     if (USBFS_DevEnumStatus) {
       KB_LED_Handle();

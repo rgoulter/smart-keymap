@@ -249,6 +249,20 @@ impl From<BluetoothProfileCommand> for keymap::BluetoothProfileCommand {
 
 static mut KEYMAP: Keymap = new_keymap();
 
+static mut PANIC_HOOK: Option<extern "C" fn()> = None;
+
+/// Register a function called once, before the panic handler spins.
+///
+/// The hook must not panic.
+/// Firmware uses it to force a GPIO and emit a UART mark.
+#[allow(static_mut_refs)]
+#[no_mangle]
+pub extern "C" fn keymap_set_panic_hook(hook: extern "C" fn()) {
+    unsafe {
+        PANIC_HOOK = Some(hook);
+    }
+}
+
 /// Initialize the global keymap instance.
 #[allow(static_mut_refs)]
 #[no_mangle]
@@ -501,6 +515,10 @@ pub unsafe extern "C" fn keymap_message_buffer_receive_byte(
 // When built with "std", a panic handler is provided.
 #[cfg(not(feature = "std"))]
 #[panic_handler]
+#[allow(static_mut_refs)]
 fn panic(_info: &core::panic::PanicInfo) -> ! {
+    if let Some(hook) = unsafe { PANIC_HOOK } {
+        hook();
+    }
     loop {}
 }
