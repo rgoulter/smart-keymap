@@ -57,7 +57,7 @@ uint8_t PREV_Mouse_Data_Pack[4] = {0x00};   // Mouse IN Data Packet
 volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
 volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
-#define REPORT_QUEUE_CAPACITY 16
+#define REPORT_QUEUE_CAPACITY 64
 
 typedef struct {
   uint8_t reports[REPORT_QUEUE_CAPACITY][KEYMAP_HID_REPORT_KEYBOARD_LEN];
