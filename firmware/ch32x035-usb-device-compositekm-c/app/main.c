@@ -32,13 +32,6 @@
 #include "system_ch32x035.h"
 #include "usbd_composite_km.h"
 
-extern uint8_t KB_Data_Pack[8];
-extern uint8_t PREV_KB_Data_Pack[8];
-extern uint8_t Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN];
-extern uint8_t PREV_Consumer_Data_Pack[KEYMAP_HID_REPORT_CONSUMER_LEN];
-extern uint8_t Mouse_Data_Pack[4];
-extern uint8_t PREV_Mouse_Data_Pack[4];
-
 /*********************************************************************
  * @fn      main
  *
@@ -64,62 +57,14 @@ int main(void) {
   TIM3_Init(47999, 0);
   printf("TIM3 Init OK!\r\n");
 
-  static uint8_t sending_kb = 0;
-  static uint8_t sending_mouse = 0;
-  static uint8_t sending_consumer = 0;
-
   /* Usb Init */
   USBFS_RCC_Init();
   USBFS_Device_Init(ENABLE, PWR_VDD_SupplyVoltage());
   USB_Sleep_Wakeup_CFG();
   while (1) {
+    USB_ReportQueue_Tick();
+
     if (USBFS_DevEnumStatus) {
-      if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) != 0) {
-        if (sending_kb == 0) {
-          USBFS_Endp_DataUp(DEF_UEP1, KB_Data_Pack, sizeof(KB_Data_Pack),
-                            DEF_UEP_CPY_LOAD);
-          sending_kb = 1;
-        } else if (USBFS_Endp_Busy[DEF_UEP1] == 0) {
-          memcpy(PREV_KB_Data_Pack, KB_Data_Pack, sizeof(KB_Data_Pack));
-          sending_kb = 0;
-        }
-      }
-
-      if (memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack,
-                 sizeof(Mouse_Data_Pack)) != 0 ||
-          memcmp(Mouse_Data_Pack,
-                 (uint8_t[4]){
-                     0x00,
-                     0x00,
-                     0x00,
-                     0x00,
-                 },
-                 sizeof(Mouse_Data_Pack)) != 0) {
-        if (sending_mouse == 0) {
-          USBFS_Endp_DataUp(DEF_UEP2, Mouse_Data_Pack, sizeof(Mouse_Data_Pack),
-                            DEF_UEP_CPY_LOAD);
-          sending_mouse = 1;
-        } else if (USBFS_Endp_Busy[DEF_UEP2] == 0) {
-          memcpy(PREV_Mouse_Data_Pack, Mouse_Data_Pack,
-                 sizeof(Mouse_Data_Pack));
-          sending_mouse = 0;
-        }
-      }
-
-      if (memcmp(Consumer_Data_Pack, PREV_Consumer_Data_Pack,
-                 sizeof(Consumer_Data_Pack)) != 0) {
-        if (sending_consumer == 0) {
-          USBFS_Endp_DataUp(DEF_UEP3, Consumer_Data_Pack,
-                            sizeof(Consumer_Data_Pack), DEF_UEP_CPY_LOAD);
-          sending_consumer = 1;
-        } else if (USBFS_Endp_Busy[DEF_UEP3] == 0) {
-          memcpy(PREV_Consumer_Data_Pack, Consumer_Data_Pack,
-                 sizeof(Consumer_Data_Pack));
-          sending_consumer = 0;
-        }
-      }
-
-      /* Handle keyboard lighting */
       KB_LED_Handle();
     }
   }

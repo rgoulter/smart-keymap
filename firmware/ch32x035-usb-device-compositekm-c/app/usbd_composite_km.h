@@ -38,6 +38,9 @@ extern void KB_Sleep_Wakeup_Cfg(void);
 extern void KB_Scan(void);
 extern void KB_Scan_Handle(void);
 extern void KB_LED_Handle(void);
+extern void USB_ReportQueue_Reset(void);
+extern void USB_ReportQueue_EnqueueCurrent(void);
+extern void USB_ReportQueue_Tick(void);
 extern void USB_Sleep_Wakeup_CFG(void);
 extern void MCU_Sleep_Wakeup_Operate(void);
 

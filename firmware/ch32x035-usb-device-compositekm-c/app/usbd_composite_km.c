@@ -57,6 +57,96 @@ uint8_t PREV_Mouse_Data_Pack[4] = {0x00};   // Mouse IN Data Packet
 volatile uint8_t KB_LED_Last_Status = 0x00; // Keyboard LED Last Result
 volatile uint8_t KB_LED_Cur_Status = 0x00;  // Keyboard LED Current Result
 
+#define REPORT_QUEUE_CAPACITY 16
+
+typedef struct {
+  uint8_t reports[REPORT_QUEUE_CAPACITY][KEYMAP_HID_REPORT_KEYBOARD_LEN];
+  uint8_t head;
+  uint8_t count;
+  uint8_t len;
+} ReportQueue;
+
+static ReportQueue keyboard_report_queue = {
+    .len = KEYMAP_HID_REPORT_KEYBOARD_LEN,
+};
+static ReportQueue mouse_report_queue = {
+    .len = sizeof(Mouse_Data_Pack),
+};
+static ReportQueue consumer_report_queue = {
+    .len = sizeof(Consumer_Data_Pack),
+};
+
+static void report_queue_push_back(ReportQueue *queue, const uint8_t *report) {
+  // Preserve the newest snapshots if the queue fills; older snapshots are
+  // dropped first so the host still receives the latest state.
+  uint8_t tail =
+      (uint8_t)((queue->head + queue->count) % REPORT_QUEUE_CAPACITY);
+
+  memcpy(queue->reports[tail], report, queue->len);
+
+  if (queue->count < REPORT_QUEUE_CAPACITY) {
+    queue->count++;
+  } else {
+    queue->head = (uint8_t)((queue->head + 1) % REPORT_QUEUE_CAPACITY);
+  }
+}
+
+static void report_queue_push_front(ReportQueue *queue, const uint8_t *report) {
+  queue->head = (uint8_t)((queue->head + REPORT_QUEUE_CAPACITY - 1) %
+                          REPORT_QUEUE_CAPACITY);
+  memcpy(queue->reports[queue->head], report, queue->len);
+
+  if (queue->count < REPORT_QUEUE_CAPACITY) {
+    queue->count++;
+  }
+}
+
+static int report_queue_pop_front(ReportQueue *queue, uint8_t *report) {
+  if (queue->count == 0) {
+    return 0;
+  }
+
+  memcpy(report, queue->reports[queue->head], queue->len);
+  queue->head = (uint8_t)((queue->head + 1) % REPORT_QUEUE_CAPACITY);
+  queue->count--;
+  return 1;
+}
+
+static void report_queue_send_next(uint8_t endp, ReportQueue *queue) {
+  uint8_t report[KEYMAP_HID_REPORT_KEYBOARD_LEN] = {0};
+
+  __disable_irq();
+  if (USBFS_Endp_Busy[endp] != 0 || !report_queue_pop_front(queue, report)) {
+    __enable_irq();
+    return;
+  }
+  __enable_irq();
+
+  if (USBFS_Endp_DataUp(endp, report, queue->len, DEF_UEP_CPY_LOAD) != 0) {
+    __disable_irq();
+    report_queue_push_front(queue, report);
+    __enable_irq();
+  }
+}
+
+void USB_ReportQueue_Reset(void) {
+  __disable_irq();
+  memset(KB_Data_Pack, 0, sizeof(KB_Data_Pack));
+  memset(PREV_KB_Data_Pack, 0, sizeof(PREV_KB_Data_Pack));
+  memset(Consumer_Data_Pack, 0, sizeof(Consumer_Data_Pack));
+  memset(PREV_Consumer_Data_Pack, 0, sizeof(PREV_Consumer_Data_Pack));
+  memset(Mouse_Data_Pack, 0, sizeof(Mouse_Data_Pack));
+  memset(PREV_Mouse_Data_Pack, 0, sizeof(PREV_Mouse_Data_Pack));
+
+  keyboard_report_queue.head = 0;
+  keyboard_report_queue.count = 0;
+  mouse_report_queue.head = 0;
+  mouse_report_queue.count = 0;
+  consumer_report_queue.head = 0;
+  consumer_report_queue.count = 0;
+  __enable_irq();
+}
+
 /*******************************************************************************/
 /* Interrupt Function Declaration */
 void TIM3_IRQHandler(void) __attribute__((interrupt()));
@@ -117,20 +207,15 @@ void TIM3_IRQHandler(void) {
     keyboard_led_tick();
 #endif
 
-    if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) == 0 &&
-        memcmp(Consumer_Data_Pack, PREV_Consumer_Data_Pack,
-               sizeof(Consumer_Data_Pack)) == 0 &&
-        memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack,
-               sizeof(Mouse_Data_Pack)) == 0) {
-      keymap_tick(&hid_report);
-      memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
-      memcpy(Consumer_Data_Pack, hid_report.consumer,
-             sizeof(Consumer_Data_Pack));
-      Mouse_Data_Pack[0] = hid_report.mouse.pressed_buttons;
-      Mouse_Data_Pack[1] = hid_report.mouse.x;
-      Mouse_Data_Pack[2] = hid_report.mouse.y;
-      Mouse_Data_Pack[3] = hid_report.mouse.vertical_scroll;
-    }
+    keymap_tick(&hid_report);
+    memcpy(KB_Data_Pack, hid_report.keyboard, sizeof(KB_Data_Pack));
+    memcpy(Consumer_Data_Pack, hid_report.consumer, sizeof(Consumer_Data_Pack));
+    Mouse_Data_Pack[0] = hid_report.mouse.pressed_buttons;
+    Mouse_Data_Pack[1] = hid_report.mouse.x;
+    Mouse_Data_Pack[2] = hid_report.mouse.y;
+    Mouse_Data_Pack[3] = hid_report.mouse.vertical_scroll;
+
+    USB_ReportQueue_EnqueueCurrent();
 
     /* Clear interrupt flag */
     TIM_ClearITPendingBit(TIM3, TIM_IT_Update);
@@ -248,6 +333,47 @@ void KB_LED_Handle(void) {
     }
     KB_LED_Last_Status = KB_LED_Cur_Status;
   }
+}
+
+void USB_ReportQueue_EnqueueCurrent(void) {
+  if (memcmp(KB_Data_Pack, PREV_KB_Data_Pack, sizeof(KB_Data_Pack)) != 0) {
+    report_queue_push_back(&keyboard_report_queue, KB_Data_Pack);
+    memcpy(PREV_KB_Data_Pack, KB_Data_Pack, sizeof(KB_Data_Pack));
+  }
+
+  if (memcmp(Mouse_Data_Pack, PREV_Mouse_Data_Pack, sizeof(Mouse_Data_Pack)) !=
+      0) {
+    report_queue_push_back(&mouse_report_queue, Mouse_Data_Pack);
+    memcpy(PREV_Mouse_Data_Pack, Mouse_Data_Pack, sizeof(Mouse_Data_Pack));
+  }
+
+  if (memcmp(Consumer_Data_Pack, PREV_Consumer_Data_Pack,
+             sizeof(Consumer_Data_Pack)) != 0) {
+    report_queue_push_back(&consumer_report_queue, Consumer_Data_Pack);
+    memcpy(PREV_Consumer_Data_Pack, Consumer_Data_Pack,
+           sizeof(Consumer_Data_Pack));
+  }
+}
+
+void USB_ReportQueue_Tick(void) {
+  static uint8_t was_enum = 0;
+
+  if (!USBFS_DevEnumStatus) {
+    if (was_enum != 0) {
+      USB_ReportQueue_Reset();
+      was_enum = 0;
+    }
+    return;
+  }
+
+  if (was_enum == 0) {
+    USB_ReportQueue_Reset();
+    was_enum = 1;
+  }
+
+  report_queue_send_next(DEF_UEP1, &keyboard_report_queue);
+  report_queue_send_next(DEF_UEP2, &mouse_report_queue);
+  report_queue_send_next(DEF_UEP3, &consumer_report_queue);
 }
 
 /*********************************************************************
