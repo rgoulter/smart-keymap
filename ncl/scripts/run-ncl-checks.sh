@@ -27,3 +27,13 @@ nickel_eval_checks \
   layouts/remap.ncl
 
 nickel_eval_checks sequence.ncl
+
+# QMK Configurator import spike: needs the fixture directory on the import
+#  path (for its qmk-keymap.json / keymap.json), on top of ncl/.
+nickel \
+  eval \
+  --import-path="${REPOSITORY_DIR}/ncl" \
+  --import-path="${REPOSITORY_DIR}/tests/ncl/keymap-qmk-import-spike" \
+  --field="evaluated_checks" \
+  checks.ncl \
+  check-qmk-import.ncl
