@@ -105,7 +105,12 @@
   NP9 = 0x61,
   NP0 = 0x62,
   NPDot = 0x63,
-
+  
+  NPEquals = 0x67,
+  F13 = 0x68,
+  F14 = 0x69,
+  F15 = 0x6A,
+    
   NonUSBackslash = 0x64,
   Application = 0x65,
 

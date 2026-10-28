@@ -169,6 +169,10 @@ extern "C" {
 #define HID_KEYBPAD_9 97             // 0x61 - Keypad 9 and PageUp
 #define HID_KEYBPAD_0 98             // 0x62 - Keypad 0 and Insert
 #define HID_KEYBPAD_DOT 99           // 0x63 - Keypad . and Delete
+#define HID_KEYBPAD_EQUALS 103       // 0x67 - Keypad = (Apple)
+#define HID_KEYBOARD_F13 104         // 0x68 - Keyboard F13 (Apple)
+#define HID_KEYBOARD_F14 105         // 0x69 - Keyboard F14 (Apple)
+#define HID_KEYBOARD_F15 106         // 0x6A - Keyboard F15 (Apple)
 #define HID_KEYBOARD_MUTE 127        // 0x7F - Keyboard Mute
 #define HID_KEYBOARD_VOLUME_UP 128   // 0x80 - Keyboard Volume up
 #define HID_KEYBOARD_VOLUME_DOWN 129 // 0x81 - Keyboard Volume down

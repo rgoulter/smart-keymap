@@ -108,6 +108,7 @@
         NPPL = keys.NPPlus,
         NPEN = keys.NPEnter,
         NPDT = keys.NPDot,
+        NPEQ = keys.NPEquals,
 
         LCTL = keys.LeftCtrl,
         LSFT = keys.LeftShift,
