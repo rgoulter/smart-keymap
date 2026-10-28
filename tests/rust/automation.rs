@@ -1,3 +1,4 @@
+use crate::hid_keycodes::*;
 use smart_keymap::keymap::ObservedKeymap;
 
 #[test]
@@ -28,7 +29,7 @@ fn test_simple_1char_string_macro() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -66,11 +67,11 @@ fn test_simple_string_macro() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -105,15 +106,15 @@ fn test_shifted_string_macro() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [2, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x2C, 0, 0, 0, 0, 0],
+        [0, 0, KC_SPACE, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [2, 0, 0x06, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -132,8 +133,8 @@ fn test_macro_while_pressed() {
         let MY_MACRO = {
             automation_instructions = {
                 while_pressed = [
-                    { Press = { key_code = { Keyboard = 0x04 } } },
-                    { Release = { key_code = { Keyboard = 0x04 } } },
+                    { Press = { key_code = { Keyboard = 4 } } },
+                    { Release = { key_code = { Keyboard = 4 } } },
                 ],
             }
         }
@@ -159,11 +160,11 @@ fn test_macro_while_pressed() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -182,8 +183,8 @@ fn test_macro_on_release_not_fired_on_press() {
         let MY_MACRO = {
             automation_instructions = {
                 on_release = [
-                    { Press = { key_code = { Keyboard = 0x04 } } },
-                    { Release = { key_code = { Keyboard = 0x04 } } },
+                    { Press = { key_code = { Keyboard = 4 } } },
+                    { Release = { key_code = { Keyboard = 4 } } },
                 ],
             }
         }
@@ -222,17 +223,17 @@ fn test_macro_press_while_pressed_release() {
         let MY_MACRO = {
             automation_instructions = {
                 on_press = [
-                    { Press = { key_code = { Keyboard = 0x04 } } },
-                    { Release = { key_code = { Keyboard = 0x04 } } },
+                    { Press = { key_code = { Keyboard = 4 } } },
+                    { Release = { key_code = { Keyboard = 4 } } },
                 ],
                 while_pressed = [
-                    { Press = { key_code = { Keyboard = 0x05 } } },
-                    { Release = { key_code = { Keyboard = 0x05 } } },
+                    { Press = { key_code = { Keyboard = 5 } } },
+                    { Release = { key_code = { Keyboard = 5 } } },
                     { Wait = 1000 },
                 ],
                 on_release = [
-                    { Press = { key_code = { Keyboard = 0x06 } } },
-                    { Release = { key_code = { Keyboard = 0x06 } } },
+                    { Press = { key_code = { Keyboard = 6 } } },
+                    { Release = { key_code = { Keyboard = 6 } } },
                 ],
             }
         }
@@ -258,15 +259,15 @@ fn test_macro_press_while_pressed_release() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -285,12 +286,12 @@ fn test_macro_press_and_release() {
         let MY_MACRO = {
             automation_instructions = {
                 on_press = [
-                    { Press = { key_code = { Keyboard = 0x04 } } },
-                    { Release = { key_code = { Keyboard = 0x04 } } },
+                    { Press = { key_code = { Keyboard = 4 } } },
+                    { Release = { key_code = { Keyboard = 4 } } },
                 ],
                 on_release = [
-                    { Press = { key_code = { Keyboard = 0x06 } } },
-                    { Release = { key_code = { Keyboard = 0x06 } } },
+                    { Press = { key_code = { Keyboard = 6 } } },
+                    { Release = { key_code = { Keyboard = 6 } } },
                 ],
             }
         }
@@ -313,9 +314,9 @@ fn test_macro_press_and_release() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -334,10 +335,10 @@ fn test_macro_press_and_release_taps() {
         let MY_MACRO = {
             automation_instructions = {
                 on_press = [
-                    { Tap = { key_code = { Keyboard = 0x04 } } },
+                    { Tap = { key_code = { Keyboard = 4 } } },
                 ],
                 on_release = [
-                    { Tap = { key_code = { Keyboard = 0x06 } } },
+                    { Tap = { key_code = { Keyboard = 6 } } },
                 ],
             }
         }
@@ -360,9 +361,9 @@ fn test_macro_press_and_release_taps() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x06, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_C, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -404,9 +405,9 @@ fn test_macro_string_to_instructions() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x06, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_C, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();

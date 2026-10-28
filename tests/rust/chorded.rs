@@ -1,3 +1,5 @@
+mod nested_idle;
+mod nested_timeout;
 mod over_layered_tap_hold;
 mod overlapping;
 mod overlapping_aux;
@@ -9,6 +11,7 @@ mod tap_hold_over_tap_hold;
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -37,7 +40,7 @@ fn tap_auxiliary_key_acts_as_passthrough() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -70,7 +73,7 @@ fn tap_chorded_key_acts_as_passthrough() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -104,7 +107,7 @@ fn press_chord_acts_as_chord() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -138,7 +141,7 @@ fn press_chord_alt_order_acts_as_chord() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -173,7 +176,7 @@ fn nested_tap_chord_acts_as_chord() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -209,7 +212,7 @@ fn rolling_tap_chord_acts_as_chord() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -245,7 +248,7 @@ fn press_chord_4_acts_as_chord() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x08, 0, 0, 0, 0, 0],
+        [0, 0, KC_E, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -276,13 +279,12 @@ fn release_and_repress_chorded_after_hold_chord_acts_as_passthrough() {
 
     keymap.tick_until_no_scheduled_events();
 
-    // Assert
+    // Assert: completing press (1) holds C; releasing 0 does not drop it.
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
-        [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, KC_A, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -313,12 +315,13 @@ fn release_and_repress_aux_after_hold_chord_acts_as_passthrough() {
 
     keymap.tick_until_no_scheduled_events();
 
-    // Assert
+    // Assert: completing press (1) holds C; releasing it drops C. Repress is passthrough B.
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0x05, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

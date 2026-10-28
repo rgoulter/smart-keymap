@@ -1,4 +1,6 @@
 #![warn(missing_docs)]
+#![warn(clippy::unwrap_used)]
+#![warn(clippy::expect_used)]
 
 //! Smart Keymap library.
 //!
@@ -13,6 +15,10 @@
 //!  and outputs HID keyboard reports (or other smart keyboard outputs).
 //!
 //! This crate can be used directly with Rust, or built as a C library.
+//!
+//! The engine implementation lives in [`smart_keymap_core`]; this package
+//! re-exports it and adds the per-build [`init`] keymap shell (dummy or
+//! codegen via `SMART_KEYMAP_CUSTOM_KEYMAP`).
 //!
 //! # Usage as a C library
 //!
@@ -38,45 +44,63 @@
 //! The heart of the library is the [key] module,
 //! and its [key::System] trait.
 //!
-//! Implementors are then aggregated by [key::composite],
-//! which is used by the [keymap] module.
+//! Per-keymap aggregation is produced by Nickel codegen
+//!  as `init::key_system` (custom keymap / `keymap!`).
+//! Without a custom keymap,
+//!  [init] provides a trivial keyboard-only shell
+//!  so [`new_keymap`] still type-checks.
+//!
+//! The full-profile, Vec-backed composite shell used by Cucumber and other
+//! std harnesses lives in the separate `smart-keymap-full-system-std` package
+//! so default `smart-keymap` builds (including `cargo doc`) do not require
+//! Nickel for the universal shell (custom keymap codegen still needs Nickel
+//! when pointing at a `.ncl` file).
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-/// Structs for input to the keymap.
-pub mod input;
-/// Smart key interface and implementations.
-///
-/// The core interface for the smart keymap library is [key::System],
-///  and its associated [key::Context], `PendingKeyState`, and [key::KeyState] types.
-/// Together, these are used to define smart key behaviour.
-pub mod key;
-/// Keymap implementation.
-pub mod keymap;
+// Re-export core engine modules so `smart_keymap::key::…` works for call sites
+// and for generated `init` / `key_system` (which use the crate name, not `crate::`).
+#[doc(inline)]
+pub use smart_keymap_core::input;
+#[doc(inline)]
+pub use smart_keymap_core::key;
+#[doc(inline)]
+pub use smart_keymap_core::keymap;
+#[doc(inline)]
+pub use smart_keymap_core::slice;
+#[doc(inline)]
+pub use smart_keymap_core::split;
 
-/// Split keyboard support.
-pub mod split;
-
-/// A helper value type for Copy-able slices.
-pub mod slice;
+// Generated modules and the default `init` shell refer to engine paths as
+// `smart_keymap::…`. Inside this package that name is this crate.
+extern crate self as smart_keymap;
 
 /// Types and initial data used for constructing a [keymap::Keymap].
+///
+/// Without `SMART_KEYMAP_CUSTOM_KEYMAP`, this is a **keyboard-only** dummy map
+/// (letter `A`) plus generous size constants used by composite shells (also
+/// re-exported by `smart-keymap-full-system-std`). With a custom keymap, build
+/// codegen replaces this module.
 /// cbindgen:ignore
 #[cfg(not(custom_keymap))]
 pub mod init {
-    use crate as smart_keymap;
-
-    use smart_keymap::key::composite;
-    use smart_keymap::key::keyboard;
-    use smart_keymap::keymap;
-
-    use composite as key_system;
-
     /// Number of instructions used by the [crate::key::automation] implementation.
     pub const AUTOMATION_INSTRUCTION_COUNT: usize = 1024;
 
+    /// Number of alternate-repeat rules for the [crate::key::history] implementation.
+    ///
+    /// Generous default for the full-system / cucumber shell; per-keymap codegen
+    /// uses the exact rule count from the keymap.
+    pub const HISTORY_ALT_REPEAT_RULE_COUNT: usize = 64;
+
     /// Number of layers supported by the [crate::key::layered] implementation.
     pub const LAYERED_LAYER_COUNT: usize = 8;
+
+    /// Number of conditional layer rules for the [crate::key::layered] implementation.
+    ///
+    /// Generous default for the full-system / cucumber shell; per-keymap codegen
+    /// uses the exact rule count from the keymap.
+    pub const CONDITIONAL_LAYER_COUNT: usize = 4;
 
     /// The maximum number of keys in a chord.
     pub const CHORDED_MAX_CHORD_SIZE: usize = 16;
@@ -87,43 +111,265 @@ pub mod init {
     /// The maximum number of overlapping chords for a chorded key.
     pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = 16;
 
+    /// The maximum number of steps in a sequence.
+    pub const SEQUENCE_MAX_SEQUENCE_LEN: usize = 8;
+
+    /// The maximum number of sequences.
+    pub const SEQUENCE_MAX_SEQUENCES: usize = 16;
+
+    /// The maximum number of sequences sharing a primary key.
+    pub const SEQUENCE_MAX_OVERLAPPING: usize = 4;
+
     /// The tap-dance definitions.
     pub const TAP_DANCE_MAX_DEFINITIONS: usize = 3;
 
-    pub use key_system::Ref;
+    /// Trivial composite shell: keyboard family only (matches codegen shape).
+    pub mod key_system {
+        use smart_keymap::key;
+        use smart_keymap::keymap;
+
+        /// Aggregate key reference.
+        #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
+        pub enum Ref {
+            /// [smart_keymap::key::keyboard] variant.
+            Keyboard(smart_keymap::key::keyboard::Ref),
+        }
+
+        /// Aggregate config (no configurable families in this default map).
+        #[derive(serde::Deserialize, Debug, Clone, Copy, PartialEq)]
+        pub struct Config {}
+
+        impl Default for Config {
+            fn default() -> Self {
+                Self::new()
+            }
+        }
+
+        impl Config {
+            /// Constructs a new [Config] with defaults.
+            pub const fn new() -> Self {
+                Self {}
+            }
+        }
+
+        /// Aggregate context.
+        #[derive(Debug, Clone, Copy)]
+        pub struct Context {
+            keymap_context: smart_keymap::keymap::KeymapContext,
+            keyboard: smart_keymap::key::keyboard::Context,
+        }
+
+        impl Context {
+            /// Constructs a [Context] from the given [Config].
+            pub const fn from_config(config: Config) -> Self {
+                let _ = &config;
+                Self {
+                    keymap_context: smart_keymap::keymap::KeymapContext::new(),
+                    keyboard: smart_keymap::key::keyboard::Context,
+                }
+            }
+        }
+
+        impl Default for Context {
+            fn default() -> Self {
+                Self::from_config(Config::new())
+            }
+        }
+
+        impl key::Context for Context {
+            type Event = Event;
+
+            fn handle_event(
+                &mut self,
+                _event: key::Event<Self::Event>,
+            ) -> key::KeyEvents<Self::Event> {
+                key::KeyEvents::no_events()
+            }
+
+            fn reset(&mut self) {
+                self.keymap_context = smart_keymap::keymap::KeymapContext::new();
+                self.keyboard.reset();
+            }
+        }
+
+        impl keymap::SetKeymapContext for Context {
+            fn set_keymap_context(&mut self, context: keymap::KeymapContext) {
+                self.keymap_context = context;
+            }
+        }
+
+        impl keymap::ReportHints for Context {}
+
+        /// Aggregate event.
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub enum Event {
+            /// [smart_keymap::key::keyboard] variant.
+            Keyboard(smart_keymap::key::keyboard::Event),
+        }
+
+        impl From<smart_keymap::key::keyboard::Event> for Event {
+            fn from(v: smart_keymap::key::keyboard::Event) -> Self {
+                Event::Keyboard(v)
+            }
+        }
+
+        impl TryFrom<Event> for smart_keymap::key::keyboard::Event {
+            type Error = smart_keymap::key::EventError;
+
+            fn try_from(v: Event) -> Result<Self, Self::Error> {
+                match v {
+                    Event::Keyboard(v) => Ok(v),
+                }
+            }
+        }
+
+        /// Aggregate pending key state.
+        #[derive(Debug, Clone, PartialEq)]
+        #[allow(clippy::large_enum_variant)]
+        pub enum PendingKeyState {
+            /// [smart_keymap::key::keyboard] variant.
+            Keyboard(smart_keymap::key::keyboard::PendingKeyState),
+        }
+
+        impl From<smart_keymap::key::keyboard::PendingKeyState> for PendingKeyState {
+            fn from(pks: smart_keymap::key::keyboard::PendingKeyState) -> Self {
+                PendingKeyState::Keyboard(pks)
+            }
+        }
+
+        /// Aggregate key state.
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub enum KeyState {
+            /// No-op key state (e.g. auxiliary chorded keys).
+            NoOp,
+            /// [smart_keymap::key::keyboard] key state.
+            Keyboard(smart_keymap::key::keyboard::KeyState),
+        }
+
+        impl From<key::NoOpKeyState> for KeyState {
+            fn from(_: key::NoOpKeyState) -> Self {
+                KeyState::NoOp
+            }
+        }
+
+        impl From<smart_keymap::key::keyboard::KeyState> for KeyState {
+            fn from(ks: smart_keymap::key::keyboard::KeyState) -> Self {
+                KeyState::Keyboard(ks)
+            }
+        }
+
+        /// Aggregate [key::System] for the default keyboard-only map.
+        #[derive(Debug, Clone, Copy, PartialEq)]
+        pub struct System {
+            keyboard:
+                smart_keymap::key::keyboard::System<Ref, [smart_keymap::key::keyboard::Key; 0]>,
+        }
+
+        impl System {
+            /// Constructs the system from the keyboard subsystem.
+            pub const fn new(
+                keyboard: smart_keymap::key::keyboard::System<
+                    Ref,
+                    [smart_keymap::key::keyboard::Key; 0],
+                >,
+            ) -> Self {
+                Self { keyboard }
+            }
+        }
+
+        impl key::System<Ref> for System {
+            type Ref = Ref;
+            type Context = Context;
+            type Event = Event;
+            type PendingKeyState = PendingKeyState;
+            type KeyState = KeyState;
+
+            fn new_pressed_key(
+                &self,
+                keymap_index: u16,
+                context: &Self::Context,
+                key_ref: Ref,
+            ) -> (
+                key::PressedKeyResult<Ref, Self::PendingKeyState, Self::KeyState>,
+                key::KeyEvents<Self::Event>,
+            ) {
+                match key_ref {
+                    Ref::Keyboard(key_ref) => {
+                        let (pkr, pke) =
+                            self.keyboard
+                                .new_pressed_key(keymap_index, &context.keyboard, key_ref);
+                        (pkr.into_result(), pke.into_events())
+                    }
+                }
+            }
+
+            fn update_pending_state(
+                &self,
+                pending_state: &mut Self::PendingKeyState,
+                keymap_index: u16,
+                context: &Self::Context,
+                key_ref: Ref,
+                event: key::Event<Self::Event>,
+            ) -> (Option<key::NewPressedKey<Ref>>, key::KeyEvents<Self::Event>) {
+                let _ = (pending_state, keymap_index, context, key_ref, event);
+                panic!("no pending key systems in this key_system")
+            }
+
+            fn update_state(
+                &self,
+                key_state: &mut Self::KeyState,
+                key_ref: &Self::Ref,
+                context: &Self::Context,
+                keymap_index: u16,
+                event: key::Event<Self::Event>,
+            ) -> key::KeyEvents<Self::Event> {
+                match (key_ref, key_state) {
+                    (Ref::Keyboard(key_ref), KeyState::Keyboard(key_state)) => {
+                        if let Ok(event) = event.try_into_key_event() {
+                            self.keyboard
+                                .update_state(
+                                    key_state,
+                                    key_ref,
+                                    &context.keyboard,
+                                    keymap_index,
+                                    event,
+                                )
+                                .into_events()
+                        } else {
+                            key::KeyEvents::no_events()
+                        }
+                    }
+                    (_, _) => key::KeyEvents::no_events(),
+                }
+            }
+
+            fn key_output(
+                &self,
+                key_ref: &Self::Ref,
+                key_state: &Self::KeyState,
+            ) -> Option<key::KeyOutput> {
+                match (key_ref, key_state) {
+                    (Ref::Keyboard(r), KeyState::Keyboard(ks)) => self.keyboard.key_output(r, ks),
+                    (_, _) => None,
+                }
+            }
+        }
+    }
 
     pub use key_system::Context;
-
     pub use key_system::Event;
-
-    pub use key_system::PendingKeyState;
-
     pub use key_system::KeyState;
-
-    /// Max number of data entries for each system.
-    pub const DATA_LEN: usize = 0;
-
-    /// Alias for the System type
-    pub type System = key_system::System<
-        key_system::KeyArrays<
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-            DATA_LEN,
-        >,
-    >;
+    pub use key_system::PendingKeyState;
+    pub use key_system::Ref;
+    pub use key_system::System;
 
     /// The number of keys in the keymap.
     pub const KEY_COUNT: usize = 1;
 
-    /// A tuples KeysN value with keys. Without a custom keymap, just the letter 'A'.
-    pub const KEY_REFS: [Ref; KEY_COUNT] = [Ref::Keyboard(keyboard::Ref::KeyCode(0x04))];
+    /// Without a custom keymap, just the letter 'A'.
+    pub const KEY_REFS: [Ref; KEY_COUNT] = [Ref::Keyboard(
+        smart_keymap::key::keyboard::Ref::KeyCode(0x04),
+    )];
 
     /// Config used to construct initial context.
     pub const CONFIG: key_system::Config = key_system::Config::new();
@@ -131,21 +377,20 @@ pub mod init {
     /// Initial [Context] value.
     pub const CONTEXT: Context = key_system::Context::from_config(CONFIG);
 
-    /// Initial [Context] value.
-    pub const SYSTEM: System = System::array_based(
-        smart_keymap::key::automation::System::new([]),
-        smart_keymap::key::callback::System::new([]),
-        smart_keymap::key::chorded::System::new([], []),
-        smart_keymap::key::keyboard::System::new([]),
-        smart_keymap::key::layered::System::new([], []),
-        smart_keymap::key::sticky::System::new([]),
-        smart_keymap::key::tap_dance::System::new([]),
-        smart_keymap::key::tap_hold::System::new([]),
-    );
+    /// Initial [System] value.
+    pub const SYSTEM: System =
+        key_system::System::new(smart_keymap::key::keyboard::System::new([]));
 
-    /// Alias for the [keymap::Keymap] type.
-    pub type Keymap =
-        keymap::Keymap<[Ref; KEY_COUNT], Ref, Context, Event, PendingKeyState, KeyState, System>;
+    /// Alias for the [crate::keymap::Keymap] type.
+    pub type Keymap = smart_keymap::keymap::Keymap<
+        [Ref; KEY_COUNT],
+        Ref,
+        Context,
+        Event,
+        PendingKeyState,
+        KeyState,
+        System,
+    >;
 }
 
 #[cfg(custom_keymap)]
@@ -153,7 +398,7 @@ include!(concat!(env!("OUT_DIR"), "/keymap.rs"));
 
 pub use init::{Keymap, CONTEXT, KEY_REFS, SYSTEM};
 
-/// Constructs a new keymap;
+/// Constructs a new keymap.
 pub const fn new_keymap() -> Keymap {
     Keymap::new(KEY_REFS, CONTEXT, SYSTEM)
 }

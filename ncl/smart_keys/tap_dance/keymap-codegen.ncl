@@ -110,23 +110,19 @@
           timeout | optional | Number,
         },
 
-        rust_expr =
+        expr =
           if std.record.has_field "tap_dance" json_keymap.config then
-            let tap_dance_config = json_keymap.config.tap_dance in
-            let timeout_field_fragment =
-              if std.record.has_field "timeout" tap_dance_config then
-                "timeout: %{std.to_string tap_dance_config.timeout},"
-              else
-                ""
-            in
-            m%"
-            %{module}::Config {
-                %{timeout_field_fragment}
-                ..%{module}::Config::new()
-            }
-          "%
+            let c = json_keymap.config.tap_dance in
+            if std.record.has_field "timeout" c then
+              {
+                timeout = "%{std.to_string c.timeout}",
+              }
+            else
+              {}
           else
-            "%{module}::Config::new()",
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

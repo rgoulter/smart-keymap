@@ -1,0 +1,23 @@
+#lang rhombus
+//// PointsIR: ortho grid factory
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def g = grid(4, 12)
+
+//// --- act / assert ---
+assert_eq("grid 4x12 count", g.length(), 48)
+assert_eq("grid first centre", g[0].x, 9.525)
+assert_eq("grid last centre x", g[47].x, 11.5 * 19.05)
+
+def cells48 = for List (i in 0 .. 48): key(to_string(i))
+def p48 = pane("t", g, cells48)
+def sc = scene_of_pane(p48)
+assert_eq("KeyTop=48", count_kind(sc, "KeyTop"), 48)
+assert_eq("KeySide=48", count_kind(sc, "KeySide"), 48)
+
+println("OK test_core_grid")

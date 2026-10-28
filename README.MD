@@ -284,6 +284,10 @@ to work with smart_keymap lib.
 
 See [firmware/ch58x-ble-hid-keyboard-c](firmware/ch58x-ble-hid-keyboard-c/README.MD) for more details.
 
+## LLM technologies
+
+LLM technologies have been used to support writing this project. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## License
 
 Licensed under either of

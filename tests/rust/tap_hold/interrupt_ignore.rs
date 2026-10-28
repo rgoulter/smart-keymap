@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -30,9 +31,9 @@ fn rolled_presses() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -42,9 +43,6 @@ fn rolled_presses() {
 #[test]
 fn rolled_presses_desc_keycodes() {
     // Assemble
-    const K_G: u8 = 0x0A;
-    const K_O: u8 = 0x12;
-
     let mut keymap = ObservedKeymap::new(keymap!(
         r#"
             let K = import "keys.ncl" in
@@ -66,9 +64,9 @@ fn rolled_presses_desc_keycodes() {
 
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, K_O, 0, 0, 0, 0, 0],
-        [0, 0, K_O, K_G, 0, 0, 0, 0],
-        [0, 0, K_G, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, KC_G, 0, 0, 0, 0],
+        [0, 0, KC_G, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -86,13 +84,13 @@ fn rolled_presses_desc_keycodes() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, K_O, 0, 0, 0, 0, 0],
-        [0, 0, K_O, K_G, 0, 0, 0, 0],
-        [0, 0, K_G, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, KC_G, 0, 0, 0, 0],
+        [0, 0, KC_G, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, K_O, 0, 0, 0, 0, 0],
-        [0, 0, K_O, K_G, 0, 0, 0, 0],
-        [0, 0, K_G, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, 0, 0, 0, 0, 0],
+        [0, 0, KC_O, KC_G, 0, 0, 0, 0],
+        [0, 0, KC_G, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

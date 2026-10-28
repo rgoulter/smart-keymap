@@ -1,0 +1,103 @@
+name: Publish firmware-core image
+
+on:
+  push:
+    branches: ["master"]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "containers/**"
+      - "nix/**"
+      - ".github/workflows/publish-firmware-core-image.yaml"
+  pull_request:
+    branches: ["master"]
+    paths:
+      - "flake.nix"
+      - "flake.lock"
+      - "containers/**"
+      - "nix/**"
+      - ".github/workflows/publish-firmware-core-image.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - name: Build image (firmware-core)
+        run: nix build .#image-firmware-core --print-out-paths
+
+      - name: Build image (firmware-core-ceedling)
+        run: nix build .#image-firmware-core-ceedling --print-out-paths
+
+  publish:
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v14
+
+      - name: Setup Cachix
+        uses: cachix/cachix-action@v15
+        with:
+          name: devenv
+          authToken: ${{ secrets.CACHIX_AUTH_TOKEN }}
+
+      - name: Install skopeo
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends skopeo
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push to GHCR
+        run: |
+          set -euo pipefail
+          OWNER=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/${OWNER}/smart-keymap-firmware-core"
+          RAW_TAG="${GITHUB_REF_NAME}"
+          TAG=$(echo "${RAW_TAG}" | tr '/' '-' | tr '[:upper:]' '[:lower:]' | sed -E 's/[^a-z0-9._-]+/-/g; s/^-+//; s/-+$//')
+          if [ -z "${TAG}" ]; then TAG="latest"; fi
+          SHA_TAG="sha-${GITHUB_SHA::12}"
+
+          echo "Pushing to $IMAGE (tags: ${TAG}, ${SHA_TAG})"
+
+          for pkg in image-firmware-core image-firmware-core-ceedling; do
+            OUT=$(nix build ".#${pkg}" --print-out-paths --no-link)
+            echo "Copying $pkg from $OUT"
+            skopeo copy --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
+              "docker-archive:${OUT}" \
+              "docker://${IMAGE}:${pkg#image-}-${TAG}"
+            skopeo copy --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
+              "docker-archive:${OUT}" \
+              "docker://${IMAGE}:${pkg#image-}-${SHA_TAG}"
+            if [ "$pkg" = "image-firmware-core" ]; then
+              skopeo copy --dest-creds "${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}" \
+                "docker-archive:${OUT}" \
+                "docker://${IMAGE}:latest"
+            fi
+          done

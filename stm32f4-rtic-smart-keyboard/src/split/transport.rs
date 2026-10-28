@@ -35,8 +35,8 @@ impl TransportWriter {
     pub fn write(&mut self, input_event: Event) {
         let message = Message { input_event };
         for b in message.serialize() {
-            block!(self.tx.write(b)).unwrap();
+            let _ = block!(self.tx.write(b));
         }
-        block!(self.tx.flush()).unwrap();
+        let _ = block!(self.tx.flush());
     }
 }

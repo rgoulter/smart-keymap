@@ -200,44 +200,44 @@
           timeout | optional | Number,
         },
 
-        rust_expr =
+        expr =
           if std.record.has_field "chorded" json_keymap.config then
-            let chorded_config = json_keymap.config.chorded in
-            let required_idle_time_field_fragment =
-              if std.record.has_field "required_idle_time" chorded_config then
-                "required_idle_time: Some(%{std.to_string chorded_config.required_idle_time}),"
+            let c = json_keymap.config.chorded in
+            (
+              if std.record.has_field "required_idle_time" c then
+                {
+                  required_idle_time = "Some(%{std.to_string c.required_idle_time})",
+                }
               else
-                ""
-            in
-            let timeout_field_fragment =
-              if std.record.has_field "timeout" chorded_config then
-                "timeout: %{std.to_string chorded_config.timeout},"
+                {}
+            )
+            & (
+              if std.record.has_field "timeout" c then
+                {
+                  timeout = "%{std.to_string c.timeout}",
+                }
               else
-                ""
-            in
-            let chords_field_fragment =
-              if std.record.has_field "chords" chorded_config then
+                {}
+            )
+            & (
+              if std.record.has_field "chords" c then
                 let chords_fragment =
-                  chorded_config.chords
+                  c.chords
                   |> std.array.map (fun indices =>
                     "%{module}::ChordIndices::from_slice(&[%{indices |> std.array.map std.to_string |> std.string.join ", "}])"
                   )
                   |> std.string.join ","
                 in
-                "chords: smart_keymap::slice::Slice::from_slice(&[%{chords_fragment}]),"
+                {
+                  chords = "smart_keymap::slice::Slice::from_slice(&[%{chords_fragment}])",
+                }
               else
-                ""
-            in
-            m%"
-          %{module}::Config {
-              %{required_idle_time_field_fragment}
-              %{timeout_field_fragment}
-              %{chords_field_fragment}
-              ..%{module}::Config::new()
-          }
-        "%
+                {}
+            )
           else
-            "%{module}::Config::new()",
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

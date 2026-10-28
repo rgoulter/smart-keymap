@@ -4,6 +4,7 @@
 tmp/
 
 build*
+generated
 .clangd
 compile_commands.json
 # Devenv

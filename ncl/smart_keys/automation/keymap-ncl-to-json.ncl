@@ -47,6 +47,8 @@
 
       Key = std.contract.from_validator key_validator,
 
+      Instruction = smart_keymap.automation.instruction.Json,
+
       key_instructions = {
         ncl_validator =
           validators.record.validator {
@@ -70,7 +72,10 @@
       key_validator =
         validators.record.validator {
           fields_validator =
-            validators.record.has_only_fields ["automation_instructions"],
+            validators.all_of [
+              validators.record.has_any_field_of ["automation_instructions"],
+              validators.record.has_only_fields ["automation_instructions"],
+            ],
           field_validators = {
             automation_instructions = key_instructions.ncl_validator,
           },
@@ -123,7 +128,7 @@
           _ => { include acc, include k },
         },
 
-      map_accum = fun f acc k =>
-        f acc k,
+      # Leaves have no nested keys; map_accum maps children only.
+      map_accum = fun f acc k => { include acc, include k },
     },
 }

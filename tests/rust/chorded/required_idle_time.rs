@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -37,9 +38,9 @@ fn press_chord_resolves_as_passthrough_quickly_following_key_press() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x04, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x04, 0x05, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_A, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_A, KC_B, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -79,9 +80,9 @@ fn press_chord_resolves_as_passthrough_quickly_alt_following_key_press() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x05, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x05, 0x04, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_B, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_B, KC_A, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -122,10 +123,10 @@ fn press_chord_resolves_as_passthrough_when_pressed_quickly() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0x05, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, KC_B, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -166,9 +167,9 @@ fn press_chord_resolves_as_chord_when_pressed_after_required_idle_time() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -208,8 +209,8 @@ fn press_chord_resolves_as_chord_following_key_press_after_required_idle_time() 
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x06, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_C, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -249,8 +250,8 @@ fn press_chord_resolves_as_chord_following_key_press_after_required_idle_time_al
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0x06, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, KC_C, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -302,11 +303,11 @@ fn quick_press_chord_resolves_as_chord_following_tap_chord() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x07, 0, 0, 0, 0, 0],
+        [0, 0, KC_D, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x06, 0, 0, 0, 0, 0],
+        [0, 0, KC_C, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

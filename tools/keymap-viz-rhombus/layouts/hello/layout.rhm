@@ -1,0 +1,28 @@
+#lang rhombus
+//// Hand-written KeyboardLayout example (no Nickel).
+//// 2×2: hold-to-layer, transparent, NO (pressed brick), and a letter.
+
+import:
+  "../../src/keyboard_layout.rhm" open
+  "../../src/svg.rhm" open
+  "../../src/io.rhm" open
+  "cells.rhm" open
+
+def panes = recipe_stacked(
+  "hello",
+  points,
+  [base, layer1],
+  ~layer_names: ["Base", "L1"]
+)
+
+ensure_dir("out")
+emit_svg(
+  "out/hello-stacked.svg",
+  panes
+)
+emit_svg(
+  "out/hello-stacked-dark.svg",
+  panes,
+  ~theme: theme_dark
+)
+println("DONE hello")

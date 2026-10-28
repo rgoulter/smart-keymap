@@ -3,6 +3,7 @@ mod release_on_next_press;
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -35,8 +36,8 @@ fn tap_sticky_mod_modifies_next_keyboard_key() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -72,8 +73,8 @@ fn tap_sticky_mod_acts_as_regular_mod_when_interrupted_by_key_slash() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x38, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_SLASH, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -113,10 +114,10 @@ fn tap_sticky_mod_modifies_only_next_keyboard_key() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x38, 0, 0, 0, 0, 0],
+        [0, 0, KC_SLASH, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -157,8 +158,8 @@ fn tap_sticky_mod_acts_as_regular_mod_when_interrupted_by_key() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -198,9 +199,9 @@ fn tap_multiple_sticky_mod_modifies_next_keyboard_key() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x03, 0, 0, 0, 0, 0, 0, 0],
-        [0x03, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LCTL_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LCTL_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -244,10 +245,10 @@ fn tap_sticky_mod_modifies_next_keyboard_key_until_released() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0x38, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, KC_SLASH, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();

@@ -1,0 +1,24 @@
+#lang rhombus
+//// PointsIR: split_3x5_3 geometric layout
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def s36 = split_3x5_3()
+def cells48 = for List (i in 0 .. 48): key(to_string(i))
+def g = grid(4, 12)
+
+//// --- act / assert ---
+assert_eq("split_3x5_3 count", s36.length(), 36)
+assert_true("rhs pinky outer", s36[9].x > s36[5].x)
+
+def layers2 = [cells48, cells48]
+def panes = recipe_stacked("demo", g, layers2)
+assert_eq("stack pane count", panes.length(), 2)
+def sc2 = scene_of_panes(panes)
+assert_eq("stacked KeyTop=96", count_kind(sc2, "KeyTop"), 96)
+
+println("OK test_core_split")

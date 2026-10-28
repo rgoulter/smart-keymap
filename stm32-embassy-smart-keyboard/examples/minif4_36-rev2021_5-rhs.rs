@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(clippy::unwrap_used)]
 
 use embassy_executor::Spawner;
 use embassy_stm32::time::Hertz;
@@ -202,7 +203,7 @@ async fn main(_spawner: Spawner) {
     }
 
     let config = usart::Config::default();
-    let usart = Uart::new_half_duplex(
+    let Ok(usart) = Uart::new_half_duplex(
         p.USART1,
         p.PB6,
         Irqs,
@@ -211,8 +212,9 @@ async fn main(_spawner: Spawner) {
         config,
         HalfDuplexReadback::NoReadback,
         HalfDuplexConfig::OpenDrainExternal,
-    )
-    .unwrap();
+    ) else {
+        panic!("uart init failed");
+    };
     let (mut tx, _) = usart.split();
 
     loop {
@@ -222,8 +224,8 @@ async fn main(_spawner: Spawner) {
             if let Some(input_event) = keymap_index_of(&KEYMAP_INDICES, event) {
                 let message = Message { input_event };
                 let buf = message.serialize();
-                tx.write(&buf).await.unwrap();
-                tx.flush().await.unwrap();
+                let _ = tx.write(&buf).await;
+                let _ = tx.flush().await;
             }
         }
     }

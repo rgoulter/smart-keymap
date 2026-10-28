@@ -10,6 +10,7 @@ on:
     paths:
       - 'ncl/**'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'tests/ncl/**'
   pull_request:
     branches:
@@ -17,27 +18,47 @@ on:
     paths:
       - 'ncl/**'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'tests/ncl/**'
 
-jobs:
-  cargo-build:
-    runs-on: ${{ matrix.os }}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+jobs:
+  ncl-checks:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+
+      - name: Run Nickel checks
+        run: make test-ncl-checks
+
+      - name: Run make ncl-format
+        run: make ncl-format
+
+      - name: Check Nickel formatting
         run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+          git diff --exit-code || (echo "There are uncommitted changes. Please run 'make ncl-format' and commit the changes." && exit 1)
+
+  ncl-snapshots:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
       - name: Install dependencies
         run: |
@@ -45,9 +66,15 @@ jobs:
           sudo apt-get install -y gawk pandoc
           rustup target add riscv32imac-unknown-none-elf
 
-      - name: Run Nickel tests
-        run: |
-          ./ncl/scripts/run-tests.sh
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+        with:
+          shared-key: nickel-codegen
+          cache-targets: riscv32imac-unknown-none-elf
+
+      - name: Run Nickel snapshot fixtures
+        run: make test-ncl-snapshots
 
       - name: Generate feature docs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         run: ./features/scripts/generate-doc.sh

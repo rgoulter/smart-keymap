@@ -3,6 +3,8 @@
 
   lib,
 
+  json_keymap,
+
   key_data_and_refs,
 
   smart_key,
@@ -72,6 +74,12 @@
     check_json_is_toggle =
       let json = { Toggle = 1 } in
       smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_lock =
+      let json = { Lock = "HighestActive" } in
+      smart_keymap.layered.modifier_key.is_json json,
+    check_json_is_lock_layer =
+      let json = { Lock = { Layer = 2 } } in
+      smart_keymap.layered.modifier_key.is_json json,
   },
 
   smart_keymap.layered
@@ -85,33 +93,60 @@
         key_type = "%{module}::ModifierKey",
 
         # c.f. doc_de_layered.md.
-        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold(layer, kb_mods), SetActiveLayers([layer, ...]).
+        # JSON serialization of key::layered::ModifierKey has variants: Default(layer), Hold([layer, kb_mods]), SetActiveLayers({ layers, mask? }), Lock("HighestActive"|{ Layer }).
         json_validator =
           validators.record.validator {
             fields_validator =
               validators.all_of [
-                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
-                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle"],
+                validators.record.has_any_field_of ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "Lock"],
+                validators.record.has_only_fields ["Default", "Hold", "Sticky", "SetActiveLayers", "Toggle", "Lock"],
               ],
-            field_validators = {
-              Hold = fun hold =>
-                hold
-                |> match {
-                  [layer_index, kb_mods] =>
-                    let valid_layer_index = validators.is_number layer_index in
-                    let valid_kb_mods = validators.is_number kb_mods in
-                    [valid_layer_index, valid_kb_mods]
-                    |> match {
-                      ['Ok, 'Ok] => 'Ok,
-                      [err, 'Ok] => err,
-                      ['Ok, err] => err,
-                    },
-                  _ => 'Error { message = "expected Hold to be [layer_index, kb_mods]" },
-                },
-              Toggle = validators.is_number,
-              Sticky = validators.is_number,
-              SetActiveLayers = validators.is_number,
-            },
+            field_validators =
+              let modifier_bitset_validator =
+                validators.record.validator {
+                  fields_validator =
+                    validators.all_of [
+                      validators.record.has_any_field_of ["layers"],
+                      validators.record.has_only_fields ["layers", "mask"],
+                    ],
+                  field_validators = {
+                    layers = validators.is_number,
+                    mask = validators.is_number,
+                  },
+                }
+              in
+              {
+                Hold = fun hold =>
+                  hold
+                  |> match {
+                    [layer_index, kb_mods] =>
+                      validators.all_ok [
+                        validators.is_number layer_index,
+                        validators.is_number kb_mods,
+                      ],
+                    _ => 'Error { message = "expected Hold to be [layer_index, kb_mods]" },
+                  },
+                Toggle = validators.is_number,
+                Sticky = validators.is_number,
+                # LayerLockTarget: "HighestActive" | { Layer = layer_index } (1-based).
+                Lock = fun lock =>
+                  lock
+                  |> match {
+                    "HighestActive" => 'Ok,
+                    { Layer = layer_index } =>
+                      validators.all_of
+                        [
+                          validators.is_number,
+                          validators.is_greater_than 0,
+                        ]
+                        layer_index,
+                    _ =>
+                      'Error {
+                        message = "expected Lock to be \"HighestActive\" or { Layer = layer_index > 0 }",
+                      },
+                  },
+                SetActiveLayers = modifier_bitset_validator,
+              },
           },
 
         is_json = fun json => 'Ok == json_validator json,
@@ -158,13 +193,42 @@
                 variant = "Sticky",
                 rust_expr = "%{module}::ModifierKey::sticky(%{std.to_string layer_index})",
               },
-            { SetActiveLayers = active_layers_bitset } =>
+            { Lock = "HighestActive" } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Lock",
+                rust_expr = "%{module}::ModifierKey::lock()",
+              },
+            { Lock = { Layer = layer_index } } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "Lock",
+                rust_expr = "%{module}::ModifierKey::lock_layer(%{std.to_string layer_index})",
+              },
+            { SetActiveLayers = { layers = active_layers_bitset } } =>
               {
                 include json,
                 include module,
                 include key_type,
                 variant = "SetActiveLayers",
-                rust_expr = "%{module}::ModifierKey::set_active_layers_from_bitset(%{active_layers_bitset |> std.to_string})",
+                rust_expr =
+                  let layers_expr = "%{module}::LayerBitset::from_bits(%{active_layers_bitset |> std.to_string})" in
+                  "%{module}::ModifierKey::set_active_layers_from_bitset(%{layers_expr})",
+              },
+            { SetActiveLayers = { layers = active_layers_bitset, mask = layer_mask } } =>
+              {
+                include json,
+                include module,
+                include key_type,
+                variant = "SetActiveLayers",
+                rust_expr =
+                  let layers_expr = "%{module}::LayerBitset::from_bits(%{active_layers_bitset |> std.to_string})" in
+                  let mask_expr = "%{module}::LayerBitset::from_bits(%{layer_mask |> std.to_string})" in
+                  "%{module}::ModifierKey::set_active_layers_from_bitset_with_mask(%{layers_expr}, %{mask_expr})",
               },
           },
 
@@ -202,10 +266,14 @@
         #     "layered": [5, null, 7]
         #   }
         # ```
-        # JSON serialization of key::layered::Layered has fields: { base, layered }
+        # JSON serialization of key::layered::LayeredKey: { base, layered, exit_on_skip? }
         json_validator =
           validators.record.validator {
-            fields_validator = validators.record.has_exact_fields ["base", "layered"],
+            fields_validator =
+              validators.all_of [
+                validators.record.has_all_fields ["base", "layered"],
+                validators.record.has_only_fields ["base", "layered", "exit_on_skip"],
+              ],
             field_validators = {
               base = smart_key.json_validator,
               layered =
@@ -215,19 +283,19 @@
                     smart_key.json_validator,
                   ]
                 ),
+              exit_on_skip = validators.is_number,
             },
           },
 
         is_json = fun json => 'Ok == json_validator json,
 
-        codegen_values = fun json @ { base, layered } =>
+        codegen_values = fun json @ { base, layered, .. } =>
           let base_cv = base |> smart_key.codegen_values in
-          let non_null_layered = std.array.filter ((!=) null) layered in
           let layered_cvs =
             std.array.map (fun json => if json != null then json |> smart_key.codegen_values else null) layered
           in
-          let nn_layered_cvs =
-            std.array.filter ((!=) null) layered_cvs
+          let exit_on_skip =
+            if std.record.has_field "exit_on_skip" json then json.exit_on_skip else 0
           in
 
           {
@@ -238,6 +306,7 @@
             include json,
             include module,
             include key_type,
+            include exit_on_skip,
             rust_expr =
               let base_expr = nested.base.rust_expr in
               let layered_exprs =
@@ -245,7 +314,13 @@
                 |> std.array.map (fun cv => if cv == null then "None" else "Some(%{cv.rust_expr})")
                 |> std.string.join ","
               in
-              "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])",
+              let new_expr = "smart_keymap::key::layered::LayeredKey::new(%{base_expr}, [%{layered_exprs}])"
+              in
+              if exit_on_skip == 0 then
+                new_expr
+              else
+                let bits = "%{module}::LayerBitset::from_bits(%{std.to_string exit_on_skip})" in
+                "(%{new_expr}).with_exit_on_skip(%{bits})",
           },
 
         map_nested = fun f cv @ { nested, ..rest } =>
@@ -270,7 +345,7 @@
             acc
             nn_layered_cvs,
 
-        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, .. } =>
+        data_and_ref = fun key_data cv @ { nested = { base = base_cv, layered = layered_cvs }, exit_on_skip, .. } =>
           let { key_data, ref = base_ref } = smart_key.data_and_ref key_data base_cv in
           let base_ref = base_ref |> composite.ref.wrap in
           let { key_data, layered_refs } =
@@ -288,21 +363,40 @@
           in
           let { layered = layered_, ..other_data } = key_data & { layered | default = [] } in
           let new_index = std.array.length layered_ in
-          let new_key = {
-            json = {
-              base = base_ref.json,
-              layered = layered_refs |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json),
-            },
-            rust_expr = m%"
-            %{module}::LayeredKey::new(
-              %{base_ref.rust_expr},
-              [%{
-                layered_refs
-                |> std.array.map (fun layer_ref => if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})")
-                |> std.string.join ", "
-              }],
+          let layered_json =
+            layered_refs
+            |> std.array.map (fun layer_ref => if layer_ref == null then null else layer_ref.json)
+          in
+          let layered_rust =
+            layered_refs
+            |> std.array.map (fun layer_ref =>
+              if layer_ref == null then "None" else "Some(%{layer_ref.rust_expr})"
             )
-          "%,
+            |> std.string.join ", "
+          in
+          let new_expr = "%{module}::LayeredKey::new(%{base_ref.rust_expr}, [%{layered_rust}])"
+          in
+          let rust_expr =
+            if exit_on_skip == 0 then
+              new_expr
+            else
+              let bits = "%{module}::LayerBitset::from_bits(%{std.to_string exit_on_skip})" in
+              "(%{new_expr}).with_exit_on_skip(%{bits})"
+          in
+          let exit_bits = exit_on_skip in
+          let new_key = {
+            json =
+              {
+                base = base_ref.json,
+                layered = layered_json,
+              }
+              & (
+                if exit_bits == 0 then
+                  {}
+                else
+                  { exit_on_skip = exit_bits }
+              ),
+            include rust_expr,
           }
           in
           {
@@ -314,6 +408,50 @@
               rust_expr = "%{module}::Ref::%{variant}(%{std.to_string new_index})",
             },
           },
+      },
+
+      config = {
+        # Intermediate JSON / keymap.json shape (bitset form for if_layers).
+        ConditionalLayerJson = {
+          then_layer | Number,
+          if_layers | Number,
+        },
+
+        Json = {
+          sticky_timeout | optional | Number,
+          conditional_layers | optional | Array ConditionalLayerJson,
+        },
+
+        expr =
+          if std.record.has_field "layered" json_keymap.config then
+            let c = json_keymap.config.layered in
+            (
+              if std.record.has_field "sticky_timeout" c then
+                {
+                  sticky_timeout = "Some(%{std.to_string c.sticky_timeout})",
+                }
+              else
+                {}
+            )
+            & (
+              if std.record.has_field "conditional_layers" c then
+                let rules_fragment =
+                  c.conditional_layers
+                  |> std.array.map (fun { then_layer, if_layers } =>
+                    "%{module}::ConditionalLayer::new(%{std.to_string then_layer}, %{module}::LayerBitset::from_bits(%{std.to_string if_layers}))"
+                  )
+                  |> std.string.join ", "
+                in
+                {
+                  conditional_layers = "smart_keymap::slice::Slice::from_slice(&[%{rules_fragment}])",
+                }
+              else
+                {}
+            )
+          else
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

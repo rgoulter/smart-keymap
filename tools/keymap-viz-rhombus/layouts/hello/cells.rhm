@@ -1,0 +1,49 @@
+#lang rhombus
+//// Shared 2×2 cells for the hello examples.
+
+import:
+  "../../src/keyboard_layout.rhm" open
+
+export:
+  points
+  base
+  layer1
+  dense_cells
+
+def points = grid(2, 2)
+
+def base = [
+  key(
+    "A",
+    ~hold: "L1",
+    ~wash: 1
+  ),
+  key("", ~emphasis: "transparent"),
+  key("", ~emphasis: "pressed"),
+  key("B")
+]
+
+def layer1 = [
+  key("1"),
+  key("", ~emphasis: "transparent"),
+  key("", ~emphasis: "pressed"),
+  key("")
+]
+
+//// Dense slots: center is the base legend, tl/tr/bl are later layers.
+def dense_cells = [
+  key(
+    "A",
+    ~hold: "L1",
+    ~wash: 1,
+    ~tl: "1",
+    ~tr: "!",
+    ~bl: "F1"
+  ),
+  key("", ~emphasis: "transparent"),
+  key("", ~emphasis: "pressed"),
+  key(
+    "B",
+    ~tl: "2"
+  )
+]

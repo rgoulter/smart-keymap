@@ -17,6 +17,7 @@
 
       to_json_value = fun key => key,
 
-      map_accum = fun f acc k => f acc k,
+      # Leaves have no nested keys; map_accum maps children only.
+      map_accum = fun f acc k => { include acc, include k },
     },
 }

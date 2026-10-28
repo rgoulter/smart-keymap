@@ -1,0 +1,29 @@
+# Configuration for cargo-release
+# See https://github.com/crate-ci/cargo-release/blob/master/docs/reference.md
+
+allow-branch = ["master"]
+tag-name = "v{{version}}"
+tag-message = "v{{version}}"
+
+# Match existing commit style used in project
+pre-release-commit-message = "cargo: bump version to v{{version}}"
+
+# We don't want to publish the keyboard firmware binaries etc.
+# (Those have `publish = false` in their Cargo.toml)
+# For the publishable crates, you may still want to opt-in explicitly:
+#   cargo release --workspace --publish --execute
+# Or release specific: cargo release -p smart-keymap 0.16.0 --execute
+
+# Cutting a release (no crates.io publish):
+#   cargo release -p smart-keymap release --no-publish --no-push -x
+#   # or: just release          # "release" level strips the -dev suffix nicely
+#
+# Then push + GitHub release:
+#   git push origin master && git push origin --tags
+#   gh release create v0.16.0 --generate-notes
+
+# After the release tag, start the next dev cycle:
+#   just bump-dev 0.16.0-dev
+#   # or: cargo set-version -p smart-keymap 0.16.0-dev
+#
+# (There is no built-in "dev" level in cargo-release equivalent to "release".)

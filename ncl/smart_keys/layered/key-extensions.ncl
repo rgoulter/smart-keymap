@@ -17,13 +17,53 @@
         {
           layer_modifier = { sticky = layer_num }
         },
+      # Lock highest currently active layer.
+      lock = { layer_modifier = { lock = true } },
+      # Lock/unlock a specific layer.
+      lock_layer = fun layer_num =>
+        {
+          layer_modifier = { lock = layer_num }
+        },
       set_active_layers_to = fun active_layers =>
         {
           layer_modifier = { set_active_layers_to = active_layers }
+        },
+      set_active_layers_amongst = fun { set_active_layers_to = set_active_layers_to_, affected_layers = affected_layers_ } =>
+        {
+          layer_modifier = {
+            set_active_layers_to = set_active_layers_to_,
+            affected_layers = affected_layers_,
+          },
+        },
+      # Exclusive switch within a named-layer group.
+      # `variant_names` is the mask (all members); `variant_name` is the one to activate.
+      # Names resolve to indices when the keymap is compiled to JSON.
+      set_semantic_variant_to = fun variant_names variant_name =>
+        {
+          layer_modifier = {
+            set_active_layers_to = [variant_name],
+            affected_layers = variant_names,
+          },
         },
     },
 
     # Layer Transparency
     TTTT = null,
+
+    # Transparent layer exit (FAK tap.tlex): hole that also deactivates
+    # the defining layer. Lowered to null + exit_on_skip bit for runtime.
+    tlex = { transparent_layer_exit = true },
+
+    # Smart-stay sugar: map a layer row, replacing null / TTTT cells with tlex.
+    # Authoring: `my_layer |> K.exit_on_transparent`
+    # (Array of keys only — not string layer tokens.)
+    exit_on_transparent = fun layer =>
+      layer
+      |> std.array.map (fun cell => if cell == null then tlex else cell),
+
+    # Semantic / variant key sugar: `named_layers` form of LayeredKey.
+    # Unit `{}` base (keyboard noop) so callers can use `K.semantic {..}` without
+    # `K.NO &`. Indices for names are assigned globally when compiling the keymap.
+    semantic = fun variants => { named_layers = variants },
   },
 }

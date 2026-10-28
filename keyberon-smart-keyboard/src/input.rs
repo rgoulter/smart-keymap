@@ -17,8 +17,9 @@ pub trait MatrixScanner<const COLS: usize, const ROWS: usize, E = Infallible> {
     fn get(&mut self) -> Result<[[bool; COLS]; ROWS], E>;
 }
 
-/// The keyboard "frontend", manages the keyboard from the hardware matrix
-/// through to keyboard events (presses/releases of coordinates on a keyboard layout).
+/// The keyboard "frontend",
+///  manages the keyboard from the hardware matrix through to keyboard events
+///  (presses/releases of coordinates on a keyboard layout).
 ///
 /// This takes care of scanning the keyboard matrix, debouncing.
 pub struct Keyboard<const COLS: usize, const ROWS: usize, M: MatrixScanner<COLS, ROWS>> {
@@ -34,7 +35,9 @@ impl<const COLS: usize, const ROWS: usize, M: MatrixScanner<COLS, ROWS>> Keyboar
 
     /// Scans the matrix and returns the debounced events.
     pub fn events(&mut self) -> heapless::Vec<Event, 8> {
-        let key_presses = self.matrix.get().unwrap();
-        self.debouncer.events(key_presses).collect()
+        match self.matrix.get() {
+            Ok(key_presses) => self.debouncer.events(key_presses).collect(),
+            Err(_) => heapless::Vec::new(),
+        }
     }
 }

@@ -127,6 +127,7 @@
         BOOT = keys.reset_to_bootloader,
 
         CWTG = keys.caps_word.toggle,
+        KLOCK = keys.key_lock,
       },
 
     keyboard_aliases = fun keys =>

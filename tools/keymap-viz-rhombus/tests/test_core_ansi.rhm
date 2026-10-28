@@ -1,0 +1,23 @@
+#lang rhombus
+//// PointsIR: ansi_66 row widths (ch32x-60-improved / GH60-ish)
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+
+//// --- assemble ---
+def a66 = ansi_66()
+
+//// --- act / assert ---
+assert_eq("ansi_66 count", a66.length(), 66)
+assert_eq("ansi_66 bksp width", a66[13].w, 2.0 * 19.05)
+fun assert_row_right(end :: Int):
+  def right = a66[end].x + a66[end].w / 2.0
+  assert_close("ansi_66 row right=" ++ to_string(end), right, 15.0 * 19.05)
+assert_row_right(13)
+assert_row_right(27)
+assert_row_right(40)
+assert_row_right(52)
+assert_row_right(65)
+
+println("OK test_core_ansi")

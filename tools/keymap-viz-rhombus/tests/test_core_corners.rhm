@@ -1,0 +1,39 @@
+#lang rhombus
+//// Per-slot corner legend colours (tl/tr/bl follow theme corner fields)
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+fun overlay_fills(cells, ~theme = theme) :
+  // Assemble -- single key with all three corners, then scene Text fills
+  def sc = scene_of_pane(pane("corners", grid(1, 1), cells), ~theme: theme)
+  for List:
+    each n in sc.nodes
+    keep_when n["kind"] == "Text" && n["role"] == "overlay"
+    n["fill"]
+
+//// --- assemble: dense-style cell with tl/tr/bl set ---
+def cells = [key("A", ~tl: "1", ~tr: "!", ~bl: "F1")]
+
+// Act -- light theme corner fills
+def fills = overlay_fills(cells)
+
+// Assert -- one fill per corner, each from its own theme slot
+assert_eq("three overlay texts", fills.length(), 3)
+assert_eq("tl uses theme corner tl", fills[0], theme["overlay_tl"])
+assert_eq("tr uses theme corner tr", fills[1], theme["overlay_tr"])
+assert_eq("bl uses theme corner bl", fills[2], theme["overlay_bl"])
+assert_true(
+  "corner fills distinct",
+  fills[0] != fills[1] && fills[1] != fills[2] && fills[0] != fills[2]
+)
+
+// Act -- dark theme corner fills
+def fills_d = overlay_fills(cells, ~theme: theme_dark)
+
+// Assert -- dark corners follow the dark theme slots
+assert_eq("dark tl uses theme corner tl", fills_d[0], theme_dark["overlay_tl"])
+assert_eq("dark tr uses theme corner tr", fills_d[1], theme_dark["overlay_tr"])
+assert_eq("dark bl uses theme corner bl", fills_d[2], theme_dark["overlay_bl"])

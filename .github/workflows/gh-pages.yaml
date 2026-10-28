@@ -6,6 +6,17 @@ env:
 on:
   push:
     branches: ["master"]
+    paths:
+      - '.cargo/**'
+      - '.github/workflows/gh-pages.yaml'
+      - 'Cargo.*'
+      - 'features/**'
+      - 'keyberon-smart-keyboard/**'
+      - 'ncl/**'
+      - 'rp2040-rtic-smart-keyboard/**'
+      - 'smart-keymap-nickel-helper/**'
+      - 'src/**'
+      - 'smart-keymap-core/**'
 
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
@@ -30,20 +41,28 @@ jobs:
         uses: actions/checkout@v4
       - name: Setup Pages
         uses: actions/configure-pages@v5
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+        with:
+          shared-key: gh-pages
       - name: Run Cargo Doc
         run: |
           mkdir -p _site
           cargo doc \
             --no-deps \
             --package=rp2040-rtic-smart-keyboard \
+            --package=smart-keymap-core \
             --package=smart-keymap \
             --package=keyberon-smart-keyboard
           cp -r target/doc _site/doc
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
       - name: features.html
         run: |
           sudo apt update

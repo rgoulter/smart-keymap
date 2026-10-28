@@ -15,6 +15,7 @@ on:
       - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'smart_keymap/**'
       - 'tests/ncl/keymap-36key-rgoulter/**'
       - 'tests/ncl/keymap-48key-rgoulter/**'
@@ -26,34 +27,29 @@ on:
       - '.cargo/**'
       - 'ncl/**/*.ncl'
       - 'src/**'
+      - 'smart-keymap-core/**'
       - 'smart_keymap/**'
       - 'firmware/ch32x035-usb-device-compositekm-c/**'
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   build-firmware-ch32x:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
 
-      - name: Install cbindgen
-        run: |
-          wget https://github.com/mozilla/cbindgen/releases/download/0.28.0/cbindgen
-          chmod +x ./cbindgen
-          sudo cp ./cbindgen /usr/bin/cbindgen
+      - name: Setup cbindgen
+        uses: ./.github/actions/setup-cbindgen
 
       - name: Install xpack toolchain
         run: |
@@ -62,6 +58,12 @@ jobs:
 
       - name: Rust Add Target
         run: rustup target add "${CH32X_TARGET}"
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+        with:
+          shared-key: firmware-ch32x
+          cache-targets: ${{ env.CH32X_TARGET }}
 
       - name: Build Keymap
         run: |

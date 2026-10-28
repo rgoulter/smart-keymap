@@ -1,0 +1,28 @@
+#lang rhombus
+//// Legend centre font size: short vs two-word / long labels
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def pts1 = grid(1, 1)
+def sc_st = scene_of_pane(pane("st", pts1, [key("St Alt")]))
+def sc_a = scene_of_pane(pane("a", pts1, [key("A")]))
+
+//// --- act / assert ---
+def tiny = for values (found = #false):
+  each n in sc_st.nodes
+  if n["kind"] == "Text" && n["text"] == "St Alt" && n["size"] == 7.5
+  | #true
+  | found
+assert_true("St Alt uses tiny centre font", tiny)
+def normal_sz = for values (found = #false):
+  each n in sc_a.nodes
+  if n["kind"] == "Text" && n["text"] == "A" && n["size"] == 11.0
+  | #true
+  | found
+assert_true("short legend keeps 11px", normal_sz)
+
+println("OK test_core_font")

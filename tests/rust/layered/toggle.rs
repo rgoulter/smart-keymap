@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -23,7 +24,7 @@ fn press_active_layer_when_layer_mod_toggle_pressed() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_B, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }
@@ -49,7 +50,7 @@ fn press_active_layer_when_layer_mod_toggle_tapped() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x05, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_B, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }
@@ -77,7 +78,7 @@ fn toggle_tapped_twice_deactivates_layer() {
     keymap.handle_input(input::Event::Press { keymap_index: 1 });
 
     // Assert
-    let expected_report: [u8; 8] = [0, 0, 0x04, 0, 0, 0, 0, 0];
+    let expected_report: [u8; 8] = [0, 0, KC_A, 0, 0, 0, 0, 0];
     let actual_report = keymap.boot_keyboard_report();
     assert_eq!(expected_report, actual_report);
 }

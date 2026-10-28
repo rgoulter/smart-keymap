@@ -26,7 +26,10 @@ keymap_key_features=(
     "layer_modifier-hold"
     "layer_modifier-modified_hold"
     "layer_modifier-set_active_layers"
+    "layer_modifier-set_active_layers_mask"
     "layer_modifier-sticky"
+    "layer_modifier-sticky-config-timeout"
+    "semantic_os_desktop"
     "layer_modifier-toggle"
     "mouse"
     "sticky_modifiers"
@@ -36,15 +39,22 @@ keymap_key_features=(
     "tap_hold-config-interrupt-ignore"
     "tap_hold-config-interrupt-presses"
     "tap_hold-config-interrupt-tap"
+    "tap_hold-config-quick_tap"
     "tap_hold-config-required_idle_time"
     "tap_hold-config-timeout"
+    "tap_hold-config-timeout-none"
+    "tap_hold-hold_trigger_positions"
+    "tap_hold-profiles"
 )
 
 keymap_ncl_features=(
     "chords"
     "chords-config-required_idle_time"
+    "conditional_layers"
     "layer_string"
     "layers"
+    "named_layers"
+    "sequences"
 )
 
 KEY_FIELDS_MD="${NCL_DIR}/key-docs.md"

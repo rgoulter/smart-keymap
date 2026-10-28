@@ -1,0 +1,107 @@
+#lang rhombus
+//// Pure Scene IR → SVG string (theme at SVG time; rot already SVG-sense in IR)
+
+export:
+  all_defined
+
+import:
+  lib("racket/format.rkt") as fmt
+  "keyboard_layout.rhm" open
+
+fun f1(n :: Real):
+  to_string(fmt.#{~r}(n, ~precision: 1))
+
+fun f2(n :: Real):
+  to_string(fmt.#{~r}(n, ~precision: 2))
+
+fun svg_escape(s :: String) :: String:
+  def s1 = String.replace(s, "&", "&amp;")
+  def s2 = String.replace(s1, "<", "&lt;")
+  def s3 = String.replace(s2, ">", "&gt;")
+  String.replace(s3, "\"", "&quot;")
+
+fun maybe_rotate_open(node):
+  def rot = node["rot"]
+  if rot == 0 || rot == 0.0 || rot == -0.0
+  | "<g>"
+  | "<g transform=\"rotate("
+      ++ f1(rot)
+      ++ " "
+      ++ f1(node["cx"])
+      ++ " "
+      ++ f1(node["cy"])
+      ++ ")\">"
+
+fun opacity_attr(node) :: String:
+  def op = if Map.has_key(node, "opacity") | node["opacity"] | 1.0
+  if op == 1 || op == 1.0
+  | ""
+  | " opacity=\"" ++ f2(op) ++ "\""
+
+fun opt_opacity(name :: String, node, key :: String) :: String:
+  if !Map.has_key(node, key)
+  | ""
+  | block:
+      def op = node[key]
+      if op == 1 || op == 1.0
+      | ""
+      | " " ++ name ++ "=\"" ++ f2(op) ++ "\""
+
+fun key_opacity_attrs(node) :: String:
+  // Prefer split fill/stroke opacity (transparent keys); fall back to unified opacity
+  if Map.has_key(node, "fill_opacity") || Map.has_key(node, "stroke_opacity")
+  | opt_opacity("fill-opacity", node, "fill_opacity")
+      ++ opt_opacity("stroke-opacity", node, "stroke_opacity")
+  | opacity_attr(node)
+
+fun render_node(node) :: String:
+  match node["kind"]
+  | "KeySide" || "KeyTop":
+      maybe_rotate_open(node)
+        ++ "<rect x=\"" ++ f1(node["x"])
+        ++ "\" y=\"" ++ f1(node["y"])
+        ++ "\" width=\"" ++ f1(node["w"])
+        ++ "\" height=\"" ++ f1(node["h"])
+        ++ "\" rx=\"" ++ f1(node["rx"])
+        ++ "\" fill=\"" ++ to_string(node["fill"])
+        ++ "\" stroke=\"" ++ to_string(node["stroke"])
+        ++ "\"" ++ key_opacity_attrs(node) ++ "/>"
+        ++ "</g>"
+  | "Text":
+      maybe_rotate_open(node)
+        ++ "<text x=\"" ++ f1(node["x"])
+        ++ "\" y=\"" ++ f1(node["y"])
+        ++ "\" text-anchor=\"" ++ to_string(node["anchor"])
+        ++ "\" fill=\"" ++ to_string(node["fill"])
+        ++ "\" font-family=\"ui-monospace,Menlo,monospace\""
+        ++ " font-size=\"" ++ f1(node["size"]) ++ "\""
+        ++ opacity_attr(node)
+        ++ ">"
+        ++ svg_escape(to_string(node["text"]))
+        ++ "</text></g>"
+  | "Title":
+      "<text x=\"" ++ f1(node["x"])
+        ++ "\" y=\"" ++ f1(node["y"])
+        ++ "\" fill=\"" ++ to_string(node["fill"])
+        ++ "\" font-family=\"ui-sans-serif,system-ui,sans-serif\""
+        ++ " font-size=\"" ++ f1(node["size"]) ++ "\">"
+        ++ svg_escape(to_string(node["text"]))
+        ++ "</text>"
+  | ~else:
+      "<!-- unknown node " ++ to_string(node["kind"]) ++ " -->"
+
+fun svg_of_scene(sc :: Scene, ~theme = theme_light) :: String:
+  def header = "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\""
+    ++ f1(sc.width) ++ "\" height=\"" ++ f1(sc.height)
+    ++ "\" viewBox=\"0 0 " ++ f1(sc.width) ++ " " ++ f1(sc.height) ++ "\">"
+  def bg = "<rect width=\"100%\" height=\"100%\" fill=\"" ++ theme["bg"] ++ "\"/>"
+  def body = for List (n in sc.nodes): render_node(n)
+  def joined = for values (acc = ""):
+    each part in body
+    if acc == "" | part | acc ++ "\n" ++ part
+  header ++ "\n" ++ bg ++ "\n" ++ joined ++ "\n</svg>\n"
+
+fun count_kind(sc :: Scene, kind :: String) :: Int:
+  for values (n = 0):
+    each node in sc.nodes
+    if node["kind"] == kind | n + 1 | n

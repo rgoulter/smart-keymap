@@ -1,5 +1,6 @@
 #![no_std]
 #![no_main]
+#![warn(clippy::unwrap_used)]
 
 use embassy_executor::Spawner;
 use embassy_futures::join::join;
@@ -11,9 +12,7 @@ use embassy_stm32::{bind_interrupts, peripherals, usart, usb, Config};
 use embassy_sync::blocking_mutex::raw::ThreadModeRawMutex;
 use embassy_sync::channel::{Channel, Sender};
 use embassy_time::Timer;
-use embassy_usb::class::hid::{
-    HidReader, HidReaderWriter, HidWriter, ReportId, RequestHandler, State,
-};
+use embassy_usb::class::hid::{HidReaderWriter, HidWriter, ReportId, RequestHandler, State};
 use embassy_usb::control::OutResponse;
 use embassy_usb::Builder;
 use panic_halt as _;
@@ -25,8 +24,8 @@ use usbd_hid::descriptor::{
 use keyberon_smart_keyboard::input::smart_keymap::keymap_index_of;
 use keyberon_smart_keyboard::input::smart_keymap::KeyboardBackend;
 use keyberon_smart_keyboard::input::MatrixScanner;
-use keyberon_smart_keyboard::smart_keymap::key;
 use keyberon_smart_keyboard::split::BackendMessage;
+use smart_keymap::key;
 
 use smart_keymap::input::Event;
 use smart_keymap::split::{Message, BUFFER_SIZE};
@@ -304,7 +303,7 @@ async fn main(spawner: Spawner) {
         BACKEND_CHANNEL.sender();
 
     let config = usart::Config::default();
-    let uart = Uart::new_half_duplex(
+    let Ok(uart) = Uart::new_half_duplex(
         p.USART1,
         p.PB6,
         Irqs,
@@ -313,8 +312,9 @@ async fn main(spawner: Spawner) {
         config,
         HalfDuplexReadback::NoReadback,
         HalfDuplexConfig::OpenDrainExternal,
-    )
-    .unwrap();
+    ) else {
+        panic!("uart init failed");
+    };
 
     let out_fut = async {
         let mut rh_kbd = MyRequestHandler {};
@@ -330,15 +330,9 @@ async fn main(spawner: Spawner) {
         .await;
     };
 
-    spawner
-        .spawn(keyboard_backend(writer_kbd, writer_mouse, writer_consumer))
-        .unwrap();
-    spawner
-        .spawn(keyboard_matrix_scan(matrix_scan_sender, keyboard))
-        .unwrap();
-    spawner
-        .spawn(keyboard_split_rx(matrix_scan_sender, uart))
-        .unwrap();
+    let _ = spawner.spawn(keyboard_backend(writer_kbd, writer_mouse, writer_consumer));
+    let _ = spawner.spawn(keyboard_matrix_scan(matrix_scan_sender, keyboard));
+    let _ = spawner.spawn(keyboard_split_rx(matrix_scan_sender, uart));
 
     join(usb_fut, out_fut).await;
 }
@@ -407,7 +401,7 @@ async fn keyboard_backend(
                 let consumer_code = backend
                     .keymap_output()
                     .pressed_consumer_codes()
-                    .get(0)
+                    .first()
                     .copied()
                     .unwrap_or(0);
                 let consumer_report = MediaKeyboardReport {
@@ -483,7 +477,7 @@ impl<'d> TransportReader<'d> {
 
     pub async fn read(&mut self) -> Option<Event> {
         let mut buf: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
-        if let Ok(_) = self.uart.read(&mut buf).await {
+        if self.uart.read(&mut buf).await.is_ok() {
             Message::deserialize(&buf)
                 .ok()
                 .map(|Message { input_event }: Message| input_event)

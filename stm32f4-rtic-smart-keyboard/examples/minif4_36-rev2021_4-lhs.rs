@@ -30,7 +30,7 @@ mod board {
     macro_rules! keyboard {
         ($gpioa:ident, $gpiob:ident) => {
             crate::board::Keyboard {
-                matrix: crate::board::Matrix::new([
+                matrix: match crate::board::Matrix::new([
                     [
                         Some($gpiob.pb15.into_pull_up_input().erase()),
                         Some($gpioa.pa8.into_pull_up_input().erase()),
@@ -59,7 +59,10 @@ mod board {
                         None,
                         None,
                     ],
-                ]),
+                ]) {
+                    Ok(matrix) => matrix,
+                    Err(e) => match e {},
+                },
                 debouncer: keyberon::debounce::Debouncer::new(
                     crate::board::PressedKeys::default(),
                     crate::board::PressedKeys::default(),
@@ -139,8 +142,10 @@ mod app {
             (gpioa.pa11, gpioa.pa12),
             &clocks,
         );
-        *c.local.usb_bus = Some(UsbBusType::new(usb, c.local.ep_memory));
-        let usb_bus = c.local.usb_bus.as_ref().unwrap();
+        let usb_bus = c
+            .local
+            .usb_bus
+            .insert(UsbBusType::new(usb, c.local.ep_memory));
 
         let (usb_dev, usb_class) = app_init::init_usb_device(
             usb_bus,
@@ -188,7 +193,7 @@ mod app {
     fn rx(c: rx::Context) {
         let rx::LocalResources { split_conn_rx } = c.local;
         if let Some(event) = split_conn_rx.read() {
-            layout::spawn(BackendMessage::Event(event)).unwrap();
+            let _ = layout::spawn(BackendMessage::Event(event));
         }
     }
 
@@ -252,7 +257,7 @@ mod app {
                                 .take(4)
                                 .collect::<heapless::Vec<_, 4>>()
                                 .into_array()
-                                .unwrap(),
+                                .unwrap_or([Consumer::Unassigned; 4]),
                         }
                     };
                     if consumer_report != *previous_consumer {
@@ -299,10 +304,10 @@ mod app {
         for event in keyboard.events() {
             if let Some(event) = keymap_index_of(&KEYMAP_INDICES, event) {
                 split_conn_tx.write(event);
-                layout::spawn(BackendMessage::Event(event)).unwrap();
+                let _ = layout::spawn(BackendMessage::Event(event));
             }
         }
 
-        layout::spawn(BackendMessage::Tick).unwrap();
+        let _ = layout::spawn(BackendMessage::Tick);
     }
 }

@@ -1,4 +1,7 @@
-use smart_keymap::{input, key};
+use smart_keymap::input;
+use smart_keymap::key;
+
+use crate::hid_keycodes::*;
 
 #[test]
 fn mouse_key() {
@@ -102,4 +105,66 @@ fn multiple_mouse_keys() {
         },
         actual_pressed_output
     );
+}
+
+#[test]
+fn modified_mouse_key_reports_modifier_and_button() {
+    // Assemble
+    let mut keymap = smart_keymap_macros::keymap!(
+        r#"
+        let K = import "keys.ncl" in
+        {
+            keys = [
+                K.MouseBtn1 & K.LeftCtrl,
+            ],
+        }
+        "#
+    );
+
+    // Act
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.tick();
+    let report_output = keymap.report_output();
+
+    // Assert -- keyboard modifier and mouse button together
+    assert_eq!(
+        key::MouseOutput {
+            pressed_buttons: 1,
+            ..key::MouseOutput::NO_OUTPUT
+        },
+        report_output.pressed_mouse_output()
+    );
+    assert_eq!(
+        [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0],
+        report_output.as_hid_boot_keyboard_report()
+    );
+}
+
+#[test]
+fn modified_mouse_key_clears_on_release() {
+    // Assemble
+    let mut keymap = smart_keymap_macros::keymap!(
+        r#"
+        let K = import "keys.ncl" in
+        {
+            keys = [
+                K.MouseBtn1 & K.LeftCtrl,
+            ],
+        }
+        "#
+    );
+
+    // Act
+    keymap.handle_input(input::Event::Press { keymap_index: 0 });
+    keymap.tick();
+    keymap.handle_input(input::Event::Release { keymap_index: 0 });
+    keymap.tick();
+    let report_output = keymap.report_output();
+
+    // Assert
+    assert_eq!(
+        key::MouseOutput::NO_OUTPUT,
+        report_output.pressed_mouse_output()
+    );
+    assert_eq!([0u8; 8], report_output.as_hid_boot_keyboard_report());
 }

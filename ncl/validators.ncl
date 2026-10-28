@@ -82,6 +82,7 @@
     },
   },
 
+  # Run each validator on the same value; first error wins.
   all_of = fun validators v =>
     validators
     |> match {
@@ -92,6 +93,39 @@
           'Ok => all_of validators v,
           err => err,
         },
+    },
+
+  checks.all_ok = {
+    empty_is_ok = {
+      expected = 'Ok,
+      actual = all_ok [],
+    },
+
+    all_ok_is_ok = {
+      expected = 'Ok,
+      actual = all_ok ['Ok, 'Ok, 'Ok],
+    },
+
+    first_error_wins = {
+      expected = 'Error { message = "a" },
+      actual =
+        all_ok [
+          'Ok,
+          'Error { message = "a" },
+          'Error { message = "b" },
+        ],
+    },
+  },
+
+  # Combine already-computed validation results; first error wins.
+  # Prefer this when validating several independent values (unlike all_of,
+  # which applies validators to one shared value).
+  all_ok = fun results =>
+    results
+    |> match {
+      [] => 'Ok,
+      ['Ok, ..rest] => all_ok rest,
+      [err, ..] => err,
     },
 
   checks.check_any_of = {

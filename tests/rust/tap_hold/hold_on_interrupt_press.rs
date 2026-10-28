@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -31,9 +32,9 @@ fn rolled_presses_resolves_hold() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x01, 0, 0, 0, 0, 0, 0, 0],
-        [0x01, 0, 0x05, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, KC_B, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
@@ -66,8 +67,8 @@ fn interrupting_press_resolves_hold() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x01, 0, 0, 0, 0, 0, 0, 0],
-        [0x01, 0, 0x05, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LCTL, 0, KC_B, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

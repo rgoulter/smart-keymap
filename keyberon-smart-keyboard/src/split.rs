@@ -1,7 +1,7 @@
 use smart_keymap::input::Event;
 
-/// Messages for the task-oriented frameworks which manages the
-///  keyboard backend.
+/// Messages for the task-oriented frameworks
+///  which manages the keyboard backend.
 #[derive(Debug)]
 pub enum BackendMessage {
     /// Update the layout with this event.

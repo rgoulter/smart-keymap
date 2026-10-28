@@ -1,0 +1,1375 @@
+use core::fmt::Debug;
+use core::marker::PhantomData;
+use core::ops::Index;
+
+use serde::Deserialize;
+
+use crate::{input, key, keymap, slice::Slice};
+
+/// Reference for a chorded key.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub enum Ref {
+    /// Ref for [Key].
+    Chorded(u8),
+    /// Ref for [AuxiliaryKey].
+    Auxiliary(u8),
+}
+
+/// A chord identifier.
+pub type ChordId = u8;
+
+/// Chords are defined by an (unordered) set of keymap indices into the keymap.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+#[serde(from = "heapless::Vec<u16, MAX_CHORD_SIZE>")]
+pub struct ChordIndices<const MAX_CHORD_SIZE: usize> {
+    /// A slice of keymap indices.
+    indices: Slice<u16, MAX_CHORD_SIZE>,
+}
+
+impl<const MAX_CHORD_SIZE: usize> ChordIndices<MAX_CHORD_SIZE> {
+    /// Constructs a new [ChordIndices] value from the given slice.
+    ///
+    /// The given slice must be less than `MAX_CHORD_SIZE` in length.
+    pub const fn from_slice(indices: &[u16]) -> ChordIndices<MAX_CHORD_SIZE> {
+        ChordIndices {
+            indices: Slice::from_slice(indices),
+        }
+    }
+
+    /// The chord indices as a slice.
+    pub const fn as_slice(&self) -> &[u16] {
+        self.indices.as_slice()
+    }
+
+    /// Whether the given index is part of the chord.
+    pub fn has_index(&self, index: u16) -> bool {
+        self.as_slice().contains(&index)
+    }
+
+    /// Whether the chord is satisfied by the given indices.
+    pub fn is_satisfied_by(&self, indices: &[u16]) -> bool {
+        self.as_slice().iter().all(|&i| indices.contains(&i))
+    }
+}
+
+impl<const MAX_CHORD_SIZE: usize> From<heapless::Vec<u16, MAX_CHORD_SIZE>>
+    for ChordIndices<MAX_CHORD_SIZE>
+{
+    fn from(v: heapless::Vec<u16, MAX_CHORD_SIZE>) -> Self {
+        ChordIndices::from_slice(&v)
+    }
+}
+
+/// Chord definitions.
+#[derive(Deserialize, Clone, Copy, PartialEq)]
+pub struct Config<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> {
+    /// The timeout (in number of milliseconds) for a chorded key to resolve.
+    ///
+    /// (Resolves as passthrough key if no chord is satisfied).
+    ///
+    /// This is the outer decision clock for a chorded position.
+    /// An inner pending key (e.g. tap-hold) then uses time remaining
+    ///  from this same physical press; the two timeouts do not add.
+    #[serde(default = "default_timeout")]
+    pub timeout: u16,
+
+    /// The keymap chords.
+    pub chords: Slice<ChordIndices<MAX_CHORD_SIZE>, MAX_CHORDS>,
+
+    /// Amount of time (in milliseconds) the keymap must have been idle
+    ///  in order for chorded key to activate.
+    ///
+    /// This reduces disruption from unexpected chord resolutions
+    ///  when typing quickly.
+    pub required_idle_time: Option<u16>,
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> core::fmt::Debug
+    for Config<MAX_CHORDS, MAX_CHORD_SIZE>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Config")
+            .field("timeout", &self.timeout)
+            .field("chords", &self.chords.as_slice())
+            .field("required_idle_time", &self.required_idle_time)
+            .finish()
+    }
+}
+
+/// The default timeout.
+pub const DEFAULT_TIMEOUT: u16 = 200;
+
+const fn default_timeout() -> u16 {
+    DEFAULT_TIMEOUT
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> Config<MAX_CHORDS, MAX_CHORD_SIZE> {
+    /// Constructs a new config.
+    pub const fn new() -> Self {
+        Self {
+            timeout: DEFAULT_TIMEOUT,
+            chords: Slice::from_slice(&[]),
+            required_idle_time: None,
+        }
+    }
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize> Default
+    for Config<MAX_CHORDS, MAX_CHORD_SIZE>
+{
+    /// Returns the default context.
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// State for a key chord.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChordState<const MAX_CHORD_SIZE: usize> {
+    /// The chord index in the chorded config.
+    pub index: usize,
+    /// The chord's indices.
+    pub chord: ChordIndices<MAX_CHORD_SIZE>,
+    /// Whether the chord is satisfied by the pressed indices.
+    pub is_satisfied: bool,
+}
+
+struct PressedIndicesDebugHelper<'a, const MAX_PRESSED_INDICES: usize> {
+    pressed_indices: &'a [Option<u16>; MAX_PRESSED_INDICES],
+}
+
+impl<const MAX_PRESSED_INDICES: usize> core::fmt::Debug
+    for PressedIndicesDebugHelper<'_, MAX_PRESSED_INDICES>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last non-empty pressed index to avoid printing large arrays.
+        let last_non_empty_pi_pos = self
+            .pressed_indices
+            .iter()
+            .rposition(|pi| pi.is_some())
+            .map_or(0, |pos| pos + 1);
+        if last_non_empty_pi_pos < MAX_PRESSED_INDICES {
+            f.debug_list()
+                .entries(&self.pressed_indices[..last_non_empty_pi_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.pressed_indices[..]).finish()
+        }
+    }
+}
+
+struct PressedChordsDebugHelper<'a, const MAX_CHORDS: usize> {
+    pressed_chords: &'a [bool; MAX_CHORDS],
+}
+
+impl<const MAX_CHORDS: usize> core::fmt::Debug for PressedChordsDebugHelper<'_, MAX_CHORDS> {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        // Reverse-find the last true pressed chord to avoid printing large arrays.
+        let last_true_pc_pos = self
+            .pressed_chords
+            .iter()
+            .rposition(|&pc| pc)
+            .map_or(0, |pos| pos + 1);
+        if last_true_pc_pos < MAX_CHORDS {
+            f.debug_list()
+                .entries(&self.pressed_chords[..last_true_pc_pos])
+                .finish_non_exhaustive()
+        } else {
+            f.debug_list().entries(&self.pressed_chords[..]).finish()
+        }
+    }
+}
+
+/// Chord definitions.
+#[derive(Clone, Copy, PartialEq)]
+pub struct Context<
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
+    config: Config<MAX_CHORDS, MAX_CHORD_SIZE>,
+    pressed_indices: [Option<u16>; MAX_PRESSED_INDICES],
+    pressed_chords: [bool; MAX_CHORDS],
+    idle_time_ms: u32,
+    ignore_idle_time: bool,
+    latest_resolved_chord: Option<ChordId>,
+    /// Index whose press completed the latest chord; nests the chord `Ref`.
+    activating_index: Option<u16>,
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize> Debug
+    for Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct("Context")
+            .field("config", &self.config)
+            .field(
+                "pressed_indices",
+                &PressedIndicesDebugHelper {
+                    pressed_indices: &self.pressed_indices,
+                },
+            )
+            .field(
+                "pressed_chords",
+                &PressedChordsDebugHelper {
+                    pressed_chords: &self.pressed_chords,
+                },
+            )
+            .field("idle_time_ms", &self.idle_time_ms)
+            .field("ignore_idle_time", &self.ignore_idle_time)
+            .field("latest_resolved_chord", &self.latest_resolved_chord)
+            .field("activating_index", &self.activating_index)
+            .finish()
+    }
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
+    Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    /// Constructs a context from the given config
+    pub const fn from_config(config: Config<MAX_CHORDS, MAX_CHORD_SIZE>) -> Self {
+        let pressed_indices = [None; MAX_PRESSED_INDICES];
+        Context {
+            config,
+            pressed_indices,
+            pressed_chords: [false; MAX_CHORDS],
+            idle_time_ms: 0,
+            ignore_idle_time: false,
+            latest_resolved_chord: None,
+            activating_index: None,
+        }
+    }
+
+    /// Re-construct from context's [Config], clearing pressed/chord runtime state.
+    pub fn reset(&mut self) {
+        *self = Self::from_config(self.config);
+    }
+
+    /// Updates the context with the given keymap context.
+    pub fn update_keymap_context(
+        &mut self,
+        keymap::KeymapContext { idle_time_ms, .. }: &keymap::KeymapContext,
+    ) {
+        self.idle_time_ms = *idle_time_ms;
+    }
+
+    /// Whether `keymap_index` completed the latest resolved chord.
+    pub fn is_activator(&self, keymap_index: u16) -> bool {
+        self.activating_index == Some(keymap_index)
+    }
+
+    fn sufficient_idle_time(&self) -> bool {
+        let sufficient_idle_time =
+            self.idle_time_ms >= self.config.required_idle_time.unwrap_or(0) as u32;
+
+        sufficient_idle_time || self.ignore_idle_time
+    }
+
+    fn pressed_chord_with_index(&self, keymap_index: u16) -> Option<ChordState<MAX_CHORD_SIZE>> {
+        self.pressed_chords
+            .iter()
+            .enumerate()
+            .filter_map(|(index, &is_pressed)| {
+                if is_pressed {
+                    Some(ChordState {
+                        index,
+                        chord: self.config.chords[index],
+                        is_satisfied: true,
+                    })
+                } else {
+                    None
+                }
+            })
+            .find(|ChordState { chord, .. }| chord.has_index(keymap_index))
+    }
+
+    // Span of indices of pressed chords.
+    fn pressed_chords_indices_span(&self) -> heapless::Vec<u16, MAX_PRESSED_INDICES> {
+        let mut res: heapless::Vec<u16, MAX_PRESSED_INDICES> = heapless::Vec::new();
+
+        let pressed_chords =
+            self.pressed_chords
+                .iter()
+                .enumerate()
+                .filter_map(|(index, &is_pressed)| {
+                    if is_pressed {
+                        Some(&self.config.chords[index])
+                    } else {
+                        None
+                    }
+                });
+
+        pressed_chords.for_each(|&chord| {
+            for &i in chord.as_slice() {
+                if let Err(pos) = res.binary_search(&i) {
+                    let _ = res.insert(pos, i);
+                }
+            }
+        });
+
+        res
+    }
+
+    /// Returns the chords for the given keymap index.
+    ///
+    /// - If a chord with that index is resolved as active, return a vec with only that chord.
+    /// - Otherwise, return a vec with all the chords which include the keymap index
+    ///   and could be satisfied. (i.e. chords which do not overlap with resolved active chords).
+    pub fn chords_for_keymap_index(
+        &self,
+        keymap_index: u16,
+    ) -> heapless::Vec<ChordState<MAX_CHORD_SIZE>, { MAX_CHORDS }> {
+        match self.pressed_chord_with_index(keymap_index) {
+            Some(chord_state) => {
+                let mut chords = heapless::Vec::new();
+                let _ = chords.push(chord_state);
+                chords
+            }
+            None => {
+                let chords_indices_span = self.pressed_chords_indices_span();
+                self.config
+                    .chords
+                    .iter()
+                    .enumerate()
+                    // filter: satisfiable chords
+                    .filter(|&(_index, chord)| chord.has_index(keymap_index))
+                    .filter(|&(_index, chord)| {
+                        // Filter out chords which overlap with resolved active chords.
+                        chords_indices_span.is_empty()
+                            || chord.indices.iter().all(|&i| {
+                                // The chord index is not part of the pressed chords indices span.
+                                chords_indices_span.binary_search(&i).is_err()
+                            })
+                    })
+                    .map(|(index, &chord)| ChordState {
+                        index,
+                        chord,
+                        is_satisfied: false,
+                    })
+                    .collect()
+            }
+        }
+    }
+
+    fn insert_pressed_index(&mut self, pos: usize, index: u16) {
+        if self.pressed_indices.is_empty() {
+            return;
+        }
+
+        let mut i = self.pressed_indices.len() - 1;
+        while i > pos {
+            self.pressed_indices[i] = self.pressed_indices[i - 1];
+            i -= 1;
+        }
+
+        self.pressed_indices[pos] = Some(index);
+    }
+
+    fn remove_pressed_index(&mut self, pos: usize) {
+        if self.pressed_indices.is_empty() {
+            return;
+        }
+
+        let mut i = pos;
+        while i < self.pressed_indices.len() - 1 {
+            self.pressed_indices[i] = self.pressed_indices[i + 1];
+            i += 1;
+        }
+
+        self.pressed_indices[self.pressed_indices.len() - 1] = None;
+    }
+
+    fn press_index(&mut self, index: u16) {
+        match self
+            .pressed_indices
+            .binary_search_by_key(&index, |&k| k.unwrap_or(u16::MAX))
+        {
+            Ok(_) => {}
+            Err(pos) => self.insert_pressed_index(pos, index),
+        }
+    }
+
+    fn release_index(&mut self, index: u16) {
+        if let Ok(pos) = self
+            .pressed_indices
+            .binary_search_by_key(&index, |&k| k.unwrap_or(u16::MAX))
+        {
+            self.remove_pressed_index(pos)
+        }
+    }
+
+    /// Updates the context for the given key event.
+    fn handle_event(&mut self, event: key::Event<Event>) {
+        match event {
+            key::Event::Input(input::Event::Press { keymap_index }) => {
+                self.press_index(keymap_index);
+
+                // Consider whether the key press supports
+                //  ignoring required idle time for a chorded key,
+                //  or supports quickly re-tapping a chorded key.
+                let span = self.pressed_chords_indices_span();
+                if span.contains(&keymap_index) {
+                    // Key presses of an active chord ignore required idle time.
+                    self.ignore_idle_time = true;
+                } else {
+                    // Otherwise, check against the latest resolved chord.
+                    if let Some(chord_id) = self.latest_resolved_chord {
+                        let chord_indices = self.config.chords[chord_id as usize];
+                        self.ignore_idle_time = chord_indices.has_index(keymap_index);
+                    } else {
+                        self.ignore_idle_time = false;
+
+                        // Chords not active, and this press was outside the latest active chord,
+                        //  so clear the latest resolved chord.
+                        self.latest_resolved_chord = None;
+                    }
+                }
+            }
+            key::Event::Input(input::Event::Release { keymap_index }) => {
+                self.release_index(keymap_index);
+
+                // Ensure every chord which includes this keymap index
+                //  is not marked as 'pressed'.
+                self.config
+                    .chords
+                    .iter()
+                    .enumerate()
+                    .for_each(|(chord_id, chord_indices)| {
+                        if chord_indices.has_index(keymap_index) {
+                            self.pressed_chords[chord_id] = false;
+                        }
+                    });
+                self.activating_index = None;
+            }
+            key::Event::Key {
+                keymap_index: _,
+                key_event: Event::ChordResolved(ChordResolution::Chord(chord_id)),
+            } => {
+                self.pressed_chords[chord_id as usize] = true;
+                self.latest_resolved_chord = Some(chord_id);
+            }
+            key::Event::Key {
+                key_event: Event::ChordActivated { keymap_index },
+                ..
+            } => {
+                self.activating_index = Some(keymap_index);
+            }
+            _ => {}
+        }
+    }
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
+    key::Context for Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    type Event = Event;
+
+    fn handle_event(&mut self, event: key::Event<Self::Event>) -> key::KeyEvents<Self::Event> {
+        self.handle_event(event);
+        key::KeyEvents::no_events()
+    }
+
+    fn reset(&mut self) {
+        Context::reset(self);
+    }
+}
+
+/// Primary Chorded key (with a passthrough key).
+///
+/// The primary key is the key with the lowest index in the chord,
+///  and has the key used for the resolved chord.
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct Key<
+    R: Copy,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_OVERLAPPING_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
+    /// The chorded key
+    pub chords: Slice<(ChordId, R), MAX_OVERLAPPING_CHORD_SIZE>,
+    /// The passthrough key
+    pub passthrough: R,
+    #[serde(default)]
+    marker: PhantomData<(
+        [(); MAX_CHORDS],
+        [(); MAX_CHORD_SIZE],
+        [(); MAX_PRESSED_INDICES],
+    )>,
+}
+
+impl<
+        R: Copy,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_OVERLAPPING_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    > Key<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_OVERLAPPING_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    /// Constructs new pressed key.
+    pub fn new_pressed_key(
+        &self,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        keymap_index: u16,
+        lookup: impl Fn(ChordId) -> Option<R>,
+    ) -> (
+        key::PressedKeyResult<
+            R,
+            PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+            KeyState,
+        >,
+        key::KeyEvents<Event>,
+    ) {
+        let pks = PendingKeyState::new(context, keymap_index);
+
+        let chord_resolution = if context.sufficient_idle_time() {
+            pks.check_resolution()
+        } else {
+            PendingChordState::Resolved(ChordResolution::Passthrough)
+        };
+
+        if let PendingChordState::Resolved(resolution) = chord_resolution {
+            let maybe_new_key_ref = match resolution {
+                ChordResolution::Chord(resolved_chord_id) => {
+                    if context.is_activator(keymap_index) {
+                        lookup(resolved_chord_id)
+                    } else {
+                        None
+                    }
+                }
+                ChordResolution::Passthrough => Some(self.passthrough),
+            };
+
+            if let Some(new_key_ref) = maybe_new_key_ref {
+                let pkr =
+                    key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(new_key_ref));
+                let pke = key::KeyEvents::no_events();
+
+                (pkr, pke)
+            } else {
+                let pkr = key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp);
+                let pke = key::KeyEvents::no_events();
+                (pkr, pke)
+            }
+        } else {
+            let pkr = key::PressedKeyResult::Pending(pks);
+
+            let timeout_ev = Event::Timeout;
+            let sch_ev = key::ScheduledEvent::after(
+                context.config.timeout,
+                key::Event::key_event(keymap_index, timeout_ev),
+            );
+            let pke = key::KeyEvents::scheduled_event(sch_ev);
+
+            (pkr, pke)
+        }
+    }
+
+    /// Constructs new chorded key.
+    pub const fn new(chords: &[(ChordId, R)], passthrough: R) -> Self {
+        let chords = Slice::from_slice(chords);
+        Key {
+            chords,
+            passthrough,
+            marker: PhantomData,
+        }
+    }
+
+    /// Bound key for a chord id stored on this primary key, if any.
+    pub fn binding_for(&self, id: ChordId) -> Option<R> {
+        self.chords
+            .iter()
+            .find(|(ch_id, _)| *ch_id == id)
+            .map(|(_, r)| *r)
+    }
+
+    fn update_pending_state(
+        &self,
+        pending_state: &mut PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        keymap_index: u16,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        event: key::Event<Event>,
+        lookup: impl Fn(ChordId) -> Option<R>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Event>) {
+        let ch_state = pending_state.handle_event(keymap_index, event);
+
+        if let Some(ch_state) = ch_state {
+            let (maybe_new_key_ref, pke) = resolved_chord_npk(
+                keymap_index,
+                context,
+                pending_state,
+                event,
+                ch_state,
+                &lookup,
+                Some(self.passthrough),
+            );
+            (maybe_new_key_ref, pke)
+        } else {
+            (None, key::KeyEvents::no_events())
+        }
+    }
+}
+
+/// Auxiliary chorded key (with a passthrough key).
+///
+/// The auxiliary keys are chorded keys,
+///  but don't store the resolved chord key.
+/// (i.e. After te primary chorded key, the remaining keys
+///  in the chord are defined with auxiliary chorded keys).
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
+pub struct AuxiliaryKey<
+    R,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
+    /// The passthrough key
+    pub passthrough: R,
+    #[serde(default)]
+    marker: PhantomData<(
+        [(); MAX_CHORDS],
+        [(); MAX_CHORD_SIZE],
+        [(); MAX_PRESSED_INDICES],
+    )>,
+}
+
+impl<
+        R: Copy,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    > AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    /// Constructs new pressed key.
+    pub fn new_pressed_key(
+        &self,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        keymap_index: u16,
+        lookup: impl Fn(ChordId) -> Option<R>,
+    ) -> (
+        key::PressedKeyResult<
+            R,
+            PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+            KeyState,
+        >,
+        key::KeyEvents<Event>,
+    ) {
+        let pks = PendingKeyState::new(context, keymap_index);
+
+        let chord_resolution = if context.sufficient_idle_time() {
+            pks.check_resolution()
+        } else {
+            PendingChordState::Resolved(ChordResolution::Passthrough)
+        };
+
+        if let PendingChordState::Resolved(resolution) = chord_resolution {
+            match resolution {
+                ChordResolution::Chord(resolved_chord_id) => {
+                    let pkr = if context.is_activator(keymap_index) {
+                        match lookup(resolved_chord_id) {
+                            Some(r) => {
+                                key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(r))
+                            }
+                            None => key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp),
+                        }
+                    } else {
+                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::NoOp)
+                    };
+                    let pke = key::KeyEvents::no_events();
+
+                    (pkr, pke)
+                }
+                ChordResolution::Passthrough => {
+                    let new_key_ref = self.passthrough;
+                    let pkr =
+                        key::PressedKeyResult::NewPressedKey(key::NewPressedKey::key(new_key_ref));
+                    let pke = key::KeyEvents::no_events();
+                    (pkr, pke)
+                }
+            }
+        } else {
+            let pkr = key::PressedKeyResult::Pending(pks);
+
+            let timeout_ev = Event::Timeout;
+            let sch_ev = key::ScheduledEvent::after(
+                context.config.timeout,
+                key::Event::key_event(keymap_index, timeout_ev),
+            );
+            let pke = key::KeyEvents::scheduled_event(sch_ev);
+
+            (pkr, pke)
+        }
+    }
+
+    /// Constructs new auxiliary chorded key.
+    pub const fn new(passthrough: R) -> Self {
+        AuxiliaryKey {
+            passthrough,
+            marker: PhantomData,
+        }
+    }
+
+    fn update_pending_state(
+        &self,
+        pending_state: &mut PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        keymap_index: u16,
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        event: key::Event<Event>,
+        lookup: impl Fn(ChordId) -> Option<R>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Event>) {
+        let ch_state = pending_state.handle_event(keymap_index, event);
+        if let Some(ch_state) = ch_state {
+            resolved_chord_npk(
+                keymap_index,
+                context,
+                pending_state,
+                event,
+                ch_state,
+                &lookup,
+                Some(self.passthrough),
+            )
+        } else {
+            (None, key::KeyEvents::no_events())
+        }
+    }
+}
+
+/// Events for chorded keys.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum Event {
+    /// The chorded key was resolved.
+    ChordResolved(ChordResolution),
+
+    /// The press at this index completed the chord; it should nest the chord `Ref`.
+    ChordActivated {
+        /// Keymap index of the completing press.
+        keymap_index: u16,
+    },
+
+    /// Timed out waiting for chord to be satisfied.
+    Timeout,
+}
+
+fn activator_index<
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+>(
+    event: key::Event<Event>,
+    pending_state: &PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+    context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+    resolving_index: u16,
+    chord_id: ChordId,
+) -> u16 {
+    let chord = context.config.chords.get(chord_id as usize);
+    let in_chord = |i: u16| chord.is_some_and(|c| c.has_index(i));
+    match event {
+        key::Event::Input(input::Event::Press { keymap_index }) if in_chord(keymap_index) => {
+            keymap_index
+        }
+        _ => pending_state
+            .last_foreign_press
+            .filter(|&i| in_chord(i))
+            .unwrap_or(resolving_index),
+    }
+}
+
+fn resolved_chord_npk<
+    R: Copy,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+>(
+    keymap_index: u16,
+    context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+    pending_state: &PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+    event: key::Event<Event>,
+    ch_state: ChordResolution,
+    lookup: impl Fn(ChordId) -> Option<R>,
+    passthrough: Option<R>,
+) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Event>) {
+    let ch_r_ev = Event::ChordResolved(ch_state);
+    let mut pke = key::KeyEvents::event(key::Event::key_event(keymap_index, ch_r_ev));
+
+    let maybe_new_key_ref = match ch_state {
+        ChordResolution::Chord(chord_id) => {
+            let activator = activator_index(event, pending_state, context, keymap_index, chord_id);
+            pke.add_event(key::Event::key_event(
+                activator,
+                Event::ChordActivated {
+                    keymap_index: activator,
+                },
+            ));
+            if keymap_index == activator {
+                lookup(chord_id)
+            } else {
+                None
+            }
+        }
+        ChordResolution::Passthrough => passthrough,
+    };
+
+    if let Some(new_key_ref) = maybe_new_key_ref {
+        (Some(key::NewPressedKey::key(new_key_ref)), pke)
+    } else {
+        (Some(key::NewPressedKey::no_op()), pke)
+    }
+}
+
+/// Whether the pressed key state has resolved to a chord or not.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum ChordResolution {
+    /// Resolved as chord.
+    Chord(ChordId),
+    /// Resolved as passthrough key.
+    Passthrough,
+}
+
+/// The resolution state of a chorded key.
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd)]
+pub enum PendingChordState {
+    /// The key state is resolved (as chord or as passthrough).
+    Resolved(ChordResolution),
+    /// The key chord state is pending.
+    ///
+    /// The chord may be pending with the ID of a satisfied chord.
+    Pending(Option<ChordId>),
+}
+
+/// State for pressed keys.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PendingKeyState<
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
+    /// The keymap indices which have been pressed while the key is pending.
+    pressed_indices: heapless::Vec<u16, { MAX_CHORD_SIZE }>,
+    /// The chords which this pending key could resolve to.
+    possible_chords: heapless::Vec<ChordState<MAX_CHORD_SIZE>, { MAX_CHORDS }>,
+    /// Most recent other-key press while pending (completes the chord on timeout).
+    last_foreign_press: Option<u16>,
+    marker: PhantomData<[(); MAX_PRESSED_INDICES]>,
+}
+
+impl<const MAX_CHORDS: usize, const MAX_CHORD_SIZE: usize, const MAX_PRESSED_INDICES: usize>
+    PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>
+{
+    /// Constructs a new [PendingKeyState].
+    pub fn new(
+        context: &Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>,
+        keymap_index: u16,
+    ) -> Self {
+        let mut pressed_indices = heapless::Vec::new();
+        let _ = pressed_indices.push(keymap_index);
+        let possible_chords = context.chords_for_keymap_index(keymap_index);
+
+        Self {
+            pressed_indices,
+            possible_chords,
+            last_foreign_press: None,
+            marker: PhantomData,
+        }
+    }
+
+    /// Finds the chord state amongst possible_chords which is satisfied (if it exists).
+    fn satisfied_chord(&self) -> Option<&ChordState<MAX_CHORD_SIZE>> {
+        self.possible_chords
+            .iter()
+            .find(|&ChordState { is_satisfied, .. }| *is_satisfied)
+    }
+
+    fn check_resolution(&self) -> PendingChordState {
+        match self.possible_chords.as_slice() {
+            [ChordState {
+                index,
+                is_satisfied,
+                ..
+            }] if *is_satisfied => {
+                // Only one chord is satisfied by pressed indices.
+                //
+                // This resolves the chord.
+                PendingChordState::Resolved(ChordResolution::Chord(*index as u8))
+            }
+            [] => {
+                // Otherwise, this key state resolves to "Passthrough",
+                //  since it has been interrupted by an unrelated key press.
+                PendingChordState::Resolved(ChordResolution::Passthrough)
+            }
+            satisfiable_chords => {
+                // Overlapping chords.
+                PendingChordState::Pending(
+                    satisfiable_chords
+                        .iter()
+                        .find(|&ChordState { is_satisfied, .. }| *is_satisfied)
+                        .map(|&ChordState { index, .. }| index as u8),
+                )
+            }
+        }
+    }
+
+    /// Handle PKS for primary chorded key.
+    pub fn handle_event(
+        &mut self,
+        keymap_index: u16,
+        event: key::Event<Event>,
+    ) -> Option<ChordResolution> {
+        match event {
+            key::Event::Key {
+                keymap_index: _ev_idx,
+                key_event: Event::Timeout,
+            } => {
+                // Timed out before chord unambiguously resolved.
+                let maybe_satisfied_chord_id = self
+                    .satisfied_chord()
+                    .map(|chord_state| chord_state.index as u8);
+                match maybe_satisfied_chord_id {
+                    Some(satisfied_chord_id) => Some(ChordResolution::Chord(satisfied_chord_id)),
+                    _ => Some(ChordResolution::Passthrough),
+                }
+            }
+            key::Event::Input(input::Event::Press {
+                keymap_index: pressed_keymap_index,
+            }) => {
+                if self
+                    .possible_chords
+                    .iter()
+                    .any(|c| c.chord.has_index(pressed_keymap_index))
+                {
+                    self.last_foreign_press = Some(pressed_keymap_index);
+                }
+
+                // Another key was pressed.
+
+                let maybe_satisfied_chord_id = self
+                    .satisfied_chord()
+                    .map(|chord_state| chord_state.index as u8);
+
+                // Update pressed_indices.
+                let pos = self
+                    .pressed_indices
+                    .binary_search(&keymap_index)
+                    .unwrap_or_else(|e| e);
+                let push_res = self.pressed_indices.insert(pos, pressed_keymap_index);
+                // pressed_indices has capacity of MAX_CHORD_SIZE.
+                // pressed_indices will only be full without resolving
+                // if multiple chords with max chord size
+                //  having the same indices.
+                if push_res.is_err() {
+                    panic!();
+                }
+
+                // Chords only remain possible if they have the pressed keymap index.
+                self.possible_chords
+                    .retain(|chord_state| chord_state.chord.has_index(pressed_keymap_index));
+
+                // Re-evaluate the chord satisfaction states.
+                for chord in self.possible_chords.iter_mut() {
+                    chord.is_satisfied = chord.chord.is_satisfied_by(&self.pressed_indices);
+                }
+
+                let resolution = match self.check_resolution() {
+                    PendingChordState::Resolved(resolution) => Some(resolution),
+                    PendingChordState::Pending(_) => None,
+                };
+
+                // If the chord resolution is now passthrough (i.e. no chords satisfiable),
+                // then resolve the chord with the satisfied chord.
+                match (resolution, maybe_satisfied_chord_id) {
+                    (Some(ChordResolution::Passthrough), Some(satisfied_chord_id)) => {
+                        Some(ChordResolution::Chord(satisfied_chord_id))
+                    }
+                    _ => resolution,
+                }
+            }
+            key::Event::Input(input::Event::Release {
+                keymap_index: released_keymap_index,
+            }) => {
+                if released_keymap_index == keymap_index {
+                    let maybe_satisfied_chord_id = self
+                        .satisfied_chord()
+                        .map(|chord_state| chord_state.index as u8);
+
+                    match maybe_satisfied_chord_id {
+                        Some(satisfied_chord_id) => {
+                            Some(ChordResolution::Chord(satisfied_chord_id))
+                        }
+
+                        // This key state resolves to "Passthrough",
+                        //  since it has been released before any chord is satisfied.
+                        None => Some(ChordResolution::Passthrough),
+                    }
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        }
+    }
+}
+
+/// Key state used by [System]. (Chorded keys do not have a key state).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct KeyState;
+
+/// The [key::System] implementation for the chorded key system.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct System<
+    R: Copy + Debug + PartialEq,
+    Keys: Index<
+        usize,
+        Output = Key<
+            R,
+            MAX_CHORDS,
+            MAX_CHORD_SIZE,
+            MAX_OVERLAPPING_CHORD_SIZE,
+            MAX_PRESSED_INDICES,
+        >,
+    >,
+    AuxiliaryKeys: Index<usize, Output = AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>>,
+    const MAX_CHORDS: usize,
+    const MAX_CHORD_SIZE: usize,
+    const MAX_OVERLAPPING_CHORD_SIZE: usize,
+    const MAX_PRESSED_INDICES: usize,
+> {
+    keys: Keys,
+    auxiliary_keys: AuxiliaryKeys,
+}
+
+impl<
+        R: Copy + Debug + PartialEq,
+        Keys: Index<
+            usize,
+            Output = Key<
+                R,
+                MAX_CHORDS,
+                MAX_CHORD_SIZE,
+                MAX_OVERLAPPING_CHORD_SIZE,
+                MAX_PRESSED_INDICES,
+            >,
+        >,
+        AuxiliaryKeys: Index<usize, Output = AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>>,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_OVERLAPPING_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    >
+    System<
+        R,
+        Keys,
+        AuxiliaryKeys,
+        MAX_CHORDS,
+        MAX_CHORD_SIZE,
+        MAX_OVERLAPPING_CHORD_SIZE,
+        MAX_PRESSED_INDICES,
+    >
+{
+    /// Constructs a new [System] with the given key data.
+    pub const fn new(keys: Keys, auxiliary_keys: AuxiliaryKeys) -> Self {
+        Self {
+            keys,
+            auxiliary_keys,
+        }
+    }
+
+    fn binding_for(&self, id: ChordId) -> Option<R>
+    where
+        Keys: AsRef<
+            [Key<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_OVERLAPPING_CHORD_SIZE, MAX_PRESSED_INDICES>],
+        >,
+    {
+        self.keys.as_ref().iter().find_map(|k| k.binding_for(id))
+    }
+}
+
+impl<
+        R: Copy + Debug + PartialEq,
+        Keys: Debug
+            + Index<
+                usize,
+                Output = Key<
+                    R,
+                    MAX_CHORDS,
+                    MAX_CHORD_SIZE,
+                    MAX_OVERLAPPING_CHORD_SIZE,
+                    MAX_PRESSED_INDICES,
+                >,
+            > + AsRef<
+                [Key<
+                    R,
+                    MAX_CHORDS,
+                    MAX_CHORD_SIZE,
+                    MAX_OVERLAPPING_CHORD_SIZE,
+                    MAX_PRESSED_INDICES,
+                >],
+            >,
+        AuxiliaryKeys: Debug
+            + Index<usize, Output = AuxiliaryKey<R, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>>,
+        const MAX_CHORDS: usize,
+        const MAX_CHORD_SIZE: usize,
+        const MAX_OVERLAPPING_CHORD_SIZE: usize,
+        const MAX_PRESSED_INDICES: usize,
+    > key::System<R>
+    for System<
+        R,
+        Keys,
+        AuxiliaryKeys,
+        MAX_CHORDS,
+        MAX_CHORD_SIZE,
+        MAX_OVERLAPPING_CHORD_SIZE,
+        MAX_PRESSED_INDICES,
+    >
+{
+    type Ref = Ref;
+    type Context = Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
+    type Event = Event;
+    type PendingKeyState = PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
+    type KeyState = KeyState;
+
+    fn new_pressed_key(
+        &self,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
+    ) -> (
+        key::PressedKeyResult<R, Self::PendingKeyState, Self::KeyState>,
+        key::KeyEvents<Self::Event>,
+    ) {
+        let lookup = |id| self.binding_for(id);
+        match key_ref {
+            Ref::Chorded(i) => self.keys[i as usize].new_pressed_key(context, keymap_index, lookup),
+            Ref::Auxiliary(i) => {
+                self.auxiliary_keys[i as usize].new_pressed_key(context, keymap_index, lookup)
+            }
+        }
+    }
+
+    fn update_pending_state(
+        &self,
+        pending_state: &mut Self::PendingKeyState,
+        keymap_index: u16,
+        context: &Self::Context,
+        key_ref: Ref,
+        event: key::Event<Self::Event>,
+    ) -> (Option<key::NewPressedKey<R>>, key::KeyEvents<Self::Event>) {
+        let lookup = |id| self.binding_for(id);
+        match key_ref {
+            Ref::Chorded(i) => self.keys[i as usize].update_pending_state(
+                pending_state,
+                keymap_index,
+                context,
+                event,
+                lookup,
+            ),
+            Ref::Auxiliary(i) => self.auxiliary_keys[i as usize].update_pending_state(
+                pending_state,
+                keymap_index,
+                context,
+                event,
+                lookup,
+            ),
+        }
+    }
+
+    fn update_state(
+        &self,
+        _key_state: &mut Self::KeyState,
+        _key_ref: &Self::Ref,
+        _context: &Self::Context,
+        _keymap_index: u16,
+        _event: key::Event<Self::Event>,
+    ) -> key::KeyEvents<Self::Event> {
+        panic!()
+    }
+
+    fn key_output(
+        &self,
+        _key_ref: &Self::Ref,
+        _key_state: &Self::KeyState,
+    ) -> Option<key::KeyOutput> {
+        panic!()
+    }
+}
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod tests {
+    use super::*;
+
+    use key::keyboard;
+
+    const MAX_CHORDS: usize = 4;
+    const MAX_CHORD_SIZE: usize = 16;
+    const MAX_PRESSED_INDICES: usize = MAX_CHORD_SIZE * 2;
+
+    const DEFAULT_CONTEXT: Context<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES> =
+        Context::from_config(Config::new());
+
+    type AuxiliaryKey =
+        super::AuxiliaryKey<keyboard::Ref, MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
+    type ChordedKey = super::Key<keyboard::Ref, MAX_CHORDS, MAX_CHORD_SIZE, 4, MAX_PRESSED_INDICES>;
+    type PendingKeyState = super::PendingKeyState<MAX_CHORDS, MAX_CHORD_SIZE, MAX_PRESSED_INDICES>;
+
+    #[test]
+    fn test_sizeof_ref() {
+        assert_eq!(2, core::mem::size_of::<Ref>());
+    }
+
+    #[test]
+    fn test_sizeof_event() {
+        assert_eq!(4, core::mem::size_of::<Event>());
+    }
+
+    #[test]
+    fn test_timeout_resolves_unsatisfied_aux_state_as_passthrough_key() {
+        // Assemble: an Auxilary chorded key, and its PKS.
+        let context = DEFAULT_CONTEXT;
+        let expected_ref = keyboard::Ref::KeyCode(0x04);
+        let _chorded_key = AuxiliaryKey::new(expected_ref);
+        let keymap_index: u16 = 0;
+        let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
+
+        // Act: handle a timeout ev.
+        let timeout_ev = key::Event::key_event(keymap_index, Event::Timeout);
+        let actual_resolution = pks.handle_event(keymap_index, timeout_ev);
+
+        // Assert
+        let expected_resolution = Some(ChordResolution::Passthrough);
+        assert_eq!(expected_resolution, actual_resolution);
+    }
+
+    #[test]
+    fn test_press_non_chorded_key_resolves_aux_state_as_interrupted() {
+        // Assemble: an Auxilary chorded key, and its PKS.
+        let context = DEFAULT_CONTEXT;
+        let expected_ref = keyboard::Ref::KeyCode(0x04);
+        let _chorded_key = AuxiliaryKey::new(expected_ref);
+        let keymap_index: u16 = 0;
+        let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
+
+        // Act: handle a key press, for an index that's not part of any chord.
+        let non_chord_press = input::Event::Press { keymap_index: 9 }.into();
+        let actual_resolution = pks.handle_event(keymap_index, non_chord_press);
+
+        // Assert
+        let expected_resolution = Some(ChordResolution::Passthrough);
+        assert_eq!(expected_resolution, actual_resolution);
+    }
+
+    // "unambiguous" in the sense that the chord
+    // is not overlapped by another chord.
+    // e.g. chord "01" is overlapped by chord "012",
+    //  and "pressed {0, 1}" would be 'ambiguous';
+    //  wheres "pressed {0, 1, 2}" would be 'unambiguous'.
+
+    #[test]
+    fn test_press_chorded_key_resolves_unambiguous_aux_state_as_chord() {
+        // Assemble: an Auxilary chorded key, and its PKS, with chord 01.
+        let mut context = Context::from_config(Config {
+            chords: Slice::from_slice(&[ChordIndices::from_slice(&[0, 1])]),
+            ..Config::new()
+        });
+        let passthrough = keyboard::Ref::KeyCode(0x04);
+        let _chorded_key = AuxiliaryKey::new(passthrough);
+        let keymap_index: u16 = 0;
+        context.handle_event(key::Event::Input(input::Event::Press { keymap_index: 0 }));
+        let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
+
+        // Act: handle a key press, for an index that completes (satisfies unambiguously) the chord.
+        let chord_press = input::Event::Press { keymap_index: 1 }.into();
+        let actual_resolution = pks.handle_event(keymap_index, chord_press);
+
+        // Assert: resolved aux key should have no events, should have (resolved) no output.
+        let expected_resolution = Some(ChordResolution::Chord(0));
+        assert_eq!(expected_resolution, actual_resolution);
+    }
+
+    #[test]
+    fn test_release_pending_aux_state_resolves_as_tapped_key() {
+        // Assemble: an Auxilary chorded key, and its PKS.
+        let context = DEFAULT_CONTEXT;
+        let expected_ref = keyboard::Ref::KeyCode(0x04);
+        let _chorded_key = AuxiliaryKey::new(expected_ref);
+        let keymap_index: u16 = 0;
+        let mut pks: PendingKeyState = PendingKeyState::new(&context, keymap_index);
+
+        // Act: handle a key press, for an index that's not part of any chord.
+        let chorded_key_release = input::Event::Release { keymap_index }.into();
+        let actual_resolution = pks.handle_event(keymap_index, chorded_key_release);
+
+        // Assert
+        let expected_resolution = Some(ChordResolution::Passthrough);
+        assert_eq!(expected_resolution, actual_resolution);
+    }
+
+    #[test]
+    fn primary_pending_press_aux_emits_chord_activated_for_aux() {
+        // Assemble: primary chorded key pending on index 0, chord [0, 1].
+        let context = Context::from_config(Config {
+            chords: Slice::from_slice(&[ChordIndices::from_slice(&[0, 1])]),
+            ..Config::new()
+        });
+        let key = ChordedKey::new(
+            &[(0, keyboard::Ref::KeyCode(0x06))],
+            keyboard::Ref::KeyCode(0x04),
+        );
+        let mut pks = PendingKeyState::new(&context, 0);
+        let lookup = |id| key.binding_for(id);
+
+        // Act: aux press completes the chord.
+        let (maybe_npk, pke) = key.update_pending_state(
+            &mut pks,
+            0,
+            &context,
+            input::Event::Press { keymap_index: 1 }.into(),
+            lookup,
+        );
+
+        // Assert: pending primary is NoOp; activator is the aux index.
+        assert_eq!(maybe_npk, Some(key::NewPressedKey::no_op()));
+        let activated = pke.into_iter().any(|sch_ev| {
+            matches!(
+                sch_ev.event,
+                key::Event::Key {
+                    key_event: Event::ChordActivated { keymap_index: 1 },
+                    ..
+                }
+            )
+        });
+        assert!(activated);
+    }
+
+    #[test]
+    fn aux_pending_press_primary_emits_chord_activated_for_primary() {
+        // Assemble: aux chorded key pending on index 1, chord [0, 1].
+        let context = Context::from_config(Config {
+            chords: Slice::from_slice(&[ChordIndices::from_slice(&[0, 1])]),
+            ..Config::new()
+        });
+        let key = AuxiliaryKey::new(keyboard::Ref::KeyCode(0x05));
+        let mut pks = PendingKeyState::new(&context, 1);
+        let lookup = |_id: ChordId| Some(keyboard::Ref::KeyCode(0x06));
+
+        // Act: primary press completes the chord.
+        let (maybe_npk, pke) = key.update_pending_state(
+            &mut pks,
+            1,
+            &context,
+            input::Event::Press { keymap_index: 0 }.into(),
+            lookup,
+        );
+
+        // Assert: pending aux is NoOp; activator is the primary index.
+        assert_eq!(maybe_npk, Some(key::NewPressedKey::no_op()));
+        let activated = pke.into_iter().any(|sch_ev| {
+            matches!(
+                sch_ev.event,
+                key::Event::Key {
+                    key_event: Event::ChordActivated { keymap_index: 0 },
+                    ..
+                }
+            )
+        });
+        assert!(activated);
+    }
+}

@@ -35,11 +35,77 @@ all: include/smart_keymap.h
 	$(CARGO) build
 
 .PHONY: test
-test: test-rust test-ncl test-ceedling build-rust-thumbv6m-none-eabi build-rust-stm32f4
+# Run the NCL checks (and NCL codegen snapshot checks)
+test: test-ncl
+# Run the rust tests (incl. integration)
+test: test-rust
+# Run the Ceedling integration tests
+test: test-ceedling
+# Run rust tidyness checks
+test: test-clippy
+test: test-doc
+test: test-fmt
+# Check the rust firmware builds
+test: build-rust-stm32f4
+test: build-rust-thumbv6m-none-eabi
 
 .PHONY: test-rust
 test-rust:
 	$(CARGO) test
+
+# Match .github/workflows/rust.yaml cargo-fmt-clippy job.
+.PHONY: test-fmt
+test-fmt:
+	$(CARGO) fmt --all -- --check
+
+.PHONY: test-clippy
+test-clippy:
+	$(CARGO) clippy --workspace \
+		--exclude rp2040-rtic-smart-keyboard \
+		--exclude stm32f4-rtic-smart-keyboard \
+		--exclude stm32-embassy-smart-keyboard \
+		-- -D warnings
+
+# Match CI cargo-doc steps (host + firmware packages).
+# Host: .github/workflows/rust.yaml
+# Firmware: rust-stm32f4.yaml, rust-thumbv6m-none-eabi.yaml
+.PHONY: test-doc
+test-doc: test-doc-host test-doc-firmware
+
+.PHONY: test-doc-host
+test-doc-host:
+	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--package=smart-keymap-core \
+		--package=smart-keymap \
+		--package=keyberon-smart-keyboard
+
+# Firmware package docs must use the firmware `--target`.
+# PAC crates use ELF `#[link_section = ".vector_table.interrupts"]`;
+# documenting them for the host triple works on Linux CI (ELF)
+# but fails on Darwin (Mach-O rejects those section names).
+.PHONY: test-doc-firmware
+test-doc-firmware: test-doc-stm32f4 test-doc-rp2040
+
+# Match .github/workflows/rust-stm32f4.yaml "Run Cargo Doc".
+.PHONY: test-doc-stm32f4
+test-doc-stm32f4:
+	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--target=$(STM32F4_TARGET) \
+		--no-default-features \
+		--package=stm32f4-rtic-smart-keyboard \
+		--package=smart-keymap \
+		--package=keyberon-smart-keyboard
+
+# Match .github/workflows/rust-thumbv6m-none-eabi.yaml "Run Cargo Doc".
+# `--no-default-features` keeps the no_std graph on the thumb target.
+.PHONY: test-doc-rp2040
+test-doc-rp2040:
+	RUSTDOCFLAGS="--deny warnings" $(CARGO) doc \
+		--target=$(RP2040_TARGET) \
+		--no-default-features \
+		--package=rp2040-rtic-smart-keyboard \
+		--package=smart-keymap \
+		--package=keyberon-smart-keyboard
 
 .PHONY: build-rust-thumbv6m-none-eabi
 build-rust-thumbv6m-none-eabi:
@@ -66,7 +132,7 @@ clean: clean-generated-keymaps clean.bin clean.uf2
 	rm -f include/smart_keymap.h
 	$(CARGO) clean
 
-include/smart_keymap.h: src/lib.rs
+include/smart_keymap.h: smart_keymap/src/lib.rs src/lib.rs
 	$(CBINDGEN) -c cbindgen.toml -o include/smart_keymap.h ./smart_keymap
 
 .PHONY: clean.bin

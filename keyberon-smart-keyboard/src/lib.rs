@@ -54,8 +54,10 @@
 //! }
 //! ```
 //!
-//! With this crate, [input::Keyboard] manages scanning/debouncing events
-//!  from the keyboard matrix. Chording is handled by smart keymap.
+//! With this crate,
+//!  [input::Keyboard] manages scanning/debouncing events
+//!  from the keyboard matrix.
+//! Chording is handled by smart keymap.
 //!
 //! For computing the key codes, this uses [input::smart_keymap::KeyboardBackend]:
 //!
@@ -94,6 +96,7 @@
 
 #![no_main]
 #![no_std]
+#![warn(clippy::unwrap_used)]
 
 /// Useful traits and structs related to input.
 pub mod input;

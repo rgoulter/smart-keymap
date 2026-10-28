@@ -1,0 +1,38 @@
+#lang rhombus
+//// Emphasis: pressed / XXXX: solid KeySide brick only (no KeyTop, no text)
+
+import:
+  "helpers.rhm" open
+  "../src/keyboard_layout.rhm" open
+  "../src/svg.rhm" open
+
+//// --- assemble ---
+def c_pr = blank(~emphasis: "pressed")
+def pts1 = grid(1, 1)
+def sc_pr = scene_of_pane(pane("pr", pts1, [c_pr]))
+
+//// --- act / assert ---
+def side_pr_fill = for values (found = ""):
+  each n in sc_pr.nodes
+  if n["kind"] == "KeySide" | n["fill"] | found
+assert_eq("pressed KeySide dark brick", side_pr_fill, theme["side_pressed"])
+def pr_has_top = for values (found = #false):
+  each n in sc_pr.nodes
+  if n["kind"] == "KeyTop" | #true | found
+assert_true("pressed light has no KeyTop", !pr_has_top)
+assert_eq("pressed light KeySide count", count_kind(sc_pr, "KeySide"), 1)
+assert_eq("pressed light KeyTop count", count_kind(sc_pr, "KeyTop"), 0)
+def pr_full_op = for values (found = #false):
+  each n in sc_pr.nodes
+  if n["kind"] == "KeySide"
+     && n["fill_opacity"] == 1.0
+     && n["stroke_opacity"] == 1.0
+  | #true
+  | found
+assert_true("pressed side full opacity", pr_full_op)
+def pr_no_text = for values (ok = #true):
+  each n in sc_pr.nodes
+  if n["kind"] == "Text" | #false | ok
+assert_true("pressed has no legend text", pr_no_text)
+
+println("OK test_core_pressed")

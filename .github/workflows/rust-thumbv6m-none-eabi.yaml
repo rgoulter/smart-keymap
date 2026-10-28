@@ -9,48 +9,95 @@ on:
       - master
     paths:
       - '.cargo/config.toml'
+      - '.github/workflows/rust-thumbv6m-none-eabi.yaml'
       - 'Cargo.*'
       - 'ld/rp2040/*'
       - 'ncl/**/*.ncl'
+      - 'keyberon-smart-keyboard/**'
       - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
+      - 'smart-keymap-core/**'
       - 'smart-keymap-nickel-helper/**'
-      - 'keyberon-smart-keyboard/**'
+      - 'stm32-embassy-smart-keyboard/**'
+      - 'stm32f4-rtic-smart-keyboard/**'
   pull_request:
     branches:
       - '*'
     paths:
       - '.cargo/config.toml'
+      - '.github/workflows/rust-thumbv6m-none-eabi.yaml'
       - 'Cargo.*'
       - 'ld/rp2040/*'
       - 'ncl/**/*.ncl'
+      - 'keyberon-smart-keyboard/**'
       - 'rp2040-rtic-smart-keyboard/**'
       - 'src/**/*.rs'
+      - 'smart-keymap-core/**'
       - 'smart-keymap-nickel-helper/**'
-      - 'keyberon-smart-keyboard/**'
+      - 'stm32-embassy-smart-keyboard/**'
+      - 'stm32f4-rtic-smart-keyboard/**'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  cargo-build-target-thumbv6m-none-eabi:
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - ubuntu-latest
+  cargo-fmt-clippy:
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
-      - name: Install nickel
-        run: |
-          wget https://github.com/tweag/nickel/releases/download/${{ env.NICKEL_VERSION }}/nickel-x86_64-linux
-          chmod +x ./nickel-x86_64-linux
-          sudo cp ./nickel-x86_64-linux /usr/bin/nickel
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+
+      - name: Install Rust lint components
+        run: rustup component add clippy rustfmt
 
       - name: Rust Add Target
         run: rustup target add thumbv6m-none-eabi
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+        with:
+          shared-key: rust-thumbv6m
+          cache-targets: thumbv6m-none-eabi
+
+      - name: Run Cargo Fmt
+        run: cargo fmt --all -- --check
+
+      - name: Run Cargo Clippy
+        run: |
+          cargo clippy \
+            --target=thumbv6m-none-eabi \
+            --package=rp2040-rtic-smart-keyboard \
+            --examples \
+            --bins \
+            -- -D warnings
+
+  cargo-build-target-thumbv6m-none-eabi:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Nickel
+        uses: ./.github/actions/setup-nickel
+        with:
+          version: ${{ env.NICKEL_VERSION }}
+
+      - name: Rust Add Target
+        run: rustup target add thumbv6m-none-eabi
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2.9.1
+        with:
+          shared-key: rust-thumbv6m
+          cache-targets: thumbv6m-none-eabi
 
       - name: Run Cargo Build
         run: cargo build --target=thumbv6m-none-eabi --no-default-features

@@ -1,5 +1,6 @@
 #![no_main]
 #![no_std]
+#![warn(clippy::unwrap_used)]
 
 pub mod app_init;
 

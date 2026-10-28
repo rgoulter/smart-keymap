@@ -31,7 +31,7 @@ pub fn init_clocks(
     resets: &mut pac::RESETS,
 ) -> (hal::Watchdog, ClocksManager) {
     let mut watchdog = hal::Watchdog::new(watchdog);
-    let clocks = hal::clocks::init_clocks_and_plls(
+    let Some(clocks) = hal::clocks::init_clocks_and_plls(
         XOSC_CRYSTAL_FREQ,
         xosc,
         clocks,
@@ -40,8 +40,9 @@ pub fn init_clocks(
         resets,
         &mut watchdog,
     )
-    .ok()
-    .unwrap();
+    .ok() else {
+        panic!("clock init failed");
+    };
     (watchdog, clocks)
 }
 
@@ -52,9 +53,11 @@ pub fn init_timer(
     clocks: &ClocksManager,
 ) -> (timer::Timer, timer::Alarm0) {
     let mut timer = timer::Timer::new(pac_timer, resets, clocks);
-    let mut alarm = timer.alarm_0().unwrap();
+    let Some(mut alarm) = timer.alarm_0() else {
+        panic!("timer alarm init failed");
+    };
     alarm.enable_interrupt();
-    alarm.schedule(1.millis()).unwrap();
+    let _ = alarm.schedule(1.millis());
     (timer, alarm)
 }
 
@@ -76,13 +79,16 @@ pub fn init_usb_device(
 
     let serial = SerialPort::new(usb_bus);
 
-    let usb_dev = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
+    let Some(usb_dev_builder) = UsbDeviceBuilder::new(usb_bus, UsbVidPid(vid, pid))
         .strings(&[StringDescriptors::new(LangID::EN_US)
             .manufacturer(mfr)
             .product(product)
             .serial_number(env!("CARGO_PKG_VERSION"))])
-        .unwrap()
-        .build();
+        .ok()
+    else {
+        panic!("usb descriptor init failed");
+    };
+    let usb_dev = usb_dev_builder.build();
 
     (usb_dev, serial, usb_class)
 }

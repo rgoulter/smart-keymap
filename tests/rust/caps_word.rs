@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -33,8 +34,8 @@ fn tap_caps_word_shifts_keyboard_keys() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -78,12 +79,12 @@ fn tap_caps_word_spc_deactivates_caps_word() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0x02, 0, 0x04, 0, 0, 0, 0, 0],
-        [0x02, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x2C, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, KC_A, 0, 0, 0, 0, 0],
+        [MOD_LSHFT, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, KC_SPACE, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

@@ -1,0 +1,6 @@
+out/*
+!out/.gitkeep
+*.svg
+*.png
+.cache/
+__pycache__/

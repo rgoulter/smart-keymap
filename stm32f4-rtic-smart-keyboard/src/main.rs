@@ -1,5 +1,6 @@
 #![no_main]
 #![no_std]
+#![warn(clippy::unwrap_used)]
 
 #[cfg(not(custom_board))]
 mod board {
@@ -116,8 +117,10 @@ mod app {
             (gpioa.pa11, gpioa.pa12),
             &clocks,
         );
-        *c.local.usb_bus = Some(UsbBusType::new(usb, c.local.ep_memory));
-        let usb_bus = c.local.usb_bus.as_ref().unwrap();
+        let usb_bus = c
+            .local
+            .usb_bus
+            .insert(UsbBusType::new(usb, c.local.ep_memory));
 
         let (usb_dev, usb_class) = app_init::init_usb_device(
             usb_bus,
@@ -212,7 +215,7 @@ mod app {
                         .take(4)
                         .collect::<heapless::Vec<_, 4>>()
                         .into_array()
-                        .unwrap(),
+                        .unwrap_or([Consumer::Unassigned; 4]),
                 }
             };
             if consumer_report != *previous_consumer {

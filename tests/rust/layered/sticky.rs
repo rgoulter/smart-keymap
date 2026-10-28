@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -29,7 +30,7 @@ fn next_press_after_tapping_sticky_layer_press_is_modified() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x0E, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_K, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -66,9 +67,9 @@ fn only_next_press_after_tapping_sticky_layer_press_is_modified() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x0E, 0, 0, 0, 0, 0],
+        [0, 0, KC_K, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -99,7 +100,7 @@ fn interrupting_sticky_layer_press_acts_as_hold_modifier() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x0E, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_K, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -135,9 +136,9 @@ fn interrupting_sticky_layer_press_acts_as_hold_modifier_while_held() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x0E, 0, 0, 0, 0, 0],
+        [0, 0, KC_K, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x0F, 0, 0, 0, 0, 0],
+        [0, 0, KC_L, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -177,9 +178,9 @@ fn interrupting_sticky_layer_press_acts_as_hold_modifier_until_released() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x0E, 0, 0, 0, 0, 0],
+        [0, 0, KC_K, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

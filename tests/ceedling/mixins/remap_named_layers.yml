@@ -1,0 +1,7 @@
+:paths:
+  :libraries:
+    - libs
+
+:libraries:
+  :system:
+    - smart_keymap_remap_named_layers

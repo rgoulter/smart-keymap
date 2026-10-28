@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -34,7 +35,7 @@ fn overlap_press_abcd_results_in_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x10, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_M, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -70,7 +71,7 @@ fn overlap_press_ab_results_in_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x11, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_N, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -106,7 +107,7 @@ fn overlap_press_cd_results_in_chord() {
     keymap.tick_until_no_scheduled_events();
 
     // Assert
-    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0x12, 0, 0, 0, 0, 0]];
+    let expected_reports: &[[u8; 8]] = &[[0, 0, 0, 0, 0, 0, 0, 0], [0, 0, KC_O, 0, 0, 0, 0, 0]];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
 }
@@ -157,8 +158,8 @@ fn overlap_press_ab_then_cd_results_in_chords() {
     // Assert
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x11, 0, 0, 0, 0, 0],
-        [0, 0, 0x11, 0x12, 0, 0, 0, 0],
+        [0, 0, KC_N, 0, 0, 0, 0, 0],
+        [0, 0, KC_N, KC_O, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

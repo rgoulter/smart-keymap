@@ -1,4 +1,5 @@
 use std::fmt::Debug;
+use std::path::PathBuf;
 
 use cucumber::gherkin::Step;
 use cucumber::{given, then, when, World};
@@ -14,15 +15,30 @@ use smart_keymap_nickel_helper::{
     NickelError,
 };
 
-use smart_keymap::key::composite::{Context, Event, KeyState, PendingKeyState, Ref};
+// Full composite key system from smart-keymap-full-system-std (Vec storage).
+use smart_keymap_full_system_std::key_system::{
+    Config, Context, Event, KeyState, PendingKeyState, Ref, System,
+};
 
-use smart_keymap::init::CHORDED_MAX_CHORDS;
-use smart_keymap::init::CHORDED_MAX_CHORD_SIZE;
-use smart_keymap::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE;
-use smart_keymap::init::LAYERED_LAYER_COUNT;
-use smart_keymap::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
+use smart_keymap_full_system_std::init::CHORDED_MAX_CHORDS;
+use smart_keymap_full_system_std::init::CHORDED_MAX_CHORD_SIZE;
+use smart_keymap_full_system_std::init::CHORDED_MAX_OVERLAPPING_CHORD_SIZE;
+use smart_keymap_full_system_std::init::LAYERED_LAYER_COUNT;
+use smart_keymap_full_system_std::init::SEQUENCE_MAX_OVERLAPPING;
+use smart_keymap_full_system_std::init::TAP_DANCE_MAX_DEFINITIONS as TAP_DANCE_MAX_DEFS;
 
-type System = smart_keymap::key::composite::System<smart_keymap::key::composite::KeyVecs>;
+/// Workspace root (parent of the `smart-keymap-full-system-std` package).
+fn workspace_root() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .parent()
+        .expect("package lives under workspace root")
+        .to_path_buf()
+}
+
+fn ncl_import_path() -> String {
+    workspace_root().join("ncl").to_string_lossy().into_owned()
+}
+
 type Keymap = keymap::Keymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
 type ObservedKeymap =
     keymap::ObservedKeymap<Vec<Ref>, Ref, Context, Event, PendingKeyState, KeyState, System>;
@@ -36,7 +52,9 @@ const TEST_KEYMAP_NCL: &str = r#"
     keys = [
       K.A, K.B, K.C, K.D, K.E, K.F, K.G, K.H, K.I, K.J, K.K, K.L, K.M, K.N, K.O, K.P, K.Q, K.R, K.S, K.T, K.U, K.V, K.W, K.X, K.Y, K.Z,
       K.N0, K.N1, K.N2, K.N3, K.N4, K.N5, K.N6, K.N7, K.N8, K.N9,
-      K.Space, K.Backspace, K.LeftShift, K.LeftCtrl,
+      K.Space, K.Backspace, K.Escape, K.Grave, K.Delete,
+      K.Left, K.Down, K.Up, K.Right,
+      K.LeftShift, K.RightShift, K.LeftCtrl,
     ]
   }
 "#;
@@ -135,42 +153,62 @@ struct KeyVecs {
         >,
     >,
     #[serde(default)]
+    consumer: Vec<key::consumer::Key>,
+    #[serde(default)]
+    history: Vec<key::history::AdaptiveKey>,
+    #[serde(default)]
     keyboard: Vec<key::keyboard::Key>,
     #[serde(default)]
     layered: Vec<key::layered::LayeredKey<Ref, LAYERED_LAYER_COUNT>>,
     #[serde(default)]
     layer_modifiers: Vec<key::layered::ModifierKey>,
     #[serde(default)]
+    mod_conditioned: Vec<key::mod_conditioned::Key<Ref>>,
+    #[serde(default)]
+    mouse: Vec<key::mouse::Key>,
+    #[serde(default)]
+    sequence: Vec<key::sequence::Key<Ref, SEQUENCE_MAX_OVERLAPPING>>,
+    #[serde(default)]
+    sequence_auxiliary: Vec<key::sequence::AuxiliaryKey<Ref>>,
+    #[serde(default)]
     sticky: Vec<key::sticky::Key>,
     #[serde(default)]
     tap_dance: Vec<key::tap_dance::Key<Ref, TAP_DANCE_MAX_DEFS>>,
     #[serde(default)]
     tap_hold: Vec<key::tap_hold::Key<Ref>>,
+    #[serde(default)]
+    tri_state: Vec<key::tri_state::Key>,
 }
 
 #[derive(Deserialize)]
 struct DocstringKeymap {
-    config: key::composite::Config,
+    config: Config,
     key_refs: Vec<Ref>,
     #[serde(default)]
     key_data: KeyVecs,
 }
 
 fn system_from_key_data(keys: KeyVecs) -> System {
-    System::vec_based(
+    System::new(
         smart_keymap::key::automation::System::new(keys.automation),
         smart_keymap::key::callback::System::new(keys.callback),
         smart_keymap::key::chorded::System::new(keys.chorded, keys.chorded_auxiliary),
+        smart_keymap::key::consumer::System::new(keys.consumer),
+        smart_keymap::key::history::System::new(keys.history),
         smart_keymap::key::keyboard::System::new(keys.keyboard),
         smart_keymap::key::layered::System::new(keys.layer_modifiers, keys.layered),
+        smart_keymap::key::mod_conditioned::System::new(keys.mod_conditioned),
+        smart_keymap::key::mouse::System::new(keys.mouse),
+        smart_keymap::key::sequence::System::new(keys.sequence, keys.sequence_auxiliary),
         smart_keymap::key::sticky::System::new(keys.sticky),
         smart_keymap::key::tap_dance::System::new(keys.tap_dance),
         smart_keymap::key::tap_hold::System::new(keys.tap_hold),
+        smart_keymap::key::tri_state::System::new(keys.tri_state),
     )
 }
 
 fn load_keymap(keymap_ncl: &str) -> Keymap {
-    match nickel_json_value_for_keymap(format!("{}/ncl", env!("CARGO_MANIFEST_DIR")), keymap_ncl) {
+    match nickel_json_value_for_keymap(ncl_import_path(), keymap_ncl) {
         Ok(json) => {
             let keymap_result: serde_json::Result<DocstringKeymap> = serde_json::from_str(&json);
             match keymap_result {
@@ -194,6 +232,10 @@ fn load_keymap(keymap_ncl: &str) -> Keymap {
             NickelError::EvalError(nickel_error_message) => panic!(
                 "\n\nerror evaluating step's doc string nickel:\n\n{}",
                 nickel_error_message
+            ),
+            NickelError::Timeout { timeout_secs } => panic!(
+                "\n\nNickel evaluation timed out after {}s (set SMART_KEYMAP_NICKEL_TIMEOUT_SECS=0 to disable, or raise the limit)\n",
+                timeout_secs
             ),
         },
     }
@@ -237,11 +279,7 @@ fn setup_nickel_keymap(world: &mut KeymapWorld, step: &Step) {
 }
 
 fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<Input> {
-    match nickel_json_value_for_inputs(
-        format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-        keymap_ncl,
-        inputs_ncl,
-    ) {
+    match nickel_json_value_for_inputs(ncl_import_path(), keymap_ncl, inputs_ncl) {
         Ok(json) => {
             let inputs_result: serde_json::Result<Vec<Input>> = serde_json::from_str(&json);
             match inputs_result {
@@ -260,6 +298,10 @@ fn inputs_from_ncl(keymap_ncl: &str, inputs_ncl: &str) -> Vec<Input> {
             NickelError::EvalError(nickel_error_message) => panic!(
                 "\n\nerror evaluating step's doc string nickel:\n\n{}",
                 nickel_error_message
+            ),
+            NickelError::Timeout { timeout_secs } => panic!(
+                "\n\nNickel evaluation timed out after {}s (set SMART_KEYMAP_NICKEL_TIMEOUT_SECS=0 to disable, or raise the limit)\n",
+                timeout_secs
             ),
         },
     }
@@ -283,10 +325,7 @@ fn when_keymap_tick(world: &mut KeymapWorld, num_ticks: u16) {
 #[then("the HID keyboard report should equal")]
 fn check_report(world: &mut KeymapWorld, step: &Step) {
     let hid_report_ncl = step.docstring().expect("docstring should be provided");
-    match nickel_to_json_for_hid_report(
-        format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-        hid_report_ncl,
-    ) {
+    match nickel_to_json_for_hid_report(ncl_import_path(), hid_report_ncl) {
         Ok(json) => {
             let expected_report: Vec<u8> = serde_json::from_str(&json)
                 .expect("failed to deserialize expected HID report JSON");
@@ -302,10 +341,7 @@ fn check_report(world: &mut KeymapWorld, step: &Step) {
 #[then("the HID keyboard report from the next tick() should equal")]
 fn check_tick_report(world: &mut KeymapWorld, step: &Step) {
     let hid_report_ncl = step.docstring().expect("docstring should be provided");
-    match nickel_to_json_for_hid_report(
-        format!("{}/ncl", env!("CARGO_MANIFEST_DIR")),
-        hid_report_ncl,
-    ) {
+    match nickel_to_json_for_hid_report(ncl_import_path(), hid_report_ncl) {
         Ok(json) => {
             let expected_report: Vec<u8> = serde_json::from_str(&json)
                 .expect("failed to deserialize expected HID report JSON");
@@ -336,8 +372,9 @@ fn check_report_equivalences(world: &mut KeymapWorld, step: &Step) {
 }
 
 fn main() {
+    let features = workspace_root().join("features/keymap");
     futures::executor::block_on(
-        KeymapWorld::cucumber().filter_run_and_exit("features/keymap/", |_, _, scenario| {
+        KeymapWorld::cucumber().filter_run_and_exit(features, |_, _, scenario| {
             !scenario.tags.iter().any(|t| t == "ignore")
         }),
     );

@@ -1,0 +1,134 @@
+//! Keymap event scheduler: same-turn pending queue vs time-based delays.
+//!
+//! Smart keys emit [`key::ScheduledEvent`]s. Delivery is **orthogonal** to
+//!  physical input pacing (`InputEventQueue` one-input-per-tick delay line):
+//!
+//! - [`key::Schedule::Immediate`] → `pending_events`, drained in the same turn
+//!   via `Keymap::handle_pending_events`. Prefer constructing these with
+//!   [`key::KeyEvents::event`].
+//! - [`key::Schedule::After`] → `scheduled_events` timed list, promoted on
+//!   [`EventScheduler::tick`]. Prefer [`key::KeyEvents::schedule_event`].
+//!   Delay `0` still waits for a tick boundary (not the same as Immediate).
+
+use core::cmp::PartialEq;
+use core::fmt::Debug;
+use core::marker::Copy;
+
+use crate::key;
+
+use key::Event;
+
+pub(crate) const MAX_PENDING_EVENTS: usize = 32;
+pub(crate) const MAX_SCHEDULED_EVENTS: usize = 32;
+
+#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+pub(crate) struct ScheduledEvent<E: Debug> {
+    time: u32,
+    event: Event<E>,
+    live: bool,
+}
+
+#[derive(Debug)]
+pub(crate) struct EventScheduler<E: Debug> {
+    pub(crate) pending_events: heapless::spsc::Queue<Option<Event<E>>, { MAX_PENDING_EVENTS }>,
+    pub(crate) scheduled_events: heapless::Vec<ScheduledEvent<E>, { MAX_SCHEDULED_EVENTS }>,
+    pub(crate) schedule_counter: u32,
+}
+
+impl<E: Debug> EventScheduler<E> {
+    pub const fn new() -> Self {
+        Self {
+            pending_events: heapless::spsc::Queue::new(),
+            scheduled_events: heapless::Vec::new(),
+            schedule_counter: 0,
+        }
+    }
+
+    pub fn init(&mut self) {
+        while self.pending_events.dequeue().flatten().is_some() {}
+        self.scheduled_events.clear();
+        self.schedule_counter = 0;
+    }
+
+    pub fn schedule_event(&mut self, scheduled_event: key::ScheduledEvent<E>) {
+        match scheduled_event.schedule {
+            key::Schedule::Immediate => {
+                self.enqueue_event(scheduled_event.event);
+            }
+            key::Schedule::After(delay) => {
+                self.schedule_after(delay as u32, scheduled_event.event);
+            }
+        }
+    }
+
+    pub fn enqueue_event(&mut self, event: Event<E>) {
+        let _ = self.pending_events.enqueue(Some(event));
+    }
+
+    pub fn schedule_after(&mut self, delay: u32, event: Event<E>) {
+        let time = self.schedule_counter + delay;
+        // binary sort insertion;
+        //  smallest at *end* (quick to pop off),
+        //  highest at *start*.
+        let pos = self
+            .scheduled_events
+            .binary_search_by(|ScheduledEvent { time: cmp_time, .. }| cmp_time.cmp(&time).reverse())
+            .unwrap_or_else(|e| e);
+        let _ = self.scheduled_events.insert(
+            pos,
+            ScheduledEvent {
+                time,
+                event,
+                live: true,
+            },
+        );
+    }
+
+    pub fn cancel_events_for_keymap_index(&mut self, keymap_index: u16) {
+        self.scheduled_events
+            .iter_mut()
+            .for_each(|scheduled_event| {
+                if let Event::Key {
+                    keymap_index: ki, ..
+                } = scheduled_event.event
+                {
+                    if ki == keymap_index {
+                        scheduled_event.live = false;
+                    }
+                }
+            });
+    }
+
+    pub fn tick(&mut self, delta_ms: u8) {
+        self.schedule_counter += delta_ms as u32;
+        let scheduled_ready =
+            if let Some(&ScheduledEvent { time, .. }) = self.scheduled_events.last() {
+                time <= self.schedule_counter
+            } else {
+                false
+            };
+        if scheduled_ready {
+            if let Some(ScheduledEvent { event, live, .. }) = self.scheduled_events.pop() {
+                let ev = if live { Some(event) } else { None };
+
+                let _ = self.pending_events.enqueue(ev);
+            }
+        }
+    }
+
+    pub fn dequeue(&mut self) -> Option<Event<E>> {
+        self.pending_events.dequeue().flatten()
+    }
+
+    /// Returns the time until the soonest scheduled event (0 if pending),
+    ///  or None if there are no pending nor scheduled events
+    pub fn next_event_time(&self) -> Option<u32> {
+        if self.pending_events.is_empty() {
+            self.scheduled_events
+                .last()
+                .map(|e| e.time - self.schedule_counter)
+        } else {
+            Some(0)
+        }
+    }
+}

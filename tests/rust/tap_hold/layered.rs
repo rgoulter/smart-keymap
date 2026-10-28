@@ -1,6 +1,7 @@
 use smart_keymap::input;
 use smart_keymap::keymap::ObservedKeymap;
 
+use crate::hid_keycodes::*;
 use smart_keymap_macros::keymap;
 
 #[test]
@@ -9,7 +10,7 @@ fn press_active_layer_when_hold_layer_mod_held() {
 
     // Assemble
     // - In order to have { tap: Keyboard, hold: LayerMod },
-    //    we need to use the aggregate composite::Key
+    //    we need to use the aggregate key system Key
     //    as the nested key type.
     let mut keymap = ObservedKeymap::new(keymap!(
         r#"
@@ -45,7 +46,7 @@ fn press_active_layer_when_hold_layer_mod_held() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x05, 0, 0, 0, 0, 0],
+        [0, 0, KC_B, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());
@@ -90,7 +91,7 @@ fn uses_base_when_pressed_after_hold_layer_mod_released() {
     #[rustfmt::skip]
     let expected_reports: &[[u8; 8]] = &[
         [0, 0, 0, 0, 0, 0, 0, 0],
-        [0, 0, 0x04, 0, 0, 0, 0, 0],
+        [0, 0, KC_A, 0, 0, 0, 0, 0],
     ];
     let actual_reports = keymap.distinct_reports();
     assert_eq!(expected_reports, actual_reports.reports());

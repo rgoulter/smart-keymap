@@ -6,6 +6,12 @@ use smart_keymap_nickel_helper::{nickel_keymap_expr_for_keymap_ncl, NickelError}
 
 #[proc_macro]
 /// Constructs a [smart_keymap::keymap::Keymap] from a Nickel keymap definition.
+///
+/// Expands to a block with a nested `pub mod init` carrying a **trimmed**
+/// per-keymap `key_system` (only families used by the map) and
+/// `init::Keymap::new(...)`.
+///
+/// Callers need the `smart_keymap` crate in scope (engine paths use that name).
 pub fn keymap(input: TokenStream) -> TokenStream {
     let keymap_ncl_lit = parse_macro_input!(input as LitStr);
     let keymap_ncl_str = keymap_ncl_lit.value();
@@ -23,6 +29,12 @@ pub fn keymap(input: TokenStream) -> TokenStream {
         }
         Err(NickelError::NickelNotFound) => {
             panic!("`nickel` executable not found in PATH");
+        }
+        Err(NickelError::Timeout { timeout_secs }) => {
+            panic!(
+                "Nickel evaluation timed out after {}s (set SMART_KEYMAP_NICKEL_TIMEOUT_SECS=0 to disable, or raise the limit)",
+                timeout_secs
+            );
         }
     }
 }

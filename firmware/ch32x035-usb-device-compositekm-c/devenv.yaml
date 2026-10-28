@@ -1,5 +1,10 @@
 inputs:
-  rgoulter-ch32:
-    url: github:rgoulter/ch32
+  git-hooks:
+    url: github:cachix/git-hooks.nix
+    inputs:
+      nixpkgs:
+        follows: nixpkgs
   nixpkgs:
     url: github:cachix/devenv-nixpkgs/rolling
+  rgoulter-ch32:
+    url: github:rgoulter/ch32

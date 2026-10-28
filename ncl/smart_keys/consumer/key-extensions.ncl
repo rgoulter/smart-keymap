@@ -8,6 +8,12 @@
       {
         VolUp = keys.VolumeUp,
         VolDown = keys.VolumeDown,
+
+        # Four-letter aliases for layer-string alignment
+        MUTE = keys.Mute,
+        VOLU = keys.VolumeUp,
+        VOLD = keys.VolumeDown,
+        MPLY = keys.PlayPause,
       },
   },
 }

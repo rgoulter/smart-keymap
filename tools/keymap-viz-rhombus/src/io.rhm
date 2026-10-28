@@ -1,0 +1,56 @@
+#lang rhombus
+//// Thin I/O shell: load JSON fixtures / LegendIR bundles, write SVG/JSON
+
+export:
+  all_defined
+
+import:
+  json
+  lib("racket/file.rkt") as rkt_file
+  "keyboard_layout.rhm" open
+  "svg.rhm" open
+
+fun write_text(path :: String, s :: String):
+  def out = Port.Output.open_file(path, ~exists: #'truncate)
+  out.write_string(s)
+  out.close()
+
+fun write_json(path :: String, v):
+  write_text(path, ir_to_string(v) ++ "\n")
+
+fun read_json(path :: String):
+  json.from_string(rkt_file.#{file->string}(path))
+
+fun load_legend_cells(path :: String) :: List.of(Cell):
+  cells_from_legend_ir(read_json(path))
+
+fun load_switches(path :: String) :: List:
+  read_json(path)
+
+//// legend-bundle/v0 → list of layer cell lists (same order as layer_legends)
+fun load_bundle_layers(path :: String) :: List:
+  def ir = read_json(path)
+  for List (layer in ir["layer_legends"]):
+    cells_from_legend_ir(layer)
+
+fun load_bundle_dense(path :: String) :: List.of(Cell):
+  def ir = read_json(path)
+  cells_from_legend_ir(ir["dense"])
+
+fun ensure_dir(path :: String):
+  rkt_file.#{make-directory*}(path)
+
+fun emit_svg(path :: String, panes :: List.of(Pane), ~theme = theme_light) :: Void:
+  def sc = scene_of_panes(panes, ~theme: theme)
+  write_text(path, svg_of_scene(sc, ~theme: theme))
+  def n_top = count_kind(sc, "KeyTop")
+  def msg = "wrote " ++ path
+    ++ " panes=" ++ to_string(panes.length())
+    ++ " KeyTop=" ++ to_string(n_top)
+    ++ " "
+    ++ to_string(sc.width) ++ "x" ++ to_string(sc.height)
+  println(msg)
+
+fun emit_points(path :: String, pts :: List.of(Point)) :: Void:
+  write_json(path, points_ir(pts))
+  println("wrote " ++ path ++ " points=" ++ to_string(pts.length()))

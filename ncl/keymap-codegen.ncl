@@ -4,26 +4,57 @@
 & (import "smart_keys/consumer/keymap-codegen.ncl")
 & (import "smart_keys/chorded/keymap-codegen.ncl")
 & (import "smart_keys/custom/keymap-codegen.ncl")
+& (import "smart_keys/history/keymap-codegen.ncl")
+& (import "smart_keys/key_lock/keymap-codegen.ncl")
 & (import "smart_keys/keyboard/keymap-codegen.ncl")
 & (import "smart_keys/layered/keymap-codegen.ncl")
+& (import "smart_keys/mod_conditioned/keymap-codegen.ncl")
 & (import "smart_keys/mouse/keymap-codegen.ncl")
+& (import "smart_keys/sequence/keymap-codegen.ncl")
 & (import "smart_keys/sticky/keymap-codegen.ncl")
 & (import "smart_keys/tap_dance/keymap-codegen.ncl")
 & (import "smart_keys/tap_hold/keymap-codegen.ncl")
+& (import "smart_keys/tri_state/keymap-codegen.ncl")
+& (import "key_system/families.ncl")
+& (import "key_system/keymap-codegen.ncl")
 & {
+  composite,
+
   KeymapJson
     | doc "Contract for the keymap.json value"
-    = {
-      keys | Array smart_key.Json,
-      config | composite.config.Json | default = {},
-      ..
-    },
+    =
+      let ConfigJson = composite.config.Json in
+      {
+        keys | Array smart_key.Json,
+        config | ConfigJson | default = {},
+        ..
+      },
 
   validators = import "validators.ncl",
 
   lib = {
     array_rust_expr = fun data =>
       "[%{data |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]",
+
+    # Build `Module::Config { field: expr, ..Module::Config::new() }` from a
+    # Nickel record of field name -> Rust value expression strings.
+    # Empty record emits `Module::Config::new()`.
+    config_rust_expr = fun module field_exprs =>
+      if field_exprs == {} then
+        "%{module}::Config::new()"
+      else
+        let fields =
+          field_exprs
+          |> std.record.to_array
+          |> std.array.map (fun { field, value } => "%{field}: %{value},")
+          |> std.string.join "\n"
+        in
+        m%"
+        %{module}::Config {
+            %{fields}
+            ..%{module}::Config::new()
+        }
+      "%,
   },
 
   smart_keymap,
@@ -181,70 +212,6 @@
       },
   },
 
-  composite = {
-    ref = {
-      wrap = fun ref @ { module, json, rust_expr, .. } =>
-        let variant =
-          module
-          |> match {
-            "smart_keymap::key::automation" => "Automation",
-            "smart_keymap::key::callback" => "Callback",
-            "smart_keymap::key::caps_word" => "CapsWord",
-            "smart_keymap::key::chorded" => "Chorded",
-            "smart_keymap::key::consumer" => "Consumer",
-            "smart_keymap::key::custom" => "Custom",
-            "smart_keymap::key::keyboard" => "Keyboard",
-            "smart_keymap::key::layered" => "Layered",
-            "smart_keymap::key::mouse" => "Mouse",
-            "smart_keymap::key::sticky" => "Sticky",
-            "smart_keymap::key::tap_dance" => "TapDance",
-            "smart_keymap::key::tap_hold" => "TapHold",
-            _ => std.fail_with "bad ref for composite.ref.wrap: %{std.serialize ref 'Json}",
-          }
-        in
-        {
-          include variant,
-          module = "smart_keymap::key::composite",
-          json = { "%{variant}" = ref.json },
-          rust_expr = "%{module}::Ref::%{variant}(%{ref.rust_expr})",
-        },
-    },
-
-    config = {
-      Json = {
-        automation | optional | smart_keymap.automation.config.Json,
-        chorded | optional | smart_keymap.chorded.config.Json,
-        sticky | optional | smart_keymap.sticky.config.Json,
-        tap_dance | optional | smart_keymap.tap_dance.config.Json,
-        tap_hold | optional | smart_keymap.tap_hold.config.Json,
-      },
-
-      rust_expr = m%"smart_keymap::key::composite::Config {
-            automation: %{smart_keymap.automation.config.rust_expr},
-            chorded: %{smart_keymap.chorded.config.rust_expr},
-            sticky: %{smart_keymap.sticky.config.rust_expr},
-            tap_dance: %{smart_keymap.tap_dance.config.rust_expr},
-            tap_hold: %{smart_keymap.tap_hold.config.rust_expr},
-            ..smart_keymap::key::composite::Config::new()
-        }"%,
-    },
-
-    system = {
-      rust_expr = m%"
-        smart_keymap::key::composite::System::array_based(
-          %{smart_keymap.automation.system.rust_expr},
-          %{smart_keymap.callback.system.rust_expr},
-          %{smart_keymap.chorded.system.rust_expr},
-          %{smart_keymap.keyboard.system.rust_expr},
-          %{smart_keymap.layered.system.rust_expr},
-          %{smart_keymap.sticky.system.rust_expr},
-          %{smart_keymap.tap_dance.system.rust_expr},
-          %{smart_keymap.tap_hold.system.rust_expr},
-        )
-      "%,
-    },
-  },
-
   smart_key = {
     Json = std.contract.from_validator json_validator,
 
@@ -256,13 +223,20 @@
       smart_keymap.chorded.key,
       smart_keymap.consumer.key,
       smart_keymap.custom.key,
+      smart_keymap.history.key,
+      smart_keymap.key_lock.key,
       smart_keymap.keyboard.key,
+      smart_keymap.mod_conditioned.key,
       smart_keymap.mouse.key,
       smart_keymap.layered.layered_key,
       smart_keymap.layered.modifier_key,
+      smart_keymap.sequence.key,
+      smart_keymap.sequence.auxiliary_key,
+      smart_keymap.sequence.start_key,
       smart_keymap.sticky.key,
       smart_keymap.tap_dance.key,
       smart_keymap.tap_hold.key,
+      smart_keymap.tri_state.key,
     ],
 
     json_validator =
@@ -303,176 +277,55 @@
     | doc "Record of rust expressions generated from keymap.json"
     =
       let keymap_len = std.array.length json_keymap.keys in
-      let num_automation_instructions =
-        if std.record.has_field "automation" json_keymap.config then
-          let automation_cfg = json_keymap.config.automation in
-          if std.record.has_field "instructions" automation_cfg then
-            std.array.length automation_cfg.instructions
-          else
-            0
-        else
-          0
-      in
-      let max_tap_dance_definitions =
-        # For each of the keys,
-        #  compute max length of any tap dance definitions.
-        let max_td_defs =
-          std.array.map
-            (fun cv =>
-              smart_key.traverse
-                (fun acc cv =>
-                  cv
-                  |> match {
-                    { nested = { definitions }, .. } =>
-                      let len = std.array.length definitions in
-                      if len > acc then len else acc,
-                    _ => acc,
-                  }
-                )
-                0
-                cv
-            )
-            key_codegen_values
-        in
-        # Compute the max over all
-        std.array.reduce_left (fun x y => if x > y then x else y) max_td_defs
-      in
-      let num_layers =
-        let max_layered_lengths =
-          std.array.map
-            (fun cv =>
-              smart_key.traverse
-                (fun acc cv =>
-                  cv
-                  |> match {
-                    { nested = { layered, .. }, .. } =>
-                      let len = std.array.length layered in
-                      if len > acc then len else acc,
-                    _ => acc,
-                  }
-                )
-                0
-                cv
-            )
-            key_codegen_values
-        in
-        # Compute the max over all
-        std.array.reduce_left (fun x y => if x > y then x else y) max_layered_lengths
-      in
-      let chords = ((json_keymap.config & { chorded | default = {} }).chorded & { chords | default = [] }).chords in
-      let chord_count = chords |> std.array.length in
-      let max_chord_size = chords |> std.array.map std.array.length |> std.array.fold_left std.number.max 0 in
-      let max_overlapping_chord_size =
-        chords
-        |> std.array.map (fun [i, ..] => std.to_string i)
-        |> std.array.fold_left
-          (fun r i =>
-            std.record.update i (1 + (std.record.get_or i 0 r)) r
-          )
-          {}
-        |> std.record.values
-        |> std.array.fold_left std.number.max 0
-      in
       let { key_data, key_refs } = key_data_and_refs in
-      let data_len_rust_expr = fun field_name =>
-        let data = (key_data & { "%{field_name}" | default = [] })."%{field_name}" in
-        data |> std.array.length |> std.to_string
-      in
       let key_refs_expr = "[%{key_refs |> std.array.map (fun { rust_expr, .. } => rust_expr) |> std.string.join ", "}]" in
-      {
-        config = composite.config.rust_expr,
-        context = "smart_keymap::key::composite::Context::from_config(%{config})",
-        key_refs = key_refs_expr,
-        keymap = m%"
-{
-    use smart_keymap::key::composite as key_system;
-    use key_system::Ref;
-    use key_system::Context;
-    use key_system::Event;
-    use key_system::KeyState;
-    use key_system::PendingKeyState;
-    use key_system::System;
-    const KEY_COUNT: usize = %{keymap_len};
-    const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
-    const CONTEXT: Context = %{context};
-
-    smart_keymap::keymap::Keymap::new(KEY_REFS, CONTEXT, %{composite.system.rust_expr})
-}
-"%,
-        keymap_module = m%"
+      let config_expr = composite.config.rust_expr in
+      let context_expr = "key_system::Context::from_config(%{config_expr})" in
+      let init_size_ctx = {
+        include json_keymap,
+        include key_codegen_values,
+        include smart_key,
+      }
+      in
+      # Nested shell under `pub mod init`: size/data consts + key_system (uses
+      # `super::` for those consts) + keymap instance surface. Engine paths use
+      # the `smart_keymap` crate name (facade: `extern crate self as smart_keymap`).
+      #
+      # Same text for firmware include and `keymap!` (block-local `pub mod init`
+      # does not leak). Only serde differs: false for `keymap!` call sites.
+      let init_module = fun { serde } =>
+        let sys = (composite & { with_serde = serde }).system in
+        m%"
 /// Types and initial data used for constructing [KEYMAP].
 pub mod init {
-    use crate as smart_keymap;
 
-    /// Number of instructions used by the [crate::key::automation] implementation.
-    pub const AUTOMATION_INSTRUCTION_COUNT: usize = %{std.to_string num_automation_instructions};
+%{sys.init_size_consts_rust_stmts init_size_ctx}
 
-    /// Number of layers supported by the [smart_keymap::key::layered] implementation.
-    pub const LAYERED_LAYER_COUNT: usize = %{std.to_string num_layers};
+%{sys.init_consts_rust_stmts key_data}
 
-    /// The maximum number of keys in a chord.
-    pub const CHORDED_MAX_CHORD_SIZE: usize = %{max_chord_size |> std.to_string};
+%{sys.rust_mod}
 
-    /// The maximum number of chords.
-    pub const CHORDED_MAX_CHORDS: usize = %{chord_count |> std.to_string};
-
-    /// The maximum number of overlapping chords for a chorded key.
-    pub const CHORDED_MAX_OVERLAPPING_CHORD_SIZE: usize = %{max_overlapping_chord_size |> std.to_string};
-
-    /// The tap-dance definitions.
-    pub const TAP_DANCE_MAX_DEFINITIONS: usize = %{max_tap_dance_definitions |> std.to_string};
-
-    pub use smart_keymap::key::composite::Ref;
-
-    pub use smart_keymap::key::composite::Context;
-
-    pub use smart_keymap::key::composite::Event;
-
-    pub use smart_keymap::key::composite::PendingKeyState;
-
-    pub use smart_keymap::key::composite::KeyState;
-
-    const AUTOMATION: usize = %{data_len_rust_expr "automation"};
-    const CALLBACK: usize = %{data_len_rust_expr "callback"};
-    const CHORDED: usize = %{data_len_rust_expr "chorded"};
-    const CHORDED_AUXILIARY: usize = %{data_len_rust_expr "chorded_auxiliary"};
-    const KEYBOARD: usize = %{data_len_rust_expr "keyboard"};
-    const LAYERED: usize = %{data_len_rust_expr "layered"};
-    const LAYER_MODIFIERS: usize = %{data_len_rust_expr "layer_modifiers"};
-    const STICKY: usize = %{data_len_rust_expr "sticky"};
-    const TAP_DANCE: usize = %{data_len_rust_expr "tap_dance"};
-    const TAP_HOLD: usize = %{data_len_rust_expr "tap_hold"};
-
-    /// The System type
-    pub type System = smart_keymap::key::composite::System<
-            smart_keymap::key::composite::KeyArrays<
-                AUTOMATION,
-                CALLBACK,
-                CHORDED,
-                CHORDED_AUXILIARY,
-                KEYBOARD,
-                LAYERED,
-                LAYER_MODIFIERS,
-                STICKY,
-                TAP_DANCE,
-                TAP_HOLD,
-            >,
-        >;
+    pub use key_system::Ref;
+    pub use key_system::Context;
+    pub use key_system::Event;
+    pub use key_system::PendingKeyState;
+    pub use key_system::KeyState;
+    pub use key_system::System;
 
     /// The number of keys in the keymap.
     pub const KEY_COUNT: usize = %{std.to_string keymap_len};
 
     /// The key references.
-    pub const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs};
+    pub const KEY_REFS: [Ref; KEY_COUNT] = %{key_refs_expr};
 
     /// The keymap config.
-    pub const CONFIG: smart_keymap::key::composite::Config = %{config};
+    pub const CONFIG: key_system::Config = %{config_expr};
 
     /// Initial [Context] value.
-    pub const CONTEXT: Context = %{context};
+    pub const CONTEXT: Context = %{context_expr};
 
     /// The key system.
-    pub const SYSTEM: System = %{composite.system.rust_expr};
+    pub const SYSTEM: System = %{sys.rust_expr};
 
     /// Alias for the [keymap::Keymap] type.
     pub type Keymap = smart_keymap::keymap::Keymap<
@@ -486,6 +339,25 @@ pub mod init {
     >;
 }
 "%,
+      in
+      let keymap_module_src = init_module { serde = true } in
+      let keymap_expr = m%"
+{
+%{init_module { serde = false }}
+    init::Keymap::new(
+        init::KEY_REFS,
+        init::CONTEXT,
+        init::SYSTEM,
+    )
+}
+"%,
+      in
+      {
+        config = config_expr,
+        context = config_expr,
+        key_refs = key_refs_expr,
+        keymap = keymap_expr,
+        keymap_module = keymap_module_src,
       },
 
   keymap_rs

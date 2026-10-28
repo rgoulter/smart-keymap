@@ -90,37 +90,29 @@
             | StickyReleaseJson_,
         },
 
-        rust_expr =
+        expr =
           if std.record.has_field "sticky" json_keymap.config then
-            let sticky_config = json_keymap.config.sticky in
-            let activation_field_fragment =
-              if std.record.has_field "activation" sticky_config then
-                "activation: %{module}::StickyKeyActivation::%{sticky_config.activation},"
+            let c = json_keymap.config.sticky in
+            (
+              if std.record.has_field "activation" c then
+                {
+                  activation = "%{module}::StickyKeyActivation::%{c.activation}",
+                }
               else
-                ""
-            in
-            let release_field_fragment =
-              if std.record.has_field "release" sticky_config then
-                "release: %{module}::StickyKeyRelease::%{sticky_config.release},"
+                {}
+            )
+            & (
+              if std.record.has_field "release" c then
+                {
+                  release = "%{module}::StickyKeyRelease::%{c.release}",
+                }
               else
-                ""
-            in
-            let config_fragment =
-              [
-                activation_field_fragment,
-                release_field_fragment,
-                "..%{module}::Config::new()"
-              ]
-              |> std.array.filter ((!=) "")
-              |> std.string.join "\n"
-            in
-            m%"
-            %{module}::Config {
-                %{config_fragment}
-            }
-          "%
+                {}
+            )
           else
-            "%{module}::Config::new()",
+            {},
+
+        rust_expr = lib.config_rust_expr module expr,
       },
 
       system = {

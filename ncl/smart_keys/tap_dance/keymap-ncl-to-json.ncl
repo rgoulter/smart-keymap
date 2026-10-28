@@ -14,14 +14,10 @@
         k
         |> match {
           { tap_dances, ..tap_key } =>
-            let valid_tap_key = keymap_ncl.key.key_validator tap_key in
-            let valid_tap_dances = validators.array.validator keymap_ncl.key.key_validator tap_dances in
-            [valid_tap_dances, valid_tap_key]
-            |> match {
-              ['Ok, 'Ok] => 'Ok,
-              [err, _] => err,
-              [_, err] => err,
-            },
+            validators.all_ok [
+              validators.array.validator keymap_ncl.key.key_validator tap_dances,
+              keymap_ncl.key.key_validator tap_key,
+            ],
           _ => 'Error { message = "expected { tap_dances = [Key, ..], ..tap_key }" },
         },
 

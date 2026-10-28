@@ -21,10 +21,14 @@ add_subdirectory(Profile)
 # Use LSI=32.768kHz.
 target_compile_definitions(HID_Keyboard PUBLIC CLK_OSC32K=2)
 
-target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
-
 add_subdirectory(keyboard)
 target_link_libraries(HID_Keyboard keyboard)
+
+# HAL_SLEEP=TRUE unless keyboard INTERFACE already has DEBUG= (board.debug).
+get_target_property(_kb_defs keyboard INTERFACE_COMPILE_DEFINITIONS)
+if(NOT _kb_defs OR _kb_defs STREQUAL "NOTFOUND" OR NOT _kb_defs MATCHES "DEBUG=")
+  target_compile_definitions(HID_Keyboard PUBLIC HAL_SLEEP=TRUE)
+endif()
 
 add_subdirectory(sdk sdk)
 
