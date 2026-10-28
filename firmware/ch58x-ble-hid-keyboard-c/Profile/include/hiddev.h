@@ -173,6 +173,9 @@ extern "C" {
 #define HID_KEYBOARD_F13 104         // 0x68 - Keyboard F13 (Apple)
 #define HID_KEYBOARD_F14 105         // 0x69 - Keyboard F14 (Apple)
 #define HID_KEYBOARD_F15 106         // 0x6A - Keyboard F15 (Apple)
+#define HID_KEYBOARD_F16 107         // 0x6B - Keyboard F16 (Apple)
+#define HID_KEYBOARD_F17 108         // 0x6C - Keyboard F17 (Apple)
+#define HID_KEYBOARD_F18 109         // 0x6D - Keyboard F18 (Apple)
 #define HID_KEYBOARD_MUTE 127        // 0x7F - Keyboard Mute
 #define HID_KEYBOARD_VOLUME_UP 128   // 0x80 - Keyboard Volume up
 #define HID_KEYBOARD_VOLUME_DOWN 129 // 0x81 - Keyboard Volume down
