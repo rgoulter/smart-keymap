@@ -53,8 +53,8 @@ jobs:
 
       - name: Install xpack toolchain
         run: |
-          wget --quiet  https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v${GCC_VERSION}/xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz
-          sudo tar -xvf ./xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz --directory=/opt
+          wget --quiet "https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v${GCC_VERSION}/xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz"
+          sudo tar -xvf "./xpack-riscv-none-elf-gcc-${GCC_VERSION}-linux-x64.tar.gz" --directory=/opt
 
       - name: Rust Add Target
         run: rustup target add "${CH32X_TARGET}"
@@ -73,14 +73,14 @@ jobs:
             --target "${CH32X_TARGET}" \
             --no-default-features
           make include/smart_keymap.h
-          cp include/smart_keymap.h ${FIRMWARE}/libsmartkeymap/
-          cp target/${CH32X_TARGET}/release/libsmart_keymap.a ${FIRMWARE}/libsmartkeymap/
+          cp include/smart_keymap.h "${FIRMWARE}/libsmartkeymap/"
+          cp target/"${CH32X_TARGET}/release/libsmart_keymap.a" "${FIRMWARE}/libsmartkeymap/"
 
       - name: Build Firmware (Row-to-Col, CH32X-48)
         shell: bash
         run: |
-          cd ${FIRMWARE}
-          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cd "${FIRMWARE}"
+          export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
           cmake \
               -S . \
               -B build-ch32x-48 \
@@ -103,13 +103,13 @@ jobs:
             grep -A2 "Memory region" make.log | \
             tail -n2 | \
             awk '{ printf "| %s | %s | %s | %s |\n", $1, $2" "$3, $4" "$5, $6 }'
-          } >> $GITHUB_STEP_SUMMARY
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Build Firmware (Col-to-Row, CH32X-48 rev2025.2)
         shell: bash
         run: |
-          cd ${FIRMWARE}
-          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cd "${FIRMWARE}"
+          export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
           cmake \
               -S . \
               -B build-ch32x-48-rev2025_2 \
@@ -121,8 +121,8 @@ jobs:
       - name: Build Firmware (Col-to-Row, CH32X-75)
         shell: bash
         run: |
-          cd ${FIRMWARE}
-          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cd "${FIRMWARE}"
+          export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
           cmake \
               -S . \
               -B build-ch32x-75 \
@@ -134,8 +134,8 @@ jobs:
       - name: Build Firmware (Split, CH32X-36 LHS)
         shell: bash
         run: |
-          cd ${FIRMWARE}
-          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cd "${FIRMWARE}"
+          export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
           cmake \
               -S . \
               -B build-ch32x-36-lhs \
@@ -147,8 +147,8 @@ jobs:
       - name: Build Firmware (CH32X-36 RHS)
         shell: bash
         run: |
-          cd ${FIRMWARE}
-          export PATH=/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH
+          cd "${FIRMWARE}"
+          export PATH="/opt/xpack-riscv-none-elf-gcc-${GCC_VERSION}/bin:$PATH"
           cmake \
               -S . \
               -B build-ch32x-36-rhs \
