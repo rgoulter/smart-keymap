@@ -17,6 +17,8 @@ let
 in
 {
   git-hooks.hooks = {
+    actionlint.enable = true;
+
     clippy = {
       enable = true;
       # Match .github/workflows/rust.yaml cargo-fmt-clippy job.
