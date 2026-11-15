@@ -1,0 +1,7 @@
+paths:
+  # cargo-test-cucumber-keymap is disabled with `if: false` on purpose,
+  #  because the cucumber suite is flaky and times out in CI.
+  # Only that constant condition in rust.yaml is ignored.
+  .github/workflows/rust.yaml:
+    ignore:
+      - 'constant expression "false" in condition'
