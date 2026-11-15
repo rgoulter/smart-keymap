@@ -22,6 +22,8 @@
   packages = let
     uf2conv = pkgs.callPackage ./nix/uf2conv {};
   in [
+    pkgs.actionlint
+    pkgs.shellcheck
     pkgs.cargo-binutils
     pkgs.cargo-deny
     pkgs.cargo-edit

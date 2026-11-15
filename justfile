@@ -85,6 +85,11 @@ check-quick: rust::fmt-check rust::clippy rust::doc ncl::format-check
 [group('lint')]
 lint: rust::fmt-check rust::clippy ncl::format
 
+# Lint GitHub Actions workflows with actionlint
+[group('lint')]
+lint-workflows:
+    actionlint
+
 # Write-format Rust and Nickel sources
 [group('lint')]
 fmt: rust::fmt ncl::format
