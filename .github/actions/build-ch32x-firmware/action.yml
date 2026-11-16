@@ -298,21 +298,23 @@ runs:
           echo "Generated $BIN ($(stat -c%s "$BIN" 2>/dev/null || stat -f%z "$BIN" 2>/dev/null || echo unknown) bytes)"
         fi
 
-        # Memory usage summary to step summary (best-effort)
-        if grep -q "Memory region" "$BUILD_DIR_ABS/make.log" 2>/dev/null; then
+        echo "firmware-elf=$ELF" >> "$GITHUB_OUTPUT"
+        echo "firmware-hex=$HEX" >> "$GITHUB_OUTPUT"
+        echo "firmware-bin=$BIN" >> "$GITHUB_OUTPUT"
+        echo "build-dir=$BUILD_DIR_ABS" >> "$GITHUB_OUTPUT"
+
+        # Memory usage summary to step summary (best-effort).
+        # A missing awk, a parse failure, or an unset step-summary
+        # path must not fail the step; outputs are already written.
+        if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]] && grep -q "Memory region" "$BUILD_DIR_ABS/make.log" 2>/dev/null; then
           {
             echo "### Memory Usage Summary"
             echo
             echo "| Memory Region | Used Size | Region Size | Usage % |"
             echo "|--------------|-----------|-------------|----------|"
             grep -A2 "Memory region" "$BUILD_DIR_ABS/make.log" | tail -n2 | awk '{ printf "| %s | %s | %s | %s |\n", $1, $2" "$3, $4" "$5, $6 }'
-          } >> "$GITHUB_STEP_SUMMARY"
+          } >> "$GITHUB_STEP_SUMMARY" || true
         fi
-
-        echo "firmware-elf=$ELF" >> "$GITHUB_OUTPUT"
-        echo "firmware-hex=$HEX" >> "$GITHUB_OUTPUT"
-        echo "firmware-bin=$BIN" >> "$GITHUB_OUTPUT"
-        echo "build-dir=$BUILD_DIR_ABS" >> "$GITHUB_OUTPUT"
 
         ls -lh "$ELF" "$HEX" "$BIN" 2>/dev/null || true
 
