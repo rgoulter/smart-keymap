@@ -15,11 +15,18 @@
 
       pkgsFirmwareCore = [
         pkgs.bashInteractive
+        pkgs.cacert
         pkgs.coreutils
         pkgs.findutils
         pkgs.gnused
         pkgs.gnugrep
         pkgs.git
+        pkgs.nodejs
+        pkgs.gcc
+        pkgs.binutils
+        pkgs.gawk
+        pkgs.gnutar
+        pkgs.gzip
         pkgs.just
         pkgs.gnumake
         pkgs.cmake
@@ -49,13 +56,21 @@
       mkImage = name: tag: env: pkgs.dockerTools.buildLayeredImage {
         inherit name;
         inherit tag;
-        contents = [ env workspaceRoot ];
+        contents = [ env workspaceRoot pkgs.cacert ];
+        extraCommands = ''
+          mkdir -p tmp
+          chmod 1777 tmp
+          mkdir -p lib64
+          ln -s ${pkgs.glibc}/lib/ld-linux-x86-64.so.2 lib64/ld-linux-x86-64.so.2
+        '';
         config = {
           Cmd = [ "/bin/bash" ];
           WorkingDir = "/workspace";
           Env = [
             "PATH=/bin:${env}/bin"
             "RUSTUP_TOOLCHAIN=none"
+            "SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
+            "NIX_SSL_CERT_FILE=${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt"
           ];
         };
         maxLayers = 120;
