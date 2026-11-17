@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "notes": "",
+  "keyboard": "spike/tiny4",
+  "keymap": "smart_keymap_spike",
+  "layout": "LAYOUT",
+  "combos": [],
+  "layers": [
+    ["KC_A", "KC_B", "MO(1)", "LSFT_T(KC_ENT)"],
+    ["KC_ESC", "KC_TRNS", "KC_TRNS", "QK_BOOT"]
+  ]
+}
